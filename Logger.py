@@ -204,10 +204,6 @@ class RPLogger(Logger):
                                                      time=timestamp,
                                                      probe=probe)))
 
-    def log_air(self, probe):
-        timestamp = self.timer.elapsed_time()
-        self.queue.put(dict(table=AirpuffDelivery(), tuple=dict(self.session_key, time=timestamp, probe=probe)))
-
     def log_pulse_weight(self, pulse_dur, probe, pulse_num, weight=0):
         self.thread_lock.acquire()
         cal_key = dict(setup=self.setup, probe=probe, date=systime.strftime("%Y-%m-%d"))
@@ -268,6 +264,15 @@ class RPLogger(Logger):
         clip_info = (MovieTables.Movie() * MovieTables.Movie.Clip() & curr_cond & self.session_key).fetch1()
         self.thread_lock.release()
         return clip_info
+
+    def sleep(self):
+        now = datetime.now()
+        start = self.params['start_time'] + now.replace(hour=0, minute=0, second=0)
+        stop = self.params['stop_time'] + now.replace(hour=0, minute=0, second=0)
+        if stop < start:
+            stop = stop + timedelta(days=1)
+        if now < start or now > stop:
+
 
     def ping(self):
         self.thread_lock.acquire()
