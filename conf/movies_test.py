@@ -1,6 +1,6 @@
 from Experiments.Center2AFC import *
 from Behavior import *
-from Stimuli.Movies import *
+from Stimuli.RPMovies import *
 from utils.factorize import *
 
 # define stimulus conditions
