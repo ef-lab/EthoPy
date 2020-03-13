@@ -107,29 +107,31 @@ class RPLogger(Logger):
         self.thread_lock.release()
         return protocol
 
-    def log_session(self, task_params):
+    def log_session(self, session_params, conditions):
         self.thread_lock.acquire()
         animal_id, task_idx = (SetupControl() & dict(setup=self.setup)).fetch1('animal_id', 'task_idx')
         self.task_idx = task_idx
 
         # create session key
         self.session_key['animal_id'] = animal_id
-        last_sessions = (Session() & self.session_key).fetch('session_id')
+        last_sessions = (Session() & self.session_key).fetch('session')
         if numpy.size(last_sessions) == 0:
             last_session = 0
         else:
             last_session = numpy.max(last_sessions)
-        self.session_key['session_id'] = last_session + 1
+        self.session_key['session'] = last_session + 1
 
         # get task parameters for session table
-        key = dict(self.session_key.items() | task_params.items())
+        key = dict(self.session_key.items())
+        key['session_params'] = session_params
+        key['conditions'] = conditions
         key['setup'] = self.setup
         self.queue.put(dict(table=Session(), tuple=key))
-        self.reward_amount = task_params['reward_amount']/1000  # convert to ml
+        self.reward_amount = session_params['reward_amount']/1000  # convert to ml
 
         # start session time
         self.timer.start()
-        (SetupControl() & dict(setup=self.setup))._update('current_session', self.session_key['session_id'])
+        (SetupControl() & dict(setup=self.setup))._update('current_session', self.session_key['session'])
         (SetupControl() & dict(setup=self.setup))._update('last_trial', 0)
         (SetupControl() & dict(setup=self.setup))._update('total_liquid', 0)
         self.thread_lock.release()
