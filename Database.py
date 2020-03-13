@@ -124,7 +124,7 @@ class MovieCond(dj.Manual):
     # movie clip conditions
     -> Condition
     ---
-    -> movies.Movie.Clip
+    -> MovieTables.Movie.Clip
     """
 
 
