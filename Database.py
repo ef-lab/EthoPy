@@ -59,7 +59,7 @@ class Session(dj.Manual):
     session_id           : smallint                     # session number
     ---
     setup=null           : varchar(256)                 # computer id
-    session_tmst=null    : timestamp                    # session timestamp
+    session_tmst         : timestamp                    # session timestamp
     notes=null           : varchar(2048)                # session notes
     session_params=null  : mediumblob                   
     conditions=null      : mediumblob        
@@ -168,5 +168,5 @@ class LiquidCalibration(dj.Manual):
         ---
         pulse_num                : int                  # number of pulses
         weight                   : float                # weight of total liquid released in gr
-        timestamp=null           : timestamp            # timestamp
+        timestamp                : timestamp            # timestamp
         """
