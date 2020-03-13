@@ -59,11 +59,8 @@ class RPBehavior(Behavior):
         # reset lick timer if licking is detected &
         if probe > 0:
             self.resp_timer.start()
-            rew_probe = probe == self.rew_probe
-        else:
-            rew_probe = False
 
-        return probe, rew_probe
+        return probe
 
     def update_bias(self, probe):
         self.probe_bias = np.concatenate((self.probe_bias[1:], [probe]))
