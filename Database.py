@@ -124,7 +124,8 @@ class MovieCond(dj.Manual):
     # movie clip conditions
     -> Condition
     ---
-    -> MovieTables.Movie.Clip
+    movie_name           : char(8)                      # short movie title
+    clip_number          : int                          # clip index
     """
 
 
