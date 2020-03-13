@@ -70,7 +70,7 @@ class RPBehavior(Behavior):
 
     def is_ready(self, init_duration):
         ready, ready_time = self.probe.in_position()
-        return self.ready and ready_time > init_duration
+        return ready and ready_time > init_duration
 
     def water_reward(self):
         self.probe.give_liquid(self.rew_probe)
