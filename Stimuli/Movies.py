@@ -5,6 +5,20 @@ import imageio, pygame, io
 class Movies(Stimulus):
     """ This class handles the presentation of Movies"""
 
+    def __init__(self, logger, params, conditions, beh=False):
+        # initilize parameters
+        self.params = params
+        self.logger = logger
+        self.conditions = conditions
+        self.beh = beh
+        self.isrunning = False
+        self.flip_count = 0
+        self.indexes = []
+        self.curr_cond = []
+        self.rew_probe = []
+        self.probes = []
+        self.timer = Timer()
+
     def setup(self):
         # setup parameters
         self.path = 'stimuli/'     # default path to copy local stimuli
@@ -43,6 +57,8 @@ class Movies(Stimulus):
             self.clock.tick_busy_loop(self.fps)
         else:
             self.isrunning = False
+            self.vid.close()
+            self.unshow()
 
     def stop(self):
         self.vid.close()
