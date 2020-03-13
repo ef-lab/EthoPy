@@ -46,7 +46,7 @@ class OdorIdentity(dj.Lookup):
     odor_idx               : int                       # odor index
     ---
     odor_name=NULL         : varchar(128)              # odor name
-    odor_concentration=100 : int                       # odor concentration (%)
+    odor_concentration=100 : int                       # odor concentration in prc
     odor_description=NULL  : varchar(256)
     """
 
