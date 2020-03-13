@@ -5,13 +5,13 @@ import os
 class RPMovies(Stimulus):
     """ This class handles the presentation of Movies with an optimized library for Raspberry pi"""
 
-    def prepare(self, conditions):
+    def prepare(self):
         from omxplayer import OMXPlayer
         self.player = OMXPlayer
         # store local copy of files
         if not os.path.isdir(self.path):  # create path if necessary
             os.makedirs(self.path)
-        for cond in conditions:
+        for cond in self.conditions:
             clip_info = self.logger.get_clip_info(cond)
             filename = self.path + clip_info['file_name']
             if not os.path.isfile(filename):
