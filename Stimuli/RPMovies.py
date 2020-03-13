@@ -3,6 +3,7 @@ from Stimulus import *
 
 class RPMovies(Stimulus):
     """ This class handles the presentation of Movies with an optimized library for Raspberry pi"""
+
     def prepare(self, conditions):
         from omxplayer import OMXPlayer
         self.player = OMXPlayer
