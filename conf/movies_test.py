@@ -1,6 +1,6 @@
 from Experiments.Center2AFC import *
 from Behavior import *
-from Stimuli.Movies import *
+from Stimuli.RPMovies import *
 from utils.factorize import *
 
 # define stimulus conditions
@@ -23,6 +23,6 @@ session_params = {
 
 # run experiment
 exp = State()
-exp.setup(logger, RPBehavior, Movies, session_params, conditions)
+exp.setup(logger, RPBehavior, RPMovies, session_params, conditions)
 exp.run()
 

@@ -11,7 +11,7 @@ class State(StateClass):
 
     def setup(self, logger, BehaviorClass, StimulusClass, session_params, conditions):
 
-        logger.log_session(session_params)
+        logger.log_session(session_params, conditions)
 
         # Initialize params & Behavior/Stimulus objects
         self.logger = logger
@@ -147,35 +147,35 @@ class Punish(State):
             return states['Punish']
 
 
-class Sleep(State):
-    def run(self):
-        now = datetime.now()
-        start = self.params['start_time'] + now.replace(hour=0, minute=0, second=0)
-        stop = self.params['stop_time'] + now.replace(hour=0, minute=0, second=0)
-        if stop < start:
-            stop = stop + timedelta(days=1)
-        if now < start or now > stop:
-            self.logger.update_setup_state('offtime')
-            self.stim.unshow([0, 0, 0])
-
-
-            self.logger.ping()
-            now = datetime.now()
-            start = self.params['start_time'] + now.replace(hour=0, minute=0, second=0)
-            stop = self.params['stop_time'] + now.replace(hour=0, minute=0, second=0)
-            if stop < start:
-                stop = stop + timedelta(days=1)
-            time.sleep(5)
-            if self.logger.get_setup_state() == 'offtime':
-                self.logger.update_setup_state('running')
-                self.stim.unshow()
-                break
-
-    def next(self):
-        if (now < start or now > stop) and self.logger.get_setup_state() == 'offtime':
-            return states['Speep']
-        else
-            return states['PreTrial']
+# class Sleep(State):
+#     def run(self):
+#         now = datetime.now()
+#         start = self.params['start_time'] + now.replace(hour=0, minute=0, second=0)
+#         stop = self.params['stop_time'] + now.replace(hour=0, minute=0, second=0)
+#         if stop < start:
+#             stop = stop + timedelta(days=1)
+#         if now < start or now > stop:
+#             self.logger.update_setup_state('offtime')
+#             self.stim.unshow([0, 0, 0])
+#
+#
+#             self.logger.ping()
+#             now = datetime.now()
+#             start = self.params['start_time'] + now.replace(hour=0, minute=0, second=0)
+#             stop = self.params['stop_time'] + now.replace(hour=0, minute=0, second=0)
+#             if stop < start:
+#                 stop = stop + timedelta(days=1)
+#             time.sleep(5)
+#             if self.logger.get_setup_state() == 'offtime':
+#                 self.logger.update_setup_state('running')
+#                 self.stim.unshow()
+#                 break
+#
+#     def next(self):
+#         if (now < start or now > stop) and self.logger.get_setup_state() == 'offtime':
+#             return states['Speep']
+#         else:
+#             return states['PreTrial']
 
 class Exit(State):
     def run(self):

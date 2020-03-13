@@ -14,6 +14,7 @@ class Behavior:
         self.rew_probe = 0
         self.probes = np.array(np.empty(0))
         self.probe_bias = np.repeat(np.nan, 1)  # History term for bias calculation
+        self.licked_probe = 0
 
     def is_licking(self):
         return False, False
@@ -22,10 +23,7 @@ class Behavior:
         return False, 0
 
     def reward(self):
-        print('Giving Water at probe:%1d' % self.rew_probe)
-
-    def punish_with_air(self, probe, air_dur=200):
-        print('Punishing with Air at probe:%1d' % probe)
+        print('Giving Water at probe:%1d' % self.licked_probe)
 
     def give_odor(self, delivery_idx, odor_idx, odor_dur, odor_dutycycle):
         print('Odor %1d presentation for %d' % (odor_idx, odor_dur))
@@ -52,28 +50,25 @@ class RPBehavior(Behavior):
         super(RPBehavior, self).__init__(logger, params)
 
     def is_licking(self):
-        probe = self.probe.lick()
+        self.licked_probe = self.probe.lick()
         time_since_last_lick = self.resp_timer.elapsed_time()
         if time_since_last_lick < self.params['response_interval']:
-            probe = 0
+            self.licked_probe = 0
         # reset lick timer if licking is detected &
-        if probe > 0:
+        if self.licked_probe > 0:
             self.resp_timer.start()
-            rew_probe = probe == self.rew_probe
-        else:
-            rew_probe = False
 
-        return probe, rew_probe
+        return self.licked_probe
 
     def update_bias(self, probe):
         self.probe_bias = np.concatenate((self.probe_bias[1:], [probe]))
 
-    def is_ready(self):
+    def is_ready(self, init_duration):
         ready, ready_time = self.probe.in_position()
-        return ready, ready_time
+        return ready and ready_time > init_duration
 
     def water_reward(self):
-        self.probe.give_liquid(self.rew_probe)
+        self.probe.give_liquid(self.licked_probe)
 
     def punish_with_air(self, probe, air_dur=200):
         self.probe.give_air(probe, air_dur)
