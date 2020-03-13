@@ -25,7 +25,6 @@ class Odors(Stimulus):
         self.beh.give_odor(delivery_idx, odor_idx, odor_dur, odor_dutycycle)
         self.isrunning = True
         self.timer.start()
-        self.logger.log_stim()
 
     def stop(self):
         self.isrunning = False
