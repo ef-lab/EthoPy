@@ -20,7 +20,7 @@ class RPMovies(Stimulus):
             if not os.path.isfile(filename):
                 clip_info['clip'].tofile(filename)
 
-    def init_stim(self):
+    def init(self):
         self.isrunning = True
         clip_info = self.logger.get_clip_info(self.curr_cond)
         filename = self.path + clip_info['file_name']
@@ -33,7 +33,7 @@ class RPMovies(Stimulus):
             self.isrunning = False
             self.vid.quit()
 
-    def stop_stim(self):
+    def stop(self):
         try:
             self.vid.quit()
         except:
