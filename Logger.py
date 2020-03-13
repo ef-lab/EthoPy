@@ -1,11 +1,11 @@
 import numpy, socket
 from utils.Timer import *
-from Database import *
 from queue import Queue
 import time as systime
 import datetime
 from threading import Lock
 import threading
+from BehTables import *
 
 
 class Logger:
