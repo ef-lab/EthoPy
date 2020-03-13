@@ -198,7 +198,7 @@ class RPLogger(Logger):
 
     def log_stim(self):
         timestamp = self.timer.elapsed_time()
-        self.queue.put(dict(table=StimDelivery(), tuple=dict(self.session_key, time=timestamp)))
+        self.queue.put(dict(table=StimOnset(), tuple=dict(self.session_key, time=timestamp)))
 
     def log_lick(self, probe):
         timestamp = self.timer.elapsed_time()
