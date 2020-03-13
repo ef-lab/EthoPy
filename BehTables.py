@@ -56,7 +56,7 @@ class Session(dj.Manual):
     definition = """
     # Behavior session infod
     animal_id            : int                          # animal id
-    session_id           : smallint                     # session number
+    session              : smallint                     # session number
     ---
     setup=null           : varchar(256)                 # computer id
     session_tmst         : timestamp                    # session timestamp
