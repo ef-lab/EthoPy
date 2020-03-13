@@ -269,10 +269,10 @@ class RPLogger(Logger):
         now = datetime.now()
         start = self.params['start_time'] + now.replace(hour=0, minute=0, second=0)
         stop = self.params['stop_time'] + now.replace(hour=0, minute=0, second=0)
-        if stop < start:
-            stop = stop + timedelta(days=1)
+        #if stop < start:
+            #stop = stop + timedelta(days=1)
         if now < start or now > stop:
-
+            pass
 
     def ping(self):
         self.thread_lock.acquire()
