@@ -19,7 +19,7 @@ class SetupControl(dj.Lookup):
     state="ready"        : enum('ready','running','stopped','sleeping','offtime') 
     animal_id=null       : int                          # animal id
     task_idx=null        : int                          # task identification number
-    last_ping=null       : timestamp                    
+    last_ping            : timestamp                    
     notes=null           : varchar(256)                 
     current_session=null : int                          
     last_trial=null      : int                          
