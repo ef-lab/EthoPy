@@ -1,6 +1,6 @@
 import datajoint as dj
 
-schema = dj.schema('pipeline_behavior2')
+schema = dj.schema('lab_behavior')
 MovieTables = dj.create_virtual_module('movies.py', 'pipeline_stimulus')
 
 
