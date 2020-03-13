@@ -43,10 +43,10 @@ class Task(dj.Lookup):
 class OdorIdentity(dj.Lookup):
     definition = """
     # Odor identity information
-    odor_idx: int                                       # odor index
+    odor_idx               : int                       # odor index
     ---
-    odor_name: char(128)                                # odor name
-    odor_concentration = 100: int                       # odor concentration (%)
+    odor_name              : varchar(128)              # odor name
+    odor_concentration=100 : int                       # odor concentration (%)
     """
 
 
