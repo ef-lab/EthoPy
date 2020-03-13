@@ -194,9 +194,9 @@ class RPLogger(Logger):
         (SetupControl() & dict(setup=self.setup))._update('total_liquid', rew)
         self.thread_lock.release()
 
-    def log_odor(self, odor_idx):
+    def log_stim(self):
         timestamp = self.timer.elapsed_time()
-        self.queue.put(dict(table=OdorDelivery(), tuple=dict(self.session_key, time=timestamp, odor_idx=odor_idx)))
+        self.queue.put(dict(table=StimDelivery(), tuple=dict(self.session_key, time=timestamp)))
 
     def log_lick(self, probe):
         timestamp = self.timer.elapsed_time()

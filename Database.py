@@ -43,10 +43,10 @@ class Task(dj.Lookup):
 class OdorIdentity(dj.Lookup):
     definition = """
     # Odor identity information
-    odor_idx: int  # odor index
+    odor_idx: int                                       # odor index
     ---
-    odor_name: char(128)  # odor name
-    odor_concentration = 100: int  # odor concentration
+    odor_name: char(128)                                # odor name
+    odor_concentration = 100: int                       # odor concentration (%)
     """
 
 
@@ -114,17 +114,6 @@ class StimDelivery(dj.Manual):
     # Liquid delivery timestamps
     -> Session
     time			    : int 	            # time from session start (ms)
-    probe               : int               # probe number
-    """
-
-
-@schema
-class OdorDelivery(dj.Manual):
-    definition = """
-    # Odor delivery timestamps
-    -> Session
-    -> OdorIdentity
-    time		    	: int 	            # time from session start (ms)
     """
 
 
@@ -144,7 +133,7 @@ class RewardCond(dj.Manual):
     # reward probe conditions
     -> Condition
     ---
-    probe=0        :int         # probe number
+    probe=0        :int                                 # probe number
     """
 
 
@@ -152,12 +141,12 @@ class RewardCond(dj.Manual):
 class OdorCond(dj.Manual):
     definition = """
     # reward probe conditions
-    -> beh.Condition
+    -> Condition
     ---
     odor_idx             : tinyblob                     # odor index for odor identity
     duration             : tinyblob                     # odor duration (ms)
     dutycycle            : tinyblob                     # odor dutycycle
-    delivery_probe       : tinyblob                     # delivery probe for channel mapping
+    delivery_idx         : tinyblob                     # delivery idx for channel mapping
     """
 
 
@@ -165,18 +154,18 @@ class OdorCond(dj.Manual):
 class LiquidCalibration(dj.Manual):
     definition = """
     # Liquid delivery calibration sessions for each probe
-    setup                        : varchar(256)   # Setup name
-    probe                        : int            # probe number
-    date                         : date           # session date (only one per day is allowed)
+    setup                        : varchar(256)         # Setup name
+    probe                        : int                  # probe number
+    date                         : date                 # session date (only one per day is allowed)
     """
 
     class PulseWeight(dj.Part):
         definition = """
         # Data for volume per pulse duty cycle estimation
         -> LiquidCalibration
-        pulse_dur                : int   # duration of pulse in ms
+        pulse_dur                : int                  # duration of pulse in ms
         ---
-        pulse_num                : int   # number of pulses
-        weight                   : float # weight of total liquid released in gr
-        timestamp=null           : timestamp                    # timestamp
+        pulse_num                : int                  # number of pulses
+        weight                   : float                # weight of total liquid released in gr
+        timestamp=null           : timestamp            # timestamp
         """
