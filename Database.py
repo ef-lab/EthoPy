@@ -53,7 +53,7 @@ class OdorIdentity(dj.Lookup):
 @schema
 class Session(dj.Manual):
     definition = """
-    # Behavior session info
+    # Behavior session infod
     animal_id            : int                          # animal id
     session_id           : smallint                     # session number
     ---
@@ -109,9 +109,9 @@ class LiquidDelivery(dj.Manual):
 
 
 @schema
-class StimDelivery(dj.Manual):
+class StimOnset(dj.Manual):
     definition = """
-    # Liquid delivery timestamps
+    # Stimulus onset timestamps
     -> Session
     time			    : int 	            # time from session start (ms)
     """
