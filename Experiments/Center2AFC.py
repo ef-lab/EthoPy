@@ -71,7 +71,7 @@ class Trial(State):
         super().__init__()
 
     def entry(self):
-        cond_idx = self.stim.init()
+        self.stim.init()
         self.beh.is_licking()
         self.timer.start()  # trial start counter
         self.logger.start_trial(self.stim.curr_cond['cond_idx'])
