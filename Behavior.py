@@ -70,9 +70,6 @@ class RPBehavior(Behavior):
     def water_reward(self):
         self.probe.give_liquid(self.licked_probe)
 
-    def punish_with_air(self, probe, air_dur=200):
-        self.probe.give_air(probe, air_dur)
-
     def give_odor(self, delivery_idx, odor_idx, odor_dur, odor_dutycycle):
         self.probe.give_odor(delivery_idx, odor_idx, odor_dur, odor_dutycycle)
 
