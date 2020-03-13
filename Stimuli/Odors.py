@@ -4,6 +4,10 @@ from Stimulus import *
 class Odors(Stimulus):
     """ This class handles the presentation of Odors"""
 
+    def prepare(self):
+        self.probes = np.array([d['probe'] for d in self.conditions])
+        self.logger.log_conditions('OdorCond', self.conditions)
+
     def init(self):
         delivery_idx = self.curr_cond['delivery_idx']
         odor_idx = self.curr_cond['odor_idx']
