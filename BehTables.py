@@ -81,9 +81,9 @@ class Trial(dj.Manual):
     definition = """
     # Trial information
     -> Session
+    trial_idx            : smallint                     # unique condition index
     ---
     cond_idx             : smallint                     # unique condition index
-    trial_idx            : smallint                     # unique condition index
     start_time           : int                          # start time from session start (ms)
     end_time             : int                          # end time from session start (ms)
     """
