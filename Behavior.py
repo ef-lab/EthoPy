@@ -69,9 +69,8 @@ class RPBehavior(Behavior):
         self.probe_bias = np.concatenate((self.probe_bias[1:], [probe]))
 
     def is_ready(self, init_duration):
-        self.__get_events()
-        elapsed_time = self.ready_timer.elapsed_time()
-        return self.ready and elapsed_time > init_duration
+        ready, ready_time = self.probe.in_position()
+        return self.ready and ready_time > init_duration
 
     def water_reward(self):
         self.probe.give_liquid(self.rew_probe)
