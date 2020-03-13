@@ -1,5 +1,6 @@
 from utils.Timer import *
 from StateMachine import *
+from datetime import datetime, timedelta
 
 
 class State(StateClass):
@@ -73,6 +74,7 @@ class Trial(State):
         self.stim.init()
         self.beh.is_licking()
         self.timer.start()  # trial start counter
+        self.logger.start_trial(self.stim.curr_cond['cond_idx'])
         self.logger.thread_lock.acquire()
 
     def run(self):
@@ -97,6 +99,7 @@ class Trial(State):
 
     def exit(self):
         self.logger.thread_lock.release()
+        self.logger.log_trial()
 
 
 class PostTrial(State):
@@ -143,6 +146,36 @@ class Punish(State):
         else:
             return states['Punish']
 
+
+class Sleep(State):
+    def run(self):
+        now = datetime.now()
+        start = self.params['start_time'] + now.replace(hour=0, minute=0, second=0)
+        stop = self.params['stop_time'] + now.replace(hour=0, minute=0, second=0)
+        if stop < start:
+            stop = stop + timedelta(days=1)
+        if now < start or now > stop:
+            self.logger.update_setup_state('offtime')
+            self.stim.unshow([0, 0, 0])
+
+
+            self.logger.ping()
+            now = datetime.now()
+            start = self.params['start_time'] + now.replace(hour=0, minute=0, second=0)
+            stop = self.params['stop_time'] + now.replace(hour=0, minute=0, second=0)
+            if stop < start:
+                stop = stop + timedelta(days=1)
+            time.sleep(5)
+            if self.logger.get_setup_state() == 'offtime':
+                self.logger.update_setup_state('running')
+                self.stim.unshow()
+                break
+
+    def next(self):
+        if (now < start or now > stop) and self.logger.get_setup_state() == 'offtime':
+            return states['Speep']
+        else
+            return states['PreTrial']
 
 class Exit(State):
     def run(self):

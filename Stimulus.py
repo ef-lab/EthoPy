@@ -1,6 +1,7 @@
-import imageio, pygame, io, os
+import pygame
 from pygame.locals import *
 import numpy as np
+from utils.Timer import *
 
 
 class Stimulus:
@@ -20,6 +21,7 @@ class Stimulus:
         self.curr_cond = []
         self.rew_probe = []
         self.probes = []
+        self.timer = Timer()
 
     def setup(self):
         # setup parameters

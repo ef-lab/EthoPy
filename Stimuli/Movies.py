@@ -1,4 +1,6 @@
 from Stimulus import *
+import imageio, pygame, io
+from utils.Timer import *
 
 
 class Movies(Stimulus):
@@ -31,12 +33,10 @@ class Movies(Stimulus):
         self.vsize = (clip_info['frame_width'], clip_info['frame_height'])
         self.pos = np.divide(self.size, 2) - np.divide(self.vsize, 2)
         self.isrunning = True
-
-        self.logger.start_trial(self.curr_cond['cond_idx'])  # log start trial
-        return self.curr_cond
+        self.timer.start()
 
     def present(self):
-        if self.curr_frame < self.vid.count_frames():
+        if self.timer.elapsed_time() < self.params['stim_duration']:
             py_image = pygame.image.frombuffer(self.vid.get_next_data(), self.vsize, "RGB")
             self.screen.blit(py_image, self.pos)
             self.flip()
@@ -49,4 +49,3 @@ class Movies(Stimulus):
         self.vid.close()
         self.unshow()
         self.isrunning = False
-        self.logger.log_trial()  # log trial
