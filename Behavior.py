@@ -1,4 +1,4 @@
-from LickSpout import *
+from Probe import *
 from utils.Timer import *
 import pygame
 import numpy as np
@@ -13,7 +13,7 @@ class Behavior:
         self.logger = logger
         self.rew_probe = 0
         self.probes = np.array(np.empty(0))
-        self.probe_bias = numpy.repeat(numpy.nan, 1)  # History term for bias calculation
+        self.probe_bias = np.repeat(np.nan, 1)  # History term for bias calculation
 
     def is_licking(self):
         return False, False
@@ -27,7 +27,7 @@ class Behavior:
     def punish_with_air(self, probe, air_dur=200):
         print('Punishing with Air at probe:%1d' % probe)
 
-    def give_odor(self, odor_idx, odor_dur):
+    def give_odor(self, delivery_idx, odor_idx, odor_dur, odor_dutycycle):
         print('Odor %1d presentation for %d' % (odor_idx, odor_dur))
 
     def inactivity_time(self):  # in minutes
@@ -78,8 +78,8 @@ class RPBehavior(Behavior):
     def punish_with_air(self, probe, air_dur=200):
         self.probe.give_air(probe, air_dur)
 
-    def give_odor(self, odor_idx, odor_dur):
-        self.probe.give_odor(odor_idx, odor_dur)
+    def give_odor(self, delivery_idx, odor_idx, odor_dur, odor_dutycycle):
+        self.probe.give_odor(delivery_idx, odor_idx, odor_dur, odor_dutycycle)
 
     def inactivity_time(self):  # in minutes
         return numpy.minimum(self.probe.timer_probe1.elapsed_time(),
