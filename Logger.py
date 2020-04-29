@@ -5,7 +5,7 @@ import time as systime
 import datetime
 from threading import Lock
 import threading
-from BehTables import *
+from DatabaseTables import *
 dj.config["enable_python_native_blobs"] = True
 
 class Logger:

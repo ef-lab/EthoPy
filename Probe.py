@@ -1,4 +1,4 @@
-from BehTables import *
+from DatabaseTables import *
 from time import sleep
 import numpy, socket
 from utils.Timer import *
