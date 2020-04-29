@@ -29,6 +29,7 @@ class State(StateClass):
             'InterTrial'   : InterTrial(self),
             'Reward'       : Reward(self),
             'Punish'       : Punish(self),
+            'Sleep'        : Sleep(self),
             'Exit'         : Exit(self)}
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
@@ -116,7 +117,10 @@ class InterTrial(State):
             self.timer.start()
 
     def next(self):
-        if self.timer.elapsed_time() > self.params['intertrial_duration']:
+        [now, start, stop] = Sleep.get_times()
+        if now < start or now > stop:
+            return states['Sleep']
+        elif self.timer.elapsed_time() > self.params['intertrial_duration']:
             return states['PreTrial']
         else:
             return states['InterTrial']
@@ -148,27 +152,16 @@ class Punish(State):
 
 
 class Sleep(State):
-
-        now = datetime.now()
-        start = self.params['start_time'] + now.replace(hour=0, minute=0, second=0)
-        stop = self.params['stop_time'] + now.replace(hour=0, minute=0, second=0)
-        if stop < start:
-            stop = stop + timedelta(days=1)
-        if now < start or now > stop:
-            self.logger.update_setup_state('offtime')
-            self.stim.unshow([0, 0, 0])
+    def entry(self):
+        self.logger.update_setup_state('offtime')
+        self.stim.unshow([0, 0, 0])
 
     def run(self):
         self.logger.ping()
-        now = datetime.now()
-        start = self.params['start_time'] + now.replace(hour=0, minute=0, second=0)
-        stop = self.params['stop_time'] + now.replace(hour=0, minute=0, second=0)
-        if stop < start:
-            stop = stop + timedelta(days=1)
         time.sleep(5)
 
-
     def next(self):
+        [now, start, stop] = self.get_times()
         if (now < start or now > stop) and self.logger.get_setup_state() == 'offtime':
             return states['Sleep']
         elif self.logger.get_setup_state() == 'offtime':
@@ -177,6 +170,15 @@ class Sleep(State):
             return states['Exit']
         else:
             return states['PreTrial']
+
+    def get_times(self):
+        now = datetime.now()
+        start = self.params['start_time'] + now.replace(hour=0, minute=0, second=0)
+        stop = self.params['stop_time'] + now.replace(hour=0, minute=0, second=0)
+        if stop < start:
+            stop = stop + timedelta(days=1)
+        return now, start, stop
+
 
 class Exit(State):
     def run(self):
