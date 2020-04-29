@@ -45,7 +45,11 @@ class Prepare(State):
         self.stim.prepare()  # prepare stimulus
 
     def next(self):
-        return states['PreTrial']
+        [now, start, stop] = Sleep.get_times()
+        if now < start or now > stop:
+            return states['Sleep']
+        else:
+            return states['PreTrial']
 
 
 class PreTrial(State):
