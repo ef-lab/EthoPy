@@ -60,12 +60,14 @@ class Logger:
         self.thread_end.set()
 
     def inserter(self):
-        while ~self.thread_end.is_set():
+        while not self.thread_end.is_set():
             if not self.queue.empty():
-                #self.thread_lock.acquire()
+                self.thread_lock.acquire()
                 item = self.queue.get()
                 eval('self.insert_schema.'+item['table']+'.insert1(item["tuple"], ignore_extra_fields=True)')
-                #self.thread_lock.release()
+                self.thread_lock.release()
+            else:
+                time.sleep(.5)
 
 
 class RPLogger(Logger):
