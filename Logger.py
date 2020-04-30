@@ -86,7 +86,8 @@ class RPLogger(Logger):
         #self.thread_lock = Lock()
         fileobject = open('dj_local_conf.json')
         connect_info = json.loads(fileobject.read())
-        conn2 = dj.Connection(connect_info['host'], connect_info['user'], connect_info['password'])
+        conn2 = dj.Connection(connect_info['database.host'], connect_info['database.user'],
+                              connect_info['database.password'])
         self.insert_schema = dj.create_virtual_module('beh.py', 'lab_behavior', connection=conn2)
 
     def init_params(self):
