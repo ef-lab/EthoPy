@@ -172,8 +172,10 @@ class Sleep(State):
 
     def is_sleep_time(self):
         now = datetime.now()
-        start = self.params['start_time'] + now.replace(hour=0, minute=0, second=0)
-        stop = self.params['stop_time'] + now.replace(hour=0, minute=0, second=0)
+        t = datetime.strptime(self.params['start_time'], "%H:%M:%S")
+        start = now.replace(hour=0, minute=0, second=0) + timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
+        t = datetime.strptime(self.params['stop_time'], "%H:%M:%S")
+        stop = now.replace(hour=0, minute=0, second=0) + timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
         if stop < start:
             stop = stop + timedelta(days=1)
         return now < start or now > stop
