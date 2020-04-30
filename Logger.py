@@ -244,7 +244,7 @@ class RPLogger(Logger):
             pass
 
     def cleanup(self):
-        self.thread_runner.stop()
+        self.thread_runner.cancel()
 
     def ping(self):
         if numpy.size((SetupControl() & dict(setup=self.setup)).fetch()):

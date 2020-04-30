@@ -38,6 +38,16 @@ class State(StateClass):
     def run(self):
         self.StateMachine.run()
 
+    def is_sleep_time(self):
+        now = datetime.now()
+        t = datetime.strptime(self.params['start_time'], "%H:%M:%S")
+        start = now.replace(hour=0, minute=0, second=0) + timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
+        t = datetime.strptime(self.params['stop_time'], "%H:%M:%S")
+        stop = now.replace(hour=0, minute=0, second=0) + timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
+        if stop < start:
+            stop = stop + timedelta(days=1)
+        return now < start or now > stop
+
 
 class Prepare(State):
     def run(self):
@@ -45,7 +55,10 @@ class Prepare(State):
         self.stim.prepare()  # prepare stimulus
 
     def next(self):
-        return states['PreTrial']
+        if self.is_sleep_time():
+            return states['Sleep']
+        else:
+            return states['PreTrial']
 
 
 class PreTrial(State):
@@ -117,7 +130,7 @@ class InterTrial(State):
             self.timer.start()
 
     def next(self):
-        if Sleep.is_sleep_time(self):
+        if self.is_sleep_time():
             return states['Sleep']
         elif self.timer.elapsed_time() > self.params['intertrial_duration']:
             return states['PreTrial']
@@ -169,16 +182,6 @@ class Sleep(State):
             return states['Exit']
         else:
             return states['PreTrial']
-
-    def is_sleep_time(self):
-        now = datetime.now()
-        t = datetime.strptime(self.params['start_time'], "%H:%M:%S")
-        start = now.replace(hour=0, minute=0, second=0) + timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
-        t = datetime.strptime(self.params['stop_time'], "%H:%M:%S")
-        stop = now.replace(hour=0, minute=0, second=0) + timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
-        if stop < start:
-            stop = stop + timedelta(days=1)
-        return now < start or now > stop
 
 
 class Exit(State):
