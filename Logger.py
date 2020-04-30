@@ -1,4 +1,4 @@
-import numpy, socket, os
+import numpy, socket, json
 from utils.Timer import *
 from queue import Queue
 import time as systime
@@ -84,7 +84,9 @@ class RPLogger(Logger):
         self.thread_runner = threading.Timer(0.1, self.inserter)  # max insertion rate of 10 events/sec
         self.thread_runner.start()
         #self.thread_lock = Lock()
-        conn2 = dj.Connection(os.environ.get('DJ_HOST'), os.environ.get('DJ_USER'), os.environ.get('DJ_PASS'))
+        fileobject = open('dj_local_conf.json')
+        connect_info = json.loads(fileobject.read())
+        conn2 = dj.Connection(connect_info['host'], connect_info['user'], connect_info['password'])
         self.insert_schema = dj.create_virtual_module('beh.py', 'lab_behavior', connection=conn2)
 
     def init_params(self):
