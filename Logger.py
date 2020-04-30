@@ -12,6 +12,12 @@ dj.config["enable_python_native_blobs"] = True
 class Logger:
     """ This class handles the database logging"""
 
+    def __init__(self):
+        self.thread_end = threading.Event()
+        self.thread_lock = Lock()
+        self.thread_runner = threading.Thread(target=self.inserter)  # max insertion rate of 10 events/sec
+        self.thread_runner.start()
+
     def init_params(self):
         pass
 
@@ -87,10 +93,7 @@ class RPLogger(Logger):
         conn2 = dj.Connection(connect_info['database.host'], connect_info['database.user'],
                               connect_info['database.password'])
         self.insert_schema = dj.create_virtual_module('beh.py', 'lab_behavior', connection=conn2)
-        self.thread_runner = threading.Thread(target=self.inserter)  # max insertion rate of 10 events/sec
-        self.thread_runner.start()
-        self.thread_end = threading.Event()
-        self.thread_lock = Lock()
+        super(RPLogger, self).__init__()
 
     def init_params(self):
         pass
