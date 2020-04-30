@@ -85,7 +85,6 @@ class RPLogger(Logger):
         self.thread_runner.start()
         #self.thread_lock = Lock()
         conn2 = dj.Connection(os.environ.get('DJ_HOST'), os.environ.get('DJ_USER'), os.environ.get('DJ_PASS'))
-)
         self.insert_schema = dj.create_virtual_module('beh.py', 'lab_behavior', connection=conn2)
 
     def init_params(self):
