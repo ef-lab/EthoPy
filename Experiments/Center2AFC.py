@@ -89,7 +89,7 @@ class Trial(State):
         self.beh.is_licking()
         self.timer.start()  # trial start counter
         self.logger.start_trial(self.stim.curr_cond['cond_idx'])
-        #self.logger.thread_lock.acquire()
+        self.logger.thread_lock.acquire()
 
     def run(self):
         self.stim.present()  # Start Stimulus
@@ -112,7 +112,7 @@ class Trial(State):
             return states['Trial']
 
     def exit(self):
-        #self.logger.thread_lock.release()
+        self.logger.thread_lock.release()
         self.logger.log_trial()
 
 

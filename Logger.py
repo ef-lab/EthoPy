@@ -8,8 +8,15 @@ import threading
 from DatabaseTables import *
 dj.config["enable_python_native_blobs"] = True
 
+
 class Logger:
     """ This class handles the database logging"""
+
+    def __init__(self):
+        self.thread_runner = threading.Thread(target=self.inserter)  # max insertion rate of 10 events/sec
+        self.thread_runner.start()
+        self.thread_end = threading.Event()
+        self.thread_lock = Lock()
 
     def init_params(self):
         pass
@@ -50,10 +57,10 @@ class Logger:
         pass
 
     def cleanup(self):
-        pass
+        self.thread_end.set()
 
     def inserter(self):
-        while True:
+        while ~self.thread_end.is_set():
             if not self.queue.empty():
                 #self.thread_lock.acquire()
                 item = self.queue.get()
@@ -81,14 +88,12 @@ class RPLogger(Logger):
         self.ip = s.getsockname()[0]
         print(self.ip)
         self.init_params()
-        self.thread_runner = threading.Timer(0.1, self.inserter)  # max insertion rate of 10 events/sec
-        self.thread_runner.start()
-        #self.thread_lock = Lock()
         fileobject = open('dj_local_conf.json')
         connect_info = json.loads(fileobject.read())
         conn2 = dj.Connection(connect_info['database.host'], connect_info['database.user'],
                               connect_info['database.password'])
         self.insert_schema = dj.create_virtual_module('beh.py', 'lab_behavior', connection=conn2)
+        super(RPLogger, self).__init__()
 
     def init_params(self):
         pass
@@ -242,9 +247,6 @@ class RPLogger(Logger):
             #stop = stop + timedelta(days=1)
         if now < start or now > stop:
             pass
-
-    def cleanup(self):
-        self.thread_runner.cancel()
 
     def ping(self):
         if numpy.size((SetupControl() & dict(setup=self.setup)).fetch()):
