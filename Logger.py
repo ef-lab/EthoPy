@@ -1,4 +1,4 @@
-import numpy, socket
+import numpy, socket, json
 from utils.Timer import *
 from queue import Queue
 import time as systime
@@ -8,8 +8,15 @@ import threading
 from DatabaseTables import *
 dj.config["enable_python_native_blobs"] = True
 
+
 class Logger:
     """ This class handles the database logging"""
+
+    def __init__(self):
+        self.thread_end = threading.Event()
+        self.thread_lock = Lock()
+        self.thread_runner = threading.Thread(target=self.inserter)  # max insertion rate of 10 events/sec
+        self.thread_runner.start()
 
     def init_params(self):
         pass
@@ -49,13 +56,18 @@ class Logger:
         """update timestamp"""
         pass
 
+    def cleanup(self):
+        self.thread_end.set()
+
     def inserter(self):
-        while True:
+        while not self.thread_end.is_set():
             if not self.queue.empty():
-                #self.thread_lock.acquire()
+                self.thread_lock.acquire()
                 item = self.queue.get()
                 eval('self.insert_schema.'+item['table']+'.insert1(item["tuple"], ignore_extra_fields=True)')
-                #self.thread_lock.release()
+                self.thread_lock.release()
+            else:
+                time.sleep(.5)
 
 
 class RPLogger(Logger):
@@ -78,11 +90,12 @@ class RPLogger(Logger):
         self.ip = s.getsockname()[0]
         print(self.ip)
         self.init_params()
-        self.thread_runner = threading.Timer(0.1, self.inserter)  # max insertion rate of 10 events/sec
-        self.thread_runner.start()
-        self.thread_lock = Lock()
-        conn2 = dj.Connection("139.91.171.210", "eflab", "cajal123")
+        fileobject = open('dj_local_conf.json')
+        connect_info = json.loads(fileobject.read())
+        conn2 = dj.Connection(connect_info['database.host'], connect_info['database.user'],
+                              connect_info['database.password'])
         self.insert_schema = dj.create_virtual_module('beh.py', 'lab_behavior', connection=conn2)
+        super(RPLogger, self).__init__()
 
     def init_params(self):
         pass
