@@ -90,7 +90,7 @@ class RPLogger(Logger):
         self.ip = s.getsockname()[0]
         print(self.ip)
         self.init_params()
-        fileobject = open('dj_local_conf.json')
+        fileobject = open('~/github/PyMouse/dj_local_conf.json')
         connect_info = json.loads(fileobject.read())
         conn2 = dj.Connection(connect_info['database.host'], connect_info['database.user'],
                               connect_info['database.password'])
