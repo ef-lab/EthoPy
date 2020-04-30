@@ -17,4 +17,5 @@ while not logger.get_setup_state() == 'stopped':
         logger.update_setup_state('ready')                            # update setup state
 
 # # # # # Exit # # # # #
+logger.cleanup()
 sys.exit(0)
