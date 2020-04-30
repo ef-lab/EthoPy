@@ -117,7 +117,7 @@ class InterTrial(State):
             self.timer.start()
 
     def next(self):
-        if Sleep.is_sleep_time():
+        if Sleep.is_sleep_time(self):
             return states['Sleep']
         elif self.timer.elapsed_time() > self.params['intertrial_duration']:
             return states['PreTrial']
@@ -160,8 +160,8 @@ class Sleep(State):
         time.sleep(5)
 
     def next(self):
-        [now, start, stop] = self.get_times()
-        if (now < start or now > stop) and self.logger.get_setup_state() == 'offtime':
+
+        if self.is_sleep_time() and self.logger.get_setup_state() == 'offtime':
             return states['Sleep']
         elif self.logger.get_setup_state() == 'offtime':
             self.logger.update_setup_state('running')
