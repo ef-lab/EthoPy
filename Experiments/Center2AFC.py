@@ -45,11 +45,7 @@ class Prepare(State):
         self.stim.prepare()  # prepare stimulus
 
     def next(self):
-        [now, start, stop] = Sleep.get_times()
-        if now < start or now > stop:
-            return states['Sleep']
-        else:
-            return states['PreTrial']
+        return states['PreTrial']
 
 
 class PreTrial(State):
@@ -121,8 +117,7 @@ class InterTrial(State):
             self.timer.start()
 
     def next(self):
-        [now, start, stop] = Sleep.get_times()
-        if now < start or now > stop:
+        if Sleep.is_sleep_time():
             return states['Sleep']
         elif self.timer.elapsed_time() > self.params['intertrial_duration']:
             return states['PreTrial']
@@ -175,13 +170,13 @@ class Sleep(State):
         else:
             return states['PreTrial']
 
-    def get_times(self):
+    def is_sleep_time(self):
         now = datetime.now()
         start = self.params['start_time'] + now.replace(hour=0, minute=0, second=0)
         stop = self.params['stop_time'] + now.replace(hour=0, minute=0, second=0)
         if stop < start:
             stop = stop + timedelta(days=1)
-        return now, start, stop
+        return now < start or now > stop
 
 
 class Exit(State):
