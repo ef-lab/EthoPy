@@ -49,6 +49,9 @@ class Logger:
         """update timestamp"""
         pass
 
+    def cleanup(self):
+        pass
+
     def inserter(self):
         while True:
             if not self.queue.empty():
@@ -80,8 +83,8 @@ class RPLogger(Logger):
         self.init_params()
         self.thread_runner = threading.Timer(0.1, self.inserter)  # max insertion rate of 10 events/sec
         self.thread_runner.start()
-        self.thread_lock = Lock()
-        conn2 = dj.Connection("139.91.171.210", "eflab", "cajal123")
+        #self.thread_lock = Lock()
+        conn2 = dj.Connection("139.91.171.210")
         self.insert_schema = dj.create_virtual_module('beh.py', 'lab_behavior', connection=conn2)
 
     def init_params(self):
@@ -236,6 +239,9 @@ class RPLogger(Logger):
             #stop = stop + timedelta(days=1)
         if now < start or now > stop:
             pass
+
+    def cleanup(self):
+        self.thread_runner.stop()
 
     def ping(self):
         if numpy.size((SetupControl() & dict(setup=self.setup)).fetch()):
