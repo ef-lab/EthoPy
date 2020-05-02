@@ -100,11 +100,17 @@ class RPLogger(Logger):
     def init_params(self):
         pass
 
-
     def get_protocol(self):
         task_idx = (SetupControl() & dict(setup=self.setup)).fetch1('task_idx')
         protocol = (Task() & dict(task_idx=task_idx)).fetch1('protocol')
         return protocol
+
+    def start_trial(self, cond_idx):
+        self.curr_cond = cond_idx
+        self.trial_start = self.timer.elapsed_time()
+
+        # return condition key
+        return dict(self.session_key, cond_idx=cond_idx)
 
     def log_session(self, session_params, conditions):
         animal_id, task_idx = (SetupControl() & dict(setup=self.setup)).fetch1('animal_id', 'task_idx')
@@ -156,13 +162,6 @@ class RPLogger(Logger):
                                                                     cond_idx=cond_idx)))
         return numpy.array(probes)
 
-    def start_trial(self, cond_idx):
-        self.curr_cond = cond_idx
-        self.trial_start = self.timer.elapsed_time()
-
-        # return condition key
-        return dict(self.session_key, cond_idx=cond_idx)
-
     def log_trial(self, last_flip_count=0):
         timestamp = self.timer.elapsed_time()
         trial_key = dict(self.session_key,
@@ -178,11 +177,10 @@ class RPLogger(Logger):
         (SetupControl() & dict(setup=self.setup))._update('last_trial', self.last_trial)
         self.ping()
 
-
     def log_liquid(self, probe):
         timestamp = self.timer.elapsed_time()
         self.queue.put(dict(table='LiquidDelivery', tuple=dict(self.session_key, time=timestamp, probe=probe)))
-        rew = (LiquidDelivery & self.session_key).__len__()*(Session() & self.session_key).fetch1('reward_amount')/1000
+        rew = (LiquidDelivery & self.session_key).__len__()*self.reward_amount/1000
         (SetupControl() & dict(setup=self.setup))._update('total_liquid', rew)
 
     def log_stim(self):
@@ -240,15 +238,6 @@ class RPLogger(Logger):
     def get_clip_info(self, curr_cond):
         clip_info = (MovieTables.Movie() * MovieTables.Movie.Clip() & curr_cond & self.session_key).fetch1()
         return clip_info
-
-    def sleep(self):
-        now = datetime.now()
-        start = self.params['start_time'] + now.replace(hour=0, minute=0, second=0)
-        stop = self.params['stop_time'] + now.replace(hour=0, minute=0, second=0)
-        #if stop < start:
-            #stop = stop + timedelta(days=1)
-        if now < start or now > stop:
-            pass
 
     def ping(self):
         if numpy.size((SetupControl() & dict(setup=self.setup)).fetch()):
