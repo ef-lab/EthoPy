@@ -67,7 +67,7 @@ class RPBehavior(Behavior):
         ready, ready_time = self.probe.in_position()
         return ready and ready_time > init_duration
 
-    def water_reward(self):
+    def reward(self):
         self.probe.give_liquid(self.licked_probe)
 
     def give_odor(self, delivery_idx, odor_idx, odor_dur, odor_dutycycle):
