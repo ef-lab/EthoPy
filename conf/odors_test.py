@@ -21,6 +21,7 @@ session_params = {
     'init_duration'      : 500,
     'reward_amount'      : 5,
     'randomization'      : 'bias',
+    'reward': 'water',
 }
 
 # run experiment
