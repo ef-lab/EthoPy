@@ -5,8 +5,8 @@ from Experiments.Calibrate import *
 session_params = {
     'duration'        : 30,
     'probes'          : [1, 2],
-    'pulsenum'        : 300,
-    'pulse_interval'  : 50,
+    'pulsenum'        : 150,
+    'pulse_interval'  : 100,
     'save'            : True,
 }
 
