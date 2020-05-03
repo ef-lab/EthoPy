@@ -4,7 +4,7 @@
 # into the next State given an Input
 class StateClass:
     def entry(self):
-        "Entry transition method"
+        """Entry transition method"""
         pass
 
     def run(self):
@@ -16,7 +16,7 @@ class StateClass:
         assert 0, "next not implemented"
 
     def exit(self):
-        "Exit transition method"
+        """Exit transition method"""
         pass
 
 

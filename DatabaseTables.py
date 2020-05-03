@@ -1,7 +1,7 @@
 import datajoint as dj
 
 schema = dj.schema('lab_behavior')
-MovieTables = dj.create_virtual_module('movies.py', 'pipeline_stimulus')
+MovieTables = dj.create_virtual_module('movies.py', 'lab_stimuli')
 
 
 def erd():
