@@ -1,4 +1,4 @@
-import numpy, socket, json
+import numpy, socket, json, os
 from utils.Timer import *
 from queue import Queue
 import time as systime
@@ -103,6 +103,10 @@ class RPLogger(Logger):
     def get_protocol(self):
         task_idx = (SetupControl() & dict(setup=self.setup)).fetch1('task_idx')
         protocol = (Task() & dict(task_idx=task_idx)).fetch1('protocol')
+        path, filename = os.path.split(protocol)
+        if not path:
+            path = '/home/eflab/github/PyMouse/conf'
+            protocol = path + '/' + filename
         return protocol
 
     def start_trial(self, cond_idx):
