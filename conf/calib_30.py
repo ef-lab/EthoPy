@@ -7,7 +7,7 @@ session_params = {
     'probes'          : [1, 2],
     'pulsenum'        : 300,
     'pulse_interval'  : 50,
-    'save'            : True,
+    'save'            : False,
 }
 
 # run experiment
