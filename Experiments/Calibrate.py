@@ -15,13 +15,14 @@ class Calibrate:
         print('Running calibration')
 
         for cal_idx in range(0, numpy.size(self.params['pulsenum'])):
-            self.screen.draw('Place zero-weighted pad', 400, 0, 400, 480, (0, 128, 0), 40)
+            self.screen.draw('Place zero-weighted pad', 0, 0, 300, 480, (0, 128, 0), 40)
             button = self.screen.add_button(name='OK', x=500, y=300, w=100, h=100, color=(0, 128, 0))
             while not button.is_pressed():
                 time.sleep(0.2)
 
             pulse = 0
             while pulse < self.params['pulsenum'][cal_idx]:
+                self.screen.clear()
                 self.screen.draw('Pulse %d/%d' % (pulse + 1, self.params['pulsenum'][cal_idx]))
                 for probe in self.params['probes']:
                     valve.give_liquid(probe, self.params['duration'][cal_idx], False)  # release liquid
@@ -29,10 +30,10 @@ class Calibrate:
                 pulse += 1  # update trial
             if self.params['save']:
                 for probe in self.params['probes']:
-                    self.screen.draw('Enter weight for probe %d' % probe, 400, 0, 400, 480, (0, 128, 0), 40)
+                    self.screen.clear()
+                    self.screen.draw('Enter weight for probe %d' % probe, 0, 0, 400, 480, (0, 128, 0), 40)
                     self.screen.add_numpad()
                     button = self.screen.add_button(name='OK', x=500, y=300, w=100, h=100)
-                    self.screen.run()
                     while not button.is_pressed():
                         time.sleep(0.2)
                     self.logger.log_pulse_weight(self.params['duration'][cal_idx], probe,

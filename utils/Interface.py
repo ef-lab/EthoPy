@@ -103,11 +103,12 @@ class Interface:
             txt += ' ' + word
             line_width += word_width + font.size(' ')[0]
         lines.append(txt)
+        offset = (h-word_height*numpy.size(lines))/2
         for line in lines:
             nline += 1  # Start on new row.
             text_surf = font.render(line, True, color)
             text_rect = text_surf.get_rect()
-            text_rect.center = ((x + (w / 2)), (y + (h / (numpy.size(lines) + 1)) * nline))
+            text_rect.center = ((x + (w / 2)), (y + offset + nline))
             self.screen.blit(text_surf, text_rect)
         pygame.display.update()
 
