@@ -58,7 +58,7 @@ class Interface:
             self.numpad += digit
         else:
             self.numpad = self.numpad[0:-1]
-        self.draw(self.numpad, 500, 0, 300, 100)
+        self.draw(self.numpad, 500, 0, 300, 100, (255, 255, 255), 40, (0, 0, 0))
 
     def _touch_handler(self, event, touch):
         if event == TS_PRESS:

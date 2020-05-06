@@ -16,8 +16,8 @@ class Calibrate:
 
         for cal_idx in range(0, numpy.size(self.params['pulsenum'])):
             self.screen.clear()
-            self.screen.draw('Place zero-weighted pad under the probe', 0, 0, 300, 480)
-            button = self.screen.add_button(name='OK', x=500, y=300, w=100, h=100, color=(0, 128, 0))
+            self.screen.draw('Place zero-weighted pad under the probe', 0, 0, 800, 280)
+            button = self.screen.add_button(name='OK', x=300, y=300, w=200, h=100, color=(0, 128, 0))
             while not button.is_pressed():
                 time.sleep(0.2)
 
@@ -41,4 +41,5 @@ class Calibrate:
                                                  self.params['pulsenum'][cal_idx], float(self.screen.numpad))  # insert
         valve.cleanup()
         self.screen.draw('Done calibrating')
+        time.sleep(5)
         self.screen.exit()
