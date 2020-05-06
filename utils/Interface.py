@@ -15,7 +15,7 @@ class Button:
         self.pressed = False
 
     def is_pressed(self):
-        if self.is_pressed():
+        if self.pressed:
             self.pressed = False
             return True
         return False
