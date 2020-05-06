@@ -34,6 +34,15 @@ class Interface:
         # define interface variables
         self.screen = None
         self.ts = Touchscreen()
+        pygame.init()
+        pygame.mouse.set_visible(0)
+        self.screen = pygame.display.set_mode(self.screen_size)
+        for touch in self.ts.touches:
+            touch.on_press = self._touch_handler
+            touch.on_release = self._touch_handler
+
+        self.ts.run()
+        self.screen.fill(self.fill_color)
         self.buttons = []
         self.texts = []
         self.button = []
@@ -71,6 +80,7 @@ class Interface:
     def add_button(self,  **kwargs):
         button = Button(**kwargs)
         self.buttons.append(button)
+        self._draw_button(button)
         return button
 
     def add_text(self, text, x, y, x_size, y_size, font_color=None, font_size=None, color=None):
@@ -107,6 +117,7 @@ class Interface:
                 txt = ''; line_width = 0
             txt += ' ' + word
             line_width += word_width + font.size(' ')[0]
+        lines.append(txt)
         for line in lines:
             nline += 1  # Start on new row.
             text_surf = font.render(line, True, color)
@@ -116,8 +127,7 @@ class Interface:
         pygame.display.update()
 
     def run(self):
-        pygame.init()
-        pygame.mouse.set_visible(0)
+
         self.screen = pygame.display.set_mode(self.screen_size)
         self.screen.fill(self.fill_color)
         for button in self.buttons:

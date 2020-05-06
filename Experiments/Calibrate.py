@@ -17,7 +17,7 @@ class Calibrate:
 
         for cal_idx in range(0, numpy.size(self.params['pulsenum'])):
             self.screen.draw('Place zero-weighted pad', 400, 0, 400, 480, (0, 128, 0), 40)
-            button = self.screen.add_button(name='OK', x=500, y=300, w=100, h=100)
+            button = self.screen.add_button(name='OK', x=500, y=300, w=100, h=100, color=(0, 128, 0))
             self.screen.run()
             while not button.is_pressed():
                 time.sleep(0.2)
