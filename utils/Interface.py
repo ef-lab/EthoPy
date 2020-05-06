@@ -33,11 +33,11 @@ class Interface:
 
         # define interface variables
         self.screen = None
+        self.ts = Touchscreen()
         self.buttons = []
         self.texts = []
-        self.numpad = ''
-        self.ts = Touchscreen()
         self.button = []
+        self.numpad = ''
 
     def _draw_button(self, button, color=None):
         if not color:
