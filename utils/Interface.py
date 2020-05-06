@@ -64,13 +64,13 @@ class Interface:
         if event == TS_PRESS:
             for button in self.buttons:
                 if button.x+button.w > touch.x > button.x and button.y+button.h > touch.y > button.y:
-                    button.pressed = True
                     self.button = button
                     self._draw_button(button, button.push_color)
                     return
         if event == TS_RELEASE:
             self._draw_button(self.button)
             exec(self.button.action)
+            self.button.pressed = True
 
     def add_button(self,  **kwargs):
         button = Button(**kwargs)
@@ -108,7 +108,7 @@ class Interface:
             nline += 1  # Start on new row.
             text_surf = font.render(line, True, color)
             text_rect = text_surf.get_rect()
-            text_rect.center = ((x + (w / 2)), (y + offset + word_height*nline + word_height/2))
+            text_rect.center = ((x + (w / 2)), (y + offset + word_height*(nline-1) + word_height/2))
             self.screen.blit(text_surf, text_rect)
         pygame.display.update()
 
