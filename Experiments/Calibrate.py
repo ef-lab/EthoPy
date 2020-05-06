@@ -15,7 +15,8 @@ class Calibrate:
         print('Running calibration')
 
         for cal_idx in range(0, numpy.size(self.params['pulsenum'])):
-            self.screen.draw('Place zero-weighted pad', 0, 0, 300, 480, (0, 128, 0), 40)
+            self.screen.clear()
+            self.screen.draw('Place zero-weighted pad under the probe', 0, 0, 300, 480, (0, 128, 0), 40)
             button = self.screen.add_button(name='OK', x=500, y=300, w=100, h=100, color=(0, 128, 0))
             while not button.is_pressed():
                 time.sleep(0.2)
@@ -33,7 +34,7 @@ class Calibrate:
                     self.screen.clear()
                     self.screen.draw('Enter weight for probe %d' % probe, 0, 0, 400, 480, (0, 128, 0), 40)
                     self.screen.add_numpad()
-                    button = self.screen.add_button(name='OK', x=500, y=300, w=100, h=100)
+                    button = self.screen.add_button(name='OK', x=200, y=300, w=100, h=100, color=(0, 128, 0))
                     while not button.is_pressed():
                         time.sleep(0.2)
                     self.logger.log_pulse_weight(self.params['duration'][cal_idx], probe,

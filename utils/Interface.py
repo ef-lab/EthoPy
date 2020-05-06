@@ -108,7 +108,7 @@ class Interface:
             nline += 1  # Start on new row.
             text_surf = font.render(line, True, color)
             text_rect = text_surf.get_rect()
-            text_rect.center = ((x + (w / 2)), (y + offset + nline))
+            text_rect.center = ((x + (w / 2)), (y + offset + word_height*nline + word_height/2))
             self.screen.blit(text_surf, text_rect)
         pygame.display.update()
 
