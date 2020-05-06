@@ -6,6 +6,8 @@ class Button:
     def __init__(self, **kwargs):
         self.color = kwargs.get('color', (50, 50, 50))
         self.push_color = kwargs.get('push_color', (128, 0, 0))
+        self.x = kwargs.get('x', 350)
+        self.y = kwargs.get('y', 200)
         self.w = kwargs.get('w', 90)
         self.h = kwargs.get('h', 90)
         self.name = kwargs.get('name', '')
