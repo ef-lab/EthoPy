@@ -69,7 +69,10 @@ class Interface:
                     return
         if event == TS_RELEASE:
             self._draw_button(self.button)
-            exec(self.button.action)
+            if isinstance(self.button.action, str):
+                exec(self.button.action)
+            else:
+                self.button.action()
             self.button.pressed = True
 
     def add_button(self,  **kwargs):
