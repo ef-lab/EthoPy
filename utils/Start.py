@@ -12,11 +12,12 @@ class Welcome:
         task = self.logger.get_setup_task()
         self.screen.clear()
         self.screen.draw('Animal %d task %d' % (animal, task), 200, 0, 400, 400)
-        self.screen.add_button(name='Set animal ID', action=self.change_animal, x=0, y=0, w=100, h=240, color=(25, 25, 50))
-        self.screen.add_button(name='Change Task', action=self.change_task, x=0, y=240, w=100, h=240, color=(25, 25, 50))
+        self.screen.add_button(name='Set animal ID', action=self.change_animal, x=40, y=0, w=100, h=160, color=(25, 25, 50))
+        self.screen.add_button(name='Change Task', action=self.change_task, x=0, y=200, w=100, h=240, color=(25, 25, 50))
         self.screen.add_button(name='Start experiment', action=self.start_experiment, x=200, y=300, w=200, h=100, color=(0, 128, 0))
         self.screen.add_button(name='Restart', action=self.reboot, x=700, y=0, w=100, h=240, color=(50, 25, 25))
         self.screen.add_button(name='Power off', action=self.shutdown, x=700, y=240, w=100, h=240, color=(50, 25, 25))
+        self.screen.add_button(name='Exit', action=self.exit, x=700, y=240, w=100, h=240, color=(50, 25, 25))
 
     def start_experiment(self):
         self.logger.update_state('running')
