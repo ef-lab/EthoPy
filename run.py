@@ -1,13 +1,14 @@
 from Logger import *
-import sys
+from utils.Start import Welcome
+import sys, utils
 
 global logger
 logger = RPLogger()                                                   # setup logger & timer
 logger.log_setup()                                                    # publish IP and make setup available
 
-
 # # # # Waiting for instructions loop # # # # #
 while not logger.get_setup_state() == 'stopped':
+    Welcome()
     while logger.get_setup_state() == 'ready':                        # wait for remote start
         time.sleep(1)
         logger.ping()

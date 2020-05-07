@@ -40,6 +40,7 @@ class Calibrate:
                     self.logger.log_pulse_weight(self.params['duration'][cal_idx], probe,
                                                  self.params['pulsenum'][cal_idx], float(self.screen.numpad))  # insert
         valve.cleanup()
+        self.screen.clear()
         self.screen.draw('Done calibrating')
         time.sleep(5)
         self.screen.exit()
