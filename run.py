@@ -8,7 +8,7 @@ logger.log_setup()                                                    # publish 
 
 # # # # Waiting for instructions loop # # # # #
 while not logger.get_setup_state() == 'stopped':
-    Welcome()
+    Welcome(logger)
     while logger.get_setup_state() == 'ready':                        # wait for remote start
         time.sleep(1)
         logger.ping()

@@ -242,7 +242,7 @@ class RPLogger(Logger):
         return state
 
     def get_setup_task(self):
-        task = (SetupControl() & dict(setup=self.setup)).fetch1('task')
+        task = (SetupControl() & dict(setup=self.setup)).fetch1('task_idx')
         return task
 
     def get_setup_animal(self):
