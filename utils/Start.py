@@ -32,7 +32,8 @@ class Welcome:
         button = screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))
         while not button.is_pressed():
             time.sleep(0.2)
-        self.logger.update_animal_id(int(self.screen.numpad))
+        self.logger.update_animal_id(int(screen.numpad))
+        self.screen = Interface()
         self.start()
 
     def change_task(self):
@@ -44,6 +45,7 @@ class Welcome:
         while not button.is_pressed():
             time.sleep(0.2)
         self.logger.update_task_idx(int(screen.numpad))
+        self.screen = Interface()
         self.start()
 
     def reboot(self):
