@@ -10,6 +10,8 @@ class Button:
         self.y = kwargs.get('y', 200)
         self.w = kwargs.get('w', 90)
         self.h = kwargs.get('h', 90)
+        self.font_color = kwargs.get('font_color', (255, 255, 255))
+        self.font_size = kwargs.get('font_size', 20)
         self.name = kwargs.get('name', '')
         self.action = kwargs.get('action', '')
         self.pressed = False
@@ -51,7 +53,7 @@ class Interface:
         if not color:
             color = button.color
         self.draw(button.name, button.x, button.y, button.w, button.h,
-                  self.font_color, self.font_size, color)
+                  button.font_color, button.font_size, color)
 
     def _numpad_input(self, digit):
         if any(digit):
@@ -80,6 +82,9 @@ class Interface:
         self.buttons.append(button)
         self._draw_button(button)
         return button
+
+    def remove_button(self, button):
+        self.buttons.remove(button)
 
     def add_numpad(self):
         for i in range(1, 10):
