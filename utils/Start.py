@@ -24,6 +24,7 @@ class Welcome:
                                color=(50, 25, 25), font_size=15)
         self.screen.add_button(name='Power off', action=self.shutdown, x=700, y=410, w=100, h=70,
                                color=(50, 50, 25), font_size=15)
+        self.screen.add_button(name='X', action=self.exit, x=750, y=0, w=50, h=50, color=(25, 25, 25))
 
     def cleanup(self):
         self.screen.cleanup()
@@ -35,8 +36,7 @@ class Welcome:
             self.screen.draw('Enter animal ID', 0, 0, 400, 280)
             self.screen.add_numpad()
             button = self.screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))
-            exit_button = self.screen.add_button(name='X', action=self.exit, x=750, y=0, w=50, h=50,
-                                                 color=(25, 25, 25))
+            exit_button = self.screen.add_button(name='X', x=750, y=0, w=50, h=50, color=(25, 25, 25))
             while not button.is_pressed() and not exit_button.is_pressed():
                 time.sleep(0.2)
             if exit_button.is_pressed():
@@ -48,8 +48,7 @@ class Welcome:
             self.screen.draw('Enter task idx', 0, 0, 400, 280)
             self.screen.add_numpad()
             button = self.screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))
-            exit_button = self.screen.add_button(name='X', action=self.exit, x=750, y=0, w=50, h=50,
-                                                 color=(25, 25, 25))
+            exit_button = self.screen.add_button(name='X', x=750, y=0, w=50, h=50, color=(25, 25, 25))
             while not button.is_pressed() and not exit_button.is_pressed():
                 time.sleep(0.2)
             if exit_button.is_pressed():
