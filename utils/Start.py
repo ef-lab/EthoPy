@@ -13,8 +13,8 @@ class Welcome:
         task = self.logger.get_setup_task()
         hostname = socket.gethostname()
         ip = socket.gethostbyname(hostname)
-        self.clear()
-        self.screen.draw('%s %s' % (ip, hostname), 0, 0, 150, 100, (128, 128, 128), size=15)
+        self.cleanup()
+        self.screen.draw('%s %s' % (self.logger.ip, self.logger.setup), 0, 0, 150, 100, (128, 128, 128), size=15)
         self.screen.add_button(name='Animal %d' % animal, action=self.change_animal, x=250, y=80, w=200, h=100,
                                color=(0, 0, 0), font_size=30)
         self.screen.add_button(name='Task %d' % task, action=self.change_task, x=250, y=160, w=200, h=100,
@@ -26,8 +26,8 @@ class Welcome:
         self.screen.add_button(name='Power off', action=self.shutdown, x=700, y=410, w=100, h=70, color=(50, 50, 25),
                                font_size=15)
 
-    def clear(self):
-        self.screen.clear()
+    def cleanup(self):
+        self.screen.cleanup()
         self.state = ''
         self.exit = self.screen.add_button(name='X', action=self.exit, x=750, y=0, w=50, h=50,
                                            color=(25, 25, 25))
@@ -36,7 +36,7 @@ class Welcome:
         self.setup()
         while True:
             if self.state == 'change_animal':
-                self.clear()
+                self.cleanup()
                 self.screen.draw('Enter animal ID', 0, 0, 400, 280)
                 self.screen.add_numpad()
                 button = self.screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))
@@ -47,7 +47,7 @@ class Welcome:
                 self.logger.update_animal_id(int(self.screen.numpad))
                 self.setup()
             elif self.state == 'change_task':
-                self.clear()
+                self.cleanup()
                 self.screen.draw('Enter task idx', 0, 0, 400, 280)
                 self.screen.add_numpad()
                 button = self.screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))

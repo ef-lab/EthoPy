@@ -120,7 +120,7 @@ class Interface:
             self.screen.blit(text_surf, text_rect)
         pygame.display.update()
 
-    def clear(self):
+    def cleanup(self):
         self.screen.fill(self.fill_color)
         self.buttons = []
         self.button = []
