@@ -228,13 +228,26 @@ class RPLogger(Logger):
     def update_setup_notes(self, note):
         (SetupControl() & dict(setup=self.setup))._update('notes', note)
 
+    def update_animal_id(self, animal_id):
+        (SetupControl() & dict(setup=self.setup))._update('animal_id', animal_id)
+
+    def update_task_idx(self, task_idx):
+        (SetupControl() & dict(setup=self.setup))._update('task_idx', task_idx)
+
+    def update_state(self, state):
+        (SetupControl() & dict(setup=self.setup))._update('state', state)
+
     def get_setup_state(self):
         state = (SetupControl() & dict(setup=self.setup)).fetch1('state')
         return state
 
     def get_setup_task(self):
-        task = (SetupControl() & dict(setup=self.setup)).fetch1('task')
+        task = (SetupControl() & dict(setup=self.setup)).fetch1('task_idx')
         return task
+
+    def get_setup_animal(self):
+        animal_id = (SetupControl() & dict(setup=self.setup)).fetch1('animal_id')
+        return animal_id
 
     def get_session_key(self):
         return self.session_key

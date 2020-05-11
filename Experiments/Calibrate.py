@@ -2,6 +2,7 @@ import pygame, numpy
 from Probe import *
 from utils.Interface import Interface
 
+
 class Calibrate:
     def __init__(self, logger, params):
         self.params = params
@@ -15,7 +16,7 @@ class Calibrate:
         print('Running calibration')
 
         for cal_idx in range(0, numpy.size(self.params['pulsenum'])):
-            self.screen.clear()
+            self.screen.cleanup()
             self.screen.draw('Place zero-weighted pad under the probe', 0, 0, 800, 280)
             button = self.screen.add_button(name='OK', x=300, y=300, w=200, h=100, color=(0, 128, 0))
             while not button.is_pressed():
@@ -23,7 +24,7 @@ class Calibrate:
 
             pulse = 0
             while pulse < self.params['pulsenum'][cal_idx]:
-                self.screen.clear()
+                self.screen.cleanup()
                 self.screen.draw('Pulse %d/%d' % (pulse + 1, self.params['pulsenum'][cal_idx]))
                 for probe in self.params['probes']:
                     valve.give_liquid(probe, self.params['duration'][cal_idx], False)  # release liquid
@@ -31,15 +32,16 @@ class Calibrate:
                 pulse += 1  # update trial
             if self.params['save']:
                 for probe in self.params['probes']:
-                    self.screen.clear()
+                    self.screen.cleanup()
                     self.screen.draw('Enter weight for probe %d' % probe, 0, 0, 400, 300)
                     self.screen.add_numpad()
-                    button = self.screen.add_button(name='OK', x=200, y=300, w=100, h=100, color=(0, 128, 0))
+                    button = self.screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))
                     while not button.is_pressed():
                         time.sleep(0.2)
                     self.logger.log_pulse_weight(self.params['duration'][cal_idx], probe,
                                                  self.params['pulsenum'][cal_idx], float(self.screen.numpad))  # insert
         valve.cleanup()
+        self.screen.cleanup()
         self.screen.draw('Done calibrating')
         time.sleep(5)
         self.screen.exit()
