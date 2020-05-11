@@ -6,7 +6,7 @@ class Welcome:
         self.logger = logger
         self.screen = Interface()
         self.start()
-        self.state = None
+        self.state = ''
 
     def setup(self):
         animal = self.logger.get_setup_animal()
@@ -14,10 +14,12 @@ class Welcome:
         hostname = socket.gethostname()
         ip = socket.gethostbyname(hostname)
         self.clear()
-        self.screen.draw('IP %d name %d' % (ip, hostname), 0, 0, 400, 100, (128, 128, 128), size=10)
-        self.screen.add_button(name='Animal %d' % animal, action=self.change_animal, x=200, y=100, w=200, h=100)
-        self.screen.add_button(name='Task %d' % task, action=self.change_task, x=200, y=200, w=200, h=100)
-        self.screen.add_button(name='Start experiment', action=self.start_experiment, x=200, y=300, w=200, h=100,
+        self.screen.draw('IP %s name %s' % (ip, hostname), 0, 0, 100, 100, (128, 128, 128), size=10)
+        self.screen.add_button(name='Animal %d' % animal, action=self.change_animal, x=200, y=80, w=200, h=100,
+                               color=(0, 0, 0))
+        self.screen.add_button(name='Task %d' % task, action=self.change_task, x=200, y=160, w=200, h=100,
+                               color=(0, 0, 0))
+        self.screen.add_button(name='Start experiment', action=self.start_experiment, x=200, y=330, w=200, h=100,
                                color=(0, 128, 0))
         self.screen.add_button(name='Restart', action=self.reboot, x=700, y=340, w=100, h=70, color=(50, 25, 25),
                                font_size=10)
