@@ -1,5 +1,6 @@
 from utils.Interface import *
-import time, os
+import os, time
+
 
 class Welcome:
     def __init__(self, logger):
@@ -8,7 +9,7 @@ class Welcome:
         self.state = ''
         self.animal = 0
         self.task = 0
-        self.start()
+        self.setup()
 
     def setup(self):
         self.cleanup()
@@ -23,49 +24,39 @@ class Welcome:
                                color=(50, 25, 25), font_size=15)
         self.screen.add_button(name='Power off', action=self.shutdown, x=700, y=410, w=100, h=70,
                                color=(50, 50, 25), font_size=15)
+        self.screen.add_button(name='X', action=self.exit, x=750, y=0, w=50, h=50, color=(25, 25, 25))
 
     def cleanup(self):
         self.screen.cleanup()
         self.state = ''
-        self.exit = self.screen.add_button(name='X', action=self.exit, x=750, y=0, w=50, h=50,
-                                           color=(25, 25, 25))
 
-    def start(self):
-        self.setup()
-        while self.logger.get_setup_state() == 'ready':
-            if self.state == 'change_animal':
-                self.cleanup()
-                self.screen.draw('Enter animal ID', 0, 0, 400, 280)
-                self.screen.add_numpad()
-                button = self.screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))
-                while not button.is_pressed() and not self.exit.is_pressed():
-                    time.sleep(0.2)
-                if self.exit.is_pressed():
-                    return
-                self.logger.update_animal_id(int(self.screen.numpad))
-                self.setup()
-            elif self.state == 'change_task':
-                self.cleanup()
-                self.screen.draw('Enter task idx', 0, 0, 400, 280)
-                self.screen.add_numpad()
-                button = self.screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))
-                while not button.is_pressed() and not self.exit.is_pressed():
-                    time.sleep(0.2)
-                if self.exit.is_pressed():
-                    return
-                self.logger.update_task_idx(int(self.screen.numpad))
-                self.setup()
-            elif self.state == 'start_experiment':
-                self.logger.update_state('running')
-                self.screen.ts.stop()
-            elif self.state == 'exit':
-                self.logger.update_state('stopped')
-                self.screen.exit()
-            else:
-                self.update_setup_info()
+    def eval_input(self):
+        if self.state == 'change_animal':
+            self.cleanup()
+            self.screen.draw('Enter animal ID', 0, 0, 400, 280)
+            self.screen.add_numpad()
+            button = self.screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))
+            while not button.is_pressed():
                 time.sleep(0.2)
-        else:
+            self.logger.update_animal_id(int(self.screen.numpad))
+            self.setup()
+        elif self.state == 'change_task':
+            self.cleanup()
+            self.screen.draw('Enter task idx', 0, 0, 400, 280)
+            self.screen.add_numpad()
+            button = self.screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))
+            while not button.is_pressed():
+                time.sleep(0.2)
+            self.logger.update_task_idx(int(self.screen.numpad))
+            self.setup()
+        elif self.state == 'start_experiment':
+            self.logger.update_state('running')
             self.screen.ts.stop()
+        elif self.state == 'exit':
+            self.logger.update_state('stopped')
+            self.screen.exit()
+        else:
+            self.update_setup_info()
 
     def update_setup_info(self):
         animal = self.logger.get_setup_animal()
