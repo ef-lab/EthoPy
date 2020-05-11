@@ -1,5 +1,5 @@
 from utils.Interface import *
-import os
+import os, time
 
 
 class Welcome:
