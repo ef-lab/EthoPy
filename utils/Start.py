@@ -9,6 +9,7 @@ class Welcome:
         self.state = ''
         self.animal = 0
         self.task = 0
+        self.setup()
 
     def setup(self):
         self.cleanup()
