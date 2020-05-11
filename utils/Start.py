@@ -1,5 +1,5 @@
 from utils.Interface import *
-import time, os
+import os
 
 
 class Welcome:
@@ -62,7 +62,6 @@ class Welcome:
             self.screen.exit()
         else:
             self.update_setup_info()
-            time.sleep(0.2)
 
     def update_setup_info(self):
         animal = self.logger.get_setup_animal()
