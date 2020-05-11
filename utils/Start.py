@@ -33,8 +33,8 @@ class Welcome:
                                            color=(25, 25, 25))
 
     def start(self):
-        self.setup()
-        while True:
+        while self.logger.get_setup_state() == 'ready':
+            self.setup()
             if self.state == 'change_animal':
                 self.cleanup()
                 self.screen.draw('Enter animal ID', 0, 0, 400, 280)
@@ -59,7 +59,7 @@ class Welcome:
                 self.setup()
             elif self.state == 'start_experiment':
                 self.logger.update_state('running')
-                self.screen.exit()
+                self.screen.ts.stop()
             elif self.state == 'exit':
                 self.logger.update_state('stopped')
                 self.screen.exit()
