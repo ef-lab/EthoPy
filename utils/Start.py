@@ -14,20 +14,21 @@ class Welcome:
         hostname = socket.gethostname()
         ip = socket.gethostbyname(hostname)
         self.clear()
-        self.screen.draw('IP %s name %s' % (ip, hostname), 0, 0, 100, 100, (128, 128, 128), size=10)
-        self.screen.add_button(name='Animal %d' % animal, action=self.change_animal, x=200, y=80, w=200, h=100,
-                               color=(0, 0, 0))
-        self.screen.add_button(name='Task %d' % task, action=self.change_task, x=200, y=160, w=200, h=100,
-                               color=(0, 0, 0))
-        self.screen.add_button(name='Start experiment', action=self.start_experiment, x=200, y=330, w=200, h=100,
+        self.screen.draw('%s %s' % (ip, hostname), 0, 0, 150, 100, (128, 128, 128), size=15)
+        self.screen.add_button(name='Animal %d' % animal, action=self.change_animal, x=250, y=80, w=200, h=100,
+                               color=(0, 0, 0), font_size=30)
+        self.screen.add_button(name='Task %d' % task, action=self.change_task, x=250, y=160, w=200, h=100,
+                               color=(0, 0, 0), font_size=30)
+        self.screen.add_button(name='Start experiment', action=self.start_experiment, x=250, y=330, w=200, h=100,
                                color=(0, 128, 0))
         self.screen.add_button(name='Restart', action=self.reboot, x=700, y=340, w=100, h=70, color=(50, 25, 25),
-                               font_size=10)
+                               font_size=15)
         self.screen.add_button(name='Power off', action=self.shutdown, x=700, y=410, w=100, h=70, color=(50, 50, 25),
-                               font_size=10)
+                               font_size=15)
 
     def clear(self):
         self.screen.clear()
+        self.state = ''
         self.exit = self.screen.add_button(name='X', action=self.exit, x=750, y=0, w=50, h=50,
                                            color=(25, 25, 25))
 
