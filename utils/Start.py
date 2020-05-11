@@ -9,7 +9,6 @@ class Welcome:
         self.state = ''
         self.animal = 0
         self.task = 0
-        self.exit_button = None
         self.setup()
 
     def setup(self):
@@ -29,8 +28,6 @@ class Welcome:
     def cleanup(self):
         self.screen.cleanup()
         self.state = ''
-        self.exit_button = self.screen.add_button(name='X', action=self.exit, x=750, y=0, w=50, h=50,
-                                           color=(25, 25, 25))
 
     def eval_input(self):
         if self.state == 'change_animal':
@@ -38,9 +35,11 @@ class Welcome:
             self.screen.draw('Enter animal ID', 0, 0, 400, 280)
             self.screen.add_numpad()
             button = self.screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))
-            while not button.is_pressed() and not self.exit_button.is_pressed():
+            exit_button = self.screen.add_button(name='X', action=self.exit, x=750, y=0, w=50, h=50,
+                                                 color=(25, 25, 25))
+            while not button.is_pressed() and not exit_button.is_pressed():
                 time.sleep(0.2)
-            if self.exit_button.is_pressed():
+            if exit_button.is_pressed():
                 return
             self.logger.update_animal_id(int(self.screen.numpad))
             self.setup()
@@ -49,9 +48,11 @@ class Welcome:
             self.screen.draw('Enter task idx', 0, 0, 400, 280)
             self.screen.add_numpad()
             button = self.screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))
-            while not button.is_pressed() and not self.exit_button.is_pressed():
+            exit_button = self.screen.add_button(name='X', action=self.exit, x=750, y=0, w=50, h=50,
+                                                 color=(25, 25, 25))
+            while not button.is_pressed() and not exit_button.is_pressed():
                 time.sleep(0.2)
-            if self.exit_button.is_pressed():
+            if exit_button.is_pressed():
                 return
             self.logger.update_task_idx(int(self.screen.numpad))
             self.setup()
