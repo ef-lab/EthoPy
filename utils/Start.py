@@ -15,16 +15,16 @@ class Welcome:
         ip = socket.gethostbyname(hostname)
         self.cleanup()
         self.screen.draw('%s %s' % (self.logger.ip, self.logger.setup), 0, 0, 150, 100, (128, 128, 128), size=15)
-        self.screen.add_button(name='Animal %d' % animal, action=self.change_animal, x=250, y=80, w=200, h=100,
-                               color=(0, 0, 0), font_size=30)
-        self.screen.add_button(name='Task %d' % task, action=self.change_task, x=250, y=160, w=200, h=100,
-                               color=(0, 0, 0), font_size=30)
-        self.screen.add_button(name='Start experiment', action=self.start_experiment, x=250, y=330, w=200, h=100,
-                               color=(0, 128, 0))
-        self.screen.add_button(name='Restart', action=self.reboot, x=700, y=340, w=100, h=70, color=(50, 25, 25),
-                               font_size=15)
-        self.screen.add_button(name='Power off', action=self.shutdown, x=700, y=410, w=100, h=70, color=(50, 50, 25),
-                               font_size=15)
+        self.screen.add_button(name='Animal %d' % animal, action=self.change_animal,
+                               x=250, y=80, w=200, h=100, color=(0, 0, 0), font_size=30)
+        self.screen.add_button(name='Task %d' % task, action=self.change_task,
+                               x=250, y=160, w=200, h=100, color=(0, 0, 0), font_size=30)
+        self.screen.add_button(name='Start experiment', action=self.start_experiment,
+                               x=250, y=330, w=200, h=100, color=(0, 128, 0))
+        self.screen.add_button(name='Restart', action=self.reboot, x=700, y=340, w=100, h=70,
+                               color=(50, 25, 25), font_size=15)
+        self.screen.add_button(name='Power off', action=self.shutdown, x=700, y=410, w=100, h=70,
+                               color=(50, 50, 25), font_size=15)
 
     def cleanup(self):
         self.screen.cleanup()
@@ -33,8 +33,8 @@ class Welcome:
                                            color=(25, 25, 25))
 
     def start(self):
+        self.setup()
         while self.logger.get_setup_state() == 'ready':
-            self.setup()
             if self.state == 'change_animal':
                 self.cleanup()
                 self.screen.draw('Enter animal ID', 0, 0, 400, 280)
@@ -64,6 +64,8 @@ class Welcome:
                 self.logger.update_state('stopped')
                 self.screen.exit()
             else:
+                self.screen.draw('%s %s' % (self.logger.ip, self.logger.setup),
+                                 0, 0, 150, 100, (128, 128, 128), size=15)
                 time.sleep(0.2)
 
     def start_experiment(self):
