@@ -2,6 +2,7 @@ import pygame, numpy
 from Probe import *
 from utils.Interface import Interface
 
+
 class Calibrate:
     def __init__(self, logger, params):
         self.params = params
@@ -34,7 +35,7 @@ class Calibrate:
                     self.screen.cleanup()
                     self.screen.draw('Enter weight for probe %d' % probe, 0, 0, 400, 300)
                     self.screen.add_numpad()
-                    button = self.screen.add_button(name='OK', x=200, y=300, w=100, h=100, color=(0, 128, 0))
+                    button = self.screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))
                     while not button.is_pressed():
                         time.sleep(0.2)
                     self.logger.log_pulse_weight(self.params['duration'][cal_idx], probe,
