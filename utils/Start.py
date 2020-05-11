@@ -1,16 +1,14 @@
 from utils.Interface import *
-import time, os, socket
-from utils.Timer import Timer
+import time, os
 
 class Welcome:
     def __init__(self, logger):
         self.logger = logger
         self.screen = Interface()
-        self.start()
         self.state = ''
-        self.timer = Timer()
         self.animal = 0
         self.task = 0
+        self.start()
 
     def setup(self):
         self.cleanup()
