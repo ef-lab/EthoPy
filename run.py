@@ -5,10 +5,10 @@ import sys, utils
 global logger
 logger = RPLogger()                                                   # setup logger & timer
 logger.log_setup()                                                    # publish IP and make setup available
-interface = Welcome(logger)
 
 # # # # Waiting for instructions loop # # # # #
 while not logger.get_setup_state() == 'stopped':
+    interface = Welcome(logger)
     while logger.get_setup_state() == 'ready':                        # wait for remote start
         interface.eval_input()
         time.sleep(0.2)

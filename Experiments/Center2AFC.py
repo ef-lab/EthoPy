@@ -66,6 +66,7 @@ class PreTrial(State):
     def entry(self):
         self.stim.get_new_cond()
         self.timer.start()
+        self.logger.update_setup_notes(self.__class__.__name__)
 
     def run(self): pass
 
@@ -86,6 +87,7 @@ class Trial(State):
         super().__init__()
 
     def entry(self):
+        self.logger.update_setup_notes(self.__class__.__name__)
         self.stim.init()
         self.beh.is_licking()
         self.timer.start()  # trial start counter
@@ -166,6 +168,7 @@ class Punish(State):
 
 class Sleep(State):
     def entry(self):
+        self.logger.update_setup_notes(self.__class__.__name__)
         self.logger.update_setup_state('offtime')
         self.stim.unshow([0, 0, 0])
 
