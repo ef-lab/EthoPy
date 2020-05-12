@@ -165,7 +165,6 @@ class RPLogger(Logger):
                                                                    cond_idx=cond_idx,
                                                                    probe=probes[cond_idx-1])))
             for condtable in condition_table:
-                #condtable = eval(condtable)
                 self.queue.put(dict(table=condtable, tuple=dict(cond.items() | self.session_key.items(),
                                                                     cond_idx=cond_idx)))
         return numpy.array(probes)
@@ -182,15 +181,16 @@ class RPLogger(Logger):
         self.last_trial += 1
 
         # insert ping
-        (SetupControl() & dict(setup=self.setup))._update('last_trial', self.last_trial)
+        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
+                            field='last_trial', value=self.last_trial, update=True))
         self.ping()
 
     def log_liquid(self, probe):
         timestamp = self.timer.elapsed_time()
         self.queue.put(dict(table='LiquidDelivery', tuple=dict(self.session_key, time=timestamp, probe=probe)))
         rew = (LiquidDelivery & self.session_key).__len__()*self.reward_amount/1000
-        (SetupControl() & dict(setup=self.setup))._update('total_liquid', rew)
-
+        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
+                            field='total_liquid', value=rew, update=True))
     def log_stim(self):
         timestamp = self.timer.elapsed_time()
         self.queue.put(dict(table='StimOnset', tuple=dict(self.session_key, time=timestamp)))
@@ -230,10 +230,12 @@ class RPLogger(Logger):
         return in_status
 
     def update_setup_notes(self, note):
-        (SetupControl() & dict(setup=self.setup))._update('notes', note)
+        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
+                            field='notes', value=note, update=True))
 
-    def update_setup_state(self, state):
-        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup), field='state', value=state, update=True))
+    def update_state(self, state):
+        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
+                            field='state', value=state, update=True))
 
     def update_animal_id(self, animal_id):
         (SetupControl() & dict(setup=self.setup))._update('animal_id', animal_id)
@@ -261,8 +263,8 @@ class RPLogger(Logger):
         return clip_info
 
     def ping(self):
-        if numpy.size((SetupControl() & dict(setup=self.setup)).fetch()):
-            lp = str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-            (SetupControl() & dict(setup=self.setup))._update('last_ping', lp)
+        lp = str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
+                            field='last_ping', value=lp, update=True))
 
 
