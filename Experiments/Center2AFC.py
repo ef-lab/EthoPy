@@ -33,7 +33,7 @@ class State(StateClass):
             'Exit'         : Exit(self)}
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
-        self.StateMachine.state = self.logger.get_setup_state()
+        self.StateMachine.status = self.logger.get_setup_status()
         self.logger.update_setup_state(self.__class__.__name__)
 
     def run(self):
@@ -74,7 +74,7 @@ class PreTrial(State):
         if self.beh.is_ready(self.params['init_duration']):
             return states['Trial']
         else:
-            self.StateMachine.state = self.logger.get_setup_state()
+            self.StateMachine.status = self.logger.get_setup_status()
             return states['PreTrial']
 
 
