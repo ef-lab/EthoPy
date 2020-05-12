@@ -16,7 +16,7 @@ class SetupControl(dj.Lookup):
     setup                : varchar(256)                 # Setup name
     ---
     ip                   : varchar(16)                  # setup IP address
-    state="ready"        : enum('ready','running','stopped','sleeping','offtime') 
+    status="ready"       : enum('ready','running','stopped','sleeping','offtime') 
     animal_id=null       : int                          # animal id
     task_idx=null        : int                          # task identification number
     last_ping            : timestamp                    
@@ -24,6 +24,7 @@ class SetupControl(dj.Lookup):
     current_session=null : int                          
     last_trial=null      : int                          
     total_liquid=null    : float     
+    state=null           : varchar(256)  
     """
 
 

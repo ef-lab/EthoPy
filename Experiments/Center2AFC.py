@@ -34,7 +34,7 @@ class State(StateClass):
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
         self.StateMachine.state = self.logger.get_setup_state()
-        self.logger.update_setup_notes(self.__class__.__name__)
+        self.logger.update_setup_state(self.__class__.__name__)
 
     def run(self):
         self.StateMachine.run()
@@ -66,7 +66,7 @@ class PreTrial(State):
     def entry(self):
         self.stim.get_new_cond()
         self.timer.start()
-        self.logger.update_setup_notes(self.__class__.__name__)
+        self.logger.update_setup_state(self.__class__.__name__)
 
     def run(self): pass
 
@@ -87,7 +87,7 @@ class Trial(State):
         super().__init__()
 
     def entry(self):
-        self.logger.update_setup_notes(self.__class__.__name__)
+        self.logger.update_setup_state(self.__class__.__name__)
         self.stim.init()
         self.beh.is_licking()
         self.timer.start()  # trial start counter
@@ -168,8 +168,8 @@ class Punish(State):
 
 class Sleep(State):
     def entry(self):
-        self.logger.update_setup_notes(self.__class__.__name__)
-        self.logger.update_setup_state('offtime')
+        self.logger.update_setup_state(self.__class__.__name__)
+        self.logger.update_setup_status('offtime')
         self.stim.unshow([0, 0, 0])
 
     def run(self):
@@ -181,7 +181,7 @@ class Sleep(State):
         if self.is_sleep_time() and self.logger.get_setup_state() == 'offtime':
             return states['Sleep']
         elif self.logger.get_setup_state() == 'offtime':
-            self.logger.update_setup_state('running')
+            self.logger.update_setup_status('running')
             self.stim.unshow()
             return states['Exit']
         else:

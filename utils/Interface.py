@@ -64,6 +64,7 @@ class Interface:
 
     def _touch_handler(self, event, touch):
         if event == TS_PRESS:
+            self.button = []
             for button in self.buttons:
                 if button.x+button.w > touch.x > button.x and button.y+button.h > touch.y > button.y:
                     self.button = button
