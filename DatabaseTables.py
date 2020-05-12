@@ -2,7 +2,7 @@ import datajoint as dj
 
 schema = dj.schema('lab_behavior')
 MovieTables = dj.create_virtual_module('movies.py', 'lab_stimuli')
-
+Mice = dj.create_virtual_module('mice.py', 'lab_mice')
 
 def erd():
     """for convenience"""

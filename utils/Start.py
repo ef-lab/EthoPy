@@ -24,6 +24,8 @@ class Welcome:
                                color=(50, 25, 25), font_size=15)
         self.screen.add_button(name='Power off', action=self.shutdown, x=700, y=410, w=100, h=70,
                                color=(50, 50, 25), font_size=15)
+        self.screen.add_button(name='Weigh Animal', action=self.weigh_animal, x=0, y=410, w=100, h=70,
+                               color=(50, 50, 50), font_size=15)
         self.screen.add_button(name='X', action=self.exit, x=750, y=0, w=50, h=50, color=(25, 25, 25))
 
     def cleanup(self):
@@ -51,6 +53,16 @@ class Welcome:
             if self.screen.numpad:
                 self.logger.update_task_idx(int(self.screen.numpad))
                 self.setup()
+        elif self.state == 'weigh_animal':
+            self.cleanup()
+            self.screen.draw('Enter animal weight', 0, 0, 400, 280)
+            self.screen.add_numpad()
+            button = self.screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))
+            while not button.is_pressed():
+                time.sleep(0.2)
+            if self.screen.numpad:
+                self.logger.log_animal_weight(int(self.screen.numpad))
+                self.setup()
         elif self.state == 'start_experiment':
             self.logger.update_setup_status('running')
             self.screen.ts.stop()
@@ -76,6 +88,9 @@ class Welcome:
 
     def change_animal(self):
         self.state = 'change_animal'
+
+    def weigh_animal(self):
+        self.state = 'weigh_animal'
 
     def change_task(self):
         self.state = 'change_task'

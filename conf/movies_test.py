@@ -16,7 +16,7 @@ session_params = {
     'stim_duration'      : 3000,
     'delay_duration'     : 500,
     'response_interval'  : 1000,
-    'init_duration'      : 0,
+    'init_duration'      : 100,
     'reward_amount'      : 10,
     'randomization'      : 'bias',
     'start_time'         : '10:00:00',
