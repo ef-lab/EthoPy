@@ -65,8 +65,8 @@ class Logger:
                 self.thread_lock.acquire()
                 item = self.queue.get()
                 if 'update' in item:
-                    eval('(self.insert_schema.' + item['table'] + ') & ' + item["tuple"] +
-                         '.__update(item["field"],item["value"])')
+                    eval('(self.insert_schema.' + item['table'] +
+                         ' & item["tuple"]).__update(item["field"],item["value"])')
                 else:
                     eval('self.insert_schema.'+item['table']+'.insert1(item["tuple"], ignore_extra_fields=True)')
                 self.thread_lock.release()
