@@ -70,6 +70,7 @@ class Interface:
                     self._draw_button(button, button.push_color)
                     return
         if event == TS_RELEASE:
+            self.button
             self._draw_button(self.button)
             self.button.pressed = True
             if isinstance(self.button.action, str):
