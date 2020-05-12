@@ -70,13 +70,14 @@ class Interface:
                     self._draw_button(button, button.push_color)
                     return
         if event == TS_RELEASE:
-            if self.button:
-                self._draw_button(self.button)
-                self.button.pressed = True
-                if isinstance(self.button.action, str):
-                    exec(self.button.action)
+            button = self.button
+            if button:
+                self._draw_button(button)
+                button.pressed = True
+                if isinstance(button.action, str):
+                    exec(button.action)
                 else:
-                    self.button.action()
+                    button.action()
 
     def add_button(self,  **kwargs):
         button = Button(**kwargs)
