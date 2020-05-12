@@ -233,7 +233,7 @@ class RPLogger(Logger):
         (SetupControl() & dict(setup=self.setup))._update('notes', note)
 
     def update_setup_state(self, state):
-        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup), field='state', value=state))
+        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup), field='state', value=state, update=True))
 
     def update_animal_id(self, animal_id):
         (SetupControl() & dict(setup=self.setup))._update('animal_id', animal_id)
