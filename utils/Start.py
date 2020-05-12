@@ -52,10 +52,10 @@ class Welcome:
                 self.logger.update_task_idx(int(self.screen.numpad))
                 self.setup()
         elif self.state == 'start_experiment':
-            self.logger.update_state('running')
+            self.logger.update_setup_status('running')
             self.screen.ts.stop()
         elif self.state == 'exit':
-            self.logger.update_state('stopped')
+            self.logger.update_setup_status('stopped')
             self.screen.exit()
         else:
             self.update_setup_info()
