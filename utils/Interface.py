@@ -64,18 +64,21 @@ class Interface:
 
     def _touch_handler(self, event, touch):
         if event == TS_PRESS:
+            self.button = []
             for button in self.buttons:
                 if button.x+button.w > touch.x > button.x and button.y+button.h > touch.y > button.y:
                     self.button = button
                     self._draw_button(button, button.push_color)
                     return
         if event == TS_RELEASE:
-            self._draw_button(self.button)
-            self.button.pressed = True
-            if isinstance(self.button.action, str):
-                exec(self.button.action)
-            else:
-                self.button.action()
+            button = self.button
+            if button:
+                self._draw_button(button)
+                button.pressed = True
+                if isinstance(button.action, str):
+                    exec(button.action)
+                else:
+                    button.action()
 
     def add_button(self,  **kwargs):
         button = Button(**kwargs)

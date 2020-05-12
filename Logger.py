@@ -40,10 +40,10 @@ class Logger:
         """Log setup information"""
         pass
 
-    def update_setup_state(self, state):
+    def update_setup_status(self, status):
         pass
 
-    def get_setup_state(self):
+    def get_setup_status(self):
         pass
 
     def get_setup_task(self):
@@ -64,7 +64,11 @@ class Logger:
             if not self.queue.empty():
                 self.thread_lock.acquire()
                 item = self.queue.get()
-                eval('self.insert_schema.'+item['table']+'.insert1(item["tuple"], ignore_extra_fields=True)')
+                if 'update' in item:
+                    eval('(self.insert_schema.' + item['table'] +
+                         '() & item["tuple"])._update(item["field"],item["value"])')
+                else:
+                    eval('self.insert_schema.'+item['table']+'.insert1(item["tuple"], ignore_extra_fields=True)')
                 self.thread_lock.release()
             else:
                 time.sleep(.5)
@@ -215,18 +219,21 @@ class RPLogger(Logger):
 
         # insert new setup
         key['ip'] = self.ip
-        key['state'] = 'ready'
+        key['status'] = 'ready'
         SetupControl().insert1(key)
 
-    def update_setup_state(self, state):
+    def update_setup_status(self, status):
         key = (SetupControl() & dict(setup=self.setup)).fetch1()
-        in_state = key['state'] == state
-        if not in_state:
-            (SetupControl() & dict(setup=self.setup))._update('state', state)
-        return in_state
+        in_status = key['status'] == status
+        if not in_status:
+            (SetupControl() & dict(setup=self.setup))._update('status', status)
+        return in_status
 
     def update_setup_notes(self, note):
         (SetupControl() & dict(setup=self.setup))._update('notes', note)
+
+    def update_setup_state(self, state):
+        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup), field='state', value=state, update=True))
 
     def update_animal_id(self, animal_id):
         (SetupControl() & dict(setup=self.setup))._update('animal_id', animal_id)
@@ -234,12 +241,9 @@ class RPLogger(Logger):
     def update_task_idx(self, task_idx):
         (SetupControl() & dict(setup=self.setup))._update('task_idx', task_idx)
 
-    def update_state(self, state):
-        (SetupControl() & dict(setup=self.setup))._update('state', state)
-
-    def get_setup_state(self):
-        state = (SetupControl() & dict(setup=self.setup)).fetch1('state')
-        return state
+    def get_setup_status(self):
+        status = (SetupControl() & dict(setup=self.setup)).fetch1('status')
+        return status
 
     def get_setup_task(self):
         task = (SetupControl() & dict(setup=self.setup)).fetch1('task_idx')

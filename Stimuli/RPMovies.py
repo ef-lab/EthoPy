@@ -34,6 +34,7 @@ class RPMovies(Stimulus):
             clip_info = self.logger.get_clip_info(cond)
             filename = self.path + clip_info['file_name']
             if not os.path.isfile(filename):
+                print('Saving %s ...' % filename)
                 clip_info['clip'].tofile(filename)
 
     def init(self):
