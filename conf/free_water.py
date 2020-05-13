@@ -20,6 +20,6 @@ session_params = {
 
 # run experiment
 exp = State()
-exp.setup(logger, RPBehavior, RPMovies, session_params)
+exp.setup(logger, RPBehavior, Uniform, session_params)
 exp.run()
 

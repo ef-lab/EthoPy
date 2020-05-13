@@ -1,6 +1,7 @@
 from utils.Timer import *
 from StateMachine import *
 from datetime import datetime, timedelta
+from Stimulus import *
 
 
 class State(StateClass):
@@ -9,9 +10,9 @@ class State(StateClass):
         if parent:
             self.__dict__.update(parent.__dict__)
 
-    def setup(self, logger, BehaviorClass, StimulusClass, session_params, conditions):
+    def setup(self, logger, BehaviorClass, StimulusClass, session_params):
 
-        logger.log_session(session_params, conditions)
+        logger.log_session(session_params)
 
         # Initialize params & Behavior/Stimulus objects
         self.logger = logger
@@ -129,7 +130,7 @@ class InterTrial(State):
 class Reward(State):
     def run(self):
         self.beh.reward()
-        self.stim.stop()
+        self.stim.unshow([0, 0, 0])
 
     def next(self):
         return states['InterTrial']
@@ -161,3 +162,57 @@ class Exit(State):
     def run(self):
         self.beh.cleanup()
         self.stim.unshow()
+
+
+class Uniform(Stimulus):
+    """ This class handles the presentation of Movies with an optimized library for Raspberry pi"""
+
+    def __init__(self, logger, params):
+        # initilize parameters
+        self.params = params
+        self.logger = logger
+        self.flip_count = 0
+        self.indexes = []
+        self.curr_cond = []
+        self.rew_probe = []
+        self.probes = []
+        self.timer = Timer()
+
+    def setup(self):
+        # setup parameters
+        self.path = 'stimuli/'     # default path to copy local stimuli
+        self.size = (800, 480)     # window size
+        self.color = [127, 127, 127]  # default background color
+        self.loc = (0, 0)          # default starting location of stimulus surface
+        self.fps = 30              # default presentation framerate
+        self.phd_size = (50, 50)    # default photodiode signal size in pixels
+
+        # setup pygame
+        pygame.init()
+        self.screen = pygame.display.set_mode(self.size)
+        self.unshow()
+        pygame.mouse.set_visible(0)
+        pygame.display.toggle_fullscreen()
+
+    def unshow(self, color=False):
+        """update background color"""
+        if not color:
+            color = self.color
+        self.screen.fill(color)
+        self.flip()
+
+    def flip(self):
+        """ Main flip method"""
+        pygame.display.update()
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+
+        self.flip_count += 1
+
+    def close(self):
+        """Close stuff"""
+        pygame.mouse.set_visible(1)
+        pygame.display.quit()
+        pygame.quit()
+
