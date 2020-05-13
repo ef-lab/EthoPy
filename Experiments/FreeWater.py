@@ -88,7 +88,7 @@ class Trial(State):
         self.logger.update_state(self.__class__.__name__)
         self.beh.is_licking()
         self.timer.start()  # trial start counter
-        self.logger.start_trial(self.stim.curr_cond['cond_idx'])
+        #self.logger.start_trial(self.stim.curr_cond['cond_idx'])
         self.logger.thread_lock.acquire()
 
     def run(self):
@@ -178,7 +178,6 @@ class Uniform(Stimulus):
         self.probes = []
         self.timer = Timer()
 
-    def setup(self):
         # setup parameters
         self.path = 'stimuli/'     # default path to copy local stimuli
         self.size = (800, 480)     # window size
