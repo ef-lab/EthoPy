@@ -120,7 +120,7 @@ class RPLogger(Logger):
         # return condition key
         return dict(self.session_key, cond_idx=cond_idx)
 
-    def log_session(self, session_params, conditions):
+    def log_session(self, session_params, conditions=None):
         animal_id, task_idx = (SetupControl() & dict(setup=self.setup)).fetch1('animal_id', 'task_idx')
         self.task_idx = task_idx
 
@@ -221,6 +221,10 @@ class RPLogger(Logger):
         key['ip'] = self.ip
         key['status'] = 'ready'
         SetupControl().insert1(key)
+
+    def log_animal_weight(self, weight):
+        key = dict(animal_id=self.get_setup_animal(), weight=weight)
+        Mice.MouseWeight().insert1(key)
 
     def update_setup_status(self, status):
         key = (SetupControl() & dict(setup=self.setup)).fetch1()
