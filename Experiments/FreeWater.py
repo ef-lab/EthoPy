@@ -17,7 +17,7 @@ class State(StateClass):
         # Initialize params & Behavior/Stimulus objects
         self.logger = logger
         self.beh = BehaviorClass(logger, session_params)
-        self.stim = StimulusClass(logger, session_params, conditions, self.beh)
+        self.stim = StimulusClass(logger, session_params)
         self.params = session_params
         self.StateMachine = StateMachine(Prepare(self), Exit(self))
 
