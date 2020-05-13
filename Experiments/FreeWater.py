@@ -78,17 +78,16 @@ class PreTrial(State):
 class Trial(State):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
-        self.stim.unshow()
         self.is_ready = 0
         self.probe = 0
         self.resp_ready = False
         super().__init__()
 
     def entry(self):
+        self.stim.unshow()
         self.logger.update_state(self.__class__.__name__)
         self.beh.is_licking()
         self.timer.start()  # trial start counter
-        #self.logger.start_trial(self.stim.curr_cond['cond_idx'])
         self.logger.thread_lock.acquire()
 
     def run(self):
@@ -109,7 +108,6 @@ class Trial(State):
 
     def exit(self):
         self.logger.thread_lock.release()
-        self.logger.log_trial()
         self.stim.unshow((0, 0, 0))
 
 
