@@ -81,12 +81,12 @@ class PreTrial(State):
 class Trial(State):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
-        self.is_ready = True
         self.probe = 0
-        self.resp_ready = False
         super().__init__()
 
     def entry(self):
+        self.is_ready = True
+        self.resp_ready = False
         self.logger.update_state(self.__class__.__name__)
         self.stim.init()
         self.beh.is_licking()
