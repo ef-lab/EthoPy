@@ -81,7 +81,7 @@ class PreTrial(State):
 class Trial(State):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
-        self.is_ready = 0
+        self.is_ready = True
         self.probe = 0
         self.resp_ready = False
         super().__init__()
@@ -96,11 +96,12 @@ class Trial(State):
 
     def run(self):
         self.stim.present()  # Start Stimulus
-        self.is_ready = self.beh.is_ready(self.params['delay_duration']+self.params['init_duration'])  # update times
         self.probe = self.beh.is_licking()
         if self.timer.elapsed_time() > self.params['delay_duration'] and not self.resp_ready:
             self.resp_ready = True
             if self.probe > 0: self.beh.update_bias(self.probe)
+        else:
+            self.is_ready = self.beh.is_ready(self.timer.elapsed_time() + self.params['init_duration'])  # update times
 
     def next(self):
         if not self.is_ready and not self.resp_ready:                           # did not wait

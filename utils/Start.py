@@ -68,7 +68,6 @@ class Welcome:
             self.screen.ts.stop()
         elif self.state == 'exit':
             self.logger.update_setup_status('stopped')
-            self.screen.exit()
         else:
             self.update_setup_info()
 
