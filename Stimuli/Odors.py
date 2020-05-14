@@ -6,18 +6,12 @@ class Odors(Stimulus):
 
     def setup(self):
         # setup parameters
-        self.path = 'stimuli/'     # default path to copy local stimuli
-        self.size = (800, 480)     # window size
         self.color = [10, 10, 10]  # default background color
-        self.loc = (0, 0)          # default starting location of stimulus surface
-        self.fps = 30              # default presentation framerate
-        self.phd_size = (50, 50)    # default photodiode signal size in pixels
 
         # setup pygame
         pygame.init()
         self.screen = pygame.display.set_mode(self.size)
         self.unshow()
-        pygame.mouse.set_visible(0)
         pygame.display.toggle_fullscreen()
         
     def prepare(self):
