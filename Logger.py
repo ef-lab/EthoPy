@@ -68,7 +68,7 @@ class Logger:
                     eval('(self.insert_schema.' + item['table'] +
                          '() & item["tuple"])._update(item["field"],item["value"])')
                 else:
-                    eval('self.insert_schema.'+item['table']+'.insert1(item["tuple"], ignore_extra_fields=True)')
+                    eval('self.insert_schema.'+item['table']+'.insert1(item["tuple"], ignore_extra_fields=True, skip_duplicates=True)')
                 self.thread_lock.release()
             else:
                 time.sleep(.5)
