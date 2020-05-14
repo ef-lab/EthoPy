@@ -5,7 +5,20 @@ class Odors(Stimulus):
     """ This class handles the presentation of Odors"""
 
     def setup(self):
+        # setup parameters
+        self.path = 'stimuli/'     # default path to copy local stimuli
+        self.size = (800, 480)     # window size
+        self.color = [10, 10, 10]  # default background color
+        self.loc = (0, 0)          # default starting location of stimulus surface
+        self.fps = 30              # default presentation framerate
+        self.phd_size = (50, 50)    # default photodiode signal size in pixels
+
+        # setup pygame
+        pygame.init()
+        self.screen = pygame.display.set_mode(self.size)
         self.unshow()
+        pygame.mouse.set_visible(0)
+        pygame.display.toggle_fullscreen()
         
     def prepare(self):
         self.probes = np.array([d['probe'] for d in self.conditions])
@@ -32,7 +45,7 @@ class Odors(Stimulus):
     def unshow(self, color=False):
         """update background color"""
         if not color:
-            color = [10, 10, 10]
+            color = self.color
         self.screen.fill(color)
         self.flip()
 
