@@ -32,7 +32,7 @@ class Odors(Stimulus):
     def unshow(self, color=False):
         """update background color"""
         if not color:
-            color = [10 10 10]
+            color = [10, 10, 10]
         self.screen.fill(color)
         self.flip()
 
