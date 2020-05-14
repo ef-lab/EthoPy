@@ -54,7 +54,7 @@ class VO(Stimulus):
         odor_dutycycle = self.curr_cond['dutycycle']
         self.beh.give_odor(delivery_idx, odor_idx, odor_dur, odor_dutycycle)
         self.isrunning = True
-        clip_info = self.logger.get_clip_info(self.curr_cond)
+        clip_info = self.logger.get_clip_info(self.curr_cond['movie_name','clip_number'])
         filename = self.path + clip_info['file_name']
         self.vid = self.player(filename, args=['--win', '0 15 800 465', '--no-osd'],
                                dbus_name='org.mpris.MediaPlayer2.omxplayer0')  # start video
