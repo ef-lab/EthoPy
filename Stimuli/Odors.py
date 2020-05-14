@@ -4,6 +4,9 @@ from Stimulus import *
 class Odors(Stimulus):
     """ This class handles the presentation of Odors"""
 
+    def setup(self):
+        self.unshow()
+        
     def prepare(self):
         self.probes = np.array([d['probe'] for d in self.conditions])
         conditions = self.conditions
@@ -25,6 +28,13 @@ class Odors(Stimulus):
         self.beh.give_odor(delivery_idx, odor_idx, odor_dur, odor_dutycycle)
         self.isrunning = True
         self.timer.start()
+        
+    def unshow(self, color=False):
+        """update background color"""
+        if not color:
+            color = [10 10 10]
+        self.screen.fill(color)
+        self.flip()
 
     def stop(self):
         self.isrunning = False
