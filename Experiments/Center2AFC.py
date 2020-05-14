@@ -146,6 +146,7 @@ class Reward(State):
     def run(self):
         self.beh.reward()
         self.stim.stop()
+        print('Rewarding')
 
     def next(self):
         return states['InterTrial']
@@ -157,6 +158,7 @@ class Punish(State):
         self.stim.unshow([0, 0, 0])
         self.timer.start()
         self.logger.update_state(self.__class__.__name__)
+        print('Punishing')
 
     def run(self): pass
 
