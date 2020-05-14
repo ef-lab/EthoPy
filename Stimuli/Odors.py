@@ -47,7 +47,7 @@ class Odors(Stimulus):
         if not color:
             color = self.color
         self.screen.fill(color)
-        self.flip()
+        
 
     def stop(self):
         self.isrunning = False
