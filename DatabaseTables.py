@@ -1,8 +1,8 @@
 import datajoint as dj
 
-schema = dj.schema('pipeline_behavior2')
-MovieTables = dj.create_virtual_module('movies.py', 'pipeline_stimulus')
-
+schema = dj.schema('lab_behavior')
+MovieTables = dj.create_virtual_module('movies.py', 'lab_stimuli')
+Mice = dj.create_virtual_module('mice.py', 'lab_mice')
 
 def erd():
     """for convenience"""
@@ -16,14 +16,15 @@ class SetupControl(dj.Lookup):
     setup                : varchar(256)                 # Setup name
     ---
     ip                   : varchar(16)                  # setup IP address
-    state="ready"        : enum('ready','running','stopped','sleeping','offtime') 
+    status="ready"       : enum('ready','running','stopped','sleeping','offtime') 
     animal_id=null       : int                          # animal id
     task_idx=null        : int                          # task identification number
-    last_ping=null       : timestamp                    
+    last_ping            : timestamp                    
     notes=null           : varchar(256)                 
     current_session=null : int                          
     last_trial=null      : int                          
     total_liquid=null    : float     
+    state=null           : varchar(256)  
     """
 
 
@@ -35,7 +36,7 @@ class Task(dj.Lookup):
     ---
     protocol             : varchar(4095)                # stimuli to be presented (array of dictionaries)
     description=""       : varchar(2048)                # task description
-    timestamp=null       : timestamp    
+    timestamp            : timestamp    
     """
 
 
@@ -43,22 +44,23 @@ class Task(dj.Lookup):
 class OdorIdentity(dj.Lookup):
     definition = """
     # Odor identity information
-    odor_idx: int                                       # odor index
+    odor_idx               : int                       # odor index
     ---
-    odor_name: char(128)                                # odor name
-    odor_concentration = 100: int                       # odor concentration (%)
+    odor_name=NULL         : varchar(128)              # odor name
+    odor_concentration=100 : int                       # odor concentration in prc
+    odor_description=NULL  : varchar(256)
     """
 
 
 @schema
 class Session(dj.Manual):
     definition = """
-    # Behavior session info
+    # Behavior session infod
     animal_id            : int                          # animal id
-    session_id           : smallint                     # session number
+    session              : smallint                     # session number
     ---
     setup=null           : varchar(256)                 # computer id
-    session_tmst=null    : timestamp                    # session timestamp
+    session_tmst         : timestamp                    # session timestamp
     notes=null           : varchar(2048)                # session notes
     session_params=null  : mediumblob                   
     conditions=null      : mediumblob        
@@ -80,9 +82,9 @@ class Trial(dj.Manual):
     definition = """
     # Trial information
     -> Session
+    trial_idx            : smallint                     # unique condition index
     ---
     cond_idx             : smallint                     # unique condition index
-    trial_idx            : smallint                     # unique condition index
     start_time           : int                          # start time from session start (ms)
     end_time             : int                          # end time from session start (ms)
     """
@@ -109,9 +111,9 @@ class LiquidDelivery(dj.Manual):
 
 
 @schema
-class StimDelivery(dj.Manual):
+class StimOnset(dj.Manual):
     definition = """
-    # Liquid delivery timestamps
+    # Stimulus onset timestamps
     -> Session
     time			    : int 	            # time from session start (ms)
     """
@@ -123,7 +125,8 @@ class MovieCond(dj.Manual):
     # movie clip conditions
     -> Condition
     ---
-    -> movies.Movie.Clip
+    movie_name           : char(8)                      # short movie title
+    clip_number          : int                          # clip index
     """
 
 
@@ -167,5 +170,5 @@ class LiquidCalibration(dj.Manual):
         ---
         pulse_num                : int                  # number of pulses
         weight                   : float                # weight of total liquid released in gr
-        timestamp=null           : timestamp            # timestamp
+        timestamp                : timestamp            # timestamp
         """

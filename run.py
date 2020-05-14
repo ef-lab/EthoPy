@@ -1,20 +1,24 @@
 from Logger import *
-import sys
+from utils.Start import Welcome
+import sys, utils
 
 global logger
 logger = RPLogger()                                                   # setup logger & timer
 logger.log_setup()                                                    # publish IP and make setup available
 
-
 # # # # Waiting for instructions loop # # # # #
-while not logger.get_setup_state() == 'stopped':
-    while logger.get_setup_state() == 'ready':                        # wait for remote start
-        time.sleep(1)
+while not logger.get_setup_status() == 'stopped':
+    interface = Welcome(logger)
+    while logger.get_setup_status() == 'ready':                        # wait for remote start
+        interface.eval_input()
+        time.sleep(0.2)
         logger.ping()
-    if not logger.get_setup_state() == 'stopped':                     # run experiment unless stopped
+    if not logger.get_setup_status() == 'stopped':                     # run experiment unless stopped
         protocol = logger.get_protocol()
         exec(open(protocol).read())
-        logger.update_setup_state('ready')                            # update setup state
+        logger.update_setup_status('ready')                            # update setup status
 
 # # # # # Exit # # # # #
+interface.screen.exit()
+logger.cleanup()
 sys.exit(0)
