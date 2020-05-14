@@ -6,6 +6,7 @@ class Odors(Stimulus):
 
     def setup(self):
         # setup parameters
+        self.size = (800, 480)     # window size
         self.color = [10, 10, 10]  # default background color
 
         # setup pygame
