@@ -147,7 +147,7 @@ class OdorCond(dj.Manual):
     -> Condition
     ---
     odor_idx             : tinyblob                     # odor index for odor identity
-    duration             : tinyblob                     # odor duration (ms)
+    duration             : int                          # odor duration (ms)
     dutycycle            : tinyblob                     # odor dutycycle
     delivery_idx         : tinyblob                     # delivery idx for channel mapping
     """

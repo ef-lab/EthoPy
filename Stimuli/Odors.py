@@ -31,7 +31,7 @@ class Odors(Stimulus):
     def init(self):
         delivery_idx = self.curr_cond['delivery_idx']
         odor_idx = self.curr_cond['odor_idx']
-        odor_dur = self.curr_cond['duration']
+        odor_dur = self.curr_cond['odor_duration']
         odor_dutycycle = self.curr_cond['dutycycle']
         self.beh.give_odor(delivery_idx, odor_idx, odor_dur, odor_dutycycle)
         self.isrunning = True
