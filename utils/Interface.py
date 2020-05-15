@@ -35,7 +35,8 @@ class Interface:
         # define interface variables
         self.screen = None
         self.ts = Touchscreen()
-        pygame.init()
+        if not pygame.get_init():
+            pygame.init()
         pygame.mouse.set_visible(0)
         self.screen = pygame.display.set_mode(self.screen_size)
         for touch in self.ts.touches:

@@ -15,7 +15,8 @@ class RPMovies(Stimulus):
         self.phd_size = (50, 50)    # default photodiode signal size in pixels
 
         # setup pygame
-        pygame.init()
+        if not pygame.get_init():
+            pygame.init()
         self.screen = pygame.display.set_mode(self.size)
         self.unshow()
         pygame.mouse.set_visible(0)

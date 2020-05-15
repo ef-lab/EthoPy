@@ -68,6 +68,7 @@ class Welcome:
             self.screen.ts.stop()
         elif self.state == 'exit':
             self.logger.update_setup_status('stopped')
+            self.close()
         else:
             self.update_setup_info()
 
@@ -99,4 +100,7 @@ class Welcome:
 
     def shutdown(self):
         os.system('systemctl poweroff')
+
+    def close(self):
+        self.screen.exit()
 
