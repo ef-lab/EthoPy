@@ -4,7 +4,7 @@
 
 from Experiments.Center2AFC import *
 from Behavior import *
-from Stimuli.VO import * 
+from Stimuli.SmellyMovies import *
 from utils.factorize import *
 
 # define stimulus conditions
@@ -34,6 +34,6 @@ session_params = {
 
 # run experiment
 exp = State()
-exp.setup(logger, RPBehavior, VO, session_params, conditions) 
+exp.setup(logger, RPBehavior, SmellyMovies, session_params, conditions)
 exp.run()
 
