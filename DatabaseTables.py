@@ -143,9 +143,24 @@ class RewardCond(dj.Manual):
 @schema
 class OdorCond(dj.Manual):
     definition = """
-    # reward probe conditions
+    # odor conditions
     -> Condition
     ---
+    odor_idx             : tinyblob                     # odor index for odor identity
+    duration             : tinyblob                     # odor duration (ms)
+    dutycycle            : tinyblob                     # odor dutycycle
+    delivery_idx         : tinyblob                     # delivery idx for channel mapping
+    """
+
+    
+@schema
+class VOCond(dj.Manual):
+    definition = """
+    # VO conditions
+    -> Condition
+    ---
+    movie_name           : char(8)                      # short movie title
+    clip_number          : int                          # clip index
     odor_idx             : tinyblob                     # odor index for odor identity
     duration             : tinyblob                     # odor duration (ms)
     dutycycle            : tinyblob                     # odor dutycycle

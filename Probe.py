@@ -30,11 +30,11 @@ class Probe:
         if self.probe1:
             self.probe1 = False
             probe = 1
-            #print('Probe 1 activated')
+            print('Probe 1 activated')
         elif self.probe2:
             self.probe2 = False
             probe = 2
-            #print('Probe 2 activated')
+            print('Probe 2 activated')
         else:
             probe = 0
         return probe
@@ -85,7 +85,7 @@ class RPProbe(Probe):
         self.setup = int(''.join(list(filter(str.isdigit, socket.gethostname()))))
         self.GPIO = GPIO
         self.GPIO.setmode(self.GPIO.BCM)
-        self.GPIO.setup([17, 27, 9], self.GPIO.IN)
+        self.GPIO.setup([17, 27, 9], self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         self.GPIO.setup([22, 23, 24, 25], self.GPIO.OUT, initial=self.GPIO.LOW)
         self.channels = {'air': {1: 24, 2: 25},
                          'liquid': {1: 22, 2: 23},
