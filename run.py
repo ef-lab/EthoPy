@@ -14,6 +14,7 @@ while not logger.get_setup_status() == 'stopped':
         time.sleep(0.2)
         logger.ping()
     if not logger.get_setup_status() == 'stopped':                     # run experiment unless stopped
+        interface.cleanup()
         protocol = logger.get_protocol()
         exec(open(protocol).read())
         logger.update_setup_status('ready')                            # update setup status

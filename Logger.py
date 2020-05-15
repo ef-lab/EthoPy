@@ -135,8 +135,8 @@ class RPLogger(Logger):
 
         # get task parameters for session table
         key = dict(self.session_key.items())
-        key['session_params'] = pandas.DataFrame(session_params).to_records()
-        key['conditions'] = pandas.DataFrame(conditions).to_records()
+        key['session_params'] = session_params
+        key['conditions'] = conditions
         key['setup'] = self.setup
         self.queue.put(dict(table='Session', tuple=key))
         self.reward_amount = session_params['reward_amount']/1000  # convert to ml
