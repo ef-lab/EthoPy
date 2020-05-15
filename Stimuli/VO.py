@@ -33,7 +33,7 @@ class VO(Stimulus):
                     value = tuple(value)
                 cond.update({names[ivalue]: value})
             conditions[icond] = cond
-        self.logger.log_conditions('VOCond', conditions)  
+        self.logger.log_conditions(['OdorCond', 'MovieCond'], conditions)
 
         from omxplayer import OMXPlayer
         self.player = OMXPlayer
@@ -50,7 +50,7 @@ class VO(Stimulus):
     def init(self):
         delivery_idx = self.curr_cond['delivery_idx']
         odor_idx = self.curr_cond['odor_idx']
-        odor_dur = self.curr_cond['duration']
+        odor_dur = self.curr_cond['odor_duration']
         odor_dutycycle = self.curr_cond['dutycycle']
         self.isrunning = True
         clip_info = self.logger.get_clip_info(dict((k, self.curr_cond[k]) for k in ('movie_name', 'clip_number')))
@@ -62,7 +62,7 @@ class VO(Stimulus):
         self.logger.log_stim()
 
     def present(self):
-        if self.timer.elapsed_time() > self.params['stim_duration']:
+        if self.timer.elapsed_time() > self.curr_cond['movie_duration']:
             self.isrunning = False
             self.vid.quit()
 
