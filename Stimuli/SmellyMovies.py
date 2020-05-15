@@ -2,7 +2,7 @@ from Stimulus import *
 import os
 
 
-class VO(Stimulus):
+class SmellyMovies(Stimulus):
     """ This class handles the presentation of Visual (movies) and Olfactory (odors) stimuli"""
 
     def setup(self):
