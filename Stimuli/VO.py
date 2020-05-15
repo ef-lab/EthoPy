@@ -62,7 +62,7 @@ class VO(Stimulus):
         self.logger.log_stim()
 
     def present(self):
-        if self.timer.elapsed_time() > self.conditions['movie_duration']:
+        if self.timer.elapsed_time() > self.curr_cond['movie_duration']:
             self.isrunning = False
             self.vid.quit()
 
