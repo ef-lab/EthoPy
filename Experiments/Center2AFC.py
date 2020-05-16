@@ -106,7 +106,7 @@ class Trial(State):
     def next(self):
         if not self.is_ready and not self.resp_ready:                           # did not wait
             return states['Punish']
-        elif self.probe > 0 and self.resp_ready and not self.probe == self.stim.curr_cond['probe']: # response to incorrect probe
+        elif self.probe > 0 and self.resp_ready and self.probe != self.stim.curr_cond['probe']: # response to incorrect probe
             return states['Punish']
         elif self.probe > 0 and self.resp_ready and self.probe == self.stim.curr_cond['probe']: # response to correct probe
             return states['Reward']
@@ -173,7 +173,7 @@ class Punish(State):
 class Sleep(State):
     def entry(self):
         self.logger.update_state(self.__class__.__name__)
-        self.logger.update_setup_status('offtime')
+        self.logger.update_setup_status('sleeping')
         self.stim.unshow([0, 0, 0])
 
     def run(self):
@@ -182,11 +182,10 @@ class Sleep(State):
 
     def next(self):
 
-        if self.is_sleep_time() and self.logger.get_setup_status() == 'offtime':
+        if self.is_sleep_time() and self.logger.get_setup_status() == 'sleeping':
             return states['Sleep']
-        elif self.logger.get_setup_status() == 'offtime':
+        elif self.logger.get_setup_status() == 'sleeping':  # if wake up then update session
             self.logger.update_setup_status('running')
-            self.stim.unshow()
             return states['Exit']
         else:
             return states['PreTrial']
@@ -196,3 +195,4 @@ class Exit(State):
     def run(self):
         self.beh.cleanup()
         self.stim.unshow()
+        self.logger.update_setup_status('stop')

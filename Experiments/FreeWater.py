@@ -137,7 +137,7 @@ class Reward(State):
 class Sleep(State):
     def entry(self):
         self.logger.update_state(self.__class__.__name__)
-        self.logger.update_setup_status('offtime')
+        self.logger.update_setup_status('sleeping')
         self.stim.unshow([0, 0, 0])
 
     def run(self):
@@ -145,12 +145,10 @@ class Sleep(State):
         time.sleep(5)
 
     def next(self):
-
-        if self.is_sleep_time() and self.logger.get_setup_status() == 'offtime':
+        if self.is_sleep_time() and self.logger.get_setup_status() == 'sleeping':
             return states['Sleep']
-        elif self.logger.get_setup_status() == 'offtime':
+        elif self.logger.get_setup_status() == 'sleeping':  # if wake up then update session
             self.logger.update_setup_status('running')
-            self.stim.unshow()
             return states['Exit']
         else:
             return states['PreTrial']
