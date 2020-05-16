@@ -7,17 +7,20 @@ logger = RPLogger()                                                   # setup lo
 logger.log_setup()                                                    # publish IP and make setup available
 
 # # # # Waiting for instructions loop # # # # #
-while not logger.get_setup_status() == 'stopped':
-    interface = Welcome(logger)
-    while logger.get_setup_status() == 'ready':                        # wait for remote start
-        interface.eval_input()
-        time.sleep(0.2)
-        logger.ping()
-    interface.close()
-    if not logger.get_setup_status() == 'stopped':                     # run experiment unless stopped
+while not logger.get_setup_status() == 'exit':
+    if logger.get_setup_status() == 'ready':
+        interface = Welcome(logger)
+        while logger.get_setup_status() == 'ready':                        # wait for remote start
+            interface.eval_input()
+            time.sleep(0.2)
+            logger.ping()
+        interface.close()
+    if logger.get_setup_status() == 'running':   # run experiment unless stopped
         protocol = logger.get_protocol()
         exec(open(protocol).read())
-        logger.update_setup_status('ready')                            # update setup status
+        if logger.get_setup_status() == 'stop':
+            logger.update_setup_status('ready')                            # update setup status
+
 
 # # # # # Exit # # # # #
 logger.cleanup()
