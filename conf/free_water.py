@@ -9,11 +9,11 @@ session_params = {
     'stim_duration'      : 0,
     'delay_duration'     : 0,
     'response_interval'  : 1000,
-    'init_duration'      : 100,
+    'init_duration'      : 0,
     'reward_amount'      : 10,
     'randomization'      : 'bias',
     'start_time'         : '10:00:00',
-    'stop_time'          : '18:00:00',
+    'stop_time'          : '09:00:00',
     'reward'             : 'water',
 }
 
