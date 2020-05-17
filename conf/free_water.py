@@ -15,6 +15,7 @@ session_params = {
     'start_time'         : '10:00:00',
     'stop_time'          : '09:00:00',
     'reward'             : 'water',
+    'max_reward'         : 2000,
 }
 
 # run experiment

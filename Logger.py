@@ -43,10 +43,7 @@ class Logger:
     def update_setup_status(self, status):
         pass
 
-    def get_setup_status(self):
-        pass
-
-    def get_setup_task(self):
+    def get_setup_info(self, info=None):
         pass
 
     def get_session_key(self):
@@ -139,7 +136,7 @@ class RPLogger(Logger):
         key['conditions'] = conditions
         key['setup'] = self.setup
         self.queue.put(dict(table='Session', tuple=key))
-        self.reward_amount = session_params['reward_amount']/1000  # convert to ml
+        self.reward_amount = session_params['reward_amount']  # convert to ml
 
         # start session time
         self.timer.start()
@@ -223,7 +220,7 @@ class RPLogger(Logger):
         SetupControl().insert1(key)
 
     def log_animal_weight(self, weight):
-        key = dict(animal_id=self.get_setup_animal(), weight=weight)
+        key = dict(animal_id=self.get_setup_info('animal'), weight=weight)
         Mice.MouseWeight().insert1(key)
 
     def update_setup_status(self, status):
@@ -247,17 +244,9 @@ class RPLogger(Logger):
     def update_task_idx(self, task_idx):
         (SetupControl() & dict(setup=self.setup))._update('task_idx', task_idx)
 
-    def get_setup_status(self):
-        status = (SetupControl() & dict(setup=self.setup)).fetch1('status')
-        return status
-
-    def get_setup_task(self):
-        task = (SetupControl() & dict(setup=self.setup)).fetch1('task_idx')
-        return task
-
-    def get_setup_animal(self):
-        animal_id = (SetupControl() & dict(setup=self.setup)).fetch1('animal_id')
-        return animal_id
+    def get_setup_info(self, field):
+        info = (SetupControl() & dict(setup=self.setup)).fetch1(field)
+        return info
 
     def get_session_key(self):
         return self.session_key
