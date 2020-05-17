@@ -52,7 +52,7 @@ class State(StateClass):
         else:
             time_restriction = False
         if self.params['max_reward']:
-            water_restriction = self.logger.get_setup_info('total_reward') > self.params['max_reward']
+            water_restriction = self.logger.get_setup_info('total_liquid') > self.params['max_reward']
         else:
             water_restriction = False
         return time_restriction or water_restriction

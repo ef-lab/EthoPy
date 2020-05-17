@@ -47,8 +47,8 @@ class State(StateClass):
         if stop < start:
             stop = stop + timedelta(days=1)
         time_restriction = now < start or now > stop
-        if self.params.max_reward:
-            water_restriction = self.logger.get_setup_info('total_reward') > self.params.max_reward
+        if self.params['max_reward']:
+            water_restriction = self.logger.get_setup_info('total_liquid') > self.params['max_reward']
         else:
             water_restriction = False
         return time_restriction or water_restriction
