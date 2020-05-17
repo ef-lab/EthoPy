@@ -70,7 +70,7 @@ class Probe:
             pulse_dur, pulse_num, weight = (LiquidCalibration.PulseWeight() & key).fetch('pulse_dur',
                                                                                          'pulse_num',
                                                                                          'weight')
-            self.liquid_dur[probe] = numpy.interp(reward_amount,
+            self.liquid_dur[probe] = numpy.interp(reward_amount/1000,
                                                   numpy.divide(weight, pulse_num),
                                                   pulse_dur)
 

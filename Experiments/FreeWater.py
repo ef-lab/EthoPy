@@ -32,7 +32,7 @@ class State(StateClass):
             'Exit'         : Exit(self)}
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
-        self.StateMachine.status = self.logger.get_setup_status()
+        self.StateMachine.status = self.logger.get_setup_info('status')
         self.logger.update_state(self.__class__.__name__)
 
     def run(self):
@@ -46,7 +46,12 @@ class State(StateClass):
         stop = now.replace(hour=0, minute=0, second=0) + timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
         if stop < start:
             stop = stop + timedelta(days=1)
-        return now < start or now > stop
+        time_restriction = now < start or now > stop
+        if self.params.max_reward:
+            water_restriction = self.logger.get_setup_info('total_reward') > self.params.max_reward
+        else:
+            water_restriction = False
+        return time_restriction or water_restriction
 
 
 class Prepare(State):
@@ -71,7 +76,7 @@ class PreTrial(State):
         if self.beh.is_ready(self.params['init_duration']):
             return states['Trial']
         else:
-            self.StateMachine.status = self.logger.get_setup_status()
+            self.StateMachine.status = self.logger.get_setup_info('status')
             return states['PreTrial']
 
 
@@ -145,9 +150,9 @@ class Sleep(State):
         time.sleep(5)
 
     def next(self):
-        if self.is_sleep_time() and self.logger.get_setup_status() == 'sleeping':
+        if self.is_sleep_time() and self.logger.get_setup_info('status') == 'sleeping':
             return states['Sleep']
-        elif self.logger.get_setup_status() == 'sleeping':  # if wake up then update session
+        elif self.logger.get_setup_info('status') == 'sleeping':  # if wake up then update session
             self.logger.update_setup_status('running')
             return states['Exit']
         else:
