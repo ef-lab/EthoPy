@@ -73,8 +73,8 @@ class Welcome:
             self.update_setup_info()
 
     def update_setup_info(self):
-        animal = self.logger.get_setup_animal()
-        task = self.logger.get_setup_task()
+        animal = self.logger.get_setup_info('animal')
+        task = self.logger.get_setup_info('task')
         if self.animal != animal or self.task != task:
             self.animal = animal
             self.task = task
