@@ -18,40 +18,8 @@ class Logger:
         self.thread_runner = threading.Thread(target=self.inserter)  # max insertion rate of 10 events/sec
         self.thread_runner.start()
 
-    def init_params(self):
-        pass
-
-    def log_session(self):
-        """Logs session"""
-        pass
-
-    def log_conditions(self, condition_table):
-        """Logs conditions"""
-        pass
-
-    def start_trial(self, cond_idx):
-        self.trial_start = self.timer.elapsed_time()
-
-    def log_trial(self, last_flip_count=0):
-        """Log experiment trial"""
-        pass
-
-    def log_setup(self):
-        """Log setup information"""
-        pass
-
-    def update_setup_status(self, status):
-        pass
-
-    def get_setup_info(self, info=None):
-        pass
-
     def get_session_key(self):
         return self.session_key
-
-    def ping(self):
-        """update timestamp"""
-        pass
 
     def cleanup(self):
         self.thread_end.set()
