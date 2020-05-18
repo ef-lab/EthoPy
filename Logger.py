@@ -103,6 +103,7 @@ class RPLogger(Logger):
         key['session_params'] = session_params
         key['conditions'] = conditions
         key['setup'] = self.setup
+        key['protocol'] = self.get_protocol()
         self.queue.put(dict(table='Session', tuple=key))
         self.reward_amount = session_params['reward_amount']  # convert to ml
 
