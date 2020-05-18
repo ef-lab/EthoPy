@@ -201,4 +201,4 @@ class Sleep(State):
 class Exit(State):
     def run(self):
         self.beh.cleanup()
-        self.stim.unshow()
+        self.stim.close()
