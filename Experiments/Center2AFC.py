@@ -30,6 +30,7 @@ class State(StateClass):
             'Reward'       : Reward(self),
             'Punish'       : Punish(self),
             'Sleep'        : Sleep(self),
+            'OffTime': OffTime(self),
             'Exit'         : Exit(self)}
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
@@ -40,22 +41,22 @@ class State(StateClass):
         self.StateMachine.run()
 
     def is_sleep_time(self):
-        if self.params['start_time']:
-            now = datetime.now()
-            t = datetime.strptime(self.params['start_time'], "%H:%M:%S")
-            start = now.replace(hour=0, minute=0, second=0) + timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
-            t = datetime.strptime(self.params['stop_time'], "%H:%M:%S")
-            stop = now.replace(hour=0, minute=0, second=0) + timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
-            if stop < start:
-                stop = stop + timedelta(days=1)
-            time_restriction = now < start or now > stop
-        else:
-            time_restriction = False
+        now = datetime.now()
+        t = datetime.strptime(self.params['start_time'], "%H:%M:%S")
+        start = now.replace(hour=0, minute=0, second=0) + timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
+        t = datetime.strptime(self.params['stop_time'], "%H:%M:%S")
+        stop = now.replace(hour=0, minute=0, second=0) + timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
+        if stop < start:
+            stop = stop + timedelta(days=1)
+        time_restriction = now < start or now > stop
+        return time_restriction
+
+    def is_hydrated(self):
         if self.params['max_reward']:
             water_restriction = self.logger.get_setup_info('total_liquid') > self.params['max_reward']
         else:
             water_restriction = False
-        return time_restriction or water_restriction
+        return water_restriction
 
 
 class Prepare(State):
@@ -147,6 +148,8 @@ class InterTrial(State):
     def next(self):
         if self.is_sleep_time():
             return states['Sleep']
+        elif self.is_hydrated():
+            return states['OffTime']
         elif self.timer.elapsed_time() > self.params['intertrial_duration']:
             return states['PreTrial']
         else:
@@ -199,6 +202,24 @@ class Sleep(State):
             return states['Exit']
         else:
             return states['PreTrial']
+
+class OffTime(State):
+    def entry(self):
+        self.logger.update_state(self.__class__.__name__)
+        self.logger.update_setup_status('offtime')
+        self.stim.unshow([0, 0, 0])
+
+    def run(self):
+        self.logger.ping()
+        time.sleep(5)
+
+    def next(self):
+        if self.is_sleep_time():
+            return states['Sleep']
+        elif self.logger.get_setup_info('status') == 'stop':  # if wake up then update session
+            return states['Exit']
+        else:
+            return states['OffTime']
 
 
 class Exit(State):
