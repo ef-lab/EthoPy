@@ -45,3 +45,10 @@ class Odors(Stimulus):
         
     def stop(self):
         self.isrunning = False
+
+
+    def close(self):
+        """Close stuff"""
+        pygame.mouse.set_visible(1)
+        pygame.display.quit()
+        pygame.quit()
