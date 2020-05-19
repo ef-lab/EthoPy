@@ -94,10 +94,11 @@ class CenterPort(dj.Manual):
     definition = """
     # Center port information
     -> Session
-    timestamp            : timestamp    
+    time	     	   	: int           	# time from session start (ms)
     ---
     in_position          : smallint
     state=null           : varchar(256)  
+    timestamp            : timestamp    
     """
 
 @schema
