@@ -101,7 +101,6 @@ class Trial(State):
         self.beh.is_licking()
         self.timer.start()  # trial start counter
         self.logger.start_trial(self.stim.curr_cond['cond_idx'])
-        self.logger.log_position(self.beh.probe.in_position(), 'Trial entry')
         self.logger.thread_lock.acquire()
 
     def run(self):
@@ -129,7 +128,6 @@ class Trial(State):
         self.logger.thread_lock.release()
         self.logger.log_trial()
         self.logger.ping()
-        self.logger.log_position(self.beh.probe.in_position(), 'Trial exit')
 
 
 class PostTrial(State):
