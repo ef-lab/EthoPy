@@ -18,43 +18,8 @@ class Logger:
         self.thread_runner = threading.Thread(target=self.inserter)  # max insertion rate of 10 events/sec
         self.thread_runner.start()
 
-    def init_params(self):
-        pass
-
-    def log_session(self):
-        """Logs session"""
-        pass
-
-    def log_conditions(self, condition_table):
-        """Logs conditions"""
-        pass
-
-    def start_trial(self, cond_idx):
-        self.trial_start = self.timer.elapsed_time()
-
-    def log_trial(self, last_flip_count=0):
-        """Log experiment trial"""
-        pass
-
-    def log_setup(self):
-        """Log setup information"""
-        pass
-
-    def update_setup_status(self, status):
-        pass
-
-    def get_setup_status(self):
-        pass
-
-    def get_setup_task(self):
-        pass
-
     def get_session_key(self):
         return self.session_key
-
-    def ping(self):
-        """update timestamp"""
-        pass
 
     def cleanup(self):
         self.thread_end.set()
@@ -135,11 +100,12 @@ class RPLogger(Logger):
 
         # get task parameters for session table
         key = dict(self.session_key.items())
-        key['session_params'] = pandas.DataFrame(session_params).to_records()
-        key['conditions'] = pandas.DataFrame(conditions).to_records()
+        key['session_params'] = session_params
+        key['conditions'] = conditions
         key['setup'] = self.setup
+        key['protocol'] = self.get_protocol()
         self.queue.put(dict(table='Session', tuple=key))
-        self.reward_amount = session_params['reward_amount']/1000  # convert to ml
+        self.reward_amount = session_params['reward_amount']  # convert to ml
 
         # start session time
         self.timer.start()
@@ -183,7 +149,6 @@ class RPLogger(Logger):
         # insert ping
         self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
                             field='last_trial', value=self.last_trial, update=True))
-        self.ping()
 
     def log_liquid(self, probe):
         timestamp = self.timer.elapsed_time()
@@ -223,8 +188,15 @@ class RPLogger(Logger):
         SetupControl().insert1(key)
 
     def log_animal_weight(self, weight):
-        key = dict(animal_id=self.get_setup_animal(), weight=weight)
+        key = dict(animal_id=self.get_setup_info('animal'), weight=weight)
         Mice.MouseWeight().insert1(key)
+
+    def log_position(self, in_position, state):
+        timestamp = self.timer.elapsed_time()
+        self.queue.put(dict(table='CenterPort', tuple=dict(self.session_key,
+                                                            time=timestamp,
+                                                            in_position=in_position,
+                                                            state=state)))
 
     def update_setup_status(self, status):
         key = (SetupControl() & dict(setup=self.setup)).fetch1()
@@ -247,17 +219,9 @@ class RPLogger(Logger):
     def update_task_idx(self, task_idx):
         (SetupControl() & dict(setup=self.setup))._update('task_idx', task_idx)
 
-    def get_setup_status(self):
-        status = (SetupControl() & dict(setup=self.setup)).fetch1('status')
-        return status
-
-    def get_setup_task(self):
-        task = (SetupControl() & dict(setup=self.setup)).fetch1('task_idx')
-        return task
-
-    def get_setup_animal(self):
-        animal_id = (SetupControl() & dict(setup=self.setup)).fetch1('animal_id')
-        return animal_id
+    def get_setup_info(self, field):
+        info = (SetupControl() & dict(setup=self.setup)).fetch1(field)
+        return info
 
     def get_session_key(self):
         return self.session_key

@@ -67,13 +67,14 @@ class Welcome:
             self.logger.update_setup_status('running')
             self.screen.ts.stop()
         elif self.state == 'exit':
-            self.logger.update_setup_status('stopped')
+            self.logger.update_setup_status('stop')
+            self.close()
         else:
             self.update_setup_info()
 
     def update_setup_info(self):
-        animal = self.logger.get_setup_animal()
-        task = self.logger.get_setup_task()
+        animal = self.logger.get_setup_info('animal_id')
+        task = self.logger.get_setup_info('task_idx')
         if self.animal != animal or self.task != task:
             self.animal = animal
             self.task = task
@@ -99,4 +100,7 @@ class Welcome:
 
     def shutdown(self):
         os.system('systemctl poweroff')
+
+    def close(self):
+        self.screen.exit()
 

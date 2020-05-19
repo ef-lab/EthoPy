@@ -2,7 +2,7 @@ from Stimulus import *
 import os
 
 
-class VO(Stimulus):
+class SmellyMovies(Stimulus):
     """ This class handles the presentation of Visual (movies) and Olfactory (odors) stimuli"""
 
     def setup(self):
@@ -15,7 +15,8 @@ class VO(Stimulus):
         self.phd_size = (50, 50)    # default photodiode signal size in pixels
 
         # setup pygame
-        pygame.init()
+        if not pygame.get_init():
+            pygame.init()
         self.screen = pygame.display.set_mode(self.size)
         self.unshow()
         pygame.mouse.set_visible(0)

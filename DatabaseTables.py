@@ -16,7 +16,7 @@ class SetupControl(dj.Lookup):
     setup                : varchar(256)                 # Setup name
     ---
     ip                   : varchar(16)                  # setup IP address
-    status="ready"       : enum('ready','running','stopped','sleeping','offtime') 
+    status="ready"       : enum('ready','running','stop','sleeping','offtime','exit') 
     animal_id=null       : int                          # animal id
     task_idx=null        : int                          # task identification number
     last_ping            : timestamp                    
@@ -89,6 +89,17 @@ class Trial(dj.Manual):
     end_time             : int                          # end time from session start (ms)
     """
 
+@schema
+class CenterPort(dj.Manual):
+    definition = """
+    # Center port information
+    -> Session
+    time	     	   	: int           	# time from session start (ms)
+    ---
+    in_position          : smallint
+    state=null           : varchar(256)  
+    timestamp            : timestamp    
+    """
 
 @schema
 class Lick(dj.Manual):

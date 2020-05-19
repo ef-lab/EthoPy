@@ -15,7 +15,8 @@ class RPMovies(Stimulus):
         self.phd_size = (50, 50)    # default photodiode signal size in pixels
 
         # setup pygame
-        pygame.init()
+        if not pygame.get_init():
+            pygame.init()
         self.screen = pygame.display.set_mode(self.size)
         self.unshow()
         pygame.mouse.set_visible(0)
@@ -47,7 +48,7 @@ class RPMovies(Stimulus):
         self.logger.log_stim()
 
     def present(self):
-        if self.timer.elapsed_time() > self.conditions['movie_duration']:
+        if self.timer.elapsed_time() > self.curr_cond['movie_duration']:
             self.isrunning = False
             self.vid.quit()
 
