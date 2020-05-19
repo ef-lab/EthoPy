@@ -149,7 +149,6 @@ class RPLogger(Logger):
         # insert ping
         self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
                             field='last_trial', value=self.last_trial, update=True))
-        self.ping()
 
     def log_liquid(self, probe):
         timestamp = self.timer.elapsed_time()
@@ -191,6 +190,11 @@ class RPLogger(Logger):
     def log_animal_weight(self, weight):
         key = dict(animal_id=self.get_setup_info('animal'), weight=weight)
         Mice.MouseWeight().insert1(key)
+
+    def log_position(self, in_position, state):
+        self.queue.put(dict(table='CenterPort', tuple=dict(self.session_key,
+                                                     in_position=in_position,
+                                                     state=state)))
 
     def update_setup_status(self, status):
         key = (SetupControl() & dict(setup=self.setup)).fetch1()

@@ -89,6 +89,16 @@ class Trial(dj.Manual):
     end_time             : int                          # end time from session start (ms)
     """
 
+@schema
+class CenterPort(dj.Manual):
+    definition = """
+    # Center port information
+    -> Session
+    timestamp            : timestamp    
+    ---
+    in_position          : smallint
+    state=null           : varchar(256)  
+    """
 
 @schema
 class Lick(dj.Manual):
