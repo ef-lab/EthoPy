@@ -118,6 +118,7 @@ class RPProbe(Probe):
         else:
             self.ready = False
             print('off position')
+        self.logger.log_position(self.ready, 'Probe status')
 
     def in_position(self):
         # handle missed events

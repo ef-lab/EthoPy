@@ -192,9 +192,11 @@ class RPLogger(Logger):
         Mice.MouseWeight().insert1(key)
 
     def log_position(self, in_position, state):
+        timestamp = self.timer.elapsed_time()
         self.queue.put(dict(table='CenterPort', tuple=dict(self.session_key,
-                                                     in_position=in_position,
-                                                     state=state)))
+                                                            time=timestamp,
+                                                            in_position=in_position,
+                                                            state=state)))
 
     def update_setup_status(self, status):
         key = (SetupControl() & dict(setup=self.setup)).fetch1()
