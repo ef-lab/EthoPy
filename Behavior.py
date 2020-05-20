@@ -15,6 +15,7 @@ class Behavior:
         self.probes = np.array(np.empty(0))
         self.probe_bias = np.repeat(np.nan, 1)  # History term for bias calculation
         self.licked_probe = 0
+        self.rewarded_trials = 0
 
     def is_licking(self):
         return False, False
@@ -72,6 +73,7 @@ class RPBehavior(Behavior):
 
     def reward(self):
         self.probe.give_liquid(self.licked_probe)
+        self.rewarded_trials += 1
 
     def give_odor(self, delivery_idx, odor_idx, odor_dur, odor_dutycycle):
         self.probe.give_odor(delivery_idx, odor_idx, odor_dur, odor_dutycycle)

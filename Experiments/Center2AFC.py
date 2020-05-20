@@ -18,7 +18,8 @@ class State(StateClass):
         self.beh = BehaviorClass(logger, session_params)
         self.stim = StimulusClass(logger, session_params, conditions, self.beh)
         self.params = session_params
-        self.StateMachine = StateMachine(Prepare(self), Exit(self))
+        exitState = Exit(self)
+        self.StateMachine = StateMachine(Prepare(self), exitState)
 
         # Initialize states
         global states
@@ -31,7 +32,7 @@ class State(StateClass):
             'Punish'       : Punish(self),
             'Sleep'        : Sleep(self),
             'OffTime': OffTime(self),
-            'Exit'         : Exit(self)}
+            'Exit'         : exitState}
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
         self.StateMachine.status = self.logger.get_setup_info('status')
@@ -53,7 +54,7 @@ class State(StateClass):
 
     def is_hydrated(self):
         if self.params['max_reward']:
-            water_restriction = self.logger.get_setup_info('total_liquid') > self.params['max_reward']
+            water_restriction = self.beh.rewarded_trials*self.params['reward_amount'] >= self.params['max_reward']
         else:
             water_restriction = False
         return water_restriction
