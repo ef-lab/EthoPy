@@ -113,12 +113,15 @@ class RPProbe(Probe):
     def position_change(self, channel=0):
         if self.GPIO.input(self.channels['start'][1]):
             self.timer_ready.start()
-            self.ready = True
-            print('in position')
+            if not self.ready:
+                self.logger.log_position(self.ready, 'Probe status')
+                self.ready = True
+                print('in position')
         else:
-            self.ready = False
-            print('off position')
-        self.logger.log_position(self.ready, 'Probe status')
+            if self.ready:
+                self.logger.log_position(self.ready, 'Probe status')
+                print('off position')
+                self.ready = False
 
     def in_position(self):
         # handle missed events

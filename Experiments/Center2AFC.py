@@ -54,7 +54,7 @@ class State(StateClass):
 
     def is_hydrated(self):
         if self.params['max_reward']:
-            water_restriction = self.beh.rewarded_trials*self.params['reward_amount'] > self.params['max_reward']
+            water_restriction = self.beh.rewarded_trials*self.params['reward_amount'] >= self.params['max_reward']
         else:
             water_restriction = False
         return water_restriction
