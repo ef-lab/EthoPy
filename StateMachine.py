@@ -38,5 +38,3 @@ class StateMachine:
             self.currentState.run()
             self.futureState = self.currentState.next()
         self.exitState.run()
-
-
