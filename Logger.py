@@ -43,7 +43,6 @@ class RPLogger(Logger):
     """ This class handles the database logging for Raspberry pi"""
 
     def __init__(self):
-
         self.last_trial = 0
         self.queue = Queue()
         self.timer = Timer()
@@ -88,6 +87,7 @@ class RPLogger(Logger):
     def log_session(self, session_params, conditions=None):
         animal_id, task_idx = (SetupControl() & dict(setup=self.setup)).fetch1('animal_id', 'task_idx')
         self.task_idx = task_idx
+        self.last_trial = 0
 
         # create session key
         self.session_key['animal_id'] = animal_id
