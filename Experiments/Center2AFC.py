@@ -83,6 +83,8 @@ class PreTrial(State):
     def next(self):
         if self.beh.is_ready(self.params['init_duration']):
             return states['Trial']
+        elif self.is_sleep_time():
+            return states['Sleep']
         else:
             self.StateMachine.status = self.logger.get_setup_info('status')
             return states['PreTrial']
