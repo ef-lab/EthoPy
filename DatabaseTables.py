@@ -1,4 +1,9 @@
 import datajoint as dj
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from matplotlib.dates import DateFormatter
+import numpy as np
 
 schema = dj.schema('lab_behavior')
 MovieTables = dj.create_virtual_module('movies.py', 'lab_stimuli')
