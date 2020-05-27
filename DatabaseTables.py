@@ -157,7 +157,7 @@ class LiquidDelivery(dj.Manual):
             plt.ylabel('DeliveredLiquid(ml)')
             ax.set_title('Animal_id: %1d' % idx)
             k = k + m_count[idx]
-
+        return ax
 
 @schema
 class StimOnset(dj.Manual):
