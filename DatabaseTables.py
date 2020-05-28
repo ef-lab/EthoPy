@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import datajoint as dj
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -106,7 +107,17 @@ class CenterPort(dj.Manual):
     state=null           : varchar(256)  
     timestamp            : timestamp    
     """
-
+         
+    def filter_cp(self):
+        
+        cp_df = pd.DataFrame(self.fetch())
+        cp_df['change'] = cp_df['in_position'].diff()
+        cp_df = cp_df.dropna()
+        cp_df = cp_df.astype({'change': 'int32'})
+        cp_df_filtered = cp_df[np.abs(cp_df['change']) == 1]
+        result = cp_df_filtered.loc[cp_df_filtered.groupby('animal_id').timestamp.idxmax(),:]
+        
+        return result
 
 @schema
 class Lick(dj.Manual):
