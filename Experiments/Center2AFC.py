@@ -111,7 +111,6 @@ class Trial(State):
         self.probe = self.beh.is_licking()
         if self.timer.elapsed_time() > self.params['delay_duration'] and not self.resp_ready:
             self.resp_ready = True
-            if self.probe > 0: self.beh.update_bias(self.probe)
         else:
             self.is_ready = self.beh.is_ready(self.timer.elapsed_time() + self.params['init_duration'])  # update times
 
@@ -119,8 +118,10 @@ class Trial(State):
         if not self.is_ready and not self.resp_ready:                           # did not wait
             return states['Punish']
         elif self.probe > 0 and self.resp_ready and self.probe != self.stim.curr_cond['probe']: # response to incorrect probe
+            self.beh.update_bias(self.probe)
             return states['Punish']
         elif self.probe > 0 and self.resp_ready and self.probe == self.stim.curr_cond['probe']: # response to correct probe
+            self.beh.update_bias(self.probe)
             return states['Reward']
         elif self.timer.elapsed_time() > self.params['trial_duration']:      # timed out
             return states['PostTrial']
