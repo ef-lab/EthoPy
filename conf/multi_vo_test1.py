@@ -40,9 +40,6 @@ v_conds += factorize({'probe': [2], 'movie_name': ['obj2v6'], 'movie_duration': 
                       'delivery_idx': [[2, 1]], 'odor_idx': [[2, 1]], 'odor_duration': [0],
                       'dutycycle': [[0, 0]], 'analysis_group': [analysis_group+1]})
 
-logger.log_conditions(['OdorCond', 'MovieCond', 'RewardCond', 'AnalysisCond'], vo_conds + v_conds + o_conds)
-conditions = vo_conds + vo_conds + v_conds + v_conds + o_conds
-
 # define session parameters
 session_params = {
     'trial_duration'     : 5000,
@@ -58,6 +55,10 @@ session_params = {
     'reward'             : 'water',
     'max_reward'         : 3000,
 }
+
+logger.log_session(session_params, vo_conds + v_conds + o_conds, '2AFC')
+logger.log_conditions(['OdorCond', 'MovieCond', 'RewardCond', 'AnalysisCond'], vo_conds + v_conds + o_conds)
+conditions = vo_conds + vo_conds + v_conds + v_conds + o_conds
 
 # run experiment
 exp = State()

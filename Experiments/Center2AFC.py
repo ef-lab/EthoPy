@@ -11,8 +11,6 @@ class State(StateClass):
 
     def setup(self, logger, BehaviorClass, StimulusClass, session_params, conditions):
 
-        logger.log_session(session_params, conditions, '2AFC')
-
         # Initialize params & Behavior/Stimulus objects
         self.logger = logger
         self.beh = BehaviorClass(logger, session_params)
