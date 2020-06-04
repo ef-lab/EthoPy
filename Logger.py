@@ -119,15 +119,6 @@ class RPLogger(Logger):
         if numpy.size(condition_table) < 2:
             condition_table = [condition_table]
 
-        # iterate through all conditions and insert
-        for cond in conditions:
-            self.cond_idx += 1
-            cond.update({'cond_idx': self.cond_idx})
-            self.queue.put(dict(table='Condition', tuple=dict(self.session_key, cond_idx=self.cond_idx)))
-            for condtable in condition_table:
-                self.queue.put(dict(table=condtable, tuple=dict(cond.items() | self.session_key.items(),
-                                                                cond_idx=self.cond_idx)))
-
         for icond, cond in enumerate(conditions):
             values = list(cond.values())
             names = list(cond.keys())
@@ -136,6 +127,15 @@ class RPLogger(Logger):
                     value = tuple(value)
                 cond.update({names[ivalue]: value})
             conditions[icond] = cond
+
+        # iterate through all conditions and insert
+        for cond in conditions:
+            self.cond_idx += 1
+            cond.update({'cond_idx': self.cond_idx})
+            self.queue.put(dict(table='Condition', tuple=dict(self.session_key, cond_idx=self.cond_idx)))
+            for condtable in condition_table:
+                self.queue.put(dict(table=condtable, tuple=dict(cond.items() | self.session_key.items(),
+                                                                cond_idx=self.cond_idx)))
         return conditions
 
     def log_trial(self, last_flip_count=0):
