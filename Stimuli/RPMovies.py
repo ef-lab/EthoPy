@@ -24,8 +24,6 @@ class RPMovies(Stimulus):
 
     def prepare(self):
         self.probes = np.array([d['probe'] for d in self.conditions])
-        self.logger.log_conditions('MovieCond', self.conditions)
-
         from omxplayer import OMXPlayer
         self.player = OMXPlayer
         # store local copy of files

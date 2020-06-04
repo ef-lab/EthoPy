@@ -21,8 +21,8 @@ for ratio in odor_ratios:
                            'dutycycle': [ratio], 'analysis_group': [analysis_group]})
     vo_conds += factorize({'probe': [2], 'movie_name': ['obj2v6'], 'movie_duration': [v_dur], 'clip_number': [1],
                            'delivery_idx': [[2, 1]], 'odor_idx': [[2, 1]], 'odor_duration': [o_dur],
-                           'dutycycle': [ratio], 'analysis_group': [analysis_group+1]})
-    analysis_group += 2
+                           'dutycycle': [ratio], 'analysis_group': [analysis_group]})
+    analysis_group += 1
 
 for ratio in odor_ratios:
     o_conds += factorize({'probe': [1], 'movie_name': ['obj1v6'], 'movie_duration': [0], 'clip_number': [1],
@@ -30,15 +30,15 @@ for ratio in odor_ratios:
                           'dutycycle': [ratio], 'analysis_group': [analysis_group]})
     o_conds += factorize({'probe': [2], 'movie_name': ['obj2v6'], 'movie_duration': [0], 'clip_number': [1],
                           'delivery_idx': [[2, 1]], 'odor_idx': [[2, 1]], 'odor_duration': [o_dur],
-                          'dutycycle': [ratio], 'analysis_group': [analysis_group+1]})
-    analysis_group += 2
+                          'dutycycle': [ratio], 'analysis_group': [analysis_group]})
+    analysis_group += 1
 
 v_conds += factorize({'probe': [1], 'movie_name': ['obj1v6'], 'movie_duration': [v_dur], 'clip_number': [1],
                       'delivery_idx': [[1, 2]], 'odor_idx': [[1, 2]], 'odor_duration': [0],
                       'dutycycle': [[0, 0]], 'analysis_group': [analysis_group]})
 v_conds += factorize({'probe': [2], 'movie_name': ['obj2v6'], 'movie_duration': [v_dur], 'clip_number': [1],
                       'delivery_idx': [[2, 1]], 'odor_idx': [[2, 1]], 'odor_duration': [0],
-                      'dutycycle': [[0, 0]], 'analysis_group': [analysis_group+1]})
+                      'dutycycle': [[0, 0]], 'analysis_group': [analysis_group]})
 
 # define session parameters
 session_params = {
