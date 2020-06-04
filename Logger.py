@@ -49,7 +49,7 @@ class RPLogger(Logger):
         self.trial_start = 0
         self.curr_cond = []
         self.task_idx = []
-        self.reward_amount = []
+        self.reward_amount = 0
 
         self.session_key = dict()
         self.setup = socket.gethostname()
@@ -189,7 +189,7 @@ class RPLogger(Logger):
         SetupControl().insert1(key)
 
     def log_animal_weight(self, weight):
-        key = dict(animal_id=self.get_setup_info('animal'), weight=weight)
+        key = dict(animal_id=self.get_setup_info('animal_id'), weight=weight)
         Mice.MouseWeight().insert1(key)
 
     def log_position(self, in_position, state):
