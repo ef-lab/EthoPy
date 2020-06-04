@@ -17,8 +17,8 @@ v_conds = []
 o_conds = []
 for ratio in odor_ratios:
     vo_conds += factorize({'probe': [1], 'movie_name': ['obj1v6'], 'movie_duration': [v_dur], 'clip_number': [1],
-                           'delivery_idx': [[1, 2]], 'odor_idx': [[1, 2]], 'dutycycle': [ratio],
-                           'analysis_group': [analysis_group]})
+                           'delivery_idx': [[1, 2]], 'odor_idx': [[1, 2]], 'odor_duration': [o_dur],
+                           'dutycycle': [ratio], 'analysis_group': [analysis_group]})
     vo_conds += factorize({'probe': [2], 'movie_name': ['obj2v6'], 'movie_duration': [v_dur], 'clip_number': [1],
                            'delivery_idx': [[2, 1]], 'odor_idx': [[2, 1]], 'odor_duration': [o_dur],
                            'dutycycle': [ratio], 'analysis_group': [analysis_group+1]})
