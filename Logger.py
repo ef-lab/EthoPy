@@ -189,7 +189,7 @@ class RPLogger(Logger):
         SetupControl().insert1(key)
 
     def log_animal_weight(self, weight):
-        key = dict(animal_id=self.get_setup_info('animal'), weight=weight)
+        key = dict(animal_id=self.get_setup_info('animal_id'), weight=weight)
         Mice.MouseWeight().insert1(key)
 
     def log_position(self, in_position, state):
