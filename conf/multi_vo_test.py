@@ -11,7 +11,6 @@ analysis_group = 1
 odor_ratios = [[100, 0], [85, 15], [65, 35], [50, 50]]
 v_dur = 4000
 o_dur = 500
-cond_tables = ['OdorCond', 'MovieCond', 'RewardCond', 'AnalysisCond']
 vo_conds = []
 v_conds = []
 o_conds = []
