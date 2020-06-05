@@ -69,7 +69,9 @@ class Session(dj.Manual):
     session_tmst         : timestamp                    # session timestamp
     notes=null           : varchar(2048)                # session notes
     session_params=null  : mediumblob                   
-    conditions=null      : mediumblob        
+    conditions=null      : mediumblob      
+    protocol=null        : varchar(256)                 # protocol file
+    experiment_type=null : varchar(256)                 
     """
 
 
@@ -205,6 +207,14 @@ class RewardCond(dj.Manual):
     probe=0        :int                                 # probe number
     """
 
+@schema
+class AnalysisCond(dj.Manual):
+    definition = """
+    # reward probe conditions
+    -> Condition
+    ---
+    analysis_group=0        :int                                 # analysis group number
+    """
 
 @schema
 class OdorCond(dj.Manual):

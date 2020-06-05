@@ -22,7 +22,6 @@ class Movies(Stimulus):
 
     def prepare(self):
         self.probes = np.array([d['probe'] for d in self.conditions])
-        self.logger.log_conditions('MovieCond', self.conditions)
 
     def init(self):
         self.curr_frame = 1

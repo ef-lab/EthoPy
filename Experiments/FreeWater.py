@@ -12,7 +12,7 @@ class State(StateClass):
 
     def setup(self, logger, BehaviorClass, StimulusClass, session_params):
 
-        logger.log_session(session_params)
+        logger.log_session(session_params, None, 'Free')
 
         # Initialize params & Behavior/Stimulus objects
         self.logger = logger

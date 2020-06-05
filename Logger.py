@@ -50,7 +50,7 @@ class RPLogger(Logger):
         self.curr_cond = []
         self.task_idx = []
         self.reward_amount = 0
-
+        self.cond_idx = 0
         self.session_key = dict()
         self.setup = socket.gethostname()
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -84,7 +84,7 @@ class RPLogger(Logger):
         # return condition key
         return dict(self.session_key, cond_idx=cond_idx)
 
-    def log_session(self, session_params, conditions=None):
+    def log_session(self, session_params, conditions=None, exp_type=''):
         animal_id, task_idx = (SetupControl() & dict(setup=self.setup)).fetch1('animal_id', 'task_idx')
         self.task_idx = task_idx
         self.last_trial = 0
@@ -104,6 +104,7 @@ class RPLogger(Logger):
         key['conditions'] = conditions
         key['setup'] = self.setup
         key['protocol'] = self.get_protocol()
+        key['experiment_type'] = exp_type
         self.queue.put(dict(table='Session', tuple=key))
         self.reward_amount = session_params['reward_amount']  # convert to ml
 
@@ -118,22 +119,24 @@ class RPLogger(Logger):
         if numpy.size(condition_table) < 2:
             condition_table = [condition_table]
 
+        for icond, cond in enumerate(conditions):
+            values = list(cond.values())
+            names = list(cond.keys())
+            for ivalue, value in enumerate(values):
+                if type(value) is list:
+                    value = tuple(value)
+                cond.update({names[ivalue]: value})
+            conditions[icond] = cond
+
         # iterate through all conditions and insert
-        cond_idx = 0
-        probes = numpy.empty(numpy.size(conditions))
         for cond in conditions:
-            cond_idx += 1
-            cond.update({'cond_idx': cond_idx})
-            self.queue.put(dict(table='Condition', tuple=dict(self.session_key, cond_idx=cond_idx)))
-            if 'probe' in cond:
-                probes[cond_idx-1] = cond['probe']
-                self.queue.put(dict(table='RewardCond', tuple=dict(self.session_key,
-                                                                   cond_idx=cond_idx,
-                                                                   probe=probes[cond_idx-1])))
+            self.cond_idx += 1
+            cond.update({'cond_idx': self.cond_idx})
+            self.queue.put(dict(table='Condition', tuple=dict(self.session_key, cond_idx=self.cond_idx)))
             for condtable in condition_table:
                 self.queue.put(dict(table=condtable, tuple=dict(cond.items() | self.session_key.items(),
-                                                                    cond_idx=cond_idx)))
-        return numpy.array(probes)
+                                                                cond_idx=self.cond_idx)))
+        return conditions
 
     def log_trial(self, last_flip_count=0):
         timestamp = self.timer.elapsed_time()
