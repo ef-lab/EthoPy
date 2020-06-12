@@ -11,8 +11,6 @@ class State(StateClass):
 
     def setup(self, logger, BehaviorClass, StimulusClass, session_params, conditions):
 
-        logger.log_session(session_params, conditions)
-
         # Initialize params & Behavior/Stimulus objects
         self.logger = logger
         self.beh = BehaviorClass(logger, session_params)
@@ -83,6 +81,8 @@ class PreTrial(State):
     def next(self):
         if self.beh.is_ready(self.params['init_duration']):
             return states['Trial']
+        elif self.is_sleep_time():
+            return states['Sleep']
         else:
             self.StateMachine.status = self.logger.get_setup_info('status')
             return states['PreTrial']
@@ -109,7 +109,6 @@ class Trial(State):
         self.probe = self.beh.is_licking()
         if self.timer.elapsed_time() > self.params['delay_duration'] and not self.resp_ready:
             self.resp_ready = True
-            if self.probe > 0: self.beh.update_bias(self.probe)
         else:
             self.is_ready = self.beh.is_ready(self.timer.elapsed_time() + self.params['init_duration'])  # update times
 
@@ -117,8 +116,10 @@ class Trial(State):
         if not self.is_ready and not self.resp_ready:                           # did not wait
             return states['Punish']
         elif self.probe > 0 and self.resp_ready and self.probe != self.stim.curr_cond['probe']: # response to incorrect probe
+            self.beh.update_bias(self.probe)
             return states['Punish']
         elif self.probe > 0 and self.resp_ready and self.probe == self.stim.curr_cond['probe']: # response to correct probe
+            self.beh.update_bias(self.probe)
             return states['Reward']
         elif self.timer.elapsed_time() > self.params['trial_duration']:      # timed out
             return states['PostTrial']

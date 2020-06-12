@@ -24,18 +24,6 @@ class SmellyMovies(Stimulus):
 
     def prepare(self):
         self.probes = np.array([d['probe'] for d in self.conditions])
-                
-        conditions = self.conditions
-        for icond, cond in enumerate(conditions):
-            values = list(cond.values())
-            names = list(cond.keys())
-            for ivalue, value in enumerate(values):
-                if type(value) is list:
-                    value = tuple(value)
-                cond.update({names[ivalue]: value})
-            conditions[icond] = cond
-        self.logger.log_conditions(['OdorCond', 'MovieCond'], conditions)
-
         from omxplayer import OMXPlayer
         self.player = OMXPlayer
         # store local copy of files

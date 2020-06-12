@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import datajoint as dj
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -68,7 +69,9 @@ class Session(dj.Manual):
     session_tmst         : timestamp                    # session timestamp
     notes=null           : varchar(2048)                # session notes
     session_params=null  : mediumblob                   
-    conditions=null      : mediumblob        
+    conditions=null      : mediumblob      
+    protocol=null        : varchar(256)                 # protocol file
+    experiment_type=null : varchar(256)                 
     """
 
 
@@ -106,7 +109,17 @@ class CenterPort(dj.Manual):
     state=null           : varchar(256)  
     timestamp            : timestamp    
     """
-
+         
+    def filter_cp(self):
+        
+        cp_df = pd.DataFrame(self.fetch())
+        cp_df['change'] = cp_df['in_position'].diff()
+        cp_df = cp_df.dropna()
+        cp_df = cp_df.astype({'change': 'int32'})
+        cp_df_filtered = cp_df[np.abs(cp_df['change']) == 1]
+        result = cp_df_filtered.loc[cp_df_filtered.groupby('animal_id').timestamp.idxmax(),:]
+        
+        return result
 
 @schema
 class Lick(dj.Manual):
@@ -194,6 +207,14 @@ class RewardCond(dj.Manual):
     probe=0        :int                                 # probe number
     """
 
+@schema
+class AnalysisCond(dj.Manual):
+    definition = """
+    # reward probe conditions
+    -> Condition
+    ---
+    analysis_group=0        :int                                 # analysis group number
+    """
 
 @schema
 class OdorCond(dj.Manual):
