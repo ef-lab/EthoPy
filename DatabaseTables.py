@@ -154,19 +154,25 @@ class LiquidDelivery(dj.Manual):
         mice = df['animal_id'].unique()  # unique animal ids
         m_count = df['animal_id'].value_counts()  # count how many times each animal id appears in dataframe
         t_count = df.groupby(['animal_id'])['new_tmst'].value_counts().sort_index()  # count unique timestamps for each animal id
+        r = 1000
+        #print(df['session_params'][r]['reward_amount'])
+        df['session_params'][r]['reward_amount']
+        df['reward_amount_new'] = np.nan
         for r in range(len(df)):
-            df['reward_amount'] = df['session_params'][r]['reward_amount']
+            df['reward_amount_new'][r] = df['session_params'][r]['reward_amount']
 
-        df['total_reward'] = np.nan
+        df['total_reward'] = np.nan # pre-allocate
         kk = 0
         for idx in mice:
             for j in range(len(t_count[idx])):
-                df['total_reward'][kk] = t_count[idx][j] * df['reward_amount'][kk]
+                df['total_reward'][kk] = t_count[idx][j] * df['reward_amount_new'][kk]
                 kk = kk + t_count[idx][j]
         df['total_reward'] = df['total_reward'] / 1000  # convert μl to ml
 
-            # plot
-        k = 0
+        # plot
+        ymin = df['total_reward'].min()
+        ymax =  df['total_reward'].max()
+        #k = 0
         for idx in mice:
             df1 = df[df['animal_id'] == idx].drop_duplicates('new_tmst', keep='first')
             ax = df1.plot(x='new_tmst', y='total_reward')
@@ -174,7 +180,9 @@ class LiquidDelivery(dj.Manual):
             plt.xticks(rotation=45)
             plt.ylabel('DeliveredLiquid(ml)')
             ax.set_title('Animal_id: %1d' % idx)
-            k = k + m_count[idx]
+            #k = k + m_count[idx]
+            axes = plt.gca()
+            axes.set_ylim([ymin,ymax])
         return ax
 
 @schema
