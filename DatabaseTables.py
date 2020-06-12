@@ -249,37 +249,3 @@ class LiquidCalibration(dj.Manual):
         """
 
 
-@schema
-class MouseWeight(dj.Manual):
-    definition = """
-    # Weight of the animal
-    animal_id                    : int # animal id
-    timestamp=CURRENT_TIMESTAMP  : timestamp
-    ---
-    weight                       : float # in grams
-    """
-
-    def plot(self, key='all'):
-        if key == 'all':
-            mw = pd.DataFrame((self).fetch())
-        else:
-            mw = pd.DataFrame((self & key).fetch())
-
-        mice = mw['animal_id'].unique()
-        m_count = mw['animal_id'].value_counts()
-        k = 0
-        for idx in mice:
-            w0 = mw[mw['animal_id'] == idx].at[k, 'weight']
-            ax = mw[mw['animal_id'] == idx].plot(x='timestamp', y='weight')
-            ax.axhline(0.7 * w0, linestyle='--', color='red', label="30%")
-            ax.axhline(0.8 * w0, linestyle='--', color='pink', label='20%')
-            ax.axhline(0.9 * w0, linestyle='--', color='green', label='10%')
-            plt.xticks(rotation=45)
-            plt.ylabel('Mouse Weight (gr)')
-            plt.xlabel('Time')
-            date_form = DateFormatter("%d-%m-%y")
-            ax.xaxis.set_major_formatter(date_form)
-            ax.xaxis.set_major_locator(mdates.WeekdayLocator(interval=1))
-            ax.set_title('Animal_id: %1d' % idx)
-            k = k + m_count[idx]
-        return ax
