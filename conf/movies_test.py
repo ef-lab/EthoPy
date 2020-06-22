@@ -5,9 +5,9 @@ from utils.factorize import *
 
 # define stimulus conditions
 probe1_conds = factorize({'probe': [1], 'movie_name': ['o3bgv6'], 'clip_number': list(range(1, 10)),
-                          'analysis_group': [1], 'movie_duration': 4000})
-probe2_conds = factorize({'probe': [2], 'movie_name': ['o1bgv6'], 'clip_number': list(range(1, 10)),
-                          'analysis_group': [1], 'movie_duration': 4000})
+                          'analysis_group': [1], 'movie_duration': [4000]})
+probe2_conds = factorize({'probe': [2], 'movie_name': 'o1bgv6', 'clip_number': list(range(1, 10)),
+                          'analysis_group': [1], 'movie_duration': [4000]})
 conditions = probe1_conds + probe2_conds
 
 # define session parameters

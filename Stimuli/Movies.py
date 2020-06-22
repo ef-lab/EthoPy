@@ -21,7 +21,7 @@ class Movies(Stimulus):
         pygame.mouse.set_visible(0)
 
     def prepare(self):
-        self.probes = np.array([d['probe'] for d in self.conditions])
+        self._get_new_cond()
 
     def init(self):
         self.curr_frame = 1
