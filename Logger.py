@@ -106,7 +106,6 @@ class RPLogger(Logger):
         key['protocol'] = self.get_protocol()
         key['experiment_type'] = exp_type
         self.queue.put(dict(table='Session', tuple=key))
-        self.reward_amount = session_params['reward_amount']  # convert to ml
 
         # start session time
         self.timer.start()

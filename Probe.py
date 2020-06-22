@@ -24,7 +24,7 @@ class Probe:
             key['date'] = dates[-1]  # use the most recent calibration
             self.pulse_dur[probe], pulse_num, weight = \
                 (LiquidCalibration.PulseWeight() & key).fetch('pulse_dur', 'pulse_num', 'weight')
-            self.weigh_per_pulse[probe] = numpy.divide(weight, pulse_num)
+            self.weight_per_pulse[probe] = numpy.divide(weight, pulse_num)
 
     def give_air(self, probe, duration, log=True):
         pass

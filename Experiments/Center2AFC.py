@@ -52,7 +52,7 @@ class State(StateClass):
 
     def is_hydrated(self):
         if self.params['max_reward']:
-            water_restriction = self.beh.rewarded_trials*self.params['reward_amount'] >= self.params['max_reward']
+            #water_restriction = self.beh.rewarded_trials*self.params['reward_amount'] >= self.params['max_reward']
         else:
             water_restriction = False
         return water_restriction
@@ -79,7 +79,7 @@ class PreTrial(State):
     def run(self): pass
 
     def next(self):
-        if self.beh.is_ready(self.params['init_duration']):
+        if self.beh.is_ready(self.stim.curr_cond['init_duration']):
             return states['Trial']
         elif self.is_sleep_time():
             return states['Sleep']
@@ -107,10 +107,10 @@ class Trial(State):
     def run(self):
         self.stim.present()  # Start Stimulus
         self.probe = self.beh.is_licking()
-        if self.timer.elapsed_time() > self.params['delay_duration'] and not self.resp_ready:
+        if self.timer.elapsed_time() > self.stim.curr_cond['delay_duration'] and not self.resp_ready:
             self.resp_ready = True
         else:
-            self.is_ready = self.beh.is_ready(self.timer.elapsed_time() + self.params['init_duration'])  # update times
+            self.is_ready = self.beh.is_ready(self.timer.elapsed_time() + self.stim.curr_cond['init_duration'])  # update times
 
     def next(self):
         if not self.is_ready and not self.resp_ready:                           # did not wait
@@ -119,7 +119,7 @@ class Trial(State):
             return states['Punish']
         elif self.probe > 0 and self.resp_ready and self.probe == self.stim.curr_cond['probe']: # response to correct probe
             return states['Reward']
-        elif self.timer.elapsed_time() > self.params['trial_duration']:      # timed out
+        elif self.timer.elapsed_time() > self.stim.curr_cond['trial_duration']:      # timed out
             return states['PostTrial']
         else:
             return states['Trial']
@@ -148,7 +148,7 @@ class InterTrial(State):
             return states['Sleep']
         elif self.is_hydrated():
             return states['OffTime']
-        elif self.timer.elapsed_time() > self.params['intertrial_duration']:
+        elif self.timer.elapsed_time() > self.stim.curr_cond['intertrial_duration']:
             return states['PreTrial']
         else:
             return states['InterTrial']
@@ -176,7 +176,7 @@ class Punish(State):
     def run(self): pass
 
     def next(self):
-        if self.timer.elapsed_time() > self.params['timeout_duration']:
+        if self.timer.elapsed_time() > self.stim.curr_cond['timeout_duration']:
             self.stim.unshow()
             return states['InterTrial']
         else:
