@@ -72,7 +72,7 @@ class Prepare(State):
 class PreTrial(State):
     def entry(self):
         self.stim.prepare()
-        self.beh.prepare()
+        self.beh.prepare(self.stim.curr_cond)
         self.timer.start()
         self.logger.update_state(self.__class__.__name__)
 

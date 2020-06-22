@@ -49,7 +49,6 @@ class RPLogger(Logger):
         self.trial_start = 0
         self.curr_cond = []
         self.task_idx = []
-        self.reward_amount = 0
         self.cond_idx = 0
         self.session_key = dict()
         self.setup = socket.gethostname()
@@ -157,9 +156,9 @@ class RPLogger(Logger):
     def log_liquid(self, probe):
         timestamp = self.timer.elapsed_time()
         self.queue.put(dict(table='LiquidDelivery', tuple=dict(self.session_key, time=timestamp, probe=probe)))
-        rew = (LiquidDelivery & self.session_key).__len__()*self.reward_amount
-        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
-                            field='total_liquid', value=rew, update=True))
+        #rew = (LiquidDelivery & self.session_key).__len__()*self.reward_amount
+        #self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
+        #                   field='total_liquid', value=rew, update=True))
 
     def log_stim(self):
         timestamp = self.timer.elapsed_time()

@@ -15,8 +15,9 @@ class Probe:
         self.timer_probe2 = Timer()
         self.timer_ready = Timer()
         self.thread = ThreadPoolExecutor(max_workers=2)
-
         self.probes = (LiquidCalibration() & dict(setup=self.logger.setup)).fetch('probe')
+        self.pulse_dur = [[]] * (len(list(set(self.probes))) + 1)
+        self.weigh_per_pulse = [[]] * (len(list(set(self.probes))) + 1)
         for probe in list(set(self.probes)):
             key = dict(setup=self.logger.setup, probe=probe)
             dates = (LiquidCalibration() & key).fetch('date', order_by='date')
@@ -68,7 +69,7 @@ class Probe:
         self.liquid_dur = dict()
         for probe in list(set(self.probes)):
             self.liquid_dur[probe] = numpy.interp(reward_amount/1000,
-                                                  self.weight_per_pylse[probe], self.pulse_dur[probe])
+                                                  self.weight_per_pulse[probe], self.pulse_dur[probe])
 
     def cleanup(self):
         pass
