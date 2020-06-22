@@ -7,51 +7,47 @@ from Stimuli.SmellyMovies import *
 from utils.factorize import *
 
 # define stimulus conditions
-odor_ratios = [[[100, 0], [85, 15], [65, 35], [50, 50]],
-               [[0, 100], [15, 85], [35, 65], [50, 50]]]
-objects = ['obj1v6', 'obj2v6']
+analysis_group = 1
+odor_ratios = [[100, 0], [85, 15], [65, 35], [50, 50]]
 v_dur = 4000
 o_dur = 500
+vo_conds = []
+v_conds = []
+o_conds = []
+for ratio in odor_ratios:
+    vo_conds += factorize({'probe': [1], 'movie_name': ['obj1v6'], 'movie_duration': [v_dur], 'clip_number': [1],
+                           'delivery_idx': [[1, 2]], 'odor_idx': [[1, 2]], 'odor_duration': [o_dur],
+                           'dutycycle': [ratio], 'analysis_group': [analysis_group]})
+    vo_conds += factorize({'probe': [2], 'movie_name': ['obj2v6'], 'movie_duration': [v_dur], 'clip_number': [1],
+                           'delivery_idx': [[2, 1]], 'odor_idx': [[2, 1]], 'odor_duration': [o_dur],
+                           'dutycycle': [ratio], 'analysis_group': [analysis_group]})
+    analysis_group += 1
 
-key = {
-    'odor_idx'        : [[1, 2]],
-    'delivery_idx'    : [[1, 2]],
-    'clip_number'     : 1,
-    'timeout_duration': 4000,
-    'reward_amount'   : 8}
+for ratio in odor_ratios:
+    o_conds += factorize({'probe': [1], 'movie_name': ['obj1v6'], 'movie_duration': [0], 'clip_number': [1],
+                          'delivery_idx': [[1, 2]], 'odor_idx': [[1, 2]], 'odor_duration': [o_dur],
+                          'dutycycle': [ratio], 'analysis_group': [analysis_group]})
+    o_conds += factorize({'probe': [2], 'movie_name': ['obj2v6'], 'movie_duration': [0], 'clip_number': [1],
+                          'delivery_idx': [[2, 1]], 'odor_idx': [[2, 1]], 'odor_duration': [o_dur],
+                          'dutycycle': [ratio], 'analysis_group': [analysis_group]})
+    analysis_group += 1
 
-vo_conds = [], v_conds = [], o_conds = []
-for probe in [1, 2]:
-    analysis_group = 1
-    for ratio in odor_ratios[probe-1]:
-        vo_conds += factorize({**key, 'probe'  : probe,
-                               'movie_name'    : objects[probe-1],
-                               'dutycycle'     : ratio,
-                               'analysis_group': analysis_group,
-                               'movie_duration': v_dur,
-                               'odor_duration' : o_dur})
-        analysis_group += 1
-        o_conds += factorize({**key, 'probe'   : probe,
-                              'movie_name'     : objects[probe-1],
-                              'dutycycle'      : ratio,
-                              'analysis_group' : analysis_group,
-                              'movie_duration' : 0,
-                              'odor_duration'  : o_dur})
-        analysis_group += 1
-    o_conds += factorize({**key, 'probe'  : probe,
-                          'movie_name'    : objects[probe - 1],
-                          'dutycycle'     : [[0, 0]],
-                          'analysis_group': analysis_group,
-                          'movie_duration': v_dur,
-                          'odor_duration' : 0})
+v_conds += factorize({'probe': [1], 'movie_name': ['obj1v6'], 'movie_duration': [v_dur], 'clip_number': [1],
+                      'delivery_idx': [[1, 2]], 'odor_idx': [[1, 2]], 'odor_duration': [0],
+                      'dutycycle': [[0, 0]], 'analysis_group': [analysis_group]})
+v_conds += factorize({'probe': [2], 'movie_name': ['obj2v6'], 'movie_duration': [v_dur], 'clip_number': [1],
+                      'delivery_idx': [[2, 1]], 'odor_idx': [[2, 1]], 'odor_duration': [0],
+                      'dutycycle': [[0, 0]], 'analysis_group': [analysis_group]})
 
 # define session parameters
 session_params = {
     'trial_duration'     : 5000,
     'intertrial_duration': 0,
+    'timeout_duration'   : 4000,
     'delay_duration'     : 0,
     'response_interval'  : 1000,
     'init_duration'      : 0,
+    'reward_amount'      : 8,
     'randomization'      : 'bias',
     'start_time'         : '10:00:00',
     'stop_time'          : '22:00:00',

@@ -22,7 +22,8 @@ class SmellyMovies(Stimulus):
         pygame.mouse.set_visible(0)
         pygame.display.toggle_fullscreen()
 
-        # setup movies
+    def prepare(self):
+        self.probes = np.array([d['probe'] for d in self.conditions])
         from omxplayer import OMXPlayer
         self.player = OMXPlayer
         # store local copy of files
@@ -34,11 +35,6 @@ class SmellyMovies(Stimulus):
             if not os.path.isfile(filename):
                 print('Saving %s ...' % filename)
                 clip_info['clip'].tofile(filename)
-
-    def prepare(self):
-        self._get_new_cond()
-        clip_info = self.logger.get_clip_info(dict((k, self.curr_cond[k]) for k in ('movie_name', 'clip_number')))
-        self.filename = self.path + clip_info['file_name']
   
     def init(self):
         delivery_idx = self.curr_cond['delivery_idx']
@@ -46,7 +42,9 @@ class SmellyMovies(Stimulus):
         odor_dur = self.curr_cond['odor_duration']
         odor_dutycycle = self.curr_cond['dutycycle']
         self.isrunning = True
-        self.vid = self.player(self.filename, args=['--win', '0 15 800 465', '--no-osd'],
+        clip_info = self.logger.get_clip_info(dict((k, self.curr_cond[k]) for k in ('movie_name', 'clip_number')))
+        filename = self.path + clip_info['file_name']
+        self.vid = self.player(filename, args=['--win', '0 15 800 465', '--no-osd'],
                                dbus_name='org.mpris.MediaPlayer2.omxplayer0')  # start video
         self.beh.give_odor(delivery_idx, odor_idx, odor_dur, odor_dutycycle)
         self.timer.start()

@@ -90,7 +90,6 @@ class RPLogger(Logger):
         self.last_trial = 0
 
         # create session key
-        self.session_key = dict()
         self.session_key['animal_id'] = animal_id
         last_sessions = (Session() & self.session_key).fetch('session')
         if numpy.size(last_sessions) == 0:
