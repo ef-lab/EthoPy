@@ -58,6 +58,7 @@ class State(StateClass):
             water_restriction = False
         return water_restriction
 
+
 class Prepare(State):
     def run(self):
         self.stim.setup()

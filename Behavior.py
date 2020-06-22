@@ -13,7 +13,8 @@ class Behavior:
         self.logger = logger
         self.rew_probe = 0
         self.probes = np.array(np.empty(0))
-        self.probe_bias = np.repeat(np.nan, 1)  # History term for bias calculation
+        self.probe_history = []  #  History term for bias calculation
+        self.reward_history = []  #  History term for performance calculation
         self.licked_probe = 0
         self.rewarded_trials = 0
 
@@ -41,8 +42,12 @@ class Behavior:
     def get_off_position(self):
         pass
 
-    def update_bias(self):
+    def punish(self):
         pass
+
+    def prepare(self, condition):
+        pass
+
 
 class RPBehavior(Behavior):
     """ This class handles the behavior variables for RP """
@@ -52,17 +57,15 @@ class RPBehavior(Behavior):
 
     def is_licking(self):
         self.licked_probe = self.probe.lick()
-        time_since_last_lick = self.resp_timer.elapsed_time()
-        if time_since_last_lick < self.params['response_interval']:
-            self.licked_probe = 0
         # reset lick timer if licking is detected &
         if self.licked_probe > 0:
             self.resp_timer.start()
 
         return self.licked_probe
 
-    def update_bias(self, probe):
-        self.probe_bias = np.concatenate((self.probe_bias[1:], [probe]))
+    def punish(self):
+        self.probe_history = self.probe_history.append(self.licked_probe)
+        self.reward_history = self.reward_history.append(0)
 
     def is_ready(self, init_duration):
         if init_duration == 0:
@@ -72,6 +75,8 @@ class RPBehavior(Behavior):
             return ready and ready_time > init_duration
 
     def reward(self):
+        self.probe_history = self.probe_history.append(self.licked_probe)
+        self.reward_history = self.reward_history.append(1)
         self.probe.give_liquid(self.licked_probe)
         self.rewarded_trials += 1
 
@@ -84,6 +89,9 @@ class RPBehavior(Behavior):
 
     def cleanup(self):
         self.probe.cleanup()
+
+    def prepare(self, condition):
+        self.probe.calc_pulse_dur(condition['reward_amount'])
 
 
 class DummyProbe(Behavior):
@@ -107,10 +115,6 @@ class DummyProbe(Behavior):
 
     def is_licking(self):
         self.__get_events()
-        time_since_last_lick = self.resp_timer.elapsed_time()
-
-        if time_since_last_lick < self.params['response_interval'] and self.licked_probe > 0:
-            self.licked_probe = 0
 
         # reset lick timer if licking is detected &
         if self.licked_probe > 0:

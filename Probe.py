@@ -14,8 +14,16 @@ class Probe:
         self.timer_probe1 = Timer()
         self.timer_probe2 = Timer()
         self.timer_ready = Timer()
-        self.__calc_pulse_dur(logger.reward_amount)
         self.thread = ThreadPoolExecutor(max_workers=2)
+
+        self.probes = (LiquidCalibration() & dict(setup=self.logger.setup)).fetch('probe')
+        for probe in list(set(self.probes)):
+            key = dict(setup=self.logger.setup, probe=probe)
+            dates = (LiquidCalibration() & key).fetch('date', order_by='date')
+            key['date'] = dates[-1]  # use the most recent calibration
+            self.pulse_dur[probe], pulse_num, weight = \
+                (LiquidCalibration.PulseWeight() & key).fetch('pulse_dur', 'pulse_num', 'weight')
+            self.weigh_per_pulse[probe] = numpy.divide(weight, pulse_num)
 
     def give_air(self, probe, duration, log=True):
         pass
@@ -56,19 +64,11 @@ class Probe:
     def get_off_position(self):
         pass
 
-    def __calc_pulse_dur(self, reward_amount):  # calculate pulse duration for the desired reward amount
+    def calc_pulse_dur(self, reward_amount):  # calculate pulse duration for the desired reward amount
         self.liquid_dur = dict()
-        probes = (LiquidCalibration() & dict(setup=self.logger.setup)).fetch('probe')
-        for probe in list(set(probes)):
-            key = dict(setup=self.logger.setup, probe=probe)
-            dates = (LiquidCalibration() & key).fetch('date', order_by='date')
-            key['date'] = dates[-1]  # use the most recent calibration
-            pulse_dur, pulse_num, weight = (LiquidCalibration.PulseWeight() & key).fetch('pulse_dur',
-                                                                                         'pulse_num',
-                                                                                         'weight')
+        for probe in list(set(self.probes)):
             self.liquid_dur[probe] = numpy.interp(reward_amount/1000,
-                                                  numpy.divide(weight, pulse_num),
-                                                  pulse_dur)
+                                                  self.weight_per_pylse[probe], self.pulse_dur[probe])
 
     def cleanup(self):
         pass
