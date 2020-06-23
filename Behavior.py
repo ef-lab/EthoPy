@@ -67,8 +67,6 @@ class RPBehavior(Behavior):
     """ This class handles the behavior variables for RP """
     def __init__(self, logger, params):
         self.probe = RPProbe(logger)
-        self.probe_history = []  #  History term for bias calculation
-        self.reward_history = []  #  History term for performance calculation
         super(RPBehavior, self).__init__(logger, params)
 
     def is_licking(self):
@@ -86,9 +84,9 @@ class RPBehavior(Behavior):
 
     def reward(self, reward_amount=0):
         hist = self.probe_history; hist.append(self.licked_probe)
-        self.probe_history = self.probe_history.append(hist)
+        self.probe_history = hist
         rew = self.reward_history; rew.append(reward_amount)
-        self.reward_history = self.reward_history.append(rew)
+        self.reward_history = rew
         self.probe.give_liquid(self.licked_probe)
         self.logger.log_liquid(self.licked_probe, reward_amount)
 
