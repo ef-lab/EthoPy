@@ -152,10 +152,10 @@ class RPLogger(Logger):
         self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
                             field='last_trial', value=self.last_trial, update=True))
 
-    def log_liquid(self, probe, rew_amount):
+    def log_liquid(self, probe, reward_amount):
         timestamp = self.timer.elapsed_time()
         self.queue.put(dict(table='LiquidDelivery', tuple=dict(self.session_key, time=timestamp, probe=probe,
-                                                               rew_amount=rew_amount)))
+                                                               reward_amount=reward_amount)))
 
     def log_stim(self):
         timestamp = self.timer.elapsed_time()

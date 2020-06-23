@@ -33,7 +33,7 @@ class Behavior:
         else:
             return False
 
-    def reward(self, reward_amount):
+    def reward(self, reward_amount=0):
         hist = self.probe_history; hist.append(self.licked_probe)
         self.probe_history = hist
         rew = self.reward_history; rew.append(reward_amount)
@@ -85,16 +85,18 @@ class RPBehavior(Behavior):
             ready, ready_time = self.probe.in_position()
             return ready and ready_time > init_duration
 
-    def reward(self, reward_amount):
+    def reward(self, reward_amount=0):
         hist = self.probe_history; hist.append(self.licked_probe)
         self.probe_history = self.probe_history.append(hist)
         rew = self.reward_history; rew.append(reward_amount)
         self.reward_history = self.reward_history.append(rew)
         self.probe.give_liquid(self.licked_probe)
+        self.logger.log_liquid(self.licked_probe, reward_amount)
         self.rewarded_trials += 1
 
     def give_odor(self, delivery_idx, odor_idx, odor_dur, odor_dutycycle):
         self.probe.give_odor(delivery_idx, odor_idx, odor_dur, odor_dutycycle)
+        self.logger.log_stim()
 
     def inactivity_time(self):  # in minutes
         return numpy.minimum(self.probe.timer_probe1.elapsed_time(),

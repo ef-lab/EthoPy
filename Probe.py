@@ -93,19 +93,14 @@ class RPProbe(Probe):
         self.GPIO.add_event_detect(self.channels['lick'][1], self.GPIO.RISING, callback=self.probe1_licked, bouncetime=200)
         self.GPIO.add_event_detect(self.channels['start'][1], self.GPIO.BOTH, callback=self.position_change, bouncetime=50)
 
-
-    def give_liquid(self, probe, duration=False, log=True):
+    def give_liquid(self, probe, duration=False):
         if not duration:
             duration = self.liquid_dur[probe]
         self.thread.submit(self.__pulse_out, self.channels['liquid'][probe], duration)
-        if log:
-            self.logger.log_liquid(probe)
 
-    def give_odor(self, delivery_idx, odor_idx, odor_duration, dutycycle, log=True):
+    def give_odor(self, delivery_idx, odor_idx, odor_duration, dutycycle):
         for i, idx in enumerate(odor_idx):
             self.thread.submit(self.__pwd_out, self.channels['air'][delivery_idx[i]], odor_duration, dutycycle[i])
-        if log:
-            self.logger.log_stim()
 
     def position_change(self, channel=0):
         if self.GPIO.input(self.channels['start'][1]):
