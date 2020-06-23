@@ -16,7 +16,6 @@ class Behavior:
         self.probe_history = []  #  History term for bias calculation
         self.reward_history = []  #  History term for performance calculation
         self.licked_probe = 0
-        self.rewarded_trials = 0
 
     def is_licking(self):
         return False, False
@@ -25,8 +24,7 @@ class Behavior:
         return False, 0
 
     def is_hydrated(self):
-        rew = sum(self.reward_history)
-        print(rew)
+        rew = np.nansum(self.reward_history)
         self.logger.update_total_liquid(rew)
         if self.params['max_reward']:
             return rew >= self.params['max_reward']
@@ -39,7 +37,6 @@ class Behavior:
         rew = self.reward_history; rew.append(reward_amount)
         self.reward_history = rew
         print('Giving Water at probe:%1d' % self.licked_probe)
-        self.rewarded_trials += 1
 
     def punish(self):
         hist = self.probe_history; hist.append(self.licked_probe)
@@ -70,6 +67,8 @@ class RPBehavior(Behavior):
     """ This class handles the behavior variables for RP """
     def __init__(self, logger, params):
         self.probe = RPProbe(logger)
+        self.probe_history = []  #  History term for bias calculation
+        self.reward_history = []  #  History term for performance calculation
         super(RPBehavior, self).__init__(logger, params)
 
     def is_licking(self):
@@ -92,7 +91,6 @@ class RPBehavior(Behavior):
         self.reward_history = self.reward_history.append(rew)
         self.probe.give_liquid(self.licked_probe)
         self.logger.log_liquid(self.licked_probe, reward_amount)
-        self.rewarded_trials += 1
 
     def give_odor(self, delivery_idx, odor_idx, odor_dur, odor_dutycycle):
         self.probe.give_odor(delivery_idx, odor_idx, odor_dur, odor_dutycycle)
@@ -130,7 +128,6 @@ class DummyProbe(Behavior):
 
     def is_licking(self):
         probe = self.__get_events()
-
         # reset lick timer if licking is detected &
         if probe > 0:
             self.resp_timer.start()
