@@ -1,34 +1,72 @@
+# visual-olfactory task with 2 objects (1 and 2) without background and 2 clips/object and 2 odors (odor_idx 1 and 2)
+# reward amount = 8 microL
+
 from Experiments.Center2AFC import *
 from Behavior import *
-from Stimuli.RPMovies import *
+from Stimuli.Movies import *
 from utils.factorize import *
-
-# define stimulus conditions
-probe1_conds = factorize({'probe': [1], 'movie_name': ['o3bgv6'], 'clip_number': list(range(1, 10)),
-                          'analysis_group': [1], 'movie_duration': [4000]})
-probe2_conds = factorize({'probe': [2], 'movie_name': 'o1bgv6', 'clip_number': list(range(1, 10)),
-                          'analysis_group': [1], 'movie_duration': [4000]})
-conditions = probe1_conds + probe2_conds
 
 # define session parameters
 session_params = {
-    'trial_duration'     : 10000,
-    'intertrial_duration': 0,
-    'timeout_duration'   : 4000,
-    'delay_duration'     : 2000,
-    'response_interval'  : 1000,
-    'init_duration'      : 1000,
-    'reward_amount'      : 10,
-    'randomization'      : 'bias',
-    'start_time'         : '10:00:00',
-    'stop_time'          : '18:00:00',
+    'trial_selection'    : 'staircase',
+    'start_time'         : '00:00:00',
+    'stop_time'          : '23:55:00',
     'reward'             : 'water',
+    'max_reward'         : 3000,
 }
 
+v_conds = []
+
+# define stimulus conditions
+odor_ratios = [[[100, 0]],
+               [[0, 100]]]
+objects = ['obj1v6', 'obj2v6']
+v_dur = 4000
+key = {
+    'difficulty'         : 1,
+    'clip_number'        : 1,
+    'timeout_duration'   : 4000,
+    'trial_duration': 5000,
+    'intertrial_duration': 0,
+    'init_duration': 100,
+    'delay_duration'     : 0,
+    'reward_amount'      : 10}
+
+for probe in [1, 2]:
+    v_conds += factorize({**key, 'probe'  : probe,
+                          'movie_name'    : objects[probe - 1],
+                          'dutycycle'     : [[0, 0]],
+                          'movie_duration': v_dur,
+                          'odor_duration' : 0})
+
+# define stimulus conditions
+odor_ratios = [[[100, 0], [85, 15], [65, 35], [50, 50]],
+               [[0, 100], [15, 85], [35, 65], [50, 50]]]
+objects = ['obj1v6', 'obj2v6']
+v_dur = 4000
+key = {
+    'difficulty'         : 2,
+    'clip_number': [1, 2],
+    'timeout_duration'   : 4000,
+    'trial_duration': 5000,
+    'intertrial_duration': 0,
+    'init_duration': 100,
+    'delay_duration'     : 0,
+    'reward_amount'      : 1}
+for probe in [1, 2]:
+    v_conds += factorize({**key, 'probe'  : probe,
+                          'movie_name'    : objects[probe - 1],
+                          'dutycycle'     : [[0, 0]],
+                          'movie_duration': v_dur,
+                          'odor_duration' : 0})
+
+
+logger.log_session(session_params, v_conds, '2AFC')
+logger.log_conditions(['MovieCond', 'RewardCond'], v_conds)
+conditions = v_conds + v_conds
+
 # run experiment
-logger.log_session(session_params, conditions, '2AFC')
-logger.log_conditions(['MovieCond', 'RewardCond', 'AnalysisCond'], conditions)
 exp = State()
-exp.setup(logger, RPBehavior, RPMovies, session_params, conditions)
+exp.setup(logger, DummyProbe, Movies, session_params, conditions)
 exp.run()
 

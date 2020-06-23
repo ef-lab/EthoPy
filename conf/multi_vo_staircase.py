@@ -95,6 +95,6 @@ conditions = vo_conds + vo_conds + v_conds + v_conds + o_conds
 
 # run experiment
 exp = State()
-exp.setup(logger, RPBehavior, SmellyMovies, session_params, conditions)
+exp.setup(logger, DummyProbe, SmellyMovies, session_params, conditions)
 exp.run()
 

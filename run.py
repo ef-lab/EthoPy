@@ -1,6 +1,10 @@
 from Logger import *
-from utils.Start import Welcome
-import sys, utils
+import sys, utils, os
+
+if os.uname()[4][:3] == 'arm':
+    from utils.Start import PyWelcome as Welcome
+else:
+    from utils.Start import Welcome
 
 global logger
 logger = RPLogger()                                                   # setup logger & timer

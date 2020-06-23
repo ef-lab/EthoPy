@@ -34,7 +34,7 @@ class Movies(Stimulus):
         self.timer.start()
 
     def present(self):
-        if self.timer.elapsed_time() < self.params['stim_duration']:
+        if self.timer.elapsed_time() < self.curr_cond['movie_duration']:
             py_image = pygame.image.frombuffer(self.vid.get_next_data(), self.vsize, "RGB")
             self.screen.blit(py_image, self.pos)
             self.flip()

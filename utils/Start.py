@@ -1,9 +1,20 @@
-from utils.Interface import *
 import os, time
 
 
 class Welcome:
     def __init__(self, logger):
+        pass
+
+    def close(self):
+        pass
+
+    def eval_input(self):
+        pass
+
+
+class PyWelcome(Welcome):
+    def __init__(self, logger):
+        from utils.Interface import Interface
         self.logger = logger
         self.screen = Interface()
         self.state = ''

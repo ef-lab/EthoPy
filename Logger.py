@@ -57,7 +57,7 @@ class RPLogger(Logger):
         self.ip = s.getsockname()[0]
         print(self.ip)
         self.init_params()
-        fileobject = open('/home/eflab/github/PyMouse/dj_local_conf.json')
+        fileobject = open(os.path.abspath('dj_local_conf.json'))
         connect_info = json.loads(fileobject.read())
         conn2 = dj.Connection(connect_info['database.host'], connect_info['database.user'],
                               connect_info['database.password'])
@@ -72,7 +72,7 @@ class RPLogger(Logger):
         protocol = (Task() & dict(task_idx=task_idx)).fetch1('protocol')
         path, filename = os.path.split(protocol)
         if not path:
-            path = '/home/eflab/github/PyMouse/conf'
+            path = os.path.abspath('conf')
             protocol = path + '/' + filename
         return protocol
 
@@ -152,12 +152,10 @@ class RPLogger(Logger):
         self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
                             field='last_trial', value=self.last_trial, update=True))
 
-    def log_liquid(self, probe):
+    def log_liquid(self, probe, rew_amount):
         timestamp = self.timer.elapsed_time()
-        self.queue.put(dict(table='LiquidDelivery', tuple=dict(self.session_key, time=timestamp, probe=probe)))
-        #rew = (LiquidDelivery & self.session_key).__len__()*self.reward_amount
-        #self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
-        #                   field='total_liquid', value=rew, update=True))
+        self.queue.put(dict(table='LiquidDelivery', tuple=dict(self.session_key, time=timestamp, probe=probe,
+                                                               rew_amount=rew_amount)))
 
     def log_stim(self):
         timestamp = self.timer.elapsed_time()
@@ -221,6 +219,10 @@ class RPLogger(Logger):
 
     def update_task_idx(self, task_idx):
         (SetupControl() & dict(setup=self.setup))._update('task_idx', task_idx)
+
+    def update_total_liquid(self, total_rew):
+        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
+                            field='total_liquid', value=total_rew, update=True))
 
     def get_setup_info(self, field):
         info = (SetupControl() & dict(setup=self.setup)).fetch1(field)

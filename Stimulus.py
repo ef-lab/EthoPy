@@ -75,7 +75,7 @@ class Stimulus:
             bias_probe = np.random.binomial(1, 1 - np.nanmean((h - mn) / (mx - mn))) * (mx - mn) + mn
             if self.iter == 0 or np.size(self.iter) == 0:
                 self.iter = self.staircase_window
-                perf = np.nanmean(self.beh.reward_history[-self.staircase_window:])
+                perf = np.nanmean(np.greater(self.beh.reward_history[-self.staircase_window:],0))
                 if perf > self.stair_up and self.curr_difficulty < max(self.difficulties):
                     self.curr_difficulty += 1
                 elif perf < self.stair_down and self.curr_difficulty > min(self.difficulties):
@@ -84,3 +84,11 @@ class Stimulus:
             selected_conditions = [i for (i, v) in zip(self.conditions, np.logical_and(self.probes == bias_probe,
                                                        np.array(self.difficulties) == self.curr_difficulty)) if v]
             self.curr_cond = np.random.choice(selected_conditions)
+
+            print('Difficulty: %d' % self.curr_difficulty)
+            print('Probe history')
+            print(h)
+            print('Iteration %d' % self.iter)
+            print('Rew history')
+            print(self.beh.reward_history[-self.staircase_window:])
+            print('Performance %f' % np.nanmean(np.greater(self.beh.reward_history[-self.staircase_window:], 0)))

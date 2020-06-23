@@ -16,8 +16,8 @@ class Probe:
         self.timer_ready = Timer()
         self.thread = ThreadPoolExecutor(max_workers=2)
         self.probes = (LiquidCalibration() & dict(setup=self.logger.setup)).fetch('probe')
-        self.pulse_dur = [[]] * (len(list(set(self.probes))) + 1)
-        self.weigh_per_pulse = [[]] * (len(list(set(self.probes))) + 1)
+        self.pulse_dur = dict()
+        self.weigh_per_pulse = dict()
         for probe in list(set(self.probes)):
             key = dict(setup=self.logger.setup, probe=probe)
             dates = (LiquidCalibration() & key).fetch('date', order_by='date')

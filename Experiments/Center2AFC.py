@@ -29,7 +29,7 @@ class State(StateClass):
             'Reward'       : Reward(self),
             'Punish'       : Punish(self),
             'Sleep'        : Sleep(self),
-            'OffTime': OffTime(self),
+            'OffTime'      : OffTime(self),
             'Exit'         : exitState}
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
@@ -49,13 +49,6 @@ class State(StateClass):
             stop = stop + timedelta(days=1)
         time_restriction = now < start or now > stop
         return time_restriction
-
-    def is_hydrated(self):
-        if self.params['max_reward']:
-            #water_restriction = self.beh.rewarded_trials*self.params['reward_amount'] >= self.params['max_reward']
-        else:
-            water_restriction = False
-        return water_restriction
 
 
 class Prepare(State):
@@ -146,9 +139,9 @@ class InterTrial(State):
     def next(self):
         if self.is_sleep_time():
             return states['Sleep']
-        elif self.is_hydrated():
+        elif self.beh.is_hydrated():
             return states['OffTime']
-        elif self.timer.elapsed_time() > self.stim.curr_cond['intertrial_duration']:
+        elif self.timer.elapsed_time() >= self.stim.curr_cond['intertrial_duration']:
             return states['PreTrial']
         else:
             return states['InterTrial']
@@ -156,7 +149,7 @@ class InterTrial(State):
 
 class Reward(State):
     def run(self):
-        self.beh.reward()
+        self.beh.reward(self.stim.curr_cond['reward_amount'])
         self.stim.stop()
         print('Rewarding')
 
@@ -176,7 +169,7 @@ class Punish(State):
     def run(self): pass
 
     def next(self):
-        if self.timer.elapsed_time() > self.stim.curr_cond['timeout_duration']:
+        if self.timer.elapsed_time() >= self.stim.curr_cond['timeout_duration']:
             self.stim.unshow()
             return states['InterTrial']
         else:
