@@ -18,8 +18,8 @@ session_params = {
 vo_conds = []; v_conds = []; o_conds = []
 
 # define stimulus conditions
-odor_ratios = [[[100, 0]],
-               [[0, 100]]]
+odor_ratios = [[[[100, 0]]],
+               [[[0, 100]]]]
 objects = ['obj1v6', 'obj2v6']
 v_dur = 4000
 o_dur = 500
