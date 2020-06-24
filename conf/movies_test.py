@@ -24,14 +24,13 @@ v_conds = []
 # define stimulus conditions
 objects = {1: 'obj1v6',
            2: 'obj2v6'}
-v_dur = 4000
-o_dur = 500
+v_dur = 2000
 key = {
     'difficulty': 1,
     'clip_number'        : 1,
-    'skip_time'          : [0, 1, 2, 3],
+    'skip_time'          : [0],
     'static_frame'       : False,
-    'timeout_duration'   : 4000,
+    'timeout_duration'   : 1000,
     'trial_duration'     : 5000,
     'intertrial_duration': 0,
     'init_duration'      : 100,
@@ -47,13 +46,13 @@ for probe in [1, 2]:
 # define stimulus conditions
 objects = {1: 'obj1v6',
            2: 'obj2v6'}
-v_dur = 4000
+v_dur = 2000
 key = {
     'difficulty': 2,
     'clip_number'        : [1, 2],
-    'skip_time'          : [0, 1, 2, 3],
+    'skip_time'          : [0, 2, 4, 6],
     'static_frame'       : False,
-    'timeout_duration'   : 4000,
+    'timeout_duration'   : 1000,
     'trial_duration'     : 5000,
     'intertrial_duration': 0,
     'init_duration'      : 100,
