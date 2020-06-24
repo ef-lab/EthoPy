@@ -46,8 +46,11 @@ class Logger:
                 print(item['table'])
                 print(item["tuple"])
                 if 'update' in item:
+                    print(item["field"])
+                    print(item["value"])
                     eval('(self.insert_schema.' + item['table'] +
                          '() & item["tuple"])._update(item["field"],item["value"])')
+                    print('done')
                 else:
                     eval('self.insert_schema.'+item['table']+'.insert1(item["tuple"], ignore_extra_fields=True, skip_duplicates=True)')
                 self.thread_lock.release()
@@ -103,10 +106,10 @@ class Logger:
         # iterate through all conditions and insert
         for cond in conditions:
             cond_hash = make_hash(cond)
-            self.queue.put(dict(table='Condition', tuple=dict(cond_hash=cond_hash, condition=cond)))
+            self.queue.put(dict(table='Condition', tuple=dict(cond_hash=cond_hash, condition=cond.copy())))
             cond.update({'cond_hash': cond_hash})
             for condtable in condition_tables:
-                self.queue.put(dict(table=condtable, tuple=dict(cond.items(), cond_hash=cond_hash)))
+                self.queue.put(dict(table=condtable, tuple=dict(cond.items())))
         self.queue.put(dict(table='Session', tuple=dict(setup=self.setup),
                             field='conditions', value=conditions, update=True))
         return conditions
