@@ -106,7 +106,7 @@ class Logger:
         # iterate through all conditions and insert
         for cond in conditions:
             cond_hash = make_hash(cond)
-            self.queue.put(dict(table='Condition', tuple=dict(cond_hash=cond_hash, condition=cond.copy())))
+            self.queue.put(dict(table='Condition', tuple=dict(cond_hash=cond_hash, cond_tuple=cond.copy())))
             cond.update({'cond_hash': cond_hash})
             for condtable in condition_tables:
                 self.queue.put(dict(table=condtable, tuple=dict(cond.items())))

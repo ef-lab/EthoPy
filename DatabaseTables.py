@@ -82,7 +82,7 @@ class Condition(dj.Manual):
     # unique stimulus conditions
     cond_hash             : char(24)                 # unique condition hash
     ---
-    condition=null        : blob      
+    cond_tuple=null        : blob      
     """
 
 
