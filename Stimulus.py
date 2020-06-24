@@ -23,6 +23,10 @@ class Stimulus:
         self.difficulties = [cond['difficulty'] for cond in self.conditions]
         self.timer = Timer()
 
+    def get_condition_tables(self):
+        """return condition tables"""
+        pass
+
     def setup(self):
         """setup stimulation for presentation before experiment starts"""
         pass

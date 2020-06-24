@@ -29,7 +29,7 @@ class Logger:
         connect_info = json.loads(fileobject.read())
         conn2 = dj.Connection(connect_info['database.host'], connect_info['database.user'],
                               connect_info['database.password'])
-        self.insert_schema = dj.create_virtual_module('beh.py', 'lab_behavior', connection=conn2)
+        self.insert_schema = dj.create_virtual_module('beh.py', 'lab_test', connection=conn2)
         self.thread_end = threading.Event()
         self.thread_lock = Lock()
         self.thread_runner = threading.Thread(target=self.inserter)  # max insertion rate of 10 events/sec
@@ -43,35 +43,26 @@ class Logger:
             if not self.queue.empty():
                 self.thread_lock.acquire()
                 item = self.queue.get()
-                print(item['table'])
-                print(item["tuple"])
                 if 'update' in item:
-                    print(item["field"])
-                    print(item["value"])
                     eval('(self.insert_schema.' + item['table'] +
                          '() & item["tuple"])._update(item["field"],item["value"])')
-                    print('done')
                 else:
                     eval('self.insert_schema.'+item['table']+'.insert1(item["tuple"], ignore_extra_fields=True, skip_duplicates=True)')
                 self.thread_lock.release()
             else:
                 time.sleep(.5)
 
-    def get_protocol(self):
-        task_idx = (SetupControl() & dict(setup=self.setup)).fetch1('task_idx')
-        protocol = (Task() & dict(task_idx=task_idx)).fetch1('protocol')
-        path, filename = os.path.split(protocol)
-        if not path:
-            path = os.path.abspath('conf')
-            protocol = path + '/' + filename
-        return protocol
+    def log_setup(self):
+        key = dict(setup=self.setup)
+        # update values in case they exist
+        if numpy.size((SetupControl() & dict(setup=self.setup)).fetch()):
+            key = (SetupControl() & dict(setup=self.setup)).fetch1()
+            (SetupControl() & dict(setup=self.setup)).delete_quick()
 
-    def init_trial(self, cond_hash):
-        self.curr_cond = cond_hash
-        self.trial_start = self.timer.elapsed_time()
-        self.thread_lock.acquire()
-        # return condition key
-        return dict(cond_hash=cond_hash)
+        # insert new setup
+        key['ip'] = self.ip
+        key['status'] = 'ready'
+        SetupControl().insert1(key)
 
     def log_session(self, session_params, exp_type=''):
         animal_id, task_idx = (SetupControl() & dict(setup=self.setup)).fetch1('animal_id', 'task_idx')
@@ -110,9 +101,14 @@ class Logger:
             cond.update({'cond_hash': cond_hash})
             for condtable in condition_tables:
                 self.queue.put(dict(table=condtable, tuple=dict(cond.items())))
-        self.queue.put(dict(table='Session', tuple=dict(setup=self.setup),
-                            field='conditions', value=conditions, update=True))
         return conditions
+
+    def init_trial(self, cond_hash):
+        self.curr_cond = cond_hash
+        self.trial_start = self.timer.elapsed_time()
+        self.thread_lock.acquire()
+        # return condition key
+        return dict(cond_hash=cond_hash)
 
     def log_trial(self, last_flip_count=0):
         self.thread_lock.release()
@@ -153,18 +149,6 @@ class Logger:
                                                      pulse_dur=pulse_dur,
                                                      pulse_num=pulse_num,
                                                      weight=weight))
-
-    def log_setup(self):
-        key = dict(setup=self.setup)
-        # update values in case they exist
-        if numpy.size((SetupControl() & dict(setup=self.setup)).fetch()):
-            key = (SetupControl() & dict(setup=self.setup)).fetch1()
-            (SetupControl() & dict(setup=self.setup)).delete_quick()
-
-        # insert new setup
-        key['ip'] = self.ip
-        key['status'] = 'ready'
-        SetupControl().insert1(key)
 
     def log_animal_weight(self, weight):
         key = dict(animal_id=self.get_setup_info('animal_id'), weight=weight)
@@ -212,6 +196,15 @@ class Logger:
     def get_clip_info(self, curr_cond):
         clip_info = (MovieTables.Movie() * MovieTables.Movie.Clip() & curr_cond & self.session_key).fetch1()
         return clip_info
+
+    def get_protocol(self):
+        task_idx = (SetupControl() & dict(setup=self.setup)).fetch1('task_idx')
+        protocol = (Task() & dict(task_idx=task_idx)).fetch1('protocol')
+        path, filename = os.path.split(protocol)
+        if not path:
+            path = os.path.abspath('conf')
+            protocol = path + '/' + filename
+        return protocol
 
     def ping(self):
         lp = str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))

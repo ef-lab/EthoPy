@@ -4,6 +4,9 @@ from Stimulus import *
 class Odors(Stimulus):
     """ This class handles the presentation of Odors"""
 
+    def get_condition_tables(self):
+        return ['OdorCond', 'RewardCond']
+
     def setup(self):
         # setup parameters
         self.size = (800, 480)     # window size

@@ -12,11 +12,12 @@ class State(StateClass):
     def setup(self, logger, BehaviorClass, StimulusClass, session_params, conditions):
         self.logger = logger
         # Initialize params & Behavior/Stimulus objects
-        self.logger.log_session(session_params, '2AFC')
-        self.logger.log_conditions(conditions)
         self.beh = BehaviorClass(self.logger, session_params)
         self.stim = StimulusClass(self.logger, session_params, conditions, self.beh)
         self.params = session_params
+        self.logger.log_session(session_params, '2AFC')
+        self.logger.log_conditions(conditions, self.stim.get_condition_tables())
+
         exitState = Exit(self)
         self.StateMachine = StateMachine(Prepare(self), exitState)
 

@@ -50,8 +50,6 @@ objects = {1: 'obj1v6',
 v_dur = 4000
 key = {
     'difficulty': 2,
-    'odor_idx'           : [[1, 2]],
-    'delivery_idx'       : [[1, 2]],
     'clip_number'        : [1, 2],
     'skip_time'          : [0, 1, 2, 3],
     'static_frame'       : False,

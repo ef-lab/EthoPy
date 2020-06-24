@@ -6,6 +6,9 @@ from pygame.locals import *
 class Movies(Stimulus):
     """ This class handles the presentation of Movies"""
 
+    def get_condition_tables(self):
+        return ['MovieCond', 'RewardCond']
+
     def setup(self):
         # setup parameters
         self.path = 'stimuli/'     # default path to copy local stimuli

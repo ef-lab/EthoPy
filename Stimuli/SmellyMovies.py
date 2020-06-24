@@ -7,6 +7,9 @@ from time import sleep
 class SmellyMovies(Stimulus):
     """ This class handles the presentation of Visual (movies) and Olfactory (odors) stimuli"""
 
+    def get_condition_tables(self):
+        return ['MovieCond', 'OdorCond', 'RewardCond']
+
     def setup(self):
         # setup parameters
         self.path = 'stimuli/'     # default path to copy local stimuli

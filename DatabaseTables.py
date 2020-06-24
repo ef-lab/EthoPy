@@ -204,6 +204,8 @@ class MovieCond(dj.Manual):
     movie_name           : char(8)                      # short movie title
     clip_number          : int                          # clip index
     movie_duration       : int                          # movie duration
+    skip_time            : smallint                     # start time in clip
+    static_frame         : smallint                     # static frame presentation
     """
 
 
