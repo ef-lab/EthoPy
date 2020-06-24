@@ -4,7 +4,7 @@
 from Experiments.Center2AFC import *
 from Behavior import *
 from Stimuli.SmellyMovies import *
-from utils.factorize import *
+from utils.Generator import *
 
 # define stimulus conditions
 odor_ratios = [[[100, 0], [85, 15], [65, 35], [50, 50]],

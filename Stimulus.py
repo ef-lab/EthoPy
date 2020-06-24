@@ -1,5 +1,3 @@
-import pygame
-from pygame.locals import *
 import numpy as np
 from utils.Timer import *
 
@@ -24,10 +22,6 @@ class Stimulus:
         self.probes = np.array([d['probe'] for d in self.conditions])
         self.difficulties = [cond['difficulty'] for cond in self.conditions]
         self.timer = Timer()
-        self.bias_window = 5
-        self.staircase_window = 10
-        self.stair_up = 0.7
-        self.stair_down = 0.6
 
     def setup(self):
         """setup stimulation for presentation before experiment starts"""
@@ -62,33 +56,26 @@ class Stimulus:
         elif self.params['trial_selection'] == 'random':
             self.curr_cond = np.random.choice(self.conditions)
         elif self.params['trial_selection'] == 'bias':
-            h = np.array(self.beh.probe_history[-self.bias_window:])
-            if len(h) < self.bias_window: h = np.mean(self.probes)
+            h = np.array(self.beh.probe_history[-self.params['bias_window']:])
+            if len(h) < self.params['bias_window']: h = np.mean(self.probes)
             mn = np.min(self.probes); mx = np.max(self.probes)
             bias_probe = np.random.binomial(1, 1 - np.nanmean((h - mn) / (mx - mn))) * (mx - mn) + mn
             selected_conditions = [i for (i, v) in zip(self.conditions, self.probes == bias_probe) if v]
             self.curr_cond = np.random.choice(selected_conditions)
         elif self.params['trial_selection'] == 'staircase':
-            h = np.array(self.beh.probe_history[-self.bias_window:])
-            if len(h) < self.bias_window: h = np.mean(self.probes)
+            h = np.array(self.beh.probe_history[-self.params['bias_window']:])
+            if len(h) < self.params['bias_window']: h = np.mean(self.probes)
             mn = np.min(self.probes); mx = np.max(self.probes)
             bias_probe = np.random.binomial(1, 1 - np.nanmean((h - mn) / (mx - mn))) * (mx - mn) + mn
             if self.iter == 0 or np.size(self.iter) == 0:
-                self.iter = self.staircase_window
-                perf = np.nanmean(np.greater(self.beh.reward_history[-self.staircase_window:],0))
-                if perf > self.stair_up and self.curr_difficulty < max(self.difficulties):
+                self.iter = self.params['staircase_window']
+                perf = np.nanmean(np.greater(self.beh.reward_history[-self.params['staircase_window']:], 0))
+                if perf > self.params['stair_up'] and self.curr_difficulty < max(self.difficulties):
                     self.curr_difficulty += 1
-                elif perf < self.stair_down and self.curr_difficulty > min(self.difficulties):
+                elif perf < self.params['stair_down'] and self.curr_difficulty > min(self.difficulties):
                     self.curr_difficulty -= 1
             self.iter -= 1
             selected_conditions = [i for (i, v) in zip(self.conditions, np.logical_and(self.probes == bias_probe,
                                                        np.array(self.difficulties) == self.curr_difficulty)) if v]
             self.curr_cond = np.random.choice(selected_conditions)
 
-            print('Difficulty: %d' % self.curr_difficulty)
-            print('Probe history')
-            print(h)
-            print('Iteration %d' % self.iter)
-            print('Rew history')
-            print(self.beh.reward_history[-self.staircase_window:])
-            print('Performance %f' % np.nanmean(np.greater(self.beh.reward_history[-self.staircase_window:], 0)))

@@ -1,5 +1,7 @@
 from Stimulus import *
-import os
+import os, pygame
+from pygame.locals import *
+from time import sleep
 
 
 class SmellyMovies(Stimulus):
@@ -38,7 +40,11 @@ class SmellyMovies(Stimulus):
     def prepare(self):
         self._get_new_cond()
         clip_info = self.logger.get_clip_info(dict((k, self.curr_cond[k]) for k in ('movie_name', 'clip_number')))
-        self.filename = self.path + clip_info['file_name']
+        filename = self.path + clip_info['file_name']
+        self.vid = self.player(filename, args=['--aspect-mode', 'stretch', '--no-osd'],
+                               dbus_name='org.mpris.MediaPlayer2.omxplayer1')
+        self.vid.pause()
+        self.vid.set_position(self.curr_cond['skip_time'])
   
     def init(self):
         delivery_idx = self.curr_cond['delivery_idx']
@@ -46,8 +52,10 @@ class SmellyMovies(Stimulus):
         odor_dur = self.curr_cond['odor_duration']
         odor_dutycycle = self.curr_cond['dutycycle']
         self.isrunning = True
-        self.vid = self.player(self.filename, args=['--win', '0 15 800 465', '--no-osd'],
-                               dbus_name='org.mpris.MediaPlayer2.omxplayer0')  # start video
+        self.vid.play()
+        if self.curr_cond['static_frame']:
+            sleep(0.2)
+            self.vid.pause()
         self.beh.give_odor(delivery_idx, odor_idx, odor_dur, odor_dutycycle)
         self.timer.start()
         self.logger.log_stim()

@@ -1,6 +1,7 @@
 from Stimulus import *
-import os
-
+import os,pygame
+from time import sleep
+from pygame.locals import *
 
 class RPMovies(Stimulus):
     """ This class handles the presentation of Movies with an optimized library for Raspberry pi"""
@@ -38,12 +39,18 @@ class RPMovies(Stimulus):
     def prepare(self):
         self._get_new_cond()
         clip_info = self.logger.get_clip_info(self.curr_cond)
-        self.filename = self.path + clip_info['file_name']
+        filename = self.path + clip_info['file_name']
+        self.vid = self.player(filename, args=['--aspect-mode', 'stretch', '--no-osd'],
+                               dbus_name='org.mpris.MediaPlayer2.omxplayer1')
+        self.vid.pause()
+        self.vid.set_position(self.curr_cond['skip_time'])
 
     def init(self):
         self.isrunning = True
-        self.vid = self.player(self.filename, args=['--win', '0 15 800 465', '--no-osd'],
-                               dbus_name='org.mpris.MediaPlayer2.omxplayer0')  # start video
+        self.vid.play()
+        if self.curr_cond['static_frame']:
+            sleep(0.2)
+            self.vid.pause()
         self.timer.start()
         self.logger.log_stim()
 

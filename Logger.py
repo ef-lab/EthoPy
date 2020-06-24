@@ -1,5 +1,6 @@
 import numpy, socket, json, os, pandas
 from utils.Timer import *
+from utils.Generator import *
 from queue import Queue
 import time as systime
 import datetime
@@ -13,13 +14,26 @@ class Logger:
     """ This class handles the database logging"""
 
     def __init__(self):
+        self.last_trial = 0
+        self.queue = Queue()
+        self.timer = Timer()
+        self.trial_start = 0
+        self.curr_cond = []
+        self.task_idx = []
+        self.session_key = dict()
+        self.setup = socket.gethostname()
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        self.ip = s.getsockname()[0]
+        fileobject = open(os.path.abspath('dj_local_conf.json'))
+        connect_info = json.loads(fileobject.read())
+        conn2 = dj.Connection(connect_info['database.host'], connect_info['database.user'],
+                              connect_info['database.password'])
+        self.insert_schema = dj.create_virtual_module('beh.py', 'lab_behavior', connection=conn2)
         self.thread_end = threading.Event()
         self.thread_lock = Lock()
         self.thread_runner = threading.Thread(target=self.inserter)  # max insertion rate of 10 events/sec
         self.thread_runner.start()
-
-    def get_session_key(self):
-        return self.session_key
 
     def cleanup(self):
         self.thread_end.set()
@@ -29,6 +43,8 @@ class Logger:
             if not self.queue.empty():
                 self.thread_lock.acquire()
                 item = self.queue.get()
+                print(item['table'])
+                print(item["tuple"])
                 if 'update' in item:
                     eval('(self.insert_schema.' + item['table'] +
                          '() & item["tuple"])._update(item["field"],item["value"])')
@@ -37,35 +53,6 @@ class Logger:
                 self.thread_lock.release()
             else:
                 time.sleep(.5)
-
-
-class RPLogger(Logger):
-    """ This class handles the database logging for Raspberry pi"""
-
-    def __init__(self):
-        self.last_trial = 0
-        self.queue = Queue()
-        self.timer = Timer()
-        self.trial_start = 0
-        self.curr_cond = []
-        self.task_idx = []
-        self.cond_idx = 0
-        self.session_key = dict()
-        self.setup = socket.gethostname()
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        self.ip = s.getsockname()[0]
-        print(self.ip)
-        self.init_params()
-        fileobject = open(os.path.abspath('dj_local_conf.json'))
-        connect_info = json.loads(fileobject.read())
-        conn2 = dj.Connection(connect_info['database.host'], connect_info['database.user'],
-                              connect_info['database.password'])
-        self.insert_schema = dj.create_virtual_module('beh.py', 'lab_behavior', connection=conn2)
-        super(RPLogger, self).__init__()
-
-    def init_params(self):
-        pass
 
     def get_protocol(self):
         task_idx = (SetupControl() & dict(setup=self.setup)).fetch1('task_idx')
@@ -76,14 +63,14 @@ class RPLogger(Logger):
             protocol = path + '/' + filename
         return protocol
 
-    def start_trial(self, cond_idx):
-        self.curr_cond = cond_idx
+    def init_trial(self, cond_hash):
+        self.curr_cond = cond_hash
         self.trial_start = self.timer.elapsed_time()
-
+        self.thread_lock.acquire()
         # return condition key
-        return dict(self.session_key, cond_idx=cond_idx)
+        return dict(cond_hash=cond_hash)
 
-    def log_session(self, session_params, conditions=None, exp_type=''):
+    def log_session(self, session_params, exp_type=''):
         animal_id, task_idx = (SetupControl() & dict(setup=self.setup)).fetch1('animal_id', 'task_idx')
         self.task_idx = task_idx
         self.last_trial = 0
@@ -101,7 +88,6 @@ class RPLogger(Logger):
         # get task parameters for session table
         key = dict(self.session_key.items())
         key['session_params'] = session_params
-        key['conditions'] = conditions
         key['setup'] = self.setup
         key['protocol'] = self.get_protocol()
         key['experiment_type'] = exp_type
@@ -113,35 +99,24 @@ class RPLogger(Logger):
         (SetupControl() & dict(setup=self.setup))._update('last_trial', 0)
         (SetupControl() & dict(setup=self.setup))._update('total_liquid', 0)
 
-    def log_conditions(self, condition_table, conditions):
-        # make sure condition_table is a list
-        if numpy.size(condition_table) < 2:
-            condition_table = [condition_table]
-
-        for icond, cond in enumerate(conditions):
-            values = list(cond.values())
-            names = list(cond.keys())
-            for ivalue, value in enumerate(values):
-                if type(value) is list:
-                    value = tuple(value)
-                cond.update({names[ivalue]: value})
-            conditions[icond] = cond
-
+    def log_conditions(self, conditions, condition_tables=['OdorCond', 'MovieCond', 'RewardCond']):
         # iterate through all conditions and insert
         for cond in conditions:
-            self.cond_idx += 1
-            cond.update({'cond_idx': self.cond_idx})
-            self.queue.put(dict(table='Condition', tuple=dict(self.session_key, cond_idx=self.cond_idx)))
-            for condtable in condition_table:
-                self.queue.put(dict(table=condtable, tuple=dict(cond.items() | self.session_key.items(),
-                                                                cond_idx=self.cond_idx)))
+            cond_hash = make_hash(cond)
+            self.queue.put(dict(table='Condition', tuple=dict(cond_hash=cond_hash, condition=cond)))
+            cond.update({'cond_hash': cond_hash})
+            for condtable in condition_tables:
+                self.queue.put(dict(table=condtable, tuple=dict(cond.items(), cond_hash=cond_hash)))
+        self.queue.put(dict(table='Session', tuple=dict(setup=self.setup),
+                            field='conditions', value=conditions, update=True))
         return conditions
 
     def log_trial(self, last_flip_count=0):
+        self.thread_lock.release()
         timestamp = self.timer.elapsed_time()
         trial_key = dict(self.session_key,
                          trial_idx=self.last_trial+1,
-                         cond_idx=self.curr_cond,
+                         cond_hash=self.curr_cond,
                          start_time=self.trial_start,
                          end_time=timestamp,
                          last_flip_count=last_flip_count)

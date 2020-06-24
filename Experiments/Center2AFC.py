@@ -10,11 +10,12 @@ class State(StateClass):
             self.__dict__.update(parent.__dict__)
 
     def setup(self, logger, BehaviorClass, StimulusClass, session_params, conditions):
-
-        # Initialize params & Behavior/Stimulus objects
         self.logger = logger
-        self.beh = BehaviorClass(logger, session_params)
-        self.stim = StimulusClass(logger, session_params, conditions, self.beh)
+        # Initialize params & Behavior/Stimulus objects
+        self.logger.log_session(session_params, '2AFC')
+        self.logger.log_conditions(conditions)
+        self.beh = BehaviorClass(self.logger, session_params)
+        self.stim = StimulusClass(self.logger, session_params, conditions, self.beh)
         self.params = session_params
         exitState = Exit(self)
         self.StateMachine = StateMachine(Prepare(self), exitState)
@@ -94,8 +95,7 @@ class Trial(State):
         self.stim.init()
         self.beh.is_licking()
         self.timer.start()  # trial start counter
-        self.logger.start_trial(self.stim.curr_cond['cond_idx'])
-        self.logger.thread_lock.acquire()
+        self.logger.init_trial(self.stim.curr_cond['cond_hash'])
 
     def run(self):
         self.stim.present()  # Start Stimulus
@@ -118,7 +118,6 @@ class Trial(State):
             return states['Trial']
 
     def exit(self):
-        self.logger.thread_lock.release()
         self.logger.log_trial()
         self.logger.ping()
 

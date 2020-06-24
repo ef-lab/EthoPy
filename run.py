@@ -7,8 +7,8 @@ else:
     from utils.Start import Welcome
 
 global logger
-logger = RPLogger()                                                   # setup logger & timer
-logger.log_setup()                                                    # publish IP and make setup available
+logger = Logger()                                                   # setup logger & timer
+logger.log_setup()                                                  # publish IP and make setup available
 
 # # # # Waiting for instructions loop # # # # #
 while not logger.get_setup_info('status') == 'exit':
