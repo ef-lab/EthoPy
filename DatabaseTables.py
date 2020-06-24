@@ -10,6 +10,7 @@ schema = dj.schema('lab_behavior')
 MovieTables = dj.create_virtual_module('movies.py', 'lab_stimuli')
 Mice = dj.create_virtual_module('mice.py', 'lab_mice')
 
+
 def erd():
     """for convenience"""
     dj.ERD(schema).draw()
@@ -79,9 +80,9 @@ class Session(dj.Manual):
 class Condition(dj.Manual):
     definition = """
     # unique stimulus conditions
-    -> Session
-    cond_idx             : smallint                     # unique condition index
+    cond_hash             : char(24)                 # unique condition hash
     ---
+    cond_tuple=null        : blob      
     """
 
 
@@ -92,7 +93,7 @@ class Trial(dj.Manual):
     -> Session
     trial_idx            : smallint                     # unique condition index
     ---
-    cond_idx             : smallint                     # unique condition index
+    -> Condition
     start_time           : int                          # start time from session start (ms)
     end_time             : int                          # end time from session start (ms)
     """
@@ -203,6 +204,8 @@ class MovieCond(dj.Manual):
     movie_name           : char(8)                      # short movie title
     clip_number          : int                          # clip index
     movie_duration       : int                          # movie duration
+    skip_time            : smallint                     # start time in clip
+    static_frame         : smallint                     # static frame presentation
     """
 
 
@@ -212,17 +215,10 @@ class RewardCond(dj.Manual):
     # reward probe conditions
     -> Condition
     ---
-    probe=0        :int                                 # probe number
+    probe=0              :int                           # probe number
+    reward_amount=0      :int                           # reward amount
     """
 
-@schema
-class AnalysisCond(dj.Manual):
-    definition = """
-    # reward probe conditions
-    -> Condition
-    ---
-    analysis_group=0        :int                                 # analysis group number
-    """
 
 @schema
 class OdorCond(dj.Manual):
@@ -235,6 +231,7 @@ class OdorCond(dj.Manual):
     dutycycle            : tinyblob                     # odor dutycycle
     delivery_idx         : tinyblob                     # delivery idx for channel mapping
     """
+
 
 @schema
 class LiquidCalibration(dj.Manual):

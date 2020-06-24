@@ -13,9 +13,9 @@ class Behavior:
         self.logger = logger
         self.rew_probe = 0
         self.probes = np.array(np.empty(0))
-        self.probe_bias = np.repeat(np.nan, 1)  # History term for bias calculation
+        self.probe_history = []  #  History term for bias calculation
+        self.reward_history = []  #  History term for performance calculation
         self.licked_probe = 0
-        self.rewarded_trials = 0
 
     def is_licking(self):
         return False, False
@@ -23,8 +23,26 @@ class Behavior:
     def is_ready(self, elapsed_time=False):
         return False, 0
 
-    def reward(self):
+    def is_hydrated(self):
+        rew = np.nansum(self.reward_history)
+        self.logger.update_total_liquid(rew)
+        if self.params['max_reward']:
+            return rew >= self.params['max_reward']
+        else:
+            return False
+
+    def reward(self, reward_amount=0):
+        hist = self.probe_history; hist.append(self.licked_probe)
+        self.probe_history = hist
+        rew = self.reward_history; rew.append(reward_amount)
+        self.reward_history = rew
         print('Giving Water at probe:%1d' % self.licked_probe)
+
+    def punish(self):
+        hist = self.probe_history; hist.append(self.licked_probe)
+        self.probe_history = hist
+        rew = self.reward_history; rew.append(0)
+        self.reward_history = rew
 
     def give_odor(self, delivery_idx, odor_idx, odor_dur, odor_dutycycle):
         print('Odor %1d presentation for %d' % (odor_idx, odor_dur))
@@ -41,8 +59,9 @@ class Behavior:
     def get_off_position(self):
         pass
 
-    def update_bias(self):
+    def prepare(self, condition):
         pass
+
 
 class RPBehavior(Behavior):
     """ This class handles the behavior variables for RP """
@@ -52,17 +71,9 @@ class RPBehavior(Behavior):
 
     def is_licking(self):
         self.licked_probe = self.probe.lick()
-        time_since_last_lick = self.resp_timer.elapsed_time()
-        if time_since_last_lick < self.params['response_interval']:
-            self.licked_probe = 0
-        # reset lick timer if licking is detected &
-        if self.licked_probe > 0:
+        if self.licked_probe > 0: # reset lick timer if licking is detected
             self.resp_timer.start()
-
         return self.licked_probe
-
-    def update_bias(self, probe):
-        self.probe_bias = np.concatenate((self.probe_bias[1:], [probe]))
 
     def is_ready(self, init_duration):
         if init_duration == 0:
@@ -71,12 +82,17 @@ class RPBehavior(Behavior):
             ready, ready_time = self.probe.in_position()
             return ready and ready_time > init_duration
 
-    def reward(self):
+    def reward(self, reward_amount=0):
+        hist = self.probe_history; hist.append(self.licked_probe)
+        self.probe_history = hist
+        rew = self.reward_history; rew.append(reward_amount)
+        self.reward_history = rew
         self.probe.give_liquid(self.licked_probe)
-        self.rewarded_trials += 1
+        self.logger.log_liquid(self.licked_probe, reward_amount)
 
     def give_odor(self, delivery_idx, odor_idx, odor_dur, odor_dutycycle):
         self.probe.give_odor(delivery_idx, odor_idx, odor_dur, odor_dutycycle)
+        self.logger.log_stim()
 
     def inactivity_time(self):  # in minutes
         return numpy.minimum(self.probe.timer_probe1.elapsed_time(),
@@ -84,6 +100,9 @@ class RPBehavior(Behavior):
 
     def cleanup(self):
         self.probe.cleanup()
+
+    def prepare(self, condition):
+        self.probe.calc_pulse_dur(condition['reward_amount'])
 
 
 class DummyProbe(Behavior):
@@ -93,7 +112,7 @@ class DummyProbe(Behavior):
         self.ready_timer = Timer()
         self.ready_timer.start()
         self.ready = False
-        self.licked_probe = 0
+        self.probe = 0
 
         super(DummyProbe, self).__init__(logger, params)
 
@@ -106,30 +125,27 @@ class DummyProbe(Behavior):
         return self.lick_timer.elapsed_time() / 1000 / 60
 
     def is_licking(self):
-        self.__get_events()
-        time_since_last_lick = self.resp_timer.elapsed_time()
-
-        if time_since_last_lick < self.params['response_interval'] and self.licked_probe > 0:
-            self.licked_probe = 0
-
+        probe = self.__get_events()
         # reset lick timer if licking is detected &
-        if self.licked_probe > 0:
+        if probe > 0:
             self.resp_timer.start()
-        return self.licked_probe
+        self.licked_probe = probe
+        return probe
 
     def __get_events(self):
+        probe = 0
         events = pygame.event.get()
         for event in events:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
                     self.logger.log_lick(1)
                     print('Probe 1 activated!')
-                    self.licked_probe = 1
+                    probe = 1
                     self.lick_timer.start()
                 elif event.key == pygame.K_RIGHT:
                     self.logger.log_lick(2)
                     print('Probe 2 activated!')
-                    self.licked_probe = 2
+                    probe = 2
                 elif event.key == pygame.K_SPACE and self.ready:
                     self.ready = False
                     print('off position')
@@ -137,4 +153,4 @@ class DummyProbe(Behavior):
                     self.lick_timer.start()
                     self.ready = True
                     print('in position')
-
+        return probe

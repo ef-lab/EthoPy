@@ -14,8 +14,17 @@ class Probe:
         self.timer_probe1 = Timer()
         self.timer_probe2 = Timer()
         self.timer_ready = Timer()
-        self.__calc_pulse_dur(logger.reward_amount)
         self.thread = ThreadPoolExecutor(max_workers=2)
+        self.probes = (LiquidCalibration() & dict(setup=self.logger.setup)).fetch('probe')
+        self.pulse_dur = dict()
+        self.weight_per_pulse = dict()
+        for probe in list(set(self.probes)):
+            key = dict(setup=self.logger.setup, probe=probe)
+            dates = (LiquidCalibration() & key).fetch('date', order_by='date')
+            key['date'] = dates[-1]  # use the most recent calibration
+            self.pulse_dur[probe], pulse_num, weight = \
+                (LiquidCalibration.PulseWeight() & key).fetch('pulse_dur', 'pulse_num', 'weight')
+            self.weight_per_pulse[probe] = numpy.divide(weight, pulse_num)
 
     def give_air(self, probe, duration, log=True):
         pass
@@ -56,19 +65,11 @@ class Probe:
     def get_off_position(self):
         pass
 
-    def __calc_pulse_dur(self, reward_amount):  # calculate pulse duration for the desired reward amount
+    def calc_pulse_dur(self, reward_amount):  # calculate pulse duration for the desired reward amount
         self.liquid_dur = dict()
-        probes = (LiquidCalibration() & dict(setup=self.logger.setup)).fetch('probe')
-        for probe in list(set(probes)):
-            key = dict(setup=self.logger.setup, probe=probe)
-            dates = (LiquidCalibration() & key).fetch('date', order_by='date')
-            key['date'] = dates[-1]  # use the most recent calibration
-            pulse_dur, pulse_num, weight = (LiquidCalibration.PulseWeight() & key).fetch('pulse_dur',
-                                                                                         'pulse_num',
-                                                                                         'weight')
+        for probe in list(set(self.probes)):
             self.liquid_dur[probe] = numpy.interp(reward_amount/1000,
-                                                  numpy.divide(weight, pulse_num),
-                                                  pulse_dur)
+                                                  self.weight_per_pulse[probe], self.pulse_dur[probe])
 
     def cleanup(self):
         pass
@@ -92,19 +93,14 @@ class RPProbe(Probe):
         self.GPIO.add_event_detect(self.channels['lick'][1], self.GPIO.RISING, callback=self.probe1_licked, bouncetime=200)
         self.GPIO.add_event_detect(self.channels['start'][1], self.GPIO.BOTH, callback=self.position_change, bouncetime=50)
 
-
-    def give_liquid(self, probe, duration=False, log=True):
+    def give_liquid(self, probe, duration=False):
         if not duration:
             duration = self.liquid_dur[probe]
         self.thread.submit(self.__pulse_out, self.channels['liquid'][probe], duration)
-        if log:
-            self.logger.log_liquid(probe)
 
-    def give_odor(self, delivery_idx, odor_idx, odor_duration, dutycycle, log=True):
+    def give_odor(self, delivery_idx, odor_idx, odor_duration, dutycycle):
         for i, idx in enumerate(odor_idx):
             self.thread.submit(self.__pwd_out, self.channels['air'][delivery_idx[i]], odor_duration, dutycycle[i])
-        if log:
-            self.logger.log_stim()
 
     def position_change(self, channel=0):
         if self.GPIO.input(self.channels['start'][1]):

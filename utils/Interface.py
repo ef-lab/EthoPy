@@ -1,4 +1,4 @@
-import pygame, numpy
+import pygame, numpy, os
 from ft5406 import Touchscreen, TS_PRESS, TS_RELEASE
 
 
@@ -31,6 +31,8 @@ class Interface:
         self.font_color = kwargs.get('font_color', (255, 255, 255))
         self.font_size = kwargs.get('font_size', 20)
         self.font = kwargs.get('font', "freesansbold.ttf")
+        cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % 64
+        os.system(cmd)
 
         # define interface variables
         self.screen = None

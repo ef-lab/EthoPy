@@ -1,10 +1,14 @@
 from Logger import *
-from utils.Start import Welcome
-import sys, utils
+import sys, utils, os
+
+if os.uname()[4][:3] == 'arm':
+    from utils.Start import PyWelcome as Welcome
+else:
+    from utils.Start import Welcome
 
 global logger
-logger = RPLogger()                                                   # setup logger & timer
-logger.log_setup()                                                    # publish IP and make setup available
+logger = Logger()                                                   # setup logger & timer
+logger.log_setup()                                                  # publish IP and make setup available
 
 # # # # Waiting for instructions loop # # # # #
 while not logger.get_setup_info('status') == 'exit':

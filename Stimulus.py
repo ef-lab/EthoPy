@@ -1,5 +1,3 @@
-import pygame
-from pygame.locals import *
 import numpy as np
 from utils.Timer import *
 
@@ -17,18 +15,24 @@ class Stimulus:
         self.beh = beh
         self.isrunning = False
         self.flip_count = 0
-        self.indexes = []
+        self.iter = []
         self.curr_cond = []
         self.rew_probe = []
-        self.probes = []
+        self.curr_difficulty = 1
+        self.probes = np.array([d['probe'] for d in self.conditions])
+        self.difficulties = [cond['difficulty'] for cond in self.conditions]
         self.timer = Timer()
 
+    def get_condition_tables(self):
+        """return condition tables"""
+        pass
+
     def setup(self):
-        """setup stimulation"""
+        """setup stimulation for presentation before experiment starts"""
         pass
 
     def prepare(self, conditions=False):
-        """prepares stuff for presentation before experiment starts"""
+        """prepares stuff for presentation before trial starts"""
         pass
 
     def init(self, cond=False):
@@ -43,25 +47,40 @@ class Stimulus:
         """stop trial"""
         pass
 
-    def get_new_cond(self):
+    def _get_new_cond(self):
         """Get curr condition & create random block of all conditions
         Should be called within init_trial
         """
-        if self.params['randomization'] == 'block':
-            if np.size(self.indexes) == 0:
-                self.indexes = np.random.permutation(np.size(self.conditions))
-            cond = self.conditions[self.indexes[0]]
-            self.indexes = self.indexes[1:]
+        if self.params['trial_selection'] == 'block':
+            if np.size(self.iter) == 0:
+                self.iter = np.random.permutation(np.size(self.conditions))
+            cond = self.conditions[self.iter[0]]
+            self.iter = self.iter[1:]
             self.curr_cond = cond
-        elif self.params['randomization'] == 'random':
+        elif self.params['trial_selection'] == 'random':
             self.curr_cond = np.random.choice(self.conditions)
-        elif self.params['randomization'] == 'bias':
-            if len(self.beh.probe_bias) == 0 or np.all(np.isnan(self.beh.probe_bias)):
-                self.beh.probe_bias = np.random.choice(self.probes, 5)
-                self.curr_cond = np.random.choice(self.conditions)
-            else:
-                mn = np.min(self.probes)
-                mx = np.max(self.probes)
-                bias_probe = np.random.binomial(1, 1 - np.nanmean((self.beh.probe_bias - mn)/(mx-mn)))*(mx-mn) + mn
-                biased_conditions = [i for (i, v) in zip(self.conditions, self.probes == bias_probe) if v]
-                self.curr_cond = np.random.choice(biased_conditions)
+        elif self.params['trial_selection'] == 'bias':
+            h = np.array(self.beh.probe_history[-self.params['bias_window']:])
+            if len(h) < self.params['bias_window']: h = np.mean(self.probes)
+            mn = np.min(self.probes); mx = np.max(self.probes)
+            bias_probe = np.random.binomial(1, 1 - np.nanmean((h - mn) / (mx - mn))) * (mx - mn) + mn
+            selected_conditions = [i for (i, v) in zip(self.conditions, self.probes == bias_probe) if v]
+            self.curr_cond = np.random.choice(selected_conditions)
+        elif self.params['trial_selection'] == 'staircase':
+            h = np.array(self.beh.probe_history[-self.params['bias_window']:])
+            if len(h) < self.params['bias_window']: h = np.mean(self.probes)
+            mn = np.min(self.probes); mx = np.max(self.probes)
+            bias_probe = np.random.binomial(1, 1 - np.nanmean((h - mn) / (mx - mn))) * (mx - mn) + mn
+            if self.iter == 0 or np.size(self.iter) == 0:
+                self.iter = self.params['staircase_window']
+                perf = np.nanmean(np.greater(self.beh.reward_history[-self.params['staircase_window']:], 0))
+                if perf > self.params['stair_up'] and self.curr_difficulty < max(self.difficulties):
+                    self.curr_difficulty += 1
+                elif perf < self.params['stair_down'] and self.curr_difficulty > min(self.difficulties):
+                    self.curr_difficulty -= 1
+                self.logger.update_difficulty(self.curr_difficulty)
+            self.iter -= 1
+            selected_conditions = [i for (i, v) in zip(self.conditions, np.logical_and(self.probes == bias_probe,
+                                                       np.array(self.difficulties) == self.curr_difficulty)) if v]
+            self.curr_cond = np.random.choice(selected_conditions)
+

@@ -1,5 +1,6 @@
 import numpy, socket, json, os, pandas
 from utils.Timer import *
+from utils.Generator import *
 from queue import Queue
 import time as systime
 import datetime
@@ -13,13 +14,26 @@ class Logger:
     """ This class handles the database logging"""
 
     def __init__(self):
+        self.last_trial = 0
+        self.queue = Queue()
+        self.timer = Timer()
+        self.trial_start = 0
+        self.curr_cond = []
+        self.task_idx = []
+        self.session_key = dict()
+        self.setup = socket.gethostname()
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        self.ip = s.getsockname()[0]
+        fileobject = open(os.path.abspath('dj_local_conf.json'))
+        connect_info = json.loads(fileobject.read())
+        conn2 = dj.Connection(connect_info['database.host'], connect_info['database.user'],
+                              connect_info['database.password'])
+        self.insert_schema = dj.create_virtual_module('beh.py', 'lab_behavior', connection=conn2)
         self.thread_end = threading.Event()
         self.thread_lock = Lock()
         self.thread_runner = threading.Thread(target=self.inserter)  # max insertion rate of 10 events/sec
         self.thread_runner.start()
-
-    def get_session_key(self):
-        return self.session_key
 
     def cleanup(self):
         self.thread_end.set()
@@ -38,58 +52,25 @@ class Logger:
             else:
                 time.sleep(.5)
 
+    def log_setup(self):
+        key = dict(setup=self.setup)
+        # update values in case they exist
+        if numpy.size((SetupControl() & dict(setup=self.setup)).fetch()):
+            key = (SetupControl() & dict(setup=self.setup)).fetch1()
+            (SetupControl() & dict(setup=self.setup)).delete_quick()
 
-class RPLogger(Logger):
-    """ This class handles the database logging for Raspberry pi"""
+        # insert new setup
+        key['ip'] = self.ip
+        key['status'] = 'ready'
+        SetupControl().insert1(key)
 
-    def __init__(self):
-        self.last_trial = 0
-        self.queue = Queue()
-        self.timer = Timer()
-        self.trial_start = 0
-        self.curr_cond = []
-        self.task_idx = []
-        self.reward_amount = 0
-        self.cond_idx = 0
-        self.session_key = dict()
-        self.setup = socket.gethostname()
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        self.ip = s.getsockname()[0]
-        print(self.ip)
-        self.init_params()
-        fileobject = open('/home/eflab/github/PyMouse/dj_local_conf.json')
-        connect_info = json.loads(fileobject.read())
-        conn2 = dj.Connection(connect_info['database.host'], connect_info['database.user'],
-                              connect_info['database.password'])
-        self.insert_schema = dj.create_virtual_module('beh.py', 'lab_behavior', connection=conn2)
-        super(RPLogger, self).__init__()
-
-    def init_params(self):
-        pass
-
-    def get_protocol(self):
-        task_idx = (SetupControl() & dict(setup=self.setup)).fetch1('task_idx')
-        protocol = (Task() & dict(task_idx=task_idx)).fetch1('protocol')
-        path, filename = os.path.split(protocol)
-        if not path:
-            path = '/home/eflab/github/PyMouse/conf'
-            protocol = path + '/' + filename
-        return protocol
-
-    def start_trial(self, cond_idx):
-        self.curr_cond = cond_idx
-        self.trial_start = self.timer.elapsed_time()
-
-        # return condition key
-        return dict(self.session_key, cond_idx=cond_idx)
-
-    def log_session(self, session_params, conditions=None, exp_type=''):
+    def log_session(self, session_params, exp_type=''):
         animal_id, task_idx = (SetupControl() & dict(setup=self.setup)).fetch1('animal_id', 'task_idx')
         self.task_idx = task_idx
         self.last_trial = 0
 
         # create session key
+        self.session_key = dict()
         self.session_key['animal_id'] = animal_id
         last_sessions = (Session() & self.session_key).fetch('session')
         if numpy.size(last_sessions) == 0:
@@ -101,12 +82,10 @@ class RPLogger(Logger):
         # get task parameters for session table
         key = dict(self.session_key.items())
         key['session_params'] = session_params
-        key['conditions'] = conditions
         key['setup'] = self.setup
         key['protocol'] = self.get_protocol()
         key['experiment_type'] = exp_type
         self.queue.put(dict(table='Session', tuple=key))
-        self.reward_amount = session_params['reward_amount']  # convert to ml
 
         # start session time
         self.timer.start()
@@ -114,35 +93,29 @@ class RPLogger(Logger):
         (SetupControl() & dict(setup=self.setup))._update('last_trial', 0)
         (SetupControl() & dict(setup=self.setup))._update('total_liquid', 0)
 
-    def log_conditions(self, condition_table, conditions):
-        # make sure condition_table is a list
-        if numpy.size(condition_table) < 2:
-            condition_table = [condition_table]
-
-        for icond, cond in enumerate(conditions):
-            values = list(cond.values())
-            names = list(cond.keys())
-            for ivalue, value in enumerate(values):
-                if type(value) is list:
-                    value = tuple(value)
-                cond.update({names[ivalue]: value})
-            conditions[icond] = cond
-
+    def log_conditions(self, conditions, condition_tables=['OdorCond', 'MovieCond', 'RewardCond']):
         # iterate through all conditions and insert
         for cond in conditions:
-            self.cond_idx += 1
-            cond.update({'cond_idx': self.cond_idx})
-            self.queue.put(dict(table='Condition', tuple=dict(self.session_key, cond_idx=self.cond_idx)))
-            for condtable in condition_table:
-                self.queue.put(dict(table=condtable, tuple=dict(cond.items() | self.session_key.items(),
-                                                                cond_idx=self.cond_idx)))
+            cond_hash = make_hash(cond)
+            self.queue.put(dict(table='Condition', tuple=dict(cond_hash=cond_hash, cond_tuple=cond.copy())))
+            cond.update({'cond_hash': cond_hash})
+            for condtable in condition_tables:
+                self.queue.put(dict(table=condtable, tuple=dict(cond.items())))
         return conditions
 
+    def init_trial(self, cond_hash):
+        self.curr_cond = cond_hash
+        self.trial_start = self.timer.elapsed_time()
+        self.thread_lock.acquire()
+        # return condition key
+        return dict(cond_hash=cond_hash)
+
     def log_trial(self, last_flip_count=0):
+        self.thread_lock.release()
         timestamp = self.timer.elapsed_time()
         trial_key = dict(self.session_key,
                          trial_idx=self.last_trial+1,
-                         cond_idx=self.curr_cond,
+                         cond_hash=self.curr_cond,
                          start_time=self.trial_start,
                          end_time=timestamp,
                          last_flip_count=last_flip_count)
@@ -153,12 +126,10 @@ class RPLogger(Logger):
         self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
                             field='last_trial', value=self.last_trial, update=True))
 
-    def log_liquid(self, probe):
+    def log_liquid(self, probe, reward_amount):
         timestamp = self.timer.elapsed_time()
-        self.queue.put(dict(table='LiquidDelivery', tuple=dict(self.session_key, time=timestamp, probe=probe)))
-        rew = (LiquidDelivery & self.session_key).__len__()*self.reward_amount
-        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
-                            field='total_liquid', value=rew, update=True))
+        self.queue.put(dict(table='LiquidDelivery', tuple=dict(self.session_key, time=timestamp, probe=probe,
+                                                               reward_amount=reward_amount)))
 
     def log_stim(self):
         timestamp = self.timer.elapsed_time()
@@ -178,18 +149,6 @@ class RPLogger(Logger):
                                                      pulse_dur=pulse_dur,
                                                      pulse_num=pulse_num,
                                                      weight=weight))
-
-    def log_setup(self):
-        key = dict(setup=self.setup)
-        # update values in case they exist
-        if numpy.size((SetupControl() & dict(setup=self.setup)).fetch()):
-            key = (SetupControl() & dict(setup=self.setup)).fetch1()
-            (SetupControl() & dict(setup=self.setup)).delete_quick()
-
-        # insert new setup
-        key['ip'] = self.ip
-        key['status'] = 'ready'
-        SetupControl().insert1(key)
 
     def log_animal_weight(self, weight):
         key = dict(animal_id=self.get_setup_info('animal_id'), weight=weight)
@@ -223,6 +182,14 @@ class RPLogger(Logger):
     def update_task_idx(self, task_idx):
         (SetupControl() & dict(setup=self.setup))._update('task_idx', task_idx)
 
+    def update_total_liquid(self, total_rew):
+        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
+                            field='total_liquid', value=total_rew, update=True))
+
+    def update_difficulty(self, difficulty):
+        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
+                            field='difficulty', value=difficulty, update=True))
+
     def get_setup_info(self, field):
         info = (SetupControl() & dict(setup=self.setup)).fetch1(field)
         return info
@@ -233,6 +200,15 @@ class RPLogger(Logger):
     def get_clip_info(self, curr_cond):
         clip_info = (MovieTables.Movie() * MovieTables.Movie.Clip() & curr_cond & self.session_key).fetch1()
         return clip_info
+
+    def get_protocol(self):
+        task_idx = (SetupControl() & dict(setup=self.setup)).fetch1('task_idx')
+        protocol = (Task() & dict(task_idx=task_idx)).fetch1('protocol')
+        path, filename = os.path.split(protocol)
+        if not path:
+            path = os.path.abspath('conf')
+            protocol = path + '/' + filename
+        return protocol
 
     def ping(self):
         lp = str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))

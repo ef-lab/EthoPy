@@ -51,12 +51,6 @@ class State(StateClass):
         time_restriction = now < start or now > stop
         return time_restriction
 
-    def is_hydrated(self):
-        if self.params['max_reward']:
-            water_restriction = self.beh.rewarded_trials*self.params['reward_amount'] >= self.params['max_reward']
-        else:
-            water_restriction = False
-        return water_restriction
 
 class Prepare(State):
     def run(self):
@@ -128,7 +122,7 @@ class InterTrial(State):
     def next(self):
         if self.is_sleep_time():
             return states['Sleep']
-        elif self.is_hydrated():
+        elif self.beh.is_hydrated():
             return states['OffTime']
         elif self.timer.elapsed_time() > self.params['intertrial_duration']:
             return states['PreTrial']

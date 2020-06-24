@@ -4,6 +4,9 @@ from Stimulus import *
 class Odors(Stimulus):
     """ This class handles the presentation of Odors"""
 
+    def get_condition_tables(self):
+        return ['OdorCond', 'RewardCond']
+
     def setup(self):
         # setup parameters
         self.size = (800, 480)     # window size
@@ -14,9 +17,6 @@ class Odors(Stimulus):
         self.screen = pygame.display.set_mode(self.size)
         self.unshow()
         pygame.display.toggle_fullscreen()
-        
-    def prepare(self):
-        self.probes = np.array([d['probe'] for d in self.conditions])
 
     def init(self):
         delivery_idx = self.curr_cond['delivery_idx']
@@ -26,7 +26,10 @@ class Odors(Stimulus):
         self.beh.give_odor(delivery_idx, odor_idx, odor_dur, odor_dutycycle)
         self.isrunning = True
         self.timer.start()
-        
+
+    def prepare(self):
+        self._get_new_cond()
+
     def unshow(self, color=False):
         """update background color"""
         if not color:
@@ -35,7 +38,6 @@ class Odors(Stimulus):
         
     def stop(self):
         self.isrunning = False
-
 
     def close(self):
         """Close stuff"""
