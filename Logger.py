@@ -29,7 +29,7 @@ class Logger:
         connect_info = json.loads(fileobject.read())
         conn2 = dj.Connection(connect_info['database.host'], connect_info['database.user'],
                               connect_info['database.password'])
-        self.insert_schema = dj.create_virtual_module('beh.py', 'lab_test', connection=conn2)
+        self.insert_schema = dj.create_virtual_module('beh.py', 'lab_behavior', connection=conn2)
         self.thread_end = threading.Event()
         self.thread_lock = Lock()
         self.thread_runner = threading.Thread(target=self.inserter)  # max insertion rate of 10 events/sec
@@ -185,6 +185,10 @@ class Logger:
     def update_total_liquid(self, total_rew):
         self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
                             field='total_liquid', value=total_rew, update=True))
+
+    def update_difficulty(self, difficulty):
+        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
+                            field='difficulty', value=difficulty, update=True))
 
     def get_setup_info(self, field):
         info = (SetupControl() & dict(setup=self.setup)).fetch1(field)

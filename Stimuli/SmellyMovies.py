@@ -18,6 +18,7 @@ class SmellyMovies(Stimulus):
         self.loc = (0, 0)          # default starting location of stimulus surface
         self.fps = 30              # default presentation framerate
         self.phd_size = (50, 50)    # default photodiode signal size in pixels
+        self.set_intensity(self.params['intensity'])
 
         # setup pygame
         if not pygame.get_init():
@@ -91,6 +92,12 @@ class SmellyMovies(Stimulus):
                 pygame.quit()
 
         self.flip_count += 1
+
+    def set_intensity(self, intensity=None):
+        if intensity is None:
+            intensity = self.params['intensity']
+        cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % intensity
+        os.system(cmd)
 
     def close(self):
         """Close stuff"""

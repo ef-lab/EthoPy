@@ -78,6 +78,7 @@ class Stimulus:
                     self.curr_difficulty += 1
                 elif perf < self.params['stair_down'] and self.curr_difficulty > min(self.difficulties):
                     self.curr_difficulty -= 1
+                self.logger.update_difficulty(self.curr_difficulty)
             self.iter -= 1
             selected_conditions = [i for (i, v) in zip(self.conditions, np.logical_and(self.probes == bias_probe,
                                                        np.array(self.difficulties) == self.curr_difficulty)) if v]

@@ -6,7 +6,7 @@ import matplotlib.dates as mdates
 from matplotlib.dates import DateFormatter
 import numpy as np
 
-schema = dj.schema('lab_test')
+schema = dj.schema('lab_behavior')
 MovieTables = dj.create_virtual_module('movies.py', 'lab_stimuli')
 Mice = dj.create_virtual_module('mice.py', 'lab_mice')
 

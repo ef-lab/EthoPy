@@ -12,6 +12,7 @@ session_params = {
     'start_time'         : '10:00:00',
     'stop_time'          : '22:00:00',
     'reward'             : 'water',
+    'intensity'          : 64,
     'max_reward'         : 3000,
     'bias_window'        : 5,
     'staircase_window'   : 10,
