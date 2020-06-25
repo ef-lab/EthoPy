@@ -229,3 +229,8 @@ class Uniform(Stimulus):
         pygame.display.quit()
         pygame.quit()
 
+    def set_intensity(self, intensity=None):
+        if intensity is None:
+            intensity = self.params['intensity']
+        cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % intensity
+        os.system(cmd)
