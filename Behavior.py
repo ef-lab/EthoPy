@@ -83,6 +83,7 @@ class RPBehavior(Behavior):
             return ready and ready_time > init_duration
 
     def reward(self, reward_amount=0):
+        print(self.reward_history)
         hist = self.probe_history; hist.append(self.licked_probe)
         self.probe_history = hist
         rew = self.reward_history; rew.append(reward_amount)
