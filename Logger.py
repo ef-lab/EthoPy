@@ -215,5 +215,7 @@ class Logger:
         lp = str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
                             field='last_ping', value=lp, update=True))
+        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
+                            field='queue_size', value=self.queue.qsize(), update=True))
 
 
