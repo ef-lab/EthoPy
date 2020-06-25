@@ -1,5 +1,4 @@
 from Stimulus import *
-import pygame
 
 
 class Odors(Stimulus):

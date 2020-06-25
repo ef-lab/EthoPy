@@ -2,6 +2,7 @@ from utils.Timer import *
 from StateMachine import *
 from datetime import datetime, timedelta
 from Stimulus import *
+import os
 
 
 class State(StateClass):
@@ -10,14 +11,14 @@ class State(StateClass):
         if parent:
             self.__dict__.update(parent.__dict__)
 
-    def setup(self, logger, BehaviorClass, StimulusClass, session_params):
+    def setup(self, logger, BehaviorClass, StimulusClass, session_params, conditions):
 
-        logger.log_session(session_params, None, 'Free')
+        logger.log_session(session_params, 'Free')
 
         # Initialize params & Behavior/Stimulus objects
         self.logger = logger
         self.beh = BehaviorClass(logger, session_params)
-        self.stim = StimulusClass(logger, session_params)
+        self.stim = StimulusClass(logger, session_params, conditions, self.beh)
         self.params = session_params
         exitState = Exit(self)
         self.StateMachine = StateMachine(Prepare(self), exitState)
@@ -65,13 +66,15 @@ class Prepare(State):
 
 class PreTrial(State):
     def entry(self):
+        self.stim.prepare()
+        self.beh.prepare(self.stim.curr_cond)
         self.timer.start()
         self.logger.update_state(self.__class__.__name__)
 
     def run(self): pass
 
     def next(self):
-        if self.beh.is_ready(self.params['init_duration']):
+        if self.beh.is_ready(self.stim.curr_cond['init_duration']):
             return states['Trial']
         else:
             self.StateMachine.status = self.logger.get_setup_info('status')
@@ -97,14 +100,14 @@ class Trial(State):
         self.stim.present()  # Start Stimulus
         self.is_ready = self.beh.is_ready(self.timer.elapsed_time())  # update times
         self.probe = self.beh.is_licking()
-        if self.timer.elapsed_time() > self.params['delay_duration'] and not self.resp_ready:
+        if self.timer.elapsed_time() > self.stim.curr_cond['delay_duration'] and not self.resp_ready:
             self.resp_ready = True
             if self.probe > 0: self.beh.update_bias(self.probe)
 
     def next(self):
         if self.probe > 0 and self.resp_ready: # response to correct probe
             return states['Reward']
-        elif self.timer.elapsed_time() > self.params['trial_duration']:      # timed out
+        elif self.timer.elapsed_time() > self.stim.curr_cond['trial_duration']:      # timed out
             return states['InterTrial']
         else:
             return states['Trial']
@@ -124,7 +127,7 @@ class InterTrial(State):
             return states['Sleep']
         elif self.beh.is_hydrated():
             return states['OffTime']
-        elif self.timer.elapsed_time() > self.params['intertrial_duration']:
+        elif self.timer.elapsed_time() > self.stim.curr_cond['intertrial_duration']:
             return states['PreTrial']
         else:
             return states['InterTrial']
@@ -187,17 +190,7 @@ class Exit(State):
 class Uniform(Stimulus):
     """ This class handles the presentation of Movies with an optimized library for Raspberry pi"""
 
-    def __init__(self, logger, params):
-        # initilize parameters
-        self.params = params
-        self.logger = logger
-        self.flip_count = 0
-        self.indexes = []
-        self.curr_cond = []
-        self.rew_probe = []
-        self.probes = []
-        self.timer = Timer()
-
+    def setup(self):
         # setup parameters
         self.path = 'stimuli/'     # default path to copy local stimuli
         self.size = (800, 480)     # window size
@@ -205,6 +198,7 @@ class Uniform(Stimulus):
         self.loc = (0, 0)          # default starting location of stimulus surface
         self.fps = 30              # default presentation framerate
         self.phd_size = (50, 50)    # default photodiode signal size in pixels
+        self.set_intensity(self.params['intensity'])
 
         # setup pygame
         pygame.init()
@@ -212,6 +206,9 @@ class Uniform(Stimulus):
         self.unshow()
         pygame.mouse.set_visible(0)
         pygame.display.toggle_fullscreen()
+
+    def prepare(self):
+        self._get_new_cond()
 
     def unshow(self, color=False):
         """update background color"""
@@ -235,3 +232,8 @@ class Uniform(Stimulus):
         pygame.display.quit()
         pygame.quit()
 
+    def set_intensity(self, intensity=None):
+        if intensity is None:
+            intensity = self.params['intensity']
+        cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % intensity
+        os.system(cmd)
