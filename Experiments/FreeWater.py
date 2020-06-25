@@ -187,17 +187,7 @@ class Exit(State):
 class Uniform(Stimulus):
     """ This class handles the presentation of Movies with an optimized library for Raspberry pi"""
 
-    def __init__(self, logger, params):
-        # initilize parameters
-        self.params = params
-        self.logger = logger
-        self.flip_count = 0
-        self.indexes = []
-        self.curr_cond = []
-        self.rew_probe = []
-        self.probes = []
-        self.timer = Timer()
-
+    def setup(self):
         # setup parameters
         self.path = 'stimuli/'     # default path to copy local stimuli
         self.size = (800, 480)     # window size
@@ -205,6 +195,7 @@ class Uniform(Stimulus):
         self.loc = (0, 0)          # default starting location of stimulus surface
         self.fps = 30              # default presentation framerate
         self.phd_size = (50, 50)    # default photodiode signal size in pixels
+        self.set_intensity(self.params['intensity'])
 
         # setup pygame
         pygame.init()
