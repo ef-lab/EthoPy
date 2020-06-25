@@ -1,6 +1,5 @@
 from Stimulus import *
-import os, pygame
-from pygame.locals import *
+import os
 from time import sleep
 
 

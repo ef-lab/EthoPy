@@ -1,6 +1,6 @@
 from Stimulus import *
-import imageio, pygame, io
-from pygame.locals import *
+import imageio, io
+
 
 
 class Movies(Stimulus):

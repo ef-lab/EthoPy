@@ -1,7 +1,6 @@
 from Stimulus import *
-import os, pygame
+import os
 from time import sleep
-from pygame.locals import *
 
 class RPMovies(Stimulus):
     """ This class handles the presentation of Movies with an optimized library for Raspberry pi"""

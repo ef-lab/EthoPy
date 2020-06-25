@@ -1,5 +1,7 @@
 import numpy as np
 from utils.Timer import *
+import pygame
+from pygame.locals import *
 
 
 class Stimulus:
