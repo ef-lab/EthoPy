@@ -94,6 +94,9 @@ class Logger:
         (SetupControl() & dict(setup=self.setup))._update('last_trial', 0)
         (SetupControl() & dict(setup=self.setup))._update('total_liquid', 0)
 
+        print('Logging Session')
+        print('Queue sz %d' % self.queue.qsize())
+
     def log_conditions(self, conditions, condition_tables=['OdorCond', 'MovieCond', 'RewardCond']):
         # iterate through all conditions and insert
         for cond in conditions:
@@ -103,6 +106,9 @@ class Logger:
             for condtable in condition_tables:
                 self.queue.put(dict(table=condtable, tuple=dict(cond.items())))
         return conditions
+
+        print('Logging Conditions')
+        print('Queue sz %d' % self.queue.qsize())
 
     def init_trial(self, cond_hash):
         self.curr_cond = cond_hash
@@ -127,20 +133,31 @@ class Logger:
         self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
                             field='last_trial', value=self.last_trial, update=True))
 
+        print('Logging Trial')
+        print('Queue sz %d' % self.queue.qsize())
+
     def log_liquid(self, probe, reward_amount):
         timestamp = self.timer.elapsed_time()
         self.queue.put(dict(table='LiquidDelivery', tuple=dict(self.session_key, time=timestamp, probe=probe,
                                                                reward_amount=reward_amount)))
 
+        print('Logging Liquid')
+        print('Queue sz %d' % self.queue.qsize())
+
     def log_stim(self):
         timestamp = self.timer.elapsed_time()
         self.queue.put(dict(table='StimOnset', tuple=dict(self.session_key, time=timestamp)))
+
+        print('Logging Stimulus')
+        print('Queue sz %d' % self.queue.qsize())
 
     def log_lick(self, probe):
         timestamp = self.timer.elapsed_time()
         self.queue.put(dict(table='Lick', tuple=dict(self.session_key,
                                                      time=timestamp,
                                                      probe=probe)))
+        print('Logging Lick')
+        print('Queue sz %d' % self.queue.qsize())
 
     def log_pulse_weight(self, pulse_dur, probe, pulse_num, weight=0):
         cal_key = dict(setup=self.setup, probe=probe, date=systime.strftime("%Y-%m-%d"))
@@ -161,6 +178,8 @@ class Logger:
                                                             time=timestamp,
                                                             in_position=in_position,
                                                             state=state)))
+        print('Logging Position')
+        print('Queue sz %d' % self.queue.qsize())
 
     def update_setup_status(self, status):
         key = (SetupControl() & dict(setup=self.setup)).fetch1()
