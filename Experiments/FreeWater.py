@@ -123,8 +123,7 @@ class Trial(State):
 
 class InterTrial(State):
     def run(self):
-        if self.beh.is_licking():
-            self.timer.start()
+        pass
 
     def next(self):
         if self.is_sleep_time():
