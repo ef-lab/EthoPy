@@ -24,7 +24,7 @@ class State(StateClass):
         self.StateMachine = StateMachine(Prepare(self), exitState)
 
         print(conditions)
-        self.logger.log_conditions(conditions, ['RewardCond'])
+        self.logger.log_conditions(conditions, [])
 
         # Initialize states
         global states
@@ -98,7 +98,6 @@ class Trial(State):
         self.beh.is_licking()
         self.timer.start()  # trial start counter
         self.logger.init_trial(self.stim.curr_cond['cond_hash'])
-        self.logger.thread_lock.acquire()
 
     def run(self):
         self.stim.present()  # Start Stimulus
@@ -117,9 +116,8 @@ class Trial(State):
             return states['Trial']
 
     def exit(self):
-        self.logger.thread_lock.release()
-        self.stim.unshow((0, 0, 0))
         self.logger.log_trial()
+        self.stim.unshow((0, 0, 0))
         self.logger.ping()
 
 
@@ -141,7 +139,7 @@ class InterTrial(State):
 
 class Reward(State):
     def run(self):
-        self.beh.reward()
+        self.beh.reward(self.stim.curr_cond['reward_amount'])
         self.stim.unshow([0, 0, 0])
 
     def next(self):

@@ -113,12 +113,12 @@ class Logger:
     def init_trial(self, cond_hash):
         self.curr_cond = cond_hash
         self.trial_start = self.timer.elapsed_time()
-        #self.thread_lock.acquire()
+        self.thread_lock.acquire()
         # return condition key
         return dict(cond_hash=cond_hash)
 
     def log_trial(self, last_flip_count=0):
-        #self.thread_lock.release()
+        self.thread_lock.release()
         timestamp = self.timer.elapsed_time()
         trial_key = dict(self.session_key,
                          trial_idx=self.last_trial+1,
