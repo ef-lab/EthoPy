@@ -128,12 +128,14 @@ class Logger:
                          last_flip_count=last_flip_count)
         self.queue.put(dict(table='Trial', tuple=trial_key))
         self.last_trial += 1
+        print('Logging Trial')
+        print('Queue sz %d' % self.queue.qsize())
 
         # insert ping
         self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
                             field='last_trial', value=self.last_trial, update=True))
 
-        print('Logging Trial')
+        print('Logging Trial #')
         print('Queue sz %d' % self.queue.qsize())
 
     def log_liquid(self, probe, reward_amount):
@@ -192,9 +194,14 @@ class Logger:
         self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
                             field='notes', value=note, update=True))
 
+        print('Updating notes')
+        print('Queue sz %d' % self.queue.qsize())
+
     def update_state(self, state):
         self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
                             field='state', value=state, update=True))
+        print('Updating state')
+        print('Queue sz %d' % self.queue.qsize())
 
     def update_animal_id(self, animal_id):
         (SetupControl() & dict(setup=self.setup))._update('animal_id', animal_id)
@@ -205,10 +212,14 @@ class Logger:
     def update_total_liquid(self, total_rew):
         self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
                             field='total_liquid', value=total_rew, update=True))
+        print('Updating total liquid')
+        print('Queue sz %d' % self.queue.qsize())
 
     def update_difficulty(self, difficulty):
         self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
                             field='difficulty', value=difficulty, update=True))
+        print('Updating Difficulty')
+        print('Queue sz %d' % self.queue.qsize())
 
     def get_setup_info(self, field):
         info = (SetupControl() & dict(setup=self.setup)).fetch1(field)
@@ -234,5 +245,7 @@ class Logger:
         lp = str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
                             field='last_ping', value=lp, update=True))
+        print('Ping')
+        print('Queue sz %d' % self.queue.qsize())
 
 
