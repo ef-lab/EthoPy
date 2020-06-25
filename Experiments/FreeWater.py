@@ -10,14 +10,14 @@ class State(StateClass):
         if parent:
             self.__dict__.update(parent.__dict__)
 
-    def setup(self, logger, BehaviorClass, StimulusClass, session_params):
+    def setup(self, logger, BehaviorClass, StimulusClass, session_params, conditions):
 
         logger.log_session(session_params, 'Free')
 
         # Initialize params & Behavior/Stimulus objects
         self.logger = logger
         self.beh = BehaviorClass(logger, session_params)
-        self.stim = StimulusClass(logger, session_params)
+        self.stim = StimulusClass(logger, session_params, conditions)
         self.params = session_params
         exitState = Exit(self)
         self.StateMachine = StateMachine(Prepare(self), exitState)
@@ -71,7 +71,7 @@ class PreTrial(State):
     def run(self): pass
 
     def next(self):
-        if self.beh.is_ready(self.params['init_duration']):
+        if self.beh.is_ready(self.stim.curr_cond['init_duration']):
             return states['Trial']
         else:
             self.StateMachine.status = self.logger.get_setup_info('status')
@@ -97,14 +97,14 @@ class Trial(State):
         self.stim.present()  # Start Stimulus
         self.is_ready = self.beh.is_ready(self.timer.elapsed_time())  # update times
         self.probe = self.beh.is_licking()
-        if self.timer.elapsed_time() > self.params['delay_duration'] and not self.resp_ready:
+        if self.timer.elapsed_time() > self.stim.curr_cond['delay_duration'] and not self.resp_ready:
             self.resp_ready = True
             if self.probe > 0: self.beh.update_bias(self.probe)
 
     def next(self):
         if self.probe > 0 and self.resp_ready: # response to correct probe
             return states['Reward']
-        elif self.timer.elapsed_time() > self.params['trial_duration']:      # timed out
+        elif self.timer.elapsed_time() > self.stim.curr_cond['trial_duration']:      # timed out
             return states['InterTrial']
         else:
             return states['Trial']
@@ -124,7 +124,7 @@ class InterTrial(State):
             return states['Sleep']
         elif self.beh.is_hydrated():
             return states['OffTime']
-        elif self.timer.elapsed_time() > self.params['intertrial_duration']:
+        elif self.timer.elapsed_time() > self.stim.curr_cond['intertrial_duration']:
             return states['PreTrial']
         else:
             return states['InterTrial']
@@ -212,6 +212,9 @@ class Uniform(Stimulus):
         self.unshow()
         pygame.mouse.set_visible(0)
         pygame.display.toggle_fullscreen()
+
+    def prepare(self):
+        self._get_new_cond()
 
     def unshow(self, color=False):
         """update background color"""
