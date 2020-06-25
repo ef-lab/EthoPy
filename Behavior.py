@@ -25,7 +25,6 @@ class Behavior:
 
     def is_hydrated(self):
         rew = np.nansum(self.reward_history)
-        self.logger.update_total_liquid(rew)
         if self.params['max_reward']:
             return rew >= self.params['max_reward']
         else:
@@ -36,6 +35,7 @@ class Behavior:
         self.probe_history = hist
         rew = self.reward_history; rew.append(reward_amount)
         self.reward_history = rew
+        self.logger.update_total_liquid(np.nansum(rew))
         print('Giving Water at probe:%1d' % self.licked_probe)
 
     def punish(self):
@@ -89,6 +89,7 @@ class RPBehavior(Behavior):
         self.reward_history = rew
         self.probe.give_liquid(self.licked_probe)
         self.logger.log_liquid(self.licked_probe, reward_amount)
+        self.logger.update_total_liquid(np.nansum(rew))
 
     def give_odor(self, delivery_idx, odor_idx, odor_dur, odor_dutycycle):
         self.probe.give_odor(delivery_idx, odor_idx, odor_dur, odor_dutycycle)
