@@ -25,7 +25,8 @@ class Logger:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
         self.ip = s.getsockname()[0]
-        fileobject = open(os.path.abspath('dj_local_conf.json'))
+        path = os.path.dirname(os.path.abspath(__file__))
+        fileobject = open(path + '/dj_local_conf.json')
         connect_info = json.loads(fileobject.read())
         conn2 = dj.Connection(connect_info['database.host'], connect_info['database.user'],
                               connect_info['database.password'])
