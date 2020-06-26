@@ -33,7 +33,7 @@ class Behavior:
     def reward(self, reward_amount=0):
         if self.licked_probe > 0:
             hist = self.probe_history; hist.append(self.licked_probe)
-        self.probe_history = hist
+            self.probe_history = hist
         rew = self.reward_history; rew.append(reward_amount)
         self.reward_history = rew
         self.logger.update_total_liquid(np.nansum(rew))
@@ -42,7 +42,7 @@ class Behavior:
     def punish(self):
         if self.licked_probe > 0:
             hist = self.probe_history; hist.append(self.licked_probe)
-        self.probe_history = hist
+            self.probe_history = hist
         rew = self.reward_history; rew.append(0)
         self.reward_history = rew
 
