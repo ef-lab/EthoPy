@@ -31,7 +31,8 @@ class Behavior:
             return False
 
     def reward(self, reward_amount=0):
-        hist = self.probe_history; hist.append(self.licked_probe)
+        if self.licked_probe > 0:
+            hist = self.probe_history; hist.append(self.licked_probe)
         self.probe_history = hist
         rew = self.reward_history; rew.append(reward_amount)
         self.reward_history = rew
@@ -39,7 +40,8 @@ class Behavior:
         print('Giving Water at probe:%1d' % self.licked_probe)
 
     def punish(self):
-        hist = self.probe_history; hist.append(self.licked_probe)
+        if self.licked_probe > 0:
+            hist = self.probe_history; hist.append(self.licked_probe)
         self.probe_history = hist
         rew = self.reward_history; rew.append(0)
         self.reward_history = rew
