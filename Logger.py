@@ -22,6 +22,7 @@ class Logger:
         self.task_idx = []
         self.session_key = dict()
         self.setup = socket.gethostname()
+        self.lock = True
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
         self.ip = s.getsockname()[0]
@@ -107,12 +108,14 @@ class Logger:
     def init_trial(self, cond_hash):
         self.curr_cond = cond_hash
         self.trial_start = self.timer.elapsed_time()
-        self.thread_lock.acquire()
+        if self.lock:
+            self.thread_lock.acquire()
         # return condition key
         return dict(cond_hash=cond_hash)
 
     def log_trial(self, last_flip_count=0):
-        self.thread_lock.release()
+        if self.lock:
+            self.thread_lock.release()
         timestamp = self.timer.elapsed_time()
         trial_key = dict(self.session_key,
                          trial_idx=self.last_trial+1,

@@ -25,6 +25,7 @@ class State(StateClass):
 
         print(conditions)
         self.logger.log_conditions(conditions, [])
+        self.logger.lock = False
 
         # Initialize states
         global states
