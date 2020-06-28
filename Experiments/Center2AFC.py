@@ -93,8 +93,8 @@ class Trial(State):
         self.is_ready = True
         self.resp_ready = False
         self.logger.update_state(self.__class__.__name__)
-        self.stim.init()
         self.beh.is_licking()
+        self.stim.init()
         self.timer.start()  # trial start counter
         self.logger.init_trial(self.stim.curr_cond['cond_hash'])
 

@@ -226,12 +226,18 @@ class OdorCond(dj.Manual):
     # odor conditions
     -> Condition
     ---
-    odor_idx             : tinyblob                     # odor index for odor identity
     odor_duration             : int                     # odor duration (ms)
-    dutycycle            : tinyblob                     # odor dutycycle
-    delivery_idx         : tinyblob                     # delivery idx for channel mapping
     """
 
+    class Port(dj.Part):
+        definition = """
+        # odor conditions
+        -> OdorCond
+        delivery_port        : int                      # delivery idx for channel mapping
+        ---
+        odor_id              : int                      # odor index for odor identity
+        dutycycle            : int                      # odor dutycycle
+        """
 
 @schema
 class LiquidCalibration(dj.Manual):

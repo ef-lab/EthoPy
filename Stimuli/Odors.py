@@ -19,11 +19,11 @@ class Odors(Stimulus):
         pygame.display.toggle_fullscreen()
 
     def init(self):
-        delivery_idx = self.curr_cond['delivery_idx']
-        odor_idx = self.curr_cond['odor_idx']
+        delivery_port = self.curr_cond['delivery_port']
+        odor_id = self.curr_cond['odor_id']
         odor_dur = self.curr_cond['odor_duration']
         odor_dutycycle = self.curr_cond['dutycycle']
-        self.beh.give_odor(delivery_idx, odor_idx, odor_dur, odor_dutycycle)
+        self.beh.give_odor(delivery_port, odor_id, odor_dur, odor_dutycycle)
         self.isrunning = True
         self.timer.start()
 

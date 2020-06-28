@@ -31,8 +31,8 @@ v_dur = 4000
 o_dur = 500
 key = {
     'difficulty': 1,
-    'odor_idx'           : [[1, 2]],
-    'delivery_idx'       : [[1, 2]],
+    'odor_id'            : [[1, 2]],
+    'delivery_port'      : [[1, 2]],
     'clip_number'        : 1,
     'skip_time'          : [0, 1, 2, 3],
     'static_frame'       : False,
@@ -71,8 +71,8 @@ v_dur = 4000
 o_dur = 500
 key = {
     'difficulty': 2,
-    'odor_idx'           : [[1, 2]],
-    'delivery_idx'       : [[1, 2]],
+    'odor_id'            : [[1, 2]],
+    'delivery_port'      : [[1, 2]],
     'clip_number'        : [1, 2],
     'skip_time'          : [0, 1, 2, 3],
     'static_frame'       : False,

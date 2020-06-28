@@ -29,8 +29,8 @@ v_dur = 4000
 o_dur = 500
 key = {
     'difficulty': 1,
-    'odor_idx'           : [[1, 2]],
-    'delivery_idx'       : [[1, 2]],
+    'odor_id'            : [[1, 2]],
+    'delivery_port'      : [[1, 2]],
     'timeout_duration'   : 4000,
     'trial_duration'     : 5000,
     'intertrial_duration': 0,
@@ -51,8 +51,8 @@ odor_ratios = {1: [[100, 0], [85, 15], [65, 35], [50, 50]],
 o_dur = 500
 key = {
     'difficulty': 2,
-    'odor_idx'           : [[1, 2]],
-    'delivery_idx'       : [[1, 2]],
+    'odor_id'            : [[1, 2]],
+    'delivery_port'      : [[1, 2]],
     'trial_duration'     : 5000,
     'intertrial_duration': 0,
     'init_duration'      : 100,

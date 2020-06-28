@@ -93,8 +93,8 @@ class RPBehavior(Behavior):
         self.logger.log_liquid(self.licked_probe, reward_amount)
         self.logger.update_total_liquid(np.nansum(rew))
 
-    def give_odor(self, delivery_idx, odor_idx, odor_dur, odor_dutycycle):
-        self.probe.give_odor(delivery_idx, odor_idx, odor_dur, odor_dutycycle)
+    def give_odor(self, delivery_port, odor_id, odor_dur, odor_dutycycle):
+        self.probe.give_odor(delivery_port, odor_id, odor_dur, odor_dutycycle)
         self.logger.log_stim()
 
     def inactivity_time(self):  # in minutes
