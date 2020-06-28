@@ -48,18 +48,6 @@ class Task(dj.Lookup):
 
 
 @schema
-class OdorIdentity(dj.Lookup):
-    definition = """
-    # Odor identity information
-    odor_idx               : int                       # odor index
-    ---
-    odor_name=NULL         : varchar(128)              # odor name
-    odor_concentration=100 : int                       # odor concentration in prc
-    odor_description=NULL  : varchar(256)
-    """
-
-
-@schema
 class Session(dj.Manual):
     definition = """
     # Behavior session infod
