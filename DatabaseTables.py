@@ -48,18 +48,6 @@ class Task(dj.Lookup):
 
 
 @schema
-class OdorIdentity(dj.Lookup):
-    definition = """
-    # Odor identity information
-    odor_idx               : int                       # odor index
-    ---
-    odor_name=NULL         : varchar(128)              # odor name
-    odor_concentration=100 : int                       # odor concentration in prc
-    odor_description=NULL  : varchar(256)
-    """
-
-
-@schema
 class Session(dj.Manual):
     definition = """
     # Behavior session infod
@@ -226,12 +214,18 @@ class OdorCond(dj.Manual):
     # odor conditions
     -> Condition
     ---
-    odor_idx             : tinyblob                     # odor index for odor identity
     odor_duration             : int                     # odor duration (ms)
-    dutycycle            : tinyblob                     # odor dutycycle
-    delivery_idx         : tinyblob                     # delivery idx for channel mapping
     """
 
+    class Port(dj.Part):
+        definition = """
+        # odor conditions
+        -> OdorCond
+        delivery_port        : int                      # delivery idx for channel mapping
+        ---
+        odor_id              : int                      # odor index for odor identity
+        dutycycle            : int                      # odor dutycycle
+        """
 
 @schema
 class LiquidCalibration(dj.Manual):

@@ -50,8 +50,8 @@ class SmellyMovies(Stimulus):
         self.vid.set_position(self.curr_cond['skip_time'])
   
     def init(self):
-        delivery_idx = self.curr_cond['delivery_idx']
-        odor_idx = self.curr_cond['odor_idx']
+        delivery_port = self.curr_cond['delivery_port']
+        odor_id = self.curr_cond['odor_id']
         odor_dur = self.curr_cond['odor_duration']
         odor_dutycycle = self.curr_cond['dutycycle']
         self.isrunning = True
@@ -59,7 +59,7 @@ class SmellyMovies(Stimulus):
         if self.curr_cond['static_frame']:
             sleep(0.2)
             self.vid.pause()
-        self.beh.give_odor(delivery_idx, odor_idx, odor_dur, odor_dutycycle)
+        self.beh.give_odor(delivery_port, odor_id, odor_dur, odor_dutycycle)
         self.timer.start()
         self.logger.log_stim()
 

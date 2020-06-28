@@ -98,9 +98,9 @@ class RPProbe(Probe):
             duration = self.liquid_dur[probe]
         self.thread.submit(self.__pulse_out, self.channels['liquid'][probe], duration)
 
-    def give_odor(self, delivery_idx, odor_idx, odor_duration, dutycycle):
-        for i, idx in enumerate(odor_idx):
-            self.thread.submit(self.__pwd_out, self.channels['air'][delivery_idx[i]], odor_duration, dutycycle[i])
+    def give_odor(self, delivery_port, odor_id, odor_duration, dutycycle):
+        for i, idx in enumerate(odor_id):
+            self.thread.submit(self.__pwd_out, self.channels['air'][delivery_port[i]], odor_duration, dutycycle[i])
 
     def position_change(self, channel=0):
         if self.GPIO.input(self.channels['start'][1]):
