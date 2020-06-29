@@ -87,20 +87,20 @@ class Trial(State):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         self.probe = 0
+        self.trial_start = 0
         super().__init__()
 
     def entry(self):
         self.is_ready = True
         self.resp_ready = False
         self.logger.update_state(self.__class__.__name__)
-        self.beh.is_licking()
         self.stim.init()
         self.timer.start()  # trial start counter
-        self.logger.init_trial(self.stim.curr_cond['cond_hash'])
+        self.trial_start = self.logger.init_trial(self.stim.curr_cond['cond_hash'])
 
     def run(self):
         self.stim.present()  # Start Stimulus
-        self.probe = self.beh.is_licking()
+        self.probe = self.beh.is_licking(self.trial_start)
         if self.timer.elapsed_time() >= self.stim.curr_cond['delay_duration'] and not self.resp_ready: # delay completed
             self.resp_ready = True
         else:

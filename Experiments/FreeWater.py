@@ -89,19 +89,19 @@ class Trial(State):
         self.is_ready = 0
         self.probe = 0
         self.resp_ready = False
+        self.trial_start = 0
         super().__init__()
 
     def entry(self):
         self.stim.unshow()
         self.logger.update_state(self.__class__.__name__)
-        self.beh.is_licking()
         self.timer.start()  # trial start counter
-        self.logger.init_trial(self.stim.curr_cond['cond_hash'])
+        self.trial_start = self.logger.init_trial(self.stim.curr_cond['cond_hash'])
 
     def run(self):
         self.stim.present()  # Start Stimulus
         self.is_ready = self.beh.is_ready(self.timer.elapsed_time())  # update times
-        self.probe = self.beh.is_licking()
+        self.probe = self.beh.is_licking(self.trial_start)
         if self.timer.elapsed_time() > self.stim.curr_cond['delay_duration'] and not self.resp_ready:
             self.resp_ready = True
             if self.probe > 0: self.beh.update_bias(self.probe)

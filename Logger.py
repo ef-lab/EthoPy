@@ -114,11 +114,11 @@ class Logger:
 
     def init_trial(self, cond_hash):
         self.curr_cond = cond_hash
-        self.trial_start = self.timer.elapsed_time()
         if self.lock:
             self.thread_lock.acquire()
-        # return condition key
-        return dict(cond_hash=cond_hash)
+        # return trial start time
+        self.trial_start = self.timer.elapsed_time()
+        return self.trial_start
 
     def log_trial(self, last_flip_count=0):
         if self.lock:
@@ -151,6 +151,7 @@ class Logger:
         self.queue.put(dict(table='Lick', tuple=dict(self.session_key,
                                                      time=timestamp,
                                                      probe=probe)))
+        return timestamp
 
     def log_pulse_weight(self, pulse_dur, probe, pulse_num, weight=0):
         cal_key = dict(setup=self.setup, probe=probe, date=systime.strftime("%Y-%m-%d"))

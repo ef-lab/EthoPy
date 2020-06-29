@@ -17,8 +17,8 @@ class Behavior:
         self.reward_history = []  #  History term for performance calculation
         self.licked_probe = 0
 
-    def is_licking(self):
-        return False, False
+    def is_licking(self, since=0):
+        return 0
 
     def is_ready(self, elapsed_time=False):
         return False, 0
@@ -71,10 +71,13 @@ class RPBehavior(Behavior):
         self.probe = RPProbe(logger)
         super(RPBehavior, self).__init__(logger, params)
 
-    def is_licking(self):
-        self.licked_probe = self.probe.lick()
-        if self.licked_probe > 0: # reset lick timer if licking is detected
+    def is_licking(self, since=0):
+        licked_probe, tmst = self.probe.get_last_lick()
+        if tmst >= since and licked_probe:
+            self.licked_probe = licked_probe
             self.resp_timer.start()
+        else:
+            self.licked_probe = 0
         return self.licked_probe
 
     def is_ready(self, init_duration):
@@ -127,7 +130,7 @@ class DummyProbe(Behavior):
     def inactivity_time(self):  # in minutes
         return self.lick_timer.elapsed_time() / 1000 / 60
 
-    def is_licking(self):
+    def is_licking(self, since=0):
         probe = self.__get_events()
         # reset lick timer if licking is detected &
         if probe > 0:

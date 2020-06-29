@@ -8,8 +8,8 @@ from concurrent.futures import ThreadPoolExecutor
 class Probe:
     def __init__(self, logger):
         self.logger = logger
-        self.probe1 = False
-        self.probe2 = False
+        self.probe = 0
+        self.lick_tmst = 0
         self.ready = False
         self.timer_probe1 = Timer()
         self.timer_probe2 = Timer()
@@ -35,26 +35,20 @@ class Probe:
     def give_odor(self, odor_idx, duration, log=True):
         pass
 
-    def lick(self):
-        if self.probe1:
-            self.probe1 = False
-            probe = 1
-        elif self.probe2:
-            self.probe2 = False
-            probe = 2
-        else:
-            probe = 0
-        return probe
+    def get_last_lick(self):
+        probe = self.probe
+        self.probe = 0
+        return probe, self.lick_tmst
 
     def probe1_licked(self, channel):
-        self.probe1 = True
+        self.lick_tmst = self.logger.log_lick(1)
         self.timer_probe1.start()
-        self.logger.log_lick(1)
+        self.probe = 1
 
     def probe2_licked(self, channel):
-        self.probe2 = True
+        self.lick_tmst = self.logger.log_lick(2)
         self.timer_probe2.start()
-        self.logger.log_lick(2)
+        self.probe = 2
 
     def in_position(self):
         return True, 0
