@@ -21,6 +21,9 @@ class Calibrate:
             button = self.screen.add_button(name='OK', x=300, y=300, w=200, h=100, color=(0, 128, 0))
             while not button.is_pressed():
                 time.sleep(0.2)
+                if self.logger.get_setup_info('status') == 'stop':
+                    self.screen.exit()
+                    break
 
             pulse = 0
             while pulse < self.params['pulsenum'][cal_idx]:

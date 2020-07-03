@@ -209,8 +209,8 @@ class Logger:
     def get_session_key(self):
         return self.session_key
 
-    def get_clip_info(self, curr_cond):
-        clip_info = (MovieTables.Movie() * MovieTables.Movie.Clip() & curr_cond & self.session_key).fetch1()
+    def get_clip_info(self, key):
+        clip_info = (MovieTables.Movie() * MovieTables.Movie.Clip() & key & self.session_key).fetch1()
         return clip_info
 
     def get_protocol(self):
