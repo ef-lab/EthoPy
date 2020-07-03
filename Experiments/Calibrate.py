@@ -23,7 +23,7 @@ class Calibrate:
                 time.sleep(0.2)
                 if self.logger.get_setup_info('status') == 'stop':
                     self.screen.exit()
-                    break
+                    return
 
             pulse = 0
             while pulse < self.params['pulsenum'][cal_idx]:
