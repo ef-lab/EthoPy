@@ -22,6 +22,7 @@ class Calibrate:
             while not button.is_pressed():
                 time.sleep(0.2)
                 if self.logger.get_setup_info('status') == 'stop':
+                    valve.cleanup()
                     self.screen.exit()
                     return
 
