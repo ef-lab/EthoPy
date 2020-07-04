@@ -149,7 +149,7 @@ class InterTrial(State):
 
 class Reward(State):
     def run(self):
-        self.beh.reward(self.stim.curr_cond['reward_amount'])
+        self.beh.reward()
         self.stim.stop()
         print('Rewarding')
 
@@ -170,10 +170,12 @@ class Punish(State):
 
     def next(self):
         if self.timer.elapsed_time() >= self.stim.curr_cond['timeout_duration']:
-            self.stim.unshow()
             return states['InterTrial']
         else:
             return states['Punish']
+
+    def exit(self):
+        self.stim.unshow()
 
 
 class Sleep(State):

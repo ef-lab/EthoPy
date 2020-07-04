@@ -136,6 +136,7 @@ class Interface:
         try:
             self.ts.stop()
         finally:
-            pygame.mouse.set_visible(1)
-            pygame.quit()
+            if pygame.get_init():
+                pygame.mouse.set_visible(1)
+                pygame.quit()
 

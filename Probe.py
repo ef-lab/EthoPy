@@ -61,9 +61,12 @@ class Probe:
 
     def calc_pulse_dur(self, reward_amount):  # calculate pulse duration for the desired reward amount
         self.liquid_dur = dict()
+        actual_rew = dict()
         for probe in list(set(self.probes)):
             self.liquid_dur[probe] = numpy.interp(reward_amount/1000,
                                                   self.weight_per_pulse[probe], self.pulse_dur[probe])
+            actual_rew[probe] = numpy.max((self.weight_per_pulse[probe], reward_amount/1000))
+        return actual_rew
 
     def cleanup(self):
         pass

@@ -14,7 +14,7 @@ logger.log_setup()                                                  # publish IP
 while not logger.get_setup_info('status') == 'exit':
     if logger.get_setup_info('status') == 'ready':
         interface = Welcome(logger)
-        while logger.get_setup_info('status') == 'ready':                        # wait for remote start
+        while logger.get_setup_info('status') != 'running' and logger.get_setup_info('status') != 'exit': # wait for remote start
             interface.eval_input()
             time.sleep(0.5)
             logger.ping()

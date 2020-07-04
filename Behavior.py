@@ -87,13 +87,13 @@ class RPBehavior(Behavior):
             ready, ready_time = self.probe.in_position()
             return ready and ready_time > init_duration
 
-    def reward(self, reward_amount=0):
+    def reward(self):
         hist = self.probe_history; hist.append(self.licked_probe)
         self.probe_history = hist
-        rew = self.reward_history; rew.append(reward_amount)
+        rew = self.reward_history; rew.append(self.reward_amount[self.licked_probe])
         self.reward_history = rew
         self.probe.give_liquid(self.licked_probe)
-        self.logger.log_liquid(self.licked_probe, reward_amount)
+        self.logger.log_liquid(self.licked_probe, self.reward_amount[self.licked_probe])
         self.logger.update_total_liquid(np.nansum(rew))
 
     def give_odor(self, delivery_port, odor_id, odor_dur, odor_dutycycle):
@@ -108,7 +108,7 @@ class RPBehavior(Behavior):
         self.probe.cleanup()
 
     def prepare(self, condition):
-        self.probe.calc_pulse_dur(condition['reward_amount'])
+        self.reward_amount = self.probe.calc_pulse_dur(condition['reward_amount'])
 
 
 class DummyProbe(Behavior):
