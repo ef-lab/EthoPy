@@ -65,7 +65,7 @@ class Probe:
         for probe in list(set(self.probes)):
             self.liquid_dur[probe] = numpy.interp(reward_amount/1000,
                                                   self.weight_per_pulse[probe], self.pulse_dur[probe])
-            actual_rew[probe] = numpy.max((numpy.min(self.weight_per_pulse[probe]), reward_amount/1000))
+            actual_rew[probe] = numpy.max((numpy.min(self.weight_per_pulse[probe]), reward_amount/1000)) * 1000 # in uL
         return actual_rew
 
     def cleanup(self):
