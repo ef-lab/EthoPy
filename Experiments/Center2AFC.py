@@ -149,7 +149,7 @@ class InterTrial(State):
 
 class Reward(State):
     def run(self):
-        self.beh.reward(self.stim.curr_cond['reward_amount'])
+        self.beh.reward()
         self.stim.stop()
         print('Rewarding')
 
