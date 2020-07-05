@@ -79,7 +79,9 @@ class PreTrial(State):
         elif self.is_sleep_time():
             return states['Sleep']
         else:
-            self.StateMachine.status = self.logger.get_setup_info('status')
+            if self.timer.elapsed_time() > 5000: # occasionally get control status
+                self.timer.start()
+                self.StateMachine.status = self.logger.get_setup_info('status')
             return states['PreTrial']
 
 
