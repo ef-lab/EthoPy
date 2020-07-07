@@ -50,7 +50,7 @@ class SmellyMovies(Stimulus):
         self.vid = self.player(self.filename, args=['--aspect-mode', 'stretch', '--no-osd'],
                                dbus_name='org.mpris.MediaPlayer2.omxplayer1')
         self.vid.pause()
-        self.vid.set_position(self.curr_cond['skip_time'])s
+        self.vid.set_position(self.curr_cond['skip_time'])
         delivery_port = self.curr_cond['delivery_port']
         odor_id = self.curr_cond['odor_id']
         odor_dur = self.curr_cond['odor_duration']
