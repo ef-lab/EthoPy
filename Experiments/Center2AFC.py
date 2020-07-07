@@ -11,11 +11,11 @@ class State(StateClass):
 
     def setup(self, logger, BehaviorClass, StimulusClass, session_params, conditions):
         self.logger = logger
+        self.logger.log_session(session_params, '2AFC')
         # Initialize params & Behavior/Stimulus objects
         self.beh = BehaviorClass(self.logger, session_params)
         self.stim = StimulusClass(self.logger, session_params, conditions, self.beh)
         self.params = session_params
-        self.logger.log_session(session_params, '2AFC')
         self.logger.log_conditions(conditions, self.stim.get_condition_tables())
 
         exitState = Exit(self)
@@ -82,6 +82,7 @@ class PreTrial(State):
             if self.timer.elapsed_time() > 5000: # occasionally get control status
                 self.timer.start()
                 self.StateMachine.status = self.logger.get_setup_info('status')
+                self.logger.ping()
             return states['PreTrial']
 
 
