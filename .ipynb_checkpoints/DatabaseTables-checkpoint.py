@@ -7,6 +7,9 @@ from matplotlib.dates import DateFormatter
 import numpy as np
 from usefull_functions import none_to_empty
 import math 
+from datetime import datetime, timedelta
+import bisect
+import itertools
 
 schema = dj.schema('lab_behavior')
 MovieTables = dj.create_virtual_module('movies.py', 'lab_stimuli')
@@ -218,49 +221,99 @@ class LiquidDelivery(dj.Manual):
     """
 
     def plot(self, key='all'):
-        if key == 'all':
-            df = pd.DataFrame((self * Session).fetch())
+        
+        # load dataset
+        query = self*Session() 
+        
+        if key=='all':
+            keys = list(range(0,11)) # 11 mice
         else:
-            df = pd.DataFrame((self * Session & key).fetch())
+            keys = [key]  
+            
+        
+        for k in keys:
+            
+            # define animal
+            liquids = (query & "animal_id = %d" %k).fetch('session_tmst','reward_amount')
 
-        df['new_tmst'] = (df['session_tmst'] - pd.Timestamp("1970-01-01")) // pd.Timedelta('1ms')
-        df['new_tmst'] = df['new_tmst'] + df['time']
-        df['new_tmst'] = pd.to_datetime(df['new_tmst'], unit='ms', origin='unix')
-        df['new_tmst'] = df['new_tmst'].dt.date
+            # convert timestamps to dates
+            tstmps = liquids[0].tolist()
+            dates = [datetime.date(d) for d in tstmps] 
+            
+            # find first index for plot, i.e. for last 15 days
+            last_tmst = liquids[0][-1]
+            last_date =  datetime.date(last_tmst)
+            starting_date = last_date - timedelta(days=15) # keep only last 15 days
+            starting_idx = bisect.bisect_right(dates, starting_date)
+            
+            # keep only 15 last days 
+            # construct the list of tuples (date,reward)
+            dates_ = dates[starting_idx:] # lick dates, for last 15 days
+            liqs_ = liquids[1][starting_idx:].tolist() # lick rewards for last 15 days
+            tuples_list = list(zip(dates_, liqs_))
 
-        mice = df['animal_id'].unique()  # unique animal ids
-        m_count = df['animal_id'].value_counts()  # count how many times each animal id appears in dataframe
-        t_count = df.groupby(['animal_id'])['new_tmst'].value_counts().sort_index()  # count unique timestamps for each animal id
-        r = 1000
-        #print(df['session_params'][r]['reward_amount'])
-        df['session_params'][r]['reward_amount']
-        df['reward_amount_new'] = np.nan
-        for r in range(len(df)):
-            df['reward_amount_new'][r] = df['session_params'][r]['reward_amount']
+            # construct tuples (unique_date, total_reward_per_day)
+            dates_liqs_unique = [(dt, sum(v for d,v in grp)) for dt, grp in itertools.groupby(tuples_list,
+                                                            key=lambda x: x[0])]
+            print('last date: {}, amount: {}'.format(dates_liqs_unique[-1][0], dates_liqs_unique[-1][1]))
 
-        df['total_reward'] = np.nan # pre-allocate
-        kk = 0
-        for idx in mice:
-            for j in range(len(t_count[idx])):
-                df['total_reward'][kk] = t_count[idx][j] * df['reward_amount_new'][kk]
-                kk = kk + t_count[idx][j]
-        df['total_reward'] = df['total_reward'] / 1000  # convert μl to ml
-
-        # plot
-        ymin = df['total_reward'].min()
-        ymax =  df['total_reward'].max()
-        #k = 0
-        for idx in mice:
-            df1 = df[df['animal_id'] == idx].drop_duplicates('new_tmst', keep='first')
-            ax = df1.plot(x='new_tmst', y='total_reward')
-            plt.axhline(y=1, color='r', linestyle='-.')  # minimum liquid intake
+            dates_to_plot = [tpls[0] for tpls in dates_liqs_unique]
+            liqs_to_plot = [tpls[1] for tpls in dates_liqs_unique]
+            
+            # plot
+            plt.figure(figsize=(9, 3))
+            plt.plot(dates_to_plot, liqs_to_plot)
+            plt.ylabel('liquid (microl)')
+            plt.xlabel('date')
             plt.xticks(rotation=45)
-            plt.ylabel('DeliveredLiquid(ml)')
-            ax.set_title('Animal_id: %1d' % idx)
-            #k = k + m_count[idx]
-            axes = plt.gca()
-            axes.set_ylim([ymin,ymax])
-        return ax
+            plt.title('animal_id: %1d' % k)
+            plt.ylim([0,3000])
+    
+    
+#    def plot(self, key='all'):
+#        if key == 'all':
+#            df = pd.DataFrame((self * Session).fetch())
+#        else:
+#            df = pd.DataFrame((self * Session & key).fetch())
+#
+#        df['new_tmst'] = (df['session_tmst'] - pd.Timestamp("1970-01-01")) // pd.Timedelta('1ms')
+#        df['new_tmst'] = df['new_tmst'] + df['time']
+#        df['new_tmst'] = pd.to_datetime(df['new_tmst'], unit='ms', origin='unix')
+#        df['new_tmst'] = df['new_tmst'].dt.date
+
+#        mice = df['animal_id'].unique()  # unique animal ids
+#        m_count = df['animal_id'].value_counts()  # count how many times each animal id appears in dataframe
+#       t_count = df.groupby(['animal_id'])['new_tmst'].value_counts().sort_index()  # count unique timestamps for each animal id
+#        r = 1000
+#        #print(df['session_params'][r]['reward_amount'])
+#        df['session_params'][r]['reward_amount']
+#        df['reward_amount_new'] = np.nan
+#        for r in range(len(df)):
+#            df['reward_amount_new'][r] = df['session_params'][r]['reward_amount']
+#
+#        df['total_reward'] = np.nan # pre-allocate
+#        kk = 0
+#        for idx in mice:
+#            for j in range(len(t_count[idx])):
+#                df['total_reward'][kk] = t_count[idx][j] * df['reward_amount_new'][kk]
+#                kk = kk + t_count[idx][j]
+#        df['total_reward'] = df['total_reward'] / 1000  # convert μl to ml
+#
+#        # plot
+#        ymin = df['total_reward'].min()
+#        ymax =  df['total_reward'].max()
+#        #k = 0
+#        for idx in mice:
+#            df1 = df[df['animal_id'] == idx].drop_duplicates('new_tmst', keep='first')
+#            ax = df1.plot(x='new_tmst', y='total_reward')
+#            plt.axhline(y=1, color='r', linestyle='-.')  # minimum liquid intake
+#            plt.xticks(rotation=45)
+#            plt.ylabel('DeliveredLiquid(ml)')
+#            ax.set_title('Animal_id: %1d' % idx)
+#            #k = k + m_count[idx]
+#            axes = plt.gca()
+#            axes.set_ylim([ymin,ymax])
+#        return ax
 
 
 @schema
