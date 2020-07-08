@@ -18,6 +18,9 @@ class State(StateClass):
         self.params = session_params
         self.logger.log_conditions(conditions, self.stim.get_condition_tables())
 
+        logger.update_setup_info('start_time', session_params['start_time'])
+        logger.update_setup_info('stop_time', session_params['stop_time'])
+
         exitState = Exit(self)
         self.StateMachine = StateMachine(Prepare(self), exitState)
 
@@ -43,10 +46,8 @@ class State(StateClass):
 
     def is_sleep_time(self):
         now = datetime.now()
-        t = datetime.strptime(self.params['start_time'], "%H:%M:%S")
-        start = now.replace(hour=0, minute=0, second=0) + timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
-        t = datetime.strptime(self.params['stop_time'], "%H:%M:%S")
-        stop = now.replace(hour=0, minute=0, second=0) + timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
+        start = now.replace(hour=0, minute=0, second=0) + self.logger.get_setup_info('start_time')
+        stop = now.replace(hour=0, minute=0, second=0) + self.logger.get_setup_info('stop_time')
         if stop < start:
             stop = stop + timedelta(days=1)
         time_restriction = now < start or now > stop
@@ -194,13 +195,14 @@ class Sleep(State):
     def next(self):
         if self.logger.get_setup_info('status') == 'stop':  # if wake up then update session
             return states['Exit']
-        elif self.is_sleep_time() and self.logger.get_setup_info('status') == 'sleeping':
-            return states['Sleep']
-        elif self.logger.get_setup_info('status') == 'sleeping':  # if wake up then update session
+        elif self.logger.get_setup_info('status') == 'wakeup' and not self.is_sleep_time():
+            self.logger.update_setup_status('running')
+            return states['PreTrial']
+        elif self.logger.get_setup_info('status') == 'sleeping' and not self.is_sleep_time():  # if wake up then update session
             self.logger.update_setup_status('running')
             return states['Exit']
         else:
-            return states['PreTrial']
+            return states['Sleep']
 
 
 class OffTime(State):
