@@ -39,18 +39,16 @@ class SmellyMovies(Stimulus):
             if not os.path.isfile(filename):
                 print('Saving %s ...' % filename)
                 clip_info['clip'].tofile(filename)
+        # initialize player
+        self.vid = self.player(filename, args=['--aspect-mode', 'stretch', '--no-osd'],
+                    dbus_name='org.mpris.MediaPlayer2.omxplayer1')
+        self.vid.stop()
 
     def prepare(self):
         self._get_new_cond()
-        clip_info = self.logger.get_clip_info(dict((k, self.curr_cond[k]) for k in ('movie_name', 'clip_number')))
-        self.filename = self.path + clip_info['file_name']
-
+        self._init_player()
   
     def init(self):
-        self.vid = self.player(self.filename, args=['--aspect-mode', 'stretch', '--no-osd'],
-                               dbus_name='org.mpris.MediaPlayer2.omxplayer1')
-        self.vid.pause()
-        self.vid.set_position(self.curr_cond['skip_time'])
         delivery_port = self.curr_cond['delivery_port']
         odor_id = self.curr_cond['odor_id']
         odor_dur = self.curr_cond['odor_duration']
@@ -71,9 +69,10 @@ class SmellyMovies(Stimulus):
 
     def stop(self):
         try:
-            self.vid.quit()
+            self.vid.stop()
         except:
-            pass
+            self._init_player()
+            self.vid.stop()
         self.unshow()
         self.isrunning = False
 
@@ -98,6 +97,17 @@ class SmellyMovies(Stimulus):
             intensity = self.params['intensity']
         cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % intensity
         os.system(cmd)
+
+    def _init_player(self):
+        clip_info = self.logger.get_clip_info(self.curr_cond)
+        self.filename = self.path + clip_info['file_name']
+        try:
+            self.vid.load(self.filename)
+        except:
+            self.vid = self.player(self.filename, args=['--aspect-mode', 'stretch', '--no-osd'],
+                        dbus_name='org.mpris.MediaPlayer2.omxplayer1')
+        self.vid.pause()
+        self.vid.set_position(self.curr_cond['skip_time'])
 
     def close(self):
         """Close stuff"""

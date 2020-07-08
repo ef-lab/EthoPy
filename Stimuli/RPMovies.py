@@ -38,29 +38,22 @@ class RPMovies(Stimulus):
             if not os.path.isfile(filename):
                 print('Saving %s ...' % filename)
                 clip_info['clip'].tofile(filename)
-
         # initialize player
-        self.player(filename, args=['--aspect-mode', 'stretch', '--no-osd'],
+        self.vid = self.player(filename, args=['--aspect-mode', 'stretch', '--no-osd'],
                     dbus_name='org.mpris.MediaPlayer2.omxplayer1')
-        self.player.stop()
+        self.vid.stop()
 
     def prepare(self):
         self._get_new_cond()
-        clip_info = self.logger.get_clip_info(self.curr_cond)
-        self.filename = self.path + clip_info['file_name']
-
+        self._init_player()
 
     def init(self):
-        try:
-            self.vid = self.player.load(self.filename)
-        except:
-            self.vid = self.player(self.filename, args=['--aspect-mode', 'stretch', '--no-osd'],
-                        dbus_name='org.mpris.MediaPlayer2.omxplayer1')
-
-        self.vid.pause()
-        self.vid.set_position(self.curr_cond['skip_time'])
         self.isrunning = True
-        self.vid.play()
+        try:
+            self.vid.play()
+        except:
+            self._init_player()
+            self.vid.play()
         if self.curr_cond['static_frame']:
             sleep(0.2)
             self.vid.pause()
@@ -76,9 +69,8 @@ class RPMovies(Stimulus):
         try:
             self.vid.stop()
         except:
-            self.player(self.filename, args=['--aspect-mode', 'stretch', '--no-osd'],
-                        dbus_name='org.mpris.MediaPlayer2.omxplayer1')
-            self.player.stop()
+            self._init_player()
+            self.vid.stop()
         self.unshow()
         self.isrunning = False
 
@@ -103,6 +95,17 @@ class RPMovies(Stimulus):
             intensity = self.params['intensity']
         cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % intensity
         os.system(cmd)
+
+    def _init_player(self):
+        clip_info = self.logger.get_clip_info(self.curr_cond)
+        self.filename = self.path + clip_info['file_name']
+        try:
+            self.vid.load(self.filename)
+        except:
+            self.vid = self.player(self.filename, args=['--aspect-mode', 'stretch', '--no-osd'],
+                        dbus_name='org.mpris.MediaPlayer2.omxplayer1')
+        self.vid.pause()
+        self.vid.set_position(self.curr_cond['skip_time'])
 
     def close(self):
         """Close stuff"""
