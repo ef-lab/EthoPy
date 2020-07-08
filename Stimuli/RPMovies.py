@@ -39,6 +39,11 @@ class RPMovies(Stimulus):
                 print('Saving %s ...' % filename)
                 clip_info['clip'].tofile(filename)
 
+        # initialize player
+        self.player(filename, args=['--aspect-mode', 'stretch', '--no-osd'],
+                    dbus_name='org.mpris.MediaPlayer2.omxplayer1')
+        self.player.stop()
+
     def prepare(self):
         self._get_new_cond()
         clip_info = self.logger.get_clip_info(self.curr_cond)
@@ -46,8 +51,12 @@ class RPMovies(Stimulus):
 
 
     def init(self):
-        self.vid = self.player(self.filename, args=['--aspect-mode', 'stretch', '--no-osd'],
-                               dbus_name='org.mpris.MediaPlayer2.omxplayer1')
+        try:
+            self.vid = self.player.load(self.filename)
+        except:
+            self.vid = self.player(self.filename, args=['--aspect-mode', 'stretch', '--no-osd'],
+                        dbus_name='org.mpris.MediaPlayer2.omxplayer1')
+
         self.vid.pause()
         self.vid.set_position(self.curr_cond['skip_time'])
         self.isrunning = True
@@ -65,9 +74,11 @@ class RPMovies(Stimulus):
 
     def stop(self):
         try:
-            self.vid.quit()
+            self.vid.stop()
         except:
-            pass
+            self.player(self.filename, args=['--aspect-mode', 'stretch', '--no-osd'],
+                        dbus_name='org.mpris.MediaPlayer2.omxplayer1')
+            self.player.stop()
         self.unshow()
         self.isrunning = False
 
