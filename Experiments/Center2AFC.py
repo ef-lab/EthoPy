@@ -19,7 +19,7 @@ class State(StateClass):
         self.logger.log_conditions(conditions, self.stim.get_condition_tables())
 
         logger.update_setup_info('start_time', session_params['start_time'])
-        logger.update_setup_info('end_time', session_params['end_time'])
+        logger.update_setup_info('stop_time', session_params['stop_time'])
 
         exitState = Exit(self)
         self.StateMachine = StateMachine(Prepare(self), exitState)
@@ -48,7 +48,7 @@ class State(StateClass):
         now = datetime.now()
         t = datetime.strptime(self.logger.get_setup_info('start_time'), "%H:%M:%S")
         start = now.replace(hour=0, minute=0, second=0) + timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
-        t = datetime.strptime(self.logger.get_setup_info('end_time'), "%H:%M:%S")
+        t = datetime.strptime(self.logger.get_setup_info('stop_time'), "%H:%M:%S")
         stop = now.replace(hour=0, minute=0, second=0) + timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
         if stop < start:
             stop = stop + timedelta(days=1)
