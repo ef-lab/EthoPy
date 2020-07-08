@@ -195,13 +195,13 @@ class Sleep(State):
     def next(self):
         if self.logger.get_setup_info('status') == 'stop':  # if wake up then update session
             return states['Exit']
-        elif self.is_sleep_time():
-            return states['Sleep']
-        elif self.logger.get_setup_info('status') == 'wakeup':
+        elif self.logger.get_setup_info('status') == 'wakeup' and not self.is_sleep_time():
             return states['PreTrial']
-        elif self.logger.get_setup_info('status') == 'sleeping':  # if wake up then update session
+        elif self.logger.get_setup_info('status') == 'sleeping' and not self.is_sleep_time():  # if wake up then update session
             self.logger.update_setup_status('running')
             return states['Exit']
+        else:
+            return states['Sleep']
 
 
 class OffTime(State):
