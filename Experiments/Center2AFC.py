@@ -196,6 +196,7 @@ class Sleep(State):
         if self.logger.get_setup_info('status') == 'stop':  # if wake up then update session
             return states['Exit']
         elif self.logger.get_setup_info('status') == 'wakeup' and not self.is_sleep_time():
+            self.logger.update_setup_status('running')
             return states['PreTrial']
         elif self.logger.get_setup_info('status') == 'sleeping' and not self.is_sleep_time():  # if wake up then update session
             self.logger.update_setup_status('running')
