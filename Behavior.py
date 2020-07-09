@@ -43,8 +43,8 @@ class Behavior:
         if self.licked_probe > 0:
             hist = self.probe_history; hist.append(self.licked_probe)
             self.probe_history = hist
-        rew = self.reward_history; rew.append(0)
-        self.reward_history = rew
+            rew = self.reward_history; rew.append(0)
+            self.reward_history = rew
 
     def give_odor(self, delivery_idx, odor_idx, odor_dur, odor_dutycycle):
         print('Odor %1d presentation for %d' % (odor_idx, odor_dur))
