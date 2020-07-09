@@ -45,9 +45,9 @@ class State(StateClass):
         self.StateMachine.run()
 
     def is_sleep_time(self):
-        now = datetime.now()
-        start = now.replace(hour=0, minute=0, second=0) + self.logger.get_setup_info('start_time')
-        stop = now.replace(hour=0, minute=0, second=0) + self.logger.get_setup_info('stop_time')
+        now = datetime.now().replace(hour=0, minute=0, second=0)
+        start = now + self.logger.get_setup_info('start_time')
+        stop = now + self.logger.get_setup_info('stop_time')
         if stop < start:
             stop = stop + timedelta(days=1)
         time_restriction = now < start or now > stop

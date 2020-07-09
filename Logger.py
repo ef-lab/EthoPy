@@ -3,7 +3,7 @@ from utils.Timer import *
 from utils.Generator import *
 from queue import Queue
 import time as systime
-import datetime
+from datetime import datetime
 from threading import Lock
 import threading
 from DatabaseTables import *
