@@ -1,9 +1,13 @@
 from Stimulus import *
 import os
+from time import sleep
 
 
 class SmellyMovies(Stimulus):
     """ This class handles the presentation of Visual (movies) and Olfactory (odors) stimuli"""
+
+    def get_condition_tables(self):
+        return ['MovieCond', 'OdorCond', 'RewardCond']
 
     def setup(self):
         # setup parameters
@@ -13,6 +17,7 @@ class SmellyMovies(Stimulus):
         self.loc = (0, 0)          # default starting location of stimulus surface
         self.fps = 30              # default presentation framerate
         self.phd_size = (50, 50)    # default photodiode signal size in pixels
+        self.set_intensity(self.params['intensity'])
 
         # setup pygame
         if not pygame.get_init():
@@ -22,20 +27,7 @@ class SmellyMovies(Stimulus):
         pygame.mouse.set_visible(0)
         pygame.display.toggle_fullscreen()
 
-    def prepare(self):
-        self.probes = np.array([d['probe'] for d in self.conditions])
-                
-        conditions = self.conditions
-        for icond, cond in enumerate(conditions):
-            values = list(cond.values())
-            names = list(cond.keys())
-            for ivalue, value in enumerate(values):
-                if type(value) is list:
-                    value = tuple(value)
-                cond.update({names[ivalue]: value})
-            conditions[icond] = cond
-        self.logger.log_conditions(['OdorCond', 'MovieCond'], conditions)
-
+        # setup movies
         from omxplayer import OMXPlayer
         self.player = OMXPlayer
         # store local copy of files
@@ -47,18 +39,26 @@ class SmellyMovies(Stimulus):
             if not os.path.isfile(filename):
                 print('Saving %s ...' % filename)
                 clip_info['clip'].tofile(filename)
+        # initialize player
+        self.vid = self.player(filename, args=['--aspect-mode', 'stretch', '--no-osd'],
+                    dbus_name='org.mpris.MediaPlayer2.omxplayer1')
+        self.vid.stop()
+
+    def prepare(self):
+        self._get_new_cond()
+        self._init_player()
   
     def init(self):
-        delivery_idx = self.curr_cond['delivery_idx']
-        odor_idx = self.curr_cond['odor_idx']
+        delivery_port = self.curr_cond['delivery_port']
+        odor_id = self.curr_cond['odor_id']
         odor_dur = self.curr_cond['odor_duration']
         odor_dutycycle = self.curr_cond['dutycycle']
         self.isrunning = True
-        clip_info = self.logger.get_clip_info(dict((k, self.curr_cond[k]) for k in ('movie_name', 'clip_number')))
-        filename = self.path + clip_info['file_name']
-        self.vid = self.player(filename, args=['--win', '0 15 800 465', '--no-osd'],
-                               dbus_name='org.mpris.MediaPlayer2.omxplayer0')  # start video
-        self.beh.give_odor(delivery_idx, odor_idx, odor_dur, odor_dutycycle)
+        self.vid.play()
+        if self.curr_cond['static_frame']:
+            sleep(0.2)
+            self.vid.pause()
+        self.beh.give_odor(delivery_port, odor_id, odor_dur, odor_dutycycle)
         self.timer.start()
         self.logger.log_stim()
 
@@ -69,9 +69,10 @@ class SmellyMovies(Stimulus):
 
     def stop(self):
         try:
-            self.vid.quit()
+            self.vid.stop()
         except:
-            pass
+            self._init_player()
+            self.vid.stop()
         self.unshow()
         self.isrunning = False
 
@@ -90,6 +91,23 @@ class SmellyMovies(Stimulus):
                 pygame.quit()
 
         self.flip_count += 1
+
+    def set_intensity(self, intensity=None):
+        if intensity is None:
+            intensity = self.params['intensity']
+        cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % intensity
+        os.system(cmd)
+
+    def _init_player(self):
+        clip_info = self.logger.get_clip_info(self.curr_cond)
+        self.filename = self.path + clip_info['file_name']
+        try:
+            self.vid.load(self.filename)
+        except:
+            self.vid = self.player(self.filename, args=['--aspect-mode', 'stretch', '--no-osd'],
+                        dbus_name='org.mpris.MediaPlayer2.omxplayer1')
+        self.vid.pause()
+        self.vid.set_position(self.curr_cond['skip_time'])
 
     def close(self):
         """Close stuff"""

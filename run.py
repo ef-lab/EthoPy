@@ -1,18 +1,22 @@
 from Logger import *
-from utils.Start import Welcome
-import sys, utils
+import sys, utils, os
+
+if os.uname()[4][:3] == 'arm':
+    from utils.Start import PyWelcome as Welcome
+else:
+    from utils.Start import Welcome
 
 global logger
-logger = RPLogger()                                                   # setup logger & timer
-logger.log_setup()                                                    # publish IP and make setup available
+logger = Logger()                                                   # setup logger & timer
+logger.log_setup()                                                  # publish IP and make setup available
 
 # # # # Waiting for instructions loop # # # # #
 while not logger.get_setup_info('status') == 'exit':
     if logger.get_setup_info('status') == 'ready':
         interface = Welcome(logger)
-        while logger.get_setup_info('status') == 'ready':                        # wait for remote start
+        while logger.get_setup_info('status') != 'running' and logger.get_setup_info('status') != 'exit': # wait for remote start
             interface.eval_input()
-            time.sleep(0.2)
+            time.sleep(0.5)
             logger.ping()
         interface.close()
     if logger.get_setup_info('status') == 'running':   # run experiment unless stopped

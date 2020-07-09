@@ -21,13 +21,17 @@ class Calibrate:
             button = self.screen.add_button(name='OK', x=300, y=300, w=200, h=100, color=(0, 128, 0))
             while not button.is_pressed():
                 time.sleep(0.2)
+                if self.logger.get_setup_info('status') == 'stop':
+                    valve.cleanup()
+                    self.screen.exit()
+                    return
 
             pulse = 0
             while pulse < self.params['pulsenum'][cal_idx]:
                 self.screen.cleanup()
                 self.screen.draw('Pulse %d/%d' % (pulse + 1, self.params['pulsenum'][cal_idx]))
                 for probe in self.params['probes']:
-                    valve.give_liquid(probe, self.params['duration'][cal_idx], False)  # release liquid
+                    valve.give_liquid(probe, self.params['duration'][cal_idx])  # release liquid
                 time.sleep(self.params['duration'][cal_idx] / 1000 + self.params['pulse_interval'][cal_idx] / 1000)
                 pulse += 1  # update trial
             if self.params['save']:
@@ -45,3 +49,4 @@ class Calibrate:
         self.screen.draw('Done calibrating')
         time.sleep(5)
         self.screen.exit()
+        self.logger.update_setup_status('stop')

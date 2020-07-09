@@ -3,17 +3,17 @@ from Behavior import *
 
 # define session parameters
 session_params = {
-    'trial_duration'     : 10000,
+    'trial_duration'     : 5000,
     'intertrial_duration': 0,
     'timeout_duration'   : 0,
     'stim_duration'      : 0,
     'delay_duration'     : 0,
     'response_interval'  : 1000,
-    'init_duration'      : 0,
-    'reward_amount'      : 10,
+    'init_duration'      : 200,
+    'reward_amount'      : 8,
     'randomization'      : 'bias',
     'start_time'         : '10:00:00',
-    'stop_time'          : '09:00:00',
+    'stop_time'          : '20:00:00',
     'reward'             : 'water',
     'max_reward'         : 2000,
 }

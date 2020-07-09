@@ -13,18 +13,38 @@ class Behavior:
         self.logger = logger
         self.rew_probe = 0
         self.probes = np.array(np.empty(0))
-        self.probe_bias = np.repeat(np.nan, 1)  # History term for bias calculation
+        self.probe_history = []  #  History term for bias calculation
+        self.reward_history = []  #  History term for performance calculation
         self.licked_probe = 0
-        self.rewarded_trials = 0
 
-    def is_licking(self):
-        return False, False
+    def is_licking(self, since=0):
+        return 0
 
     def is_ready(self, elapsed_time=False):
         return False, 0
 
-    def reward(self):
+    def is_hydrated(self):
+        rew = np.nansum(self.reward_history)
+        if self.params['max_reward']:
+            return rew >= self.params['max_reward']
+        else:
+            return False
+
+    def reward(self, reward_amount=0):
+        if self.licked_probe > 0:
+            hist = self.probe_history; hist.append(self.licked_probe)
+            self.probe_history = hist
+        rew = self.reward_history; rew.append(reward_amount)
+        self.reward_history = rew
+        self.logger.update_total_liquid(np.nansum(rew))
         print('Giving Water at probe:%1d' % self.licked_probe)
+
+    def punish(self):
+        if self.licked_probe > 0:
+            hist = self.probe_history; hist.append(self.licked_probe)
+            self.probe_history = hist
+        rew = self.reward_history; rew.append(0)
+        self.reward_history = rew
 
     def give_odor(self, delivery_idx, odor_idx, odor_dur, odor_dutycycle):
         print('Odor %1d presentation for %d' % (odor_idx, odor_dur))
@@ -41,8 +61,9 @@ class Behavior:
     def get_off_position(self):
         pass
 
-    def update_bias(self):
+    def prepare(self, condition):
         pass
+
 
 class RPBehavior(Behavior):
     """ This class handles the behavior variables for RP """
@@ -50,19 +71,14 @@ class RPBehavior(Behavior):
         self.probe = RPProbe(logger)
         super(RPBehavior, self).__init__(logger, params)
 
-    def is_licking(self):
-        self.licked_probe = self.probe.lick()
-        time_since_last_lick = self.resp_timer.elapsed_time()
-        if time_since_last_lick < self.params['response_interval']:
-            self.licked_probe = 0
-        # reset lick timer if licking is detected &
-        if self.licked_probe > 0:
+    def is_licking(self, since=0):
+        licked_probe, tmst = self.probe.get_last_lick()
+        if tmst >= since and licked_probe:
+            self.licked_probe = licked_probe
             self.resp_timer.start()
-
+        else:
+            self.licked_probe = 0
         return self.licked_probe
-
-    def update_bias(self, probe):
-        self.probe_bias = np.concatenate((self.probe_bias[1:], [probe]))
 
     def is_ready(self, init_duration):
         if init_duration == 0:
@@ -72,11 +88,17 @@ class RPBehavior(Behavior):
             return ready and ready_time > init_duration
 
     def reward(self):
+        hist = self.probe_history; hist.append(self.licked_probe)
+        self.probe_history = hist
+        rew = self.reward_history; rew.append(self.reward_amount[self.licked_probe])
+        self.reward_history = rew
         self.probe.give_liquid(self.licked_probe)
-        self.rewarded_trials += 1
+        self.logger.log_liquid(self.licked_probe, self.reward_amount[self.licked_probe])
+        self.logger.update_total_liquid(np.nansum(rew))
 
-    def give_odor(self, delivery_idx, odor_idx, odor_dur, odor_dutycycle):
-        self.probe.give_odor(delivery_idx, odor_idx, odor_dur, odor_dutycycle)
+    def give_odor(self, delivery_port, odor_id, odor_dur, odor_dutycycle):
+        self.probe.give_odor(delivery_port, odor_id, odor_dur, odor_dutycycle)
+        self.logger.log_stim()
 
     def inactivity_time(self):  # in minutes
         return numpy.minimum(self.probe.timer_probe1.elapsed_time(),
@@ -84,6 +106,9 @@ class RPBehavior(Behavior):
 
     def cleanup(self):
         self.probe.cleanup()
+
+    def prepare(self, condition):
+        self.reward_amount = self.probe.calc_pulse_dur(condition['reward_amount'])
 
 
 class DummyProbe(Behavior):
@@ -93,7 +118,7 @@ class DummyProbe(Behavior):
         self.ready_timer = Timer()
         self.ready_timer.start()
         self.ready = False
-        self.licked_probe = 0
+        self.probe = 0
 
         super(DummyProbe, self).__init__(logger, params)
 
@@ -105,31 +130,28 @@ class DummyProbe(Behavior):
     def inactivity_time(self):  # in minutes
         return self.lick_timer.elapsed_time() / 1000 / 60
 
-    def is_licking(self):
-        self.__get_events()
-        time_since_last_lick = self.resp_timer.elapsed_time()
-
-        if time_since_last_lick < self.params['response_interval'] and self.licked_probe > 0:
-            self.licked_probe = 0
-
+    def is_licking(self, since=0):
+        probe = self.__get_events()
         # reset lick timer if licking is detected &
-        if self.licked_probe > 0:
+        if probe > 0:
             self.resp_timer.start()
-        return self.licked_probe
+        self.licked_probe = probe
+        return probe
 
     def __get_events(self):
+        probe = 0
         events = pygame.event.get()
         for event in events:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
                     self.logger.log_lick(1)
                     print('Probe 1 activated!')
-                    self.licked_probe = 1
+                    probe = 1
                     self.lick_timer.start()
                 elif event.key == pygame.K_RIGHT:
                     self.logger.log_lick(2)
                     print('Probe 2 activated!')
-                    self.licked_probe = 2
+                    probe = 2
                 elif event.key == pygame.K_SPACE and self.ready:
                     self.ready = False
                     print('off position')
@@ -137,4 +159,4 @@ class DummyProbe(Behavior):
                     self.lick_timer.start()
                     self.ready = True
                     print('in position')
-
+        return probe

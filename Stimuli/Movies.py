@@ -1,9 +1,13 @@
 from Stimulus import *
-import imageio, pygame, io
+import imageio, io
+
 
 
 class Movies(Stimulus):
     """ This class handles the presentation of Movies"""
+
+    def get_condition_tables(self):
+        return ['MovieCond', 'RewardCond']
 
     def setup(self):
         # setup parameters
@@ -21,8 +25,7 @@ class Movies(Stimulus):
         pygame.mouse.set_visible(0)
 
     def prepare(self):
-        self.probes = np.array([d['probe'] for d in self.conditions])
-        self.logger.log_conditions('MovieCond', self.conditions)
+        self._get_new_cond()
 
     def init(self):
         self.curr_frame = 1
@@ -35,7 +38,7 @@ class Movies(Stimulus):
         self.timer.start()
 
     def present(self):
-        if self.timer.elapsed_time() < self.params['stim_duration']:
+        if self.timer.elapsed_time() < self.curr_cond['movie_duration']:
             py_image = pygame.image.frombuffer(self.vid.get_next_data(), self.vsize, "RGB")
             self.screen.blit(py_image, self.pos)
             self.flip()
