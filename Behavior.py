@@ -13,8 +13,8 @@ class Behavior:
         self.logger = logger
         self.rew_probe = 0
         self.probes = np.array(np.empty(0))
-        self.probe_history = []  #  History term for bias calculation
-        self.reward_history = []  #  History term for performance calculation
+        self.probe_history =  np.array([])  #  History term for bias calculation
+        self.reward_history =  np.array([])  #  History term for performance calculation
         self.licked_probe = 0
 
     def is_licking(self, since=0):
@@ -32,9 +32,9 @@ class Behavior:
 
     def reward(self, reward_amount=0):
         if self.licked_probe > 0:
-            hist = self.probe_history; hist.append(self.licked_probe)
+            hist = self.probe_history; np.append(hist, self.licked_probe)
             self.probe_history = hist
-        rew = self.reward_history; rew.append(reward_amount)
+        rew = self.reward_history; np.append(rew, reward_amount)
         self.reward_history = rew
         self.logger.update_total_liquid(np.nansum(rew))
         print('Giving Water at probe:%1d' % self.licked_probe)
@@ -44,9 +44,9 @@ class Behavior:
             probe = self.licked_probe
         else:
             probe = np.nan
-        hist = self.probe_history; hist.append(probe)
+        hist = self.probe_history; np.append(hist, probe)
         self.probe_history = hist
-        rew = self.reward_history; rew.append(0)
+        rew = self.reward_history; np.append(rew, 0)
         self.reward_history = rew
 
     def give_odor(self, delivery_idx, odor_idx, odor_dur, odor_dutycycle):
@@ -91,9 +91,9 @@ class RPBehavior(Behavior):
             return ready and ready_time > init_duration
 
     def reward(self):
-        hist = self.probe_history; hist.append(self.licked_probe)
+        hist = self.probe_history; np.append(hist, self.licked_probe)
         self.probe_history = hist
-        rew = self.reward_history; rew.append(self.reward_amount[self.licked_probe])
+        rew = self.reward_history; np.append(rew, self.reward_amount[self.licked_probe])
         self.reward_history = rew
         self.probe.give_liquid(self.licked_probe)
         self.logger.log_liquid(self.licked_probe, self.reward_amount[self.licked_probe])
@@ -104,7 +104,7 @@ class RPBehavior(Behavior):
         self.logger.log_stim()
 
     def inactivity_time(self):  # in minutes
-        return numpy.minimum(self.probe.timer_probe1.elapsed_time(),
+        return np.minimum(self.probe.timer_probe1.elapsed_time(),
                              self.probe.timer_probe2.elapsed_time()) / 1000 / 60
 
     def cleanup(self):

@@ -62,7 +62,7 @@ class Stimulus:
         elif self.params['trial_selection'] == 'random':
             self.curr_cond = np.random.choice(self.conditions)
         elif self.params['trial_selection'] == 'bias':
-            idx = np.isnan(self.beh.probe_history) < 1
+            idx = ~np.isnan(self.beh.probe_history)
             probe_h = self.beh.probe_history[idx]
             h = np.array(probe_h[-self.params['bias_window']:])
             if len(h) < self.params['bias_window']: h = np.mean(self.probes)
@@ -71,7 +71,7 @@ class Stimulus:
             selected_conditions = [i for (i, v) in zip(self.conditions, self.probes == bias_probe) if v]
             self.curr_cond = np.random.choice(selected_conditions)
         elif self.params['trial_selection'] == 'staircase':
-            idx = np.isnan(self.beh.probe_history) < 1
+            idx = ~np.isnan(self.beh.probe_history)
             probe_h = self.beh.probe_history[idx]
             rew_h = self.beh.reward_history[idx]
             h = np.array(probe_h[-self.params['bias_window']:])
