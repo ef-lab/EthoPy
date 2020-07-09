@@ -223,7 +223,7 @@ class Logger:
         path, filename = os.path.split(protocol)
         if not path:
             path = pathlib.Path(__file__).parent.absolute()
-            protocol = path + '/conf/' + filename
+            protocol = str(path) + '/conf/' + filename
         return protocol
 
     def ping(self):
