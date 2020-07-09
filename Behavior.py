@@ -32,11 +32,9 @@ class Behavior:
 
     def reward(self, reward_amount=0):
         if self.licked_probe > 0:
-            hist = self.probe_history; np.append(hist, self.licked_probe)
-            self.probe_history = hist
-        rew = self.reward_history; np.append(rew, reward_amount)
-        self.reward_history = rew
-        self.logger.update_total_liquid(np.nansum(rew))
+            self.probe_history = np.append(self.probe_history, self.licked_probe)
+        self.reward_history = np.append(self.reward_history, reward_amount)
+        self.logger.update_total_liquid(np.nansum(self.reward_history))
         print('Giving Water at probe:%1d' % self.licked_probe)
 
     def punish(self):
@@ -44,10 +42,8 @@ class Behavior:
             probe = self.licked_probe
         else:
             probe = np.nan
-        hist = self.probe_history; np.append(hist, probe)
-        self.probe_history = hist
-        rew = self.reward_history; np.append(rew, 0)
-        self.reward_history = rew
+        self.probe_history = np.append(self.probe_history, probe)
+        self.reward_history = np.append(self.reward_history, np.nan)
 
     def give_odor(self, delivery_idx, odor_idx, odor_dur, odor_dutycycle):
         print('Odor %1d presentation for %d' % (odor_idx, odor_dur))
