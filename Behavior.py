@@ -91,10 +91,8 @@ class RPBehavior(Behavior):
             return ready and ready_time > init_duration
 
     def reward(self):
-        hist = self.probe_history; np.append(hist, self.licked_probe)
-        self.probe_history = hist
-        rew = self.reward_history; np.append(rew, self.reward_amount[self.licked_probe])
-        self.reward_history = rew
+        self.probe_history = np.append(self.probe_history, self.licked_probe)
+        self.reward_history = np.append(self.reward_history, self.reward_amount[self.licked_probe])
         self.probe.give_liquid(self.licked_probe)
         self.logger.log_liquid(self.licked_probe, self.reward_amount[self.licked_probe])
         self.logger.update_total_liquid(np.nansum(rew))
