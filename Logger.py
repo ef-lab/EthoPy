@@ -1,4 +1,4 @@
-import numpy, socket, json, os, pandas
+import numpy, socket, json, os, pandas, pathlib
 from utils.Timer import *
 from utils.Generator import *
 from queue import Queue
@@ -222,8 +222,8 @@ class Logger:
         protocol = (Task() & dict(task_idx=task_idx)).fetch1('protocol')
         path, filename = os.path.split(protocol)
         if not path:
-            path = os.path.abspath('conf')
-            protocol = path + '/' + filename
+            path = pathlib.Path(__file__).parent.absolute()
+            protocol = path + '/conf/' + filename
         return protocol
 
     def ping(self):
