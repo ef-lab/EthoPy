@@ -95,7 +95,7 @@ class RPBehavior(Behavior):
         self.reward_history = np.append(self.reward_history, self.reward_amount[self.licked_probe])
         self.probe.give_liquid(self.licked_probe)
         self.logger.log_liquid(self.licked_probe, self.reward_amount[self.licked_probe])
-        self.logger.update_total_liquid(np.nansum(rew))
+        self.logger.update_total_liquid(np.nansum(self.reward_history))
 
     def give_odor(self, delivery_port, odor_id, odor_dur, odor_dutycycle):
         self.probe.give_odor(delivery_port, odor_id, odor_dur, odor_dutycycle)
