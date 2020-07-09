@@ -13,8 +13,8 @@ class Behavior:
         self.logger = logger
         self.rew_probe = 0
         self.probes = np.array(np.empty(0))
-        self.probe_history = []  #  History term for bias calculation
-        self.reward_history = []  #  History term for performance calculation
+        self.probe_history =  np.array([])  #  History term for bias calculation
+        self.reward_history =  np.array([])  #  History term for performance calculation
         self.licked_probe = 0
 
     def is_licking(self, since=0):
@@ -30,21 +30,17 @@ class Behavior:
         else:
             return False
 
-    def reward(self, reward_amount=0):
-        if self.licked_probe > 0:
-            hist = self.probe_history; hist.append(self.licked_probe)
-            self.probe_history = hist
-        rew = self.reward_history; rew.append(reward_amount)
-        self.reward_history = rew
-        self.logger.update_total_liquid(np.nansum(rew))
+    def reward(self):
+        self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
+        self.logger.log_liquid(self.licked_probe, self.reward_amount[self.licked_probe])
         print('Giving Water at probe:%1d' % self.licked_probe)
 
     def punish(self):
         if self.licked_probe > 0:
-            hist = self.probe_history; hist.append(self.licked_probe)
-            self.probe_history = hist
-        rew = self.reward_history; rew.append(0)
-        self.reward_history = rew
+            probe = self.licked_probe
+        else:
+            probe = np.nan
+        self.update_history(probe)
 
     def give_odor(self, delivery_idx, odor_idx, odor_dur, odor_dutycycle):
         print('Odor %1d presentation for %d' % (odor_idx, odor_dur))
@@ -60,6 +56,11 @@ class Behavior:
 
     def get_off_position(self):
         pass
+
+    def update_history(self, probe=np.nan, reward=np.nan):
+        self.probe_history = np.append(self.probe_history, probe)
+        self.reward_history = np.append(self.reward_history, reward)
+        self.logger.update_total_liquid(np.nansum(self.reward_history))
 
     def prepare(self, condition):
         pass
@@ -88,20 +89,16 @@ class RPBehavior(Behavior):
             return ready and ready_time > init_duration
 
     def reward(self):
-        hist = self.probe_history; hist.append(self.licked_probe)
-        self.probe_history = hist
-        rew = self.reward_history; rew.append(self.reward_amount[self.licked_probe])
-        self.reward_history = rew
+        self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
         self.probe.give_liquid(self.licked_probe)
         self.logger.log_liquid(self.licked_probe, self.reward_amount[self.licked_probe])
-        self.logger.update_total_liquid(np.nansum(rew))
 
     def give_odor(self, delivery_port, odor_id, odor_dur, odor_dutycycle):
         self.probe.give_odor(delivery_port, odor_id, odor_dur, odor_dutycycle)
         self.logger.log_stim()
 
     def inactivity_time(self):  # in minutes
-        return numpy.minimum(self.probe.timer_probe1.elapsed_time(),
+        return np.minimum(self.probe.timer_probe1.elapsed_time(),
                              self.probe.timer_probe2.elapsed_time()) / 1000 / 60
 
     def cleanup(self):
