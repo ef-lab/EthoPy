@@ -227,7 +227,7 @@ class Logger:
         return protocol
 
     def ping(self):
-        lp = str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        lp = str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
                             field='last_ping', value=lp, update=True))
         self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
