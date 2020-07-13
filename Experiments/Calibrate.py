@@ -34,7 +34,7 @@ class Calibrate:
                     valve.create_pulse(probe, self.params['duration'][cal_idx])
 
                 for probe in self.params['probes']:
-                    valve.__pulse_out(probe)  # release liquid
+                    valve.pulse_out(probe)  # release liquid
                     time.sleep(self.params['duration'][cal_idx] / 1000 + self.params['pulse_interval'][cal_idx] / 1000)
                 pulse += 1  # update trial
             if self.params['save']:

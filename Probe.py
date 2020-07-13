@@ -101,7 +101,7 @@ class RPProbe(Probe):
         self.pulses = dict()
 
     def give_liquid(self, probe):
-        self.__pulse_out(self.channels['liquid'][probe])
+        self.thread.submit(self.pulse_out, self.channels['liquid'][probe])
 
     def give_odor(self, delivery_port, odor_id, odor_duration, dutycycle):
         for i, idx in enumerate(odor_id):
@@ -145,7 +145,7 @@ class RPProbe(Probe):
         self.Pulser.wave_add_generic(pulse)  # 500 ms flashes
         self.pulses[probe] = self.Pulser.wave_create()
 
-    def __pulse_out(self, probe):
+    def pulse_out(self, probe):
         self.Pulser.wave_send_once(self.pulses[probe])
 
     def cleanup(self):
