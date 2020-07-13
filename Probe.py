@@ -134,7 +134,6 @@ class RPProbe(Probe):
 
     def calc_pulse_dur(self, reward_amount):  # calculate pulse duration for the desired reward amount
         actual_rew = dict()
-        self.Pulser.wave_clear()
         for probe in list(set(self.probes)):
             duration = numpy.interp(reward_amount/1000,
                                                   self.weight_per_pulse[probe], self.pulse_dur[probe])
@@ -143,6 +142,8 @@ class RPProbe(Probe):
         return actual_rew
 
     def create_pulse(self, probe, duration):
+        if self.pulses[probe]:
+            self.Pulser.wave_delete(self.pulses[probe])
         pulse = []
         pulse.append(self.PulseGen(1 << self.channels['liquid'][probe], 0, int(duration*1000)))
         pulse.append(self.PulseGen(0, 1 << self.channels['liquid'][probe], int(duration)))
