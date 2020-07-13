@@ -142,7 +142,7 @@ class RPProbe(Probe):
         return actual_rew
 
     def create_pulse(self, probe, duration):
-        if self.pulses[probe]:
+        if probe in self.pulses:
             self.Pulser.wave_delete(self.pulses[probe])
         pulse = []
         pulse.append(self.PulseGen(1 << self.channels['liquid'][probe], 0, int(duration*1000)))
