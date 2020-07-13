@@ -86,8 +86,8 @@ class RPProbe(Probe):
                          'lick': {1: 17, 2: 27},
                          'start': {1: 9}}  # 2
         self.frequency = 20
-        self.GPIO.add_event_detect(self.channels['lick'][2], self.GPIO.RISING, callback=self.probe2_licked, bouncetime=200)
-        self.GPIO.add_event_detect(self.channels['lick'][1], self.GPIO.RISING, callback=self.probe1_licked, bouncetime=200)
+        self.GPIO.add_event_detect(self.channels['lick'][2], self.GPIO.RISING, callback=self.probe2_licked, bouncetime=100)
+        self.GPIO.add_event_detect(self.channels['lick'][1], self.GPIO.RISING, callback=self.probe1_licked, bouncetime=100)
         self.GPIO.add_event_detect(self.channels['start'][1], self.GPIO.BOTH, callback=self.position_change, bouncetime=50)
         self.Pulser = pigpio.pi()
         self.Pulser.set_mode(22, pigpio.OUTPUT)
