@@ -30,10 +30,9 @@ class Calibrate:
             while pulse < self.params['pulsenum'][cal_idx]:
                 self.screen.cleanup()
                 self.screen.draw('Pulse %d/%d' % (pulse + 1, self.params['pulsenum'][cal_idx]))
-                for probe in self.params['probes']:
-                    valve.create_pulse(probe, self.params['duration'][cal_idx])
 
                 for probe in self.params['probes']:
+                    valve.create_pulse(probe, self.params['duration'][cal_idx])
                     valve.pulse_out(probe)  # release liquid
                     time.sleep(self.params['duration'][cal_idx] / 1000 + self.params['pulse_interval'][cal_idx] / 1000)
                 pulse += 1  # update trial
