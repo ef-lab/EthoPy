@@ -94,8 +94,8 @@ class RPProbe(Probe):
         self.GPIO.add_event_detect(self.channels['lick'][2], self.GPIO.RISING, callback=self.probe2_licked, bouncetime=100)
         self.GPIO.add_event_detect(self.channels['lick'][1], self.GPIO.RISING, callback=self.probe1_licked, bouncetime=100)
         self.GPIO.add_event_detect(self.channels['start'][1], self.GPIO.BOTH, callback=self.position_change, bouncetime=50)
-        self.Pulser.pi = pigpio.pi()
-        self.Pulser.pulse = pigpio.pulse
+        self.Pulser = pigpio.pi()
+        self.PulseGen = pigpio.pulse
         self.Pulser.set_mode(self.channels['liquid'][1], pigpio.OUTPUT)
         self.Pulser.set_mode(self.channels['liquid'][2], pigpio.OUTPUT)
         self.pulses = dict()
@@ -140,8 +140,8 @@ class RPProbe(Probe):
 
     def create_pulse(self, probe, duration):
         pulse = []
-        pulse.append(self.Pulser.pulse(1 << self.channels['liquid'][probe], 0, int(duration*1000)))
-        pulse.append(self.Pulser.pulse(0, 1 << self.channels['liquid'][probe], int(duration)))
+        pulse.append(self.PulseGen(1 << self.channels['liquid'][probe], 0, int(duration*1000)))
+        pulse.append(self.PulseGen(0, 1 << self.channels['liquid'][probe], int(duration)))
         self.Pulser.wave_add_generic(pulse)  # 500 ms flashes
         self.pulses[probe] = self.Pulser.wave_create()
 
