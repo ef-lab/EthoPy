@@ -1,6 +1,6 @@
 from DatabaseTables import *
 from time import sleep
-import numpy, socket, pigpio
+import numpy, socket
 from utils.Timer import *
 from concurrent.futures import ThreadPoolExecutor
 
@@ -16,7 +16,6 @@ class Probe:
         self.timer_ready = Timer()
         self.thread = ThreadPoolExecutor(max_workers=2)
         self.probes = (LiquidCalibration() & dict(setup=self.logger.setup)).fetch('probe')
-        self.pulse_dur = dict()
         self.weight_per_pulse = dict()
         for probe in list(set(self.probes)):
             key = dict(setup=self.logger.setup, probe=probe)
@@ -59,12 +58,15 @@ class Probe:
     def get_off_position(self):
         pass
 
+    def create_pulse(self, probe, duration):
+        pass
+
     def calc_pulse_dur(self, reward_amount):  # calculate pulse duration for the desired reward amount
-        self.liquid_dur = dict()
         actual_rew = dict()
         for probe in list(set(self.probes)):
-            self.liquid_dur[probe] = numpy.interp(reward_amount/1000,
+            duration = numpy.interp(reward_amount/1000,
                                                   self.weight_per_pulse[probe], self.pulse_dur[probe])
+            self.create_pulse(probe, duration)
             actual_rew[probe] = numpy.max((numpy.min(self.weight_per_pulse[probe]), reward_amount/1000)) * 1000 # in uL
         return actual_rew
 
@@ -76,27 +78,28 @@ class RPProbe(Probe):
     def __init__(self, logger):
         super(RPProbe, self).__init__(logger)
         from RPi import GPIO
+        import pigpio
         self.setup = int(''.join(list(filter(str.isdigit, socket.gethostname()))))
         self.GPIO = GPIO
         self.GPIO.setmode(self.GPIO.BCM)
-        self.GPIO.setup([17, 27, 9], self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-        self.GPIO.setup([24, 25], self.GPIO.OUT, initial=self.GPIO.LOW)
         self.channels = {'air': {1: 24, 2: 25},
                          'liquid': {1: 22, 2: 23},
                          'lick': {1: 17, 2: 27},
                          'start': {1: 9}}  # 2
         self.frequency = 20
+        self.GPIO.setup([self.channels['lick'][1], self.channels['lick'][2], self.channels['start'][1]],
+                        self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        self.GPIO.setup([self.channels['start'][1], self.channels['start'][2]], self.GPIO.OUT, initial=self.GPIO.LOW)
         self.GPIO.add_event_detect(self.channels['lick'][2], self.GPIO.RISING, callback=self.probe2_licked, bouncetime=100)
         self.GPIO.add_event_detect(self.channels['lick'][1], self.GPIO.RISING, callback=self.probe1_licked, bouncetime=100)
         self.GPIO.add_event_detect(self.channels['start'][1], self.GPIO.BOTH, callback=self.position_change, bouncetime=50)
         self.Pulser = pigpio.pi()
-        self.Pulser.set_mode(22, pigpio.OUTPUT)
-        self.Pulser.set_mode(23, pigpio.OUTPUT)
+        self.Pulser.set_mode(self.channels['liquid'][1], pigpio.OUTPUT)
+        self.Pulser.set_mode(self.channels['liquid'][2], pigpio.OUTPUT)
+        self.pulses = dict()
 
-    def give_liquid(self, probe, duration=False):
-        if not duration:
-            duration = self.liquid_dur[probe]
-        self.__pulse_out(self.channels['liquid'][probe], duration)
+    def give_liquid(self, probe):
+        self.__pulse_out(self.channels['liquid'][probe])
 
     def give_odor(self, delivery_port, odor_id, odor_duration, dutycycle):
         for i, idx in enumerate(odor_id):
@@ -133,17 +136,19 @@ class RPProbe(Probe):
         sleep(duration/1000)    # to add a  delay in seconds
         pwm.stop()
 
-    def __pulse_out(self, channel, duration):
+    def create_pulse(self, probe, duration):
         pulse = []
-        pulse.append(pigpio.pulse(1 << channel, 0, int(duration*1000)))
-        pulse.append(pigpio.pulse(0, 1 << channel, int(duration)))
-
-        self.Pulser.wave_clear()  # clear any existing waveforms
+        pulse.append(pigpio.pulse(1 << self.channels['liquid'][probe], 0, int(duration*1000)))
+        pulse.append(pigpio.pulse(0, 1 << self.channels['liquid'][probe], int(duration)))
         self.Pulser.wave_add_generic(pulse)  # 500 ms flashes
-        self.Pulser.wave_send_once(self.Pulser.wave_create())
+        self.pulses[probe] = self.Pulser.wave_create()
+
+    def __pulse_out(self, probe):
+        self.Pulser.wave_send_once(self.pulses[probe])
 
     def cleanup(self):
         self.GPIO.remove_event_detect(self.channels['lick'][1])
         self.GPIO.remove_event_detect(self.channels['lick'][2])
         self.GPIO.remove_event_detect(self.channels['start'][1])
         self.GPIO.cleanup()
+        self.Pulser.wave_clear()
