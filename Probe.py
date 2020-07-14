@@ -101,7 +101,7 @@ class RPProbe(Probe):
         self.pulses = dict()
 
     def give_liquid(self, probe):
-        self.thread.submit(self.pulse_out, self.channels['liquid'][probe])
+        self.thread.submit(self.pulse_out, probe)
 
     def give_odor(self, delivery_port, odor_id, odor_duration, dutycycle):
         for i, idx in enumerate(odor_id):
