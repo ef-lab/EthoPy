@@ -92,4 +92,21 @@ class Stimulus:
             selected_conditions = [i for (i, v) in zip(self.conditions, np.logical_and(self.probes == bias_probe,
                                                        np.array(self.difficulties) == self.curr_difficulty)) if v]
             self.curr_cond = np.random.choice(selected_conditions)
+        elif self.params['trial_selection'] == 'staircase_nobias':
+            idx = ~np.isnan(self.beh.probe_history)
+            rew_h = self.beh.reward_history[idx]
+            if self.iter == 1 or np.size(self.iter) == 0:
+                self.iter = self.params['staircase_window']
+                perf = np.nanmean(np.greater(rew_h[-self.params['staircase_window']:], 0))
+                if perf > self.params['stair_up'] and self.curr_difficulty < max(self.difficulties):
+                    self.curr_difficulty += 1
+                elif perf < self.params['stair_down'] and self.curr_difficulty > min(self.difficulties):
+                    self.curr_difficulty -= 1
+                self.logger.update_difficulty(self.curr_difficulty)
+            else:
+                if self.beh.probe_history[-1:] > 0:
+                    self.iter -= 1
+            selected_conditions = [i for (i, v) in zip(self.conditions,
+                                                       np.array(self.difficulties) == self.curr_difficulty) if v]
+            self.curr_cond = np.random.choice(selected_conditions)
 
