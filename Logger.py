@@ -108,7 +108,7 @@ class Logger:
                                'probe': probe,
                                'reward_amount': cond['reward_amount']}
                         self.queue.put(dict(table=condtable, tuple=key))
-                else
+                else:
                     self.queue.put(dict(table=condtable, tuple=dict(cond.items())))
                     if condtable == 'OdorCond':
                         for idx, port in enumerate(cond['delivery_port']):
