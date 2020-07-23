@@ -93,7 +93,7 @@ class Stimulus:
                                                        np.array(self.difficulties) == self.curr_difficulty)) if v]
             self.curr_cond = np.random.choice(selected_conditions)
         elif self.params['trial_selection'] == 'water_stairs':
-            rew_h = self.beh.reward_history
+            rew_h = np.greater(self.beh.reward_history, 0)
             if self.iter == 1 or np.size(self.iter) == 0:
                 self.iter = self.params['staircase_window']
                 perf = np.nanmean(np.greater(rew_h[-self.params['staircase_window']:], 0))
