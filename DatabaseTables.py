@@ -226,7 +226,7 @@ class LiquidDelivery(dj.Manual):
         query = self*Session() 
         
         if key=='all':
-            keys = list(range(0,11)) # 11 mice
+            keys = list(range(1,11)) # 11 mice
         else:
             keys = [key]  
             
