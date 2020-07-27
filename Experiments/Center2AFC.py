@@ -130,6 +130,7 @@ class Trial(State):
 class PostTrial(State):
     def run(self):
         self.stim.stop()  # stop stimulus when timeout
+        self.beh.update_history()
 
     def next(self):
         return states['InterTrial']

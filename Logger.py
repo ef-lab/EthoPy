@@ -1,9 +1,9 @@
-import numpy, socket, json, os, pandas
+import numpy, socket, json, os, pandas, pathlib
 from utils.Timer import *
 from utils.Generator import *
 from queue import Queue
 import time as systime
-import datetime
+from datetime import datetime, timedelta
 from threading import Lock
 import threading
 from DatabaseTables import *
@@ -222,12 +222,12 @@ class Logger:
         protocol = (Task() & dict(task_idx=task_idx)).fetch1('protocol')
         path, filename = os.path.split(protocol)
         if not path:
-            path = os.path.abspath('conf')
-            protocol = path + '/' + filename
+            path = pathlib.Path(__file__).parent.absolute()
+            protocol = str(path) + '/conf/' + filename
         return protocol
 
     def ping(self):
-        lp = str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        lp = str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
                             field='last_ping', value=lp, update=True))
         self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
