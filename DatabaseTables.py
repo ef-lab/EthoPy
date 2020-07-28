@@ -74,7 +74,7 @@ class Session(dj.Manual):
             difficulties = [cond['difficulty'] for cond in conds]
             plt.scatter(trial_idxs, difficulties + offset, zorder=10, **kwargs)
 
-        for key in self:
+        for key in Session() & self:
             # correct trials
             correct_trials = ((LiquidDelivery * Trial & key).proj(
                 selected='(time - end_time)<100 AND (time - end_time)>0') & 'selected > 0')
