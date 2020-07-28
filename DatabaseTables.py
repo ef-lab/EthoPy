@@ -66,7 +66,11 @@ class Session(dj.Manual):
 
     def plotDifficulty(self, **kwargs):
         # parameters
-        params = {'probe_colors': np.array([[1, 0, 0], [0, .5, 1]]), 'trial_bins': 10, 'range': 0.9, **kwargs}
+        params = {'probe_colors': [[1, 0, 0], [0, .5, 1]],
+                  'trial_bins': 10,
+                  'range': 0.9,
+                  'xlim': (-1,),
+                  'ylim': (0.4,), **kwargs}
 
         def plot_trials(trials, **kwargs):
             conds, trial_idxs = ((Trial & trials) * Condition()).fetch('cond_tuple', 'trial_idx')
@@ -74,7 +78,7 @@ class Session(dj.Manual):
             difficulties = [cond['difficulty'] for cond in conds]
             plt.scatter(trial_idxs, difficulties + offset, zorder=10, **kwargs)
 
-        for key in self.fetch():
+        for key in self:
             # correct trials
             correct_trials = ((LiquidDelivery * Trial & key).proj(
                 selected='(time - end_time)<100 AND (time - end_time)>0') & 'selected > 0')
@@ -88,7 +92,7 @@ class Session(dj.Manual):
 
             # plot trials
             fig = plt.figure(figsize=(10, 4), tight_layout=True)
-            plot_trials(correct_trials, s=4, c=params['probe_colors'][correct_trials.fetch('probe') - 1])
+            plot_trials(correct_trials, s=4, c=np.array(params['probe_colors'])[correct_trials.fetch('probe') - 1])
             plot_trials(incorrect_trials, s=4, marker='o', facecolors='none', edgecolors=[.3, .3, .3], linewidths=.5)
             plot_trials(missed_trials, s=.1, c=[[0, 0, 0]])
 
@@ -96,9 +100,10 @@ class Session(dj.Manual):
             plt.xlabel('Trials')
             plt.ylabel('Difficulty')
             plt.title('Animal:%d  Session:%d' % (key['animal_id'], key['session']))
-            plt.ylim((0.4, 3.6))
-            plt.xlim((-1, 1400))
-            plt.yticks((1, 2, 3))
+            plt.title('Animal:%d  Session:%d' % (key['animal_id'], key['session']))
+            plt.yticks(range(int(min(plt.gca().get_ylim())),int(max(plt.gca().get_ylim()))+1))
+            plt.ylim(params['ylim'][0])
+            plt.xlim(params['xlim'][0])
             plt.gca().xaxis.set_ticks_position('none')
             plt.gca().yaxis.set_ticks_position('none')
             plt.box(False)
@@ -161,23 +166,25 @@ class Lick(dj.Manual):
     """
     
     def plot(self, **kwargs):
-        params = {'probe_colors':['red','blue'], # set function parameters with defaults
+        params = {'probe_colors':['red','blue'],                                # set function parameters with defaults
                   'xlim':[-500, 3000], **kwargs}
-        conds = Condition() & (Trial() & self) # conditions in trials for animal
+        conds = Condition() & (Trial() & self)                                        # conditions in trials for animal
         fig, axs = plt.subplots(round(len(conds)**.5), -(-len(conds)//round(len(conds)**.5)),
                                 sharex=True, figsize=(30, 20))
-        for idx, cond in enumerate(conds): #  iterate through conditions
-            trials, probes, times = ((Lick * Trial & cond).proj( # get licks for all trials of one condition
-                trial_time='time-start_time') & ('(trial_time>%d) AND (trial_time<%d)' % (params['xlim']))).\
-                fetch('trial_idx', 'probe', 'trial_time')
-            axs.item(idx).scatter(times, range(1,len(trials)), 2, c=params['probe_colors'][probes-1]) # plot all of them
+        for idx, cond in enumerate(conds):                                                #  iterate through conditions
+            selected_trials = (Lick * Trial & cond & self).proj(                             # select trials with licks
+                selected='(time <= end_time) AND (time > start_time)') & 'selected > 0'
+            trials, probes, times = ((Lick * (Trial() & selected_trials & self)).proj(       # get licks for all trials
+                trial_time='time-start_time') & ('(trial_time>%d) AND (trial_time<%d)' %
+                (params['xlim'][0], params['xlim'][1]))).fetch('trial_idx', 'probe', 'trial_time')
+            un_trials, idx_trials = np.unique(trials, return_inverse=True)                          # get unique trials
+            axs.item(idx).scatter(times, idx_trials, c=np.array(params['probe_colors'])[probes-1])   # plot all of them
             axs.item(idx).axvline(x=0, color='green', linestyle='-')
-            axs.item(idx).set_title('Mov:%s Odor:%s \n %s   %s' % (str(cond['cond_tuple'].get('movie_name')),
+            axs.item(idx).set_title('Mov:%s   Odor:%s \n dur:%s   dur:%s' % (str(cond['cond_tuple'].get('movie_name')),
                 str(cond['cond_tuple'].get('dutycycle')), str(cond['cond_tuple'].get('movie_duration')),
                 str(cond['cond_tuple'].get('odor_duration'))),
-                               color=params['probe_colors'][cond['cond_tuple']['probe']-1], fontsize=9)
-            axs.item(idx).set_yticks(range(0, len(trials) + 1, len(trials)//3))
-        plt.ylim(0, )
+                               color=np.array(params['probe_colors'])[cond['cond_tuple']['probe']-1], fontsize=9)
+            axs.item(idx).invert_yaxis()
         plt.xlim(params['xlim'])
         plt.show()
 
