@@ -187,6 +187,7 @@ class Lick(dj.Manual):
             axs.item(idx).invert_yaxis()
         plt.xlim(params['xlim'])
         plt.show()
+        return fig
 
 
 @schema
