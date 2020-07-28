@@ -2,11 +2,7 @@
 import datajoint as dj
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-from matplotlib.dates import DateFormatter
 import numpy as np
-from usefull_functions import none_to_empty
-import math 
 from datetime import datetime, timedelta
 import bisect
 import itertools
