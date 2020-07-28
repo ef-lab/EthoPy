@@ -230,7 +230,7 @@ class LiquidDelivery(dj.Manual):
             plt.ylabel('liquid (microl)')
             plt.xlabel('date')
             plt.xticks(rotation=45)
-            plt.title('animal_id: %1d' % k)
+            plt.title('animal_id: %d' % animal['animal_id'])
             plt.ylim([0,3000])
 
 
