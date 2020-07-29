@@ -189,10 +189,11 @@ class Lick(dj.Manual):
     
     def plot(self, **kwargs):
         params = {'probe_colors':['red','blue'],                                # set function parameters with defaults
-                  'xlim':[-500, 3000], **kwargs}
+                  'xlim':[-500, 3000],
+                  'figsize':(10, 15), **kwargs}
         conds = (Session() & self).getCondGroups()                                    # conditions in trials for animal
         fig, axs = plt.subplots(round(len(conds)**.5), -(-len(conds)//round(len(conds)**.5)),
-                                sharex=True, figsize=(30, 20))
+                                sharex=True, figsize=params['figsize'])
         for idx, cond in enumerate(conds):                                                #  iterate through conditions
             selected_trials = (Lick * Trial & (Condition & cond) & self).proj(               # select trials with licks
                 selected='(time <= end_time) AND (time > start_time)') & 'selected > 0'
