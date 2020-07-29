@@ -102,7 +102,7 @@ class Logger:
             self.queue.put(dict(table='Condition', tuple=dict(cond_hash=cond_hash, cond_tuple=cond.copy())))
             cond.update({'cond_hash': cond_hash})
             for condtable in condition_tables:
-                if condtable == 'RewardCond' and isinstance(cond['probe'],list):
+                if condtable == 'RewardCond' and isinstance(cond['probe'], tuple):
                     for idx, probe in enumerate(cond['probe']):
                         key = {'cond_hash': cond['cond_hash'],
                                'probe': probe,
