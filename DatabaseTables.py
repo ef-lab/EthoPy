@@ -212,7 +212,7 @@ class Lick(dj.Manual):
                 name = 'Mov:%s' % np.unique((MovieCond & cond).fetch('movie_name'))[0]
             elif np.unique(cond['odor_duration'])[0]:
                 name = 'Odor:%d' % np.unique(cond['dutycycle'])[0]
-            name = name + ' p:' + str(np.nanmean(selected_trials.fetch('probe')==np.unique(cond['probe'])[0]))
+            name = '%s p:%.2f' % (name, np.nanmean(selected_trials.fetch('probe')==np.unique(cond['probe'])[0]))
             axs.item(idx).set_title(name, color=np.array(params['probe_colors'])[np.unique(cond['probe'])[0] - 1],
                                     fontsize=9)
             axs.item(idx).invert_yaxis()
