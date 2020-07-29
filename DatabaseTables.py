@@ -173,7 +173,7 @@ class Trial(dj.Manual):
         # plot info
         plt.xlabel('Trials')
         plt.ylabel('Difficulty')
-        plt.title('Animal:%d  Session:%d' % (Session() & self).fetch('animal_id','session'))
+        plt.title('Animal:%d  Session:%d' % (Session() & self).fetch1('animal_id','session'))
         plt.yticks(range(int(min(plt.gca().get_ylim())),int(max(plt.gca().get_ylim()))+1))
         plt.ylim(params['ylim'][0])
         plt.xlim(params['xlim'][0])
