@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import datajoint as dj
-import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime, timedelta
@@ -64,52 +63,6 @@ class Session(dj.Manual):
     experiment_type=null : varchar(256)                 
     """
 
-    def plotDifficulty(self, **kwargs):
-        # parameters
-        params = {'probe_colors': [[1, 0, 0], [0, .5, 1]],
-                  'trial_bins': 10,
-                  'range': 0.9,
-                  'xlim': (-1,),
-                  'ylim': (0.4,), **kwargs}
-
-        def plot_trials(trials, **kwargs):
-            conds, trial_idxs = ((Trial & trials) * Condition()).fetch('cond_tuple', 'trial_idx')
-            offset = ((trial_idxs - 1) % params['trial_bins'] - params['trial_bins'] / 2) * params['range'] * 0.1
-            difficulties = [cond['difficulty'] for cond in conds]
-            plt.scatter(trial_idxs, difficulties + offset, zorder=10, **kwargs)
-
-        for key in self:
-            # correct trials
-            correct_trials = ((LiquidDelivery * Trial & key).proj(
-                selected='(time - end_time)<100 AND (time - end_time)>0') & 'selected > 0')
-
-            # missed trials
-            incorrect_trials = ((Lick * Trial & key).proj(
-                selected='(time <= end_time) AND (time > start_time)') & 'selected > 0') - (Trial() & correct_trials)
-
-            # incorrect trials
-            missed_trials = ((Trial - correct_trials & key) - incorrect_trials).proj()
-
-            # plot trials
-            fig = plt.figure(figsize=(10, 4), tight_layout=True)
-            plot_trials(correct_trials, s=4, c=np.array(params['probe_colors'])[correct_trials.fetch('probe') - 1])
-            plot_trials(incorrect_trials, s=4, marker='o', facecolors='none', edgecolors=[.3, .3, .3], linewidths=.5)
-            plot_trials(missed_trials, s=.1, c=[[0, 0, 0]])
-
-            # plot info
-            plt.xlabel('Trials')
-            plt.ylabel('Difficulty')
-            plt.title('Animal:%d  Session:%d' % (key['animal_id'], key['session']))
-            plt.title('Animal:%d  Session:%d' % (key['animal_id'], key['session']))
-            plt.yticks(range(int(min(plt.gca().get_ylim())),int(max(plt.gca().get_ylim()))+1))
-            plt.ylim(params['ylim'][0])
-            plt.xlim(params['xlim'][0])
-            plt.gca().xaxis.set_ticks_position('none')
-            plt.gca().yaxis.set_ticks_position('none')
-            plt.box(False)
-            plt.show()
-
-
 
 @schema
 class Condition(dj.Manual):
@@ -154,51 +107,18 @@ class Trial(dj.Manual):
     end_time             : int                          # end time from session start (ms)
     """
 
-
-@schema
-class CenterPort(dj.Manual):
-    definition = """
-    # Center port information
-    -> Session
-    time	     	   	: int           	# time from session start (ms)
-    ---
-    in_position          : smallint
-    state=null           : varchar(256)  
-    timestamp            : timestamp    
-    """
-         
-    def filter_cp(self):
-        
-        cp_df = pd.DataFrame(self.fetch())
-        cp_df['change'] = cp_df['in_position'].diff()
-        cp_df = cp_df.dropna()
-        cp_df = cp_df.astype({'change': 'int32'})
-        cp_df_filtered = cp_df[np.abs(cp_df['change']) == 1]
-        result = cp_df_filtered.loc[cp_df_filtered.groupby('animal_id').timestamp.idxmax(),:]
-        
-        return result
-
-@schema
-class Lick(dj.Manual):
-    definition = """
-    # Lick timestamps
-    -> Session
-    time	     	  	: int           	# time from session start (ms)
-    probe               : int               # probe number
-    """
-    
-    def plot(self, **kwargs):
+    def plotLicks(self, **kwargs):
         params = {'probe_colors':['red','blue'],                                # set function parameters with defaults
                   'xlim':[-500, 3000],
                   'figsize':(15, 15),
                   'dotsize': 4, **kwargs}
-        conds = (Condition() & (Trial() & self)).getGroups()                          # conditions in trials for animal
+        conds = (Condition() & self).getGroups()                          # conditions in trials for animal
         fig, axs = plt.subplots(round(len(conds)**.5), -(-len(conds)//round(len(conds)**.5)),
                                 sharex=True, figsize=params['figsize'])
         for idx, cond in enumerate(conds):                                                #  iterate through conditions
-            selected_trials = (Lick * Trial & (Condition & cond) & self).proj(               # select trials with licks
+            selected_trials = (Lick * self & (Condition & cond)).proj(                       # select trials with licks
                 selected='(time <= end_time) AND (time > start_time)') & 'selected > 0'
-            trials, probes, times = ((Lick * (Trial() & selected_trials & self)).proj(       # get licks for all trials
+            trials, probes, times = ((Lick * (self & selected_trials)).proj(                 # get licks for all trials
                 trial_time='time-start_time') & ('(trial_time>%d) AND (trial_time<%d)' %
                 (params['xlim'][0], params['xlim'][1]))).fetch('trial_idx', 'probe', 'trial_time')
             un_trials, idx_trials = np.unique(trials, return_inverse=True)                          # get unique trials
@@ -219,6 +139,77 @@ class Lick(dj.Manual):
         plt.xlim(params['xlim'])
         plt.show()
         return fig
+
+    def plotDifficulty(self, **kwargs):
+        params = {'probe_colors': [[1, 0, 0], [0, .5, 1]],
+                  'trial_bins': 10,
+                  'range': 0.9,
+                  'xlim': (-1,),
+                  'ylim': (0.4,), **kwargs}
+
+        def plot_trials(trials, **kwargs):
+            conds, trial_idxs = ((Trial & trials) * Condition()).fetch('cond_tuple', 'trial_idx')
+            offset = ((trial_idxs - 1) % params['trial_bins'] - params['trial_bins'] / 2) * params['range'] * 0.1
+            difficulties = [cond['difficulty'] for cond in conds]
+            plt.scatter(trial_idxs, difficulties + offset, zorder=10, **kwargs)
+
+        # correct trials
+        correct_trials = ((LiquidDelivery * self).proj(
+            selected='(time - end_time)<100 AND (time - end_time)>0') & 'selected > 0')
+
+        # missed trials
+        incorrect_trials = ((Lick * self).proj(
+            selected='(time <= end_time) AND (time > start_time)') & 'selected > 0') - (self & correct_trials)
+
+        # incorrect trials
+        missed_trials = ((self - correct_trials) - incorrect_trials).proj()
+
+        # plot trials
+        fig = plt.figure(figsize=(10, 4), tight_layout=True)
+        plot_trials(correct_trials, s=4, c=np.array(params['probe_colors'])[correct_trials.fetch('probe') - 1])
+        plot_trials(incorrect_trials, s=4, marker='o', facecolors='none', edgecolors=[.3, .3, .3], linewidths=.5)
+        plot_trials(missed_trials, s=.1, c=[[0, 0, 0]])
+
+        # plot info
+        plt.xlabel('Trials')
+        plt.ylabel('Difficulty')
+        plt.title('Animal:%d  Session:%d' % (key['animal_id'], key['session']))
+        plt.yticks(range(int(min(plt.gca().get_ylim())),int(max(plt.gca().get_ylim()))+1))
+        plt.ylim(params['ylim'][0])
+        plt.xlim(params['xlim'][0])
+        plt.gca().xaxis.set_ticks_position('none')
+        plt.gca().yaxis.set_ticks_position('none')
+        plt.box(False)
+        plt.show()
+
+
+@schema
+class CenterPort(dj.Manual):
+    definition = """
+    # Center port information
+    -> Session
+    time	     	   	: int           	# time from session start (ms)
+    ---
+    in_position          : smallint
+    state=null           : varchar(256)  
+    timestamp            : timestamp    
+    """
+         
+    def plot(self, **kwargs):
+        params = {'range':(0,1000),
+                  'bins':100, **kwargs}
+        d = np.diff(self.fetch('time'))
+        plt.hist(d, params['bins'], range=params['range'])
+
+
+@schema
+class Lick(dj.Manual):
+    definition = """
+    # Lick timestamps
+    -> Session
+    time	     	  	: int           	# time from session start (ms)
+    probe               : int               # probe number
+    """
 
 
 @schema
