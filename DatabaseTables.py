@@ -190,7 +190,8 @@ class Lick(dj.Manual):
     def plot(self, **kwargs):
         params = {'probe_colors':['red','blue'],                                # set function parameters with defaults
                   'xlim':[-500, 3000],
-                  'figsize':(10, 15), **kwargs}
+                  'figsize':(15, 15),
+                  'dotsize': 4, **kwargs}
         conds = (Session() & self).getCondGroups()                                    # conditions in trials for animal
         fig, axs = plt.subplots(round(len(conds)**.5), -(-len(conds)//round(len(conds)**.5)),
                                 sharex=True, figsize=params['figsize'])
@@ -201,7 +202,8 @@ class Lick(dj.Manual):
                 trial_time='time-start_time') & ('(trial_time>%d) AND (trial_time<%d)' %
                 (params['xlim'][0], params['xlim'][1]))).fetch('trial_idx', 'probe', 'trial_time')
             un_trials, idx_trials = np.unique(trials, return_inverse=True)                          # get unique trials
-            axs.item(idx).scatter(times, idx_trials, c=np.array(params['probe_colors'])[probes-1])   # plot all of them
+            axs.item(idx).scatter(times, idx_trials, params['dotsize'],                              # plot all of them
+                                  c=np.array(params['probe_colors'])[probes-1])
             axs.item(idx).axvline(x=0, color='green', linestyle='-')
             if np.unique(cond['movie_duration'])[0] and np.unique(cond['odor_duration'])[0]:
                 name = 'Mov:%s  Odor:%d' % (np.unique((MovieCond & cond).fetch('movie_name'))[0],
