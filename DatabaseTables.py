@@ -192,7 +192,7 @@ class Lick(dj.Manual):
                   'xlim':[-500, 3000],
                   'figsize':(15, 15),
                   'dotsize': 4, **kwargs}
-        conds = (Condition() & (Trial() & self)).getCondGroups()                                    # conditions in trials for animal
+        conds = (Condition() & (Trial() & self)).getGroups()                          # conditions in trials for animal
         fig, axs = plt.subplots(round(len(conds)**.5), -(-len(conds)//round(len(conds)**.5)),
                                 sharex=True, figsize=params['figsize'])
         for idx, cond in enumerate(conds):                                                #  iterate through conditions
