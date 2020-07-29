@@ -108,21 +108,21 @@ class RPProbe(Probe):
             self.thread.submit(self.__pwd_out, self.channels['air'][delivery_port[i]], odor_duration, dutycycle[i])
 
     def position_change(self, channel=0):
-        if self.GPIO.input(self.channels['start'][1]):
+        if self.getStart():
             self.timer_ready.start()
             if not self.ready:
                 self.ready = True
                 self.logger.log_position(self.ready, 'Probe status')
-                #print('in position')
+                print('in position')
         else:
             if self.ready:
                 self.ready = False
                 self.logger.log_position(self.ready, 'Probe status')
-                #print('off position')
+                print('off position')
 
     def in_position(self):
         # handle missed events
-        ready = self.GPIO.input(self.channels['start'][1])
+        ready = self.getStart()
         if self.ready != ready:
             self.position_change()
         if not self.ready:
@@ -156,3 +156,9 @@ class RPProbe(Probe):
         self.GPIO.remove_event_detect(self.channels['start'][1])
         self.GPIO.cleanup()
         self.Pulser.wave_clear()
+
+    def getStart(self):
+        if self.logger.setup == 'ef-rp9':
+            return not self.GPIO.input(self.channels['start'][1])
+        else:
+            return self.GPIO.input(self.channels['start'][1])
