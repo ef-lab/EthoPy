@@ -189,10 +189,12 @@ class Lick(dj.Manual):
     
     def plot(self, **kwargs):
         params = {'probe_colors':['red','blue'],                                # set function parameters with defaults
-                  'xlim':[-500, 3000], **kwargs}
+                  'xlim':[-500, 3000],
+                  'figsize':(15, 15),
+                  'dotsize': 4, **kwargs}
         conds = (Session() & self).getCondGroups()                                    # conditions in trials for animal
         fig, axs = plt.subplots(round(len(conds)**.5), -(-len(conds)//round(len(conds)**.5)),
-                                sharex=True, figsize=(30, 20))
+                                sharex=True, figsize=params['figsize'])
         for idx, cond in enumerate(conds):                                                #  iterate through conditions
             selected_trials = (Lick * Trial & (Condition & cond) & self).proj(               # select trials with licks
                 selected='(time <= end_time) AND (time > start_time)') & 'selected > 0'
@@ -200,7 +202,8 @@ class Lick(dj.Manual):
                 trial_time='time-start_time') & ('(trial_time>%d) AND (trial_time<%d)' %
                 (params['xlim'][0], params['xlim'][1]))).fetch('trial_idx', 'probe', 'trial_time')
             un_trials, idx_trials = np.unique(trials, return_inverse=True)                          # get unique trials
-            axs.item(idx).scatter(times, idx_trials, c=np.array(params['probe_colors'])[probes-1])   # plot all of them
+            axs.item(idx).scatter(times, idx_trials, params['dotsize'],                              # plot all of them
+                                  c=np.array(params['probe_colors'])[probes-1])
             axs.item(idx).axvline(x=0, color='green', linestyle='-')
             if np.unique(cond['movie_duration'])[0] and np.unique(cond['odor_duration'])[0]:
                 name = 'Mov:%s  Odor:%d' % (np.unique((MovieCond & cond).fetch('movie_name'))[0],
@@ -209,6 +212,7 @@ class Lick(dj.Manual):
                 name = 'Mov:%s' % np.unique((MovieCond & cond).fetch('movie_name'))[0]
             elif np.unique(cond['odor_duration'])[0]:
                 name = 'Odor:%d' % np.unique(cond['dutycycle'])[0]
+            name = '%s p:%.2f' % (name, np.nanmean(selected_trials.fetch('probe')==np.unique(cond['probe'])[0]))
             axs.item(idx).set_title(name, color=np.array(params['probe_colors'])[np.unique(cond['probe'])[0] - 1],
                                     fontsize=9)
             axs.item(idx).invert_yaxis()
