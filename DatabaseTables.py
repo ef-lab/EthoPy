@@ -110,7 +110,17 @@ class Session(dj.Manual):
             plt.show()
 
 
-    def getCondGroups(self):
+
+@schema
+class Condition(dj.Manual):
+    definition = """
+    # unique stimulus conditions
+    cond_hash             : char(24)                 # unique condition hash
+    ---
+    cond_tuple=null        : blob      
+    """
+
+    def getGroups(self):
         odor_flag = (len(Trial & OdorCond.Port() & self) > 0)  # filter trials by hash number of odor
         movie_flag = (len(Trial & MovieCond & self) > 0)  # filter trials by hash number of movies
         if movie_flag and odor_flag:
@@ -130,16 +140,6 @@ class Session(dj.Manual):
         conditions = conditions.fetch()
         condition_groups = [conditions[groups_idx == group] for group in set(groups_idx)]
         return condition_groups
-
-
-@schema
-class Condition(dj.Manual):
-    definition = """
-    # unique stimulus conditions
-    cond_hash             : char(24)                 # unique condition hash
-    ---
-    cond_tuple=null        : blob      
-    """
 
 
 @schema
@@ -192,7 +192,7 @@ class Lick(dj.Manual):
                   'xlim':[-500, 3000],
                   'figsize':(15, 15),
                   'dotsize': 4, **kwargs}
-        conds = (Session() & self).getCondGroups()                                    # conditions in trials for animal
+        conds = (Condition() & (Trial() & self)).getCondGroups()                                    # conditions in trials for animal
         fig, axs = plt.subplots(round(len(conds)**.5), -(-len(conds)//round(len(conds)**.5)),
                                 sharex=True, figsize=params['figsize'])
         for idx, cond in enumerate(conds):                                                #  iterate through conditions
