@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import datajoint as dj
 import matplotlib.pyplot as plt
+from matplotlib import cm
 import numpy as np
 from datetime import datetime, timedelta
 import bisect
@@ -337,10 +338,10 @@ class LiquidCalibration(dj.Manual):
         """
 
     def plot(self):
-        plt.set_cmap('gist_ncar')
-        for key in self:
+        colors = cm.get_cmap('gist_ncar', len(self))
+        for idx, key in enumerate(self):
             d, n, w = (LiquidCalibration.PulseWeight() & key).fetch('pulse_dur', 'pulse_num', 'weight')
-            plt.plot(d, (w / n) * 1000, label=(key['setup'] + ' #' + str(key['probe'])))
+            plt.plot(d, (w / n) * 1000, label=(key['setup'] + ' #' + str(key['probe'])),c=colors(idx))
             plt.legend(loc=1)
             plt.xlabel('Time (ms)')
             plt.ylabel('Liquid(uL)')
