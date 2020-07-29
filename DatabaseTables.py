@@ -138,7 +138,6 @@ class Trial(dj.Manual):
             axs.item(idx).invert_yaxis()
         plt.xlim(params['xlim'])
         plt.show()
-        return fig
 
     def plotDifficulty(self, **kwargs):
         params = {'probe_colors': [[1, 0, 0], [0, .5, 1]],
@@ -336,5 +335,13 @@ class LiquidCalibration(dj.Manual):
         weight                   : float                # weight of total liquid released in gr
         timestamp                : timestamp            # timestamp
         """
+
+    def plot(self):
+        for key in self:
+            d, n, w = (LiquidCalibration.PulseWeight() & key).fetch('pulse_dur', 'pulse_num', 'weight')
+            plt.plot(d, (w / n) * 1000, label=(key['setup'] + ' #' + str(key['probe'])))
+            plt.legend(loc=1)
+            plt.xlabel('Time (ms)')
+            plt.ylabel('Liquid(uL)')
 
 
