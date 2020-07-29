@@ -338,7 +338,7 @@ class LiquidCalibration(dj.Manual):
         """
 
     def plot(self):
-        colors = cm.get_cmap('gist_ncar', len(self))
+        colors = cm.get_cmap('nipy_spectral', len(self))
         for idx, key in enumerate(self):
             d, n, w = (LiquidCalibration.PulseWeight() & key).fetch('pulse_dur', 'pulse_num', 'weight')
             plt.plot(d, (w / n) * 1000, label=(key['setup'] + ' #' + str(key['probe'])),c=colors(idx))
