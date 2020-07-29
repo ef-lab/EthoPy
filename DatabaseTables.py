@@ -337,6 +337,7 @@ class LiquidCalibration(dj.Manual):
         """
 
     def plot(self):
+        plt.set_cmap('gist_ncar')
         for key in self:
             d, n, w = (LiquidCalibration.PulseWeight() & key).fetch('pulse_dur', 'pulse_num', 'weight')
             plt.plot(d, (w / n) * 1000, label=(key['setup'] + ' #' + str(key['probe'])))
