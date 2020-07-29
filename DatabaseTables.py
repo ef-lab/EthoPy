@@ -110,6 +110,28 @@ class Session(dj.Manual):
             plt.show()
 
 
+    def getCondGroups(self):
+        odor_flag = (len(Trial & OdorCond.Port() & self) > 0)  # filter trials by hash number of odor
+        movie_flag = (len(Trial & MovieCond & self) > 0)  # filter trials by hash number of movies
+        if movie_flag and odor_flag:
+            conditions = RewardCond() * MovieCond() * (OdorCond.Port() & 'delivery_port=1')\
+                         * OdorCond() & (Trial & self)
+        elif not movie_flag and odor_flag:
+            conditions = (RewardCond() *  (OdorCond.Port() & 'delivery_port=1') * OdorCond() & (Trial & self)).proj(
+                movie_duration='0', dutycycle='dutycycle', odor_duration='odor_duration', probe='probe')
+        elif movie_flag and not odor_flag:
+            conditions = (RewardCond() * MovieCond() & (Trial & self)).proj(
+                movie_duration='movie_duration',probe='probe', dutycycle='0', odor_duration='0')
+        else:
+            return []
+        uniq_groups, groups_idx = np.unique(
+            [cond.astype(int) for cond in conditions.fetch('movie_duration','dutycycle','odor_duration','probe')],
+            axis=1, return_inverse=True)
+        conditions = conditions.fetch()
+        condition_groups = [conditions[groups_idx == group] for group in set(groups_idx)]
+        return condition_groups
+
+
 @schema
 class Condition(dj.Manual):
     definition = """
@@ -168,11 +190,11 @@ class Lick(dj.Manual):
     def plot(self, **kwargs):
         params = {'probe_colors':['red','blue'],                                # set function parameters with defaults
                   'xlim':[-500, 3000], **kwargs}
-        conds = Condition() & (Trial() & self)                                        # conditions in trials for animal
+        conds = (Session() & self).getCondGroups()                                    # conditions in trials for animal
         fig, axs = plt.subplots(round(len(conds)**.5), -(-len(conds)//round(len(conds)**.5)),
                                 sharex=True, figsize=(30, 20))
         for idx, cond in enumerate(conds):                                                #  iterate through conditions
-            selected_trials = (Lick * Trial & cond & self).proj(                             # select trials with licks
+            selected_trials = (Lick * Trial & (Condition & cond) & self).proj(               # select trials with licks
                 selected='(time <= end_time) AND (time > start_time)') & 'selected > 0'
             trials, probes, times = ((Lick * (Trial() & selected_trials & self)).proj(       # get licks for all trials
                 trial_time='time-start_time') & ('(trial_time>%d) AND (trial_time<%d)' %
@@ -180,10 +202,15 @@ class Lick(dj.Manual):
             un_trials, idx_trials = np.unique(trials, return_inverse=True)                          # get unique trials
             axs.item(idx).scatter(times, idx_trials, c=np.array(params['probe_colors'])[probes-1])   # plot all of them
             axs.item(idx).axvline(x=0, color='green', linestyle='-')
-            axs.item(idx).set_title('Mov:%s   Odor:%s \n dur:%s   dur:%s' % (str(cond['cond_tuple'].get('movie_name')),
-                str(cond['cond_tuple'].get('dutycycle')), str(cond['cond_tuple'].get('movie_duration')),
-                str(cond['cond_tuple'].get('odor_duration'))),
-                               color=np.array(params['probe_colors'])[cond['cond_tuple']['probe']-1], fontsize=9)
+            if np.unique(cond['movie_duration'])[0] and np.unique(cond['odor_duration'])[0]:
+                name = 'Mov:%s  Odor:%d' % (np.unique((MovieCond & cond).fetch('movie_name'))[0],
+                                            np.unique(cond['dutycycle'])[0])
+            elif np.unique(cond['movie_duration'])[0]:
+                name = 'Mov:%s' % np.unique((MovieCond & cond).fetch('movie_name'))[0]
+            elif np.unique(cond['odor_duration'])[0]:
+                name = 'Odor:%d' % np.unique(cond['dutycycle'])[0]
+            axs.item(idx).set_title(name, color=np.array(params['probe_colors'])[np.unique(cond['probe'])[0] - 1],
+                                    fontsize=9)
             axs.item(idx).invert_yaxis()
         plt.xlim(params['xlim'])
         plt.show()
