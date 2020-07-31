@@ -102,14 +102,21 @@ class Logger:
             self.queue.put(dict(table='Condition', tuple=dict(cond_hash=cond_hash, cond_tuple=cond.copy())))
             cond.update({'cond_hash': cond_hash})
             for condtable in condition_tables:
-                self.queue.put(dict(table=condtable, tuple=dict(cond.items())))
-                if condtable == 'OdorCond':
-                    for idx, port in enumerate(cond['delivery_port']):
+                if condtable == 'RewardCond' and isinstance(cond['probe'], tuple):
+                    for idx, probe in enumerate(cond['probe']):
                         key = {'cond_hash': cond['cond_hash'],
-                               'dutycycle': cond['dutycycle'][idx],
-                               'odor_id': cond['odor_id'][idx],
-                               'delivery_port': port}
-                        self.queue.put(dict(table=condtable+'.Port', tuple=key))
+                               'probe': probe,
+                               'reward_amount': cond['reward_amount']}
+                        self.queue.put(dict(table=condtable, tuple=key))
+                else:
+                    self.queue.put(dict(table=condtable, tuple=dict(cond.items())))
+                    if condtable == 'OdorCond':
+                        for idx, port in enumerate(cond['delivery_port']):
+                            key = {'cond_hash': cond['cond_hash'],
+                                   'dutycycle': cond['dutycycle'][idx],
+                                   'odor_id': cond['odor_id'][idx],
+                                   'delivery_port': port}
+                            self.queue.put(dict(table=condtable+'.Port', tuple=key))
         return conditions
 
     def init_trial(self, cond_hash):

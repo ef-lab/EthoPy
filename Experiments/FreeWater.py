@@ -78,8 +78,13 @@ class PreTrial(State):
     def next(self):
         if self.beh.is_ready(self.stim.curr_cond['init_duration']):
             return states['Trial']
+        elif self.is_sleep_time():
+            return states['Sleep']
         else:
-            self.StateMachine.status = self.logger.get_setup_info('status')
+            if self.timer.elapsed_time() > 5000:  # occasionally get control status
+                self.timer.start()
+                self.StateMachine.status = self.logger.get_setup_info('status')
+                self.logger.ping()
             return states['PreTrial']
 
 
