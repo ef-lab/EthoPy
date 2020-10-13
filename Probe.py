@@ -158,7 +158,4 @@ class RPProbe(Probe):
         self.Pulser.wave_clear()
 
     def getStart(self):
-        if numpy.any(self.logger.setup == numpy.array(['ef-rp9','ef-rp1','ef-rp2','ef-rp4'])):
-            return not self.GPIO.input(self.channels['start'][1])
-        else:
-            return self.GPIO.input(self.channels['start'][1])
+        return not self.GPIO.input(self.channels['start'][1])
