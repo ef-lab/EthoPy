@@ -82,12 +82,12 @@ class RPBehavior(Behavior):
             self.licked_probe = 0
         return self.licked_probe
 
-    def is_ready(self, init_duration):
-        if init_duration == 0:
+    def is_ready(self, duration):
+        if duration == 0:
             return True
         else:
             ready, ready_time = self.probe.in_position()
-            return ready and ready_time > init_duration
+            return ready and ready_time > duration
 
     def is_correct(self, condition):
         return np.any(np.equal(self.licked_probe, condition['probe']))
