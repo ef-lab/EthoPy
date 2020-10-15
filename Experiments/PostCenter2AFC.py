@@ -105,15 +105,11 @@ class Trial(State):
     def run(self):
         self.stim.present()  # Start Stimulus
         self.probe = self.beh.is_licking(self.trial_start)
-        if self.timer.elapsed_time() >= self.stim.curr_cond['delay_duration'] and not self.resp_ready: # delay completed
+        if self.beh.is_ready(self.stim.curr_cond['delay_duration']):
             self.resp_ready = True
-        else:
-            self.is_ready = self.beh.is_ready(self.timer.elapsed_time() + self.stim.curr_cond['init_duration'])  # update times
 
     def next(self):
-        if not self.is_ready and not self.resp_ready:                           # did not wait
-            return states['PostTrial']
-        elif self.probe > 0 and self.resp_ready and not self.beh.is_correct(self.stim.curr_cond): # response to incorrect probe
+        if self.probe > 0 and self.resp_ready and not self.beh.is_correct(self.stim.curr_cond): # response to incorrect probe
             return states['Punish']
         elif self.probe > 0 and self.resp_ready and self.beh.is_correct(self.stim.curr_cond): # response to correct probe
             return states['Reward']
