@@ -135,8 +135,11 @@ class PostTrial(State):
 
 
 class InterTrial(State):
+    def entry(self):
+        self.timer.start()
+
     def run(self):
-        if self.beh.is_licking(self.timer.elapsed_time()) & self.params['nolick_intertrial']:
+        if self.beh.is_licking(self.timer.elapsed_time())>0 & self.params['nolick_intertrial']:
             self.timer.start()
 
     def next(self):
