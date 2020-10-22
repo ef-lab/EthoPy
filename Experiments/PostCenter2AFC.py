@@ -110,7 +110,7 @@ class Trial(State):
 
     def next(self):
         if self.probe and not self.resp_ready:
-            return states['PostTrial']
+            return states['Punish']
         if self.probe > 0 and self.resp_ready and not self.beh.is_correct(self.stim.curr_cond): # response to incorrect probe
             return states['Punish']
         elif self.probe > 0 and self.resp_ready and self.beh.is_correct(self.stim.curr_cond): # response to correct probe
