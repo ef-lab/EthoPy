@@ -105,13 +105,16 @@ class Trial(State):
     def run(self):
         self.stim.present()  # Start Stimulus
         self.probe = self.beh.is_licking(self.trial_start)
-        if self.beh.is_ready(self.stim.curr_cond['delay_duration']):
+        if self.timer.elapsed_time() >= self.stim.curr_cond['delay_duration'] and not self.resp_ready: # delay completed
             self.resp_ready = True
+            self.stim.unshow([255,255,255])
+        else:
+            self.is_ready = self.beh.is_ready(self.timer.elapsed_time() + self.stim.curr_cond['init_duration'])  # update times
 
     def next(self):
-        if self.probe and not self.resp_ready:
-            return states['Punish']
-        if self.probe > 0 and self.resp_ready and not self.beh.is_correct(self.stim.curr_cond): # response to incorrect probe
+        if not self.is_ready and not self.resp_ready:                           # did not wait
+            return states['PostTrial']
+        elif self.probe > 0 and self.resp_ready and not self.beh.is_correct(self.stim.curr_cond): # response to incorrect probe
             return states['Punish']
         elif self.probe > 0 and self.resp_ready and self.beh.is_correct(self.stim.curr_cond): # response to correct probe
             return states['Reward']
@@ -135,11 +138,8 @@ class PostTrial(State):
 
 
 class InterTrial(State):
-    def entry(self):
-        self.timer.start()
-
     def run(self):
-        if self.beh.is_licking(self.timer.elapsed_time())>0 & self.params['nolick_intertrial']:
+        if self.beh.is_licking() & self.params.get('nolick_intertrial'):
             self.timer.start()
 
     def next(self):
