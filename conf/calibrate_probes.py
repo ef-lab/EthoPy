@@ -6,7 +6,7 @@ session_params = {
     'duration'        : [20, 40, 100, 250],
     'probes'          : [1, 2],
     'pulsenum'        : [600, 400, 100, 30],
-    'pulse_interval'  : [50, 50, 100, 100],
+    'pulse_interval'  : [30, 10, 0, 0],
     'save'            : True,
 }
 

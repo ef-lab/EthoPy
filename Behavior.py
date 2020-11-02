@@ -13,14 +13,15 @@ class Behavior:
         self.logger = logger
         self.rew_probe = 0
         self.probes = np.array(np.empty(0))
-        self.probe_history =  np.array([])  #  History term for bias calculation
-        self.reward_history =  np.array([])  #  History term for performance calculation
+        self.probe_history = np.array([])  # History term for bias calculation
+        self.reward_history = np.array([])  # History term for performance calculation
         self.licked_probe = 0
+        self.reward_amount = dict()
 
     def is_licking(self, since=0):
         return 0
 
-    def is_ready(self, elapsed_time=False):
+    def is_ready(self, init_duration):
         return False, 0
 
     def is_hydrated(self):
@@ -81,12 +82,15 @@ class RPBehavior(Behavior):
             self.licked_probe = 0
         return self.licked_probe
 
-    def is_ready(self, init_duration):
-        if init_duration == 0:
+    def is_ready(self, duration):
+        if duration == 0:
             return True
         else:
             ready, ready_time = self.probe.in_position()
-            return ready and ready_time > init_duration
+            return ready and ready_time > duration
+
+    def is_correct(self, condition):
+        return np.any(np.equal(self.licked_probe, condition['probe']))
 
     def reward(self):
         self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
@@ -99,7 +103,7 @@ class RPBehavior(Behavior):
 
     def inactivity_time(self):  # in minutes
         return np.minimum(self.probe.timer_probe1.elapsed_time(),
-                             self.probe.timer_probe2.elapsed_time()) / 1000 / 60
+                          self.probe.timer_probe2.elapsed_time()) / 1000 / 60
 
     def cleanup(self):
         self.probe.cleanup()

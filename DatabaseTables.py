@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 import datajoint as dj
-import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-from matplotlib.dates import DateFormatter
+from matplotlib import cm
 import numpy as np
+from datetime import datetime, timedelta
+import bisect
+import itertools
 
 schema = dj.schema('lab_behavior')
 MovieTables = dj.create_virtual_module('movies.py', 'lab_stimuli')
@@ -73,6 +74,27 @@ class Condition(dj.Manual):
     cond_tuple=null        : blob      
     """
 
+    def getGroups(self):
+        odor_flag = (len(Trial & OdorCond.Port() & self) > 0)  # filter trials by hash number of odor
+        movie_flag = (len(Trial & MovieCond & self) > 0)  # filter trials by hash number of movies
+        if movie_flag and odor_flag:
+            conditions = RewardCond() * MovieCond() * (OdorCond.Port() & 'delivery_port=1')\
+                         * OdorCond() & (Trial & self)
+        elif not movie_flag and odor_flag:
+            conditions = (RewardCond() *  (OdorCond.Port() & 'delivery_port=1') * OdorCond() & (Trial & self)).proj(
+                movie_duration='0', dutycycle='dutycycle', odor_duration='odor_duration', probe='probe')
+        elif movie_flag and not odor_flag:
+            conditions = (RewardCond() * MovieCond() & (Trial & self)).proj(
+                movie_duration='movie_duration',probe='probe', dutycycle='0', odor_duration='0')
+        else:
+            return []
+        uniq_groups, groups_idx = np.unique(
+            [cond.astype(int) for cond in conditions.fetch('movie_duration','dutycycle','odor_duration','probe')],
+            axis=1, return_inverse=True)
+        conditions = conditions.fetch()
+        condition_groups = [conditions[groups_idx == group] for group in set(groups_idx)]
+        return condition_groups
+
 
 @schema
 class Trial(dj.Manual):
@@ -85,6 +107,80 @@ class Trial(dj.Manual):
     start_time           : int                          # start time from session start (ms)
     end_time             : int                          # end time from session start (ms)
     """
+
+    def plotLicks(self, **kwargs):
+        params = {'probe_colors':['red','blue'],                                # set function parameters with defaults
+                  'xlim':[-500, 3000],
+                  'figsize':(15, 15),
+                  'dotsize': 4, **kwargs}
+        conds = (Condition() & self).getGroups()                          # conditions in trials for animal
+        fig, axs = plt.subplots(round(len(conds)**.5), -(-len(conds)//round(len(conds)**.5)),
+                                sharex=True, figsize=params['figsize'])
+        for idx, cond in enumerate(conds):                                                #  iterate through conditions
+            selected_trials = (Lick * self & (Condition & cond)).proj(                       # select trials with licks
+                selected='(time <= end_time) AND (time > start_time)') & 'selected > 0'
+            trials, probes, times = ((Lick * (self & selected_trials)).proj(                 # get licks for all trials
+                trial_time='time-start_time') & ('(trial_time>%d) AND (trial_time<%d)' %
+                (params['xlim'][0], params['xlim'][1]))).fetch('trial_idx', 'probe', 'trial_time')
+            un_trials, idx_trials = np.unique(trials, return_inverse=True)                          # get unique trials
+            axs.item(idx).scatter(times, idx_trials, params['dotsize'],                              # plot all of them
+                                  c=np.array(params['probe_colors'])[probes-1])
+            axs.item(idx).axvline(x=0, color='green', linestyle='-')
+            if np.unique(cond['movie_duration'])[0] and np.unique(cond['odor_duration'])[0]:
+                name = 'Mov:%s  Odor:%d' % (np.unique((MovieCond & cond).fetch('movie_name'))[0],
+                                            np.unique(cond['dutycycle'])[0])
+            elif np.unique(cond['movie_duration'])[0]:
+                name = 'Mov:%s' % np.unique((MovieCond & cond).fetch('movie_name'))[0]
+            elif np.unique(cond['odor_duration'])[0]:
+                name = 'Odor:%d' % np.unique(cond['dutycycle'])[0]
+            name = '%s p:%.2f' % (name, np.nanmean(selected_trials.fetch('probe')==np.unique(cond['probe'])[0]))
+            axs.item(idx).set_title(name, color=np.array(params['probe_colors'])[np.unique(cond['probe'])[0] - 1],
+                                    fontsize=9)
+            axs.item(idx).invert_yaxis()
+        plt.xlim(params['xlim'])
+        plt.show()
+
+    def plotDifficulty(self, **kwargs):
+        params = {'probe_colors': [[1, 0, 0], [0, .5, 1]],
+                  'trial_bins': 10,
+                  'range': 0.9,
+                  'xlim': (-1,),
+                  'ylim': (0.4,), **kwargs}
+
+        def plot_trials(trials, **kwargs):
+            conds, trial_idxs = ((Trial & trials) * Condition()).fetch('cond_tuple', 'trial_idx')
+            offset = ((trial_idxs - 1) % params['trial_bins'] - params['trial_bins'] / 2) * params['range'] * 0.1
+            difficulties = [cond['difficulty'] for cond in conds]
+            plt.scatter(trial_idxs, difficulties + offset, zorder=10, **kwargs)
+
+        # correct trials
+        correct_trials = ((LiquidDelivery * self).proj(
+            selected='(time - end_time)<100 AND (time - end_time)>0') & 'selected > 0')
+
+        # missed trials
+        incorrect_trials = ((Lick * self).proj(
+            selected='(time <= end_time) AND (time > start_time)') & 'selected > 0') - (self & correct_trials)
+
+        # incorrect trials
+        missed_trials = ((self - correct_trials) - incorrect_trials).proj()
+
+        # plot trials
+        fig = plt.figure(figsize=(10, 4), tight_layout=True)
+        plot_trials(correct_trials, s=4, c=np.array(params['probe_colors'])[correct_trials.fetch('probe') - 1])
+        plot_trials(incorrect_trials, s=4, marker='o', facecolors='none', edgecolors=[.3, .3, .3], linewidths=.5)
+        plot_trials(missed_trials, s=.1, c=[[0, 0, 0]])
+
+        # plot info
+        plt.xlabel('Trials')
+        plt.ylabel('Difficulty')
+        plt.title('Animal:%d  Session:%d' % (Session() & self).fetch1('animal_id','session'))
+        plt.yticks(range(int(min(plt.gca().get_ylim())),int(max(plt.gca().get_ylim()))+1))
+        plt.ylim(params['ylim'][0])
+        plt.xlim(params['xlim'][0])
+        plt.gca().xaxis.set_ticks_position('none')
+        plt.gca().yaxis.set_ticks_position('none')
+        plt.box(False)
+        plt.show()
 
 
 @schema
@@ -99,16 +195,12 @@ class CenterPort(dj.Manual):
     timestamp            : timestamp    
     """
          
-    def filter_cp(self):
-        
-        cp_df = pd.DataFrame(self.fetch())
-        cp_df['change'] = cp_df['in_position'].diff()
-        cp_df = cp_df.dropna()
-        cp_df = cp_df.astype({'change': 'int32'})
-        cp_df_filtered = cp_df[np.abs(cp_df['change']) == 1]
-        result = cp_df_filtered.loc[cp_df_filtered.groupby('animal_id').timestamp.idxmax(),:]
-        
-        return result
+    def plot(self, **kwargs):
+        params = {'range':(0,1000),
+                  'bins':100, **kwargs}
+        d = np.diff(self.fetch('time'))
+        plt.hist(d, params['bins'], range=params['range'])
+
 
 @schema
 class Lick(dj.Manual):
@@ -129,50 +221,48 @@ class LiquidDelivery(dj.Manual):
     probe               : int               # probe number
     """
 
-    def plot(self, key='all'):
-        if key == 'all':
-            df = pd.DataFrame((self * Session).fetch())
-        else:
-            df = pd.DataFrame((self * Session & key).fetch())
+    def plot(self):
+        
+        animals =  Mice.Mice() & self
 
-        df['new_tmst'] = (df['session_tmst'] - pd.Timestamp("1970-01-01")) // pd.Timedelta('1ms')
-        df['new_tmst'] = df['new_tmst'] + df['time']
-        df['new_tmst'] = pd.to_datetime(df['new_tmst'], unit='ms', origin='unix')
-        df['new_tmst'] = df['new_tmst'].dt.date
+        for animal in animals:
 
-        mice = df['animal_id'].unique()  # unique animal ids
-        m_count = df['animal_id'].value_counts()  # count how many times each animal id appears in dataframe
-        t_count = df.groupby(['animal_id'])['new_tmst'].value_counts().sort_index()  # count unique timestamps for each animal id
-        r = 1000
-        #print(df['session_params'][r]['reward_amount'])
-        df['session_params'][r]['reward_amount']
-        df['reward_amount_new'] = np.nan
-        for r in range(len(df)):
-            df['reward_amount_new'][r] = df['session_params'][r]['reward_amount']
+            # define animal
+            liquids = (self*Session() & animal).fetch('session_tmst','reward_amount')
 
-        df['total_reward'] = np.nan # pre-allocate
-        kk = 0
-        for idx in mice:
-            for j in range(len(t_count[idx])):
-                df['total_reward'][kk] = t_count[idx][j] * df['reward_amount_new'][kk]
-                kk = kk + t_count[idx][j]
-        df['total_reward'] = df['total_reward'] / 1000  # convert μl to ml
+            # convert timestamps to dates
+            tstmps = liquids[0].tolist()
+            dates = [datetime.date(d) for d in tstmps] 
+            
+            # find first index for plot, i.e. for last 15 days
+            last_tmst = liquids[0][-1]
+            last_date =  datetime.date(last_tmst)
+            starting_date = last_date - timedelta(days=15) # keep only last 15 days
+            starting_idx = bisect.bisect_right(dates, starting_date)
+            
+            # keep only 15 last days 
+            # construct the list of tuples (date,reward)
+            dates_ = dates[starting_idx:] # lick dates, for last 15 days
+            liqs_ = liquids[1][starting_idx:].tolist() # lick rewards for last 15 days
+            tuples_list = list(zip(dates_, liqs_))
 
-        # plot
-        ymin = df['total_reward'].min()
-        ymax =  df['total_reward'].max()
-        #k = 0
-        for idx in mice:
-            df1 = df[df['animal_id'] == idx].drop_duplicates('new_tmst', keep='first')
-            ax = df1.plot(x='new_tmst', y='total_reward')
-            plt.axhline(y=1, color='r', linestyle='-.')  # minimum liquid intake
+            # construct tuples (unique_date, total_reward_per_day)
+            dates_liqs_unique = [(dt, sum(v for d,v in grp)) for dt, grp in itertools.groupby(tuples_list,
+                                                            key=lambda x: x[0])]
+            print('last date: {}, amount: {}'.format(dates_liqs_unique[-1][0], dates_liqs_unique[-1][1]))
+
+            dates_to_plot = [tpls[0] for tpls in dates_liqs_unique]
+            liqs_to_plot = [tpls[1] for tpls in dates_liqs_unique]
+            
+            # plot
+            plt.figure(figsize=(9, 3))
+            plt.plot(dates_to_plot, liqs_to_plot)
+            plt.ylabel('liquid (microl)')
+            plt.xlabel('date')
             plt.xticks(rotation=45)
-            plt.ylabel('DeliveredLiquid(ml)')
-            ax.set_title('Animal_id: %1d' % idx)
-            #k = k + m_count[idx]
-            axes = plt.gca()
-            axes.set_ylim([ymin,ymax])
-        return ax
+            plt.title('animal_id: %d' % animal['animal_id'])
+            plt.ylim([0,3000])
+
 
 @schema
 class StimOnset(dj.Manual):
@@ -246,5 +336,14 @@ class LiquidCalibration(dj.Manual):
         weight                   : float                # weight of total liquid released in gr
         timestamp                : timestamp            # timestamp
         """
+
+    def plot(self):
+        colors = cm.get_cmap('nipy_spectral', len(self))
+        for idx, key in enumerate(self):
+            d, n, w = (LiquidCalibration.PulseWeight() & key).fetch('pulse_dur', 'pulse_num', 'weight')
+            plt.plot(d, (w / n) * 1000, label=(key['setup'] + ' #' + str(key['probe'])),c=colors(idx))
+            plt.legend(loc=1)
+            plt.xlabel('Time (ms)')
+            plt.ylabel('Liquid(uL)')
 
 

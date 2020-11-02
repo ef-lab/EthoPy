@@ -1,8 +1,6 @@
 from utils.Timer import *
 from StateMachine import *
 from datetime import datetime, timedelta
-from Stimulus import *
-import os
 
 
 class State(StateClass):
@@ -12,26 +10,29 @@ class State(StateClass):
             self.__dict__.update(parent.__dict__)
 
     def setup(self, logger, BehaviorClass, StimulusClass, session_params, conditions):
-
-        logger.log_session(session_params, 'Free')
-
-        # Initialize params & Behavior/Stimulus objects
         self.logger = logger
-        self.beh = BehaviorClass(logger, session_params)
-        self.stim = StimulusClass(logger, session_params, conditions, self.beh)
+        self.logger.log_session(session_params, '2AFC')
+        # Initialize params & Behavior/Stimulus objects
+        self.beh = BehaviorClass(self.logger, session_params)
+        self.stim = StimulusClass(self.logger, session_params, conditions, self.beh)
         self.params = session_params
+        self.logger.log_conditions(conditions, self.stim.get_condition_tables())
+
+        logger.update_setup_info('start_time', session_params['start_time'])
+        logger.update_setup_info('stop_time', session_params['stop_time'])
+
         exitState = Exit(self)
         self.StateMachine = StateMachine(Prepare(self), exitState)
-        self.logger.log_conditions(conditions, ['RewardCond'])
-        self.logger.lock = False
 
         # Initialize states
         global states
         states = {
             'PreTrial'     : PreTrial(self),
             'Trial'        : Trial(self),
+            'PostTrial'    : PostTrial(self),
             'InterTrial'   : InterTrial(self),
             'Reward'       : Reward(self),
+            'Punish'       : Punish(self),
             'Sleep'        : Sleep(self),
             'OffTime'      : OffTime(self),
             'Exit'         : exitState}
@@ -45,10 +46,8 @@ class State(StateClass):
 
     def is_sleep_time(self):
         now = datetime.now()
-        t = datetime.strptime(self.params['start_time'], "%H:%M:%S")
-        start = now.replace(hour=0, minute=0, second=0) + timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
-        t = datetime.strptime(self.params['stop_time'], "%H:%M:%S")
-        stop = now.replace(hour=0, minute=0, second=0) + timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
+        start = now.replace(hour=0, minute=0, second=0) + self.logger.get_setup_info('start_time')
+        stop = now.replace(hour=0, minute=0, second=0) + self.logger.get_setup_info('stop_time')
         if stop < start:
             stop = stop + timedelta(days=1)
         time_restriction = now < start or now > stop
@@ -57,7 +56,7 @@ class State(StateClass):
 
 class Prepare(State):
     def run(self):
-        self.stim.setup()
+        self.stim.setup() # prepare stimulus
 
     def next(self):
         if self.is_sleep_time():
@@ -81,7 +80,7 @@ class PreTrial(State):
         elif self.is_sleep_time():
             return states['Sleep']
         else:
-            if self.timer.elapsed_time() > 5000:  # occasionally get control status
+            if self.timer.elapsed_time() > 5000: # occasionally get control status
                 self.timer.start()
                 self.StateMachine.status = self.logger.get_setup_info('status')
                 self.logger.ping()
@@ -91,50 +90,64 @@ class PreTrial(State):
 class Trial(State):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
-        self.is_ready = 0
         self.probe = 0
-        self.resp_ready = False
         self.trial_start = 0
         super().__init__()
 
     def entry(self):
-        self.stim.unshow()
+        self.is_ready = True
+        self.resp_ready = False
         self.logger.update_state(self.__class__.__name__)
+        self.stim.init()
         self.timer.start()  # trial start counter
         self.trial_start = self.logger.init_trial(self.stim.curr_cond['cond_hash'])
 
     def run(self):
         self.stim.present()  # Start Stimulus
-        self.is_ready = self.beh.is_ready(self.timer.elapsed_time())  # update times
         self.probe = self.beh.is_licking(self.trial_start)
-        if self.timer.elapsed_time() > self.stim.curr_cond['delay_duration'] and not self.resp_ready:
+        if self.beh.is_ready(self.stim.curr_cond['delay_duration']):
             self.resp_ready = True
-            if self.probe > 0: self.beh.update_bias(self.probe)
 
     def next(self):
-        if self.probe > 0 and self.resp_ready: # response to correct probe
+        if self.probe and not self.resp_ready:
+            return states['Punish']
+        if self.probe > 0 and self.resp_ready and not self.beh.is_correct(self.stim.curr_cond): # response to incorrect probe
+            return states['Punish']
+        elif self.probe > 0 and self.resp_ready and self.beh.is_correct(self.stim.curr_cond): # response to correct probe
             return states['Reward']
         elif self.timer.elapsed_time() > self.stim.curr_cond['trial_duration']:      # timed out
-            return states['InterTrial']
+            return states['PostTrial']
         else:
             return states['Trial']
 
     def exit(self):
         self.logger.log_trial()
-        self.stim.unshow((0, 0, 0))
         self.logger.ping()
 
 
-class InterTrial(State):
+class PostTrial(State):
     def run(self):
-        pass
+        self.stim.stop()  # stop stimulus when timeout
+        self.beh.update_history()
+
+    def next(self):
+        return states['InterTrial']
+
+
+class InterTrial(State):
+    def entry(self):
+        self.timer.start()
+
+    def run(self):
+        if self.beh.is_licking(self.timer.elapsed_time())>0 & self.params['nolick_intertrial']:
+            self.timer.start()
 
     def next(self):
         if self.is_sleep_time():
             return states['Sleep']
         elif self.beh.is_hydrated():
             return states['OffTime']
-        elif self.timer.elapsed_time() > self.stim.curr_cond['intertrial_duration']:
+        elif self.timer.elapsed_time() >= self.stim.curr_cond['intertrial_duration']:
             return states['PreTrial']
         else:
             return states['InterTrial']
@@ -143,10 +156,32 @@ class InterTrial(State):
 class Reward(State):
     def run(self):
         self.beh.reward()
-        self.stim.unshow([0, 0, 0])
+        self.stim.stop()
+        print('Rewarding')
 
     def next(self):
         return states['InterTrial']
+
+
+class Punish(State):
+    def entry(self):
+        self.beh.punish()
+        self.stim.stop()
+        self.stim.unshow([0, 0, 0])
+        self.timer.start()
+        self.logger.update_state(self.__class__.__name__)
+        print('Punishing')
+
+    def run(self): pass
+
+    def next(self):
+        if self.timer.elapsed_time() >= self.stim.curr_cond['timeout_duration']:
+            return states['InterTrial']
+        else:
+            return states['Punish']
+
+    def exit(self):
+        self.stim.unshow()
 
 
 class Sleep(State):
@@ -160,13 +195,16 @@ class Sleep(State):
         time.sleep(5)
 
     def next(self):
-        if self.is_sleep_time() and self.logger.get_setup_info('status') == 'sleeping':
-            return states['Sleep']
-        elif self.logger.get_setup_info('status') == 'sleeping':  # if wake up then update session
+        if self.logger.get_setup_info('status') == 'stop':  # if wake up then update session
+            return states['Exit']
+        elif self.logger.get_setup_info('status') == 'wakeup' and not self.is_sleep_time():
+            self.logger.update_setup_status('running')
+            return states['PreTrial']
+        elif self.logger.get_setup_info('status') == 'sleeping' and not self.is_sleep_time():  # if wake up then update session
             self.logger.update_setup_status('running')
             return states['Exit']
         else:
-            return states['PreTrial']
+            return states['Sleep']
 
 
 class OffTime(State):
@@ -180,10 +218,10 @@ class OffTime(State):
         time.sleep(5)
 
     def next(self):
-        if self.is_sleep_time():
-            return states['Sleep']
-        elif self.logger.get_setup_info('status') == 'stop':  # if wake up then update session
+        if self.logger.get_setup_info('status') == 'stop':  # if wake up then update session
             return states['Exit']
+        elif self.is_sleep_time():
+            return states['Sleep']
         else:
             return states['OffTime']
 
@@ -192,55 +230,3 @@ class Exit(State):
     def run(self):
         self.beh.cleanup()
         self.stim.close()
-
-
-class Uniform(Stimulus):
-    """ This class handles the presentation of Movies with an optimized library for Raspberry pi"""
-
-    def setup(self):
-        # setup parameters
-        self.path = 'stimuli/'     # default path to copy local stimuli
-        self.size = (800, 480)     # window size
-        self.color = [127, 127, 127]  # default background color
-        self.loc = (0, 0)          # default starting location of stimulus surface
-        self.fps = 30              # default presentation framerate
-        self.phd_size = (50, 50)    # default photodiode signal size in pixels
-        self.set_intensity(self.params['intensity'])
-
-        # setup pygame
-        pygame.init()
-        self.screen = pygame.display.set_mode(self.size)
-        self.unshow()
-        pygame.mouse.set_visible(0)
-        pygame.display.toggle_fullscreen()
-
-    def prepare(self):
-        self._get_new_cond()
-
-    def unshow(self, color=False):
-        """update background color"""
-        if not color:
-            color = self.color
-        self.screen.fill(color)
-        self.flip()
-
-    def flip(self):
-        """ Main flip method"""
-        pygame.display.update()
-        for event in pygame.event.get():
-            if event.type == QUIT:
-                pygame.quit()
-
-        self.flip_count += 1
-
-    def close(self):
-        """Close stuff"""
-        pygame.mouse.set_visible(1)
-        pygame.display.quit()
-        pygame.quit()
-
-    def set_intensity(self, intensity=None):
-        if intensity is None:
-            intensity = self.params['intensity']
-        cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % intensity
-        os.system(cmd)
