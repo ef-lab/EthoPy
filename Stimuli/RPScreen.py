@@ -33,6 +33,7 @@ class RPScreen(Stimulus):
         self.isrunning = True
         self.timer.start()
         self.logger.log_stim()
+        self.unshow([255,255,255])
 
     def present(self):
         pass
