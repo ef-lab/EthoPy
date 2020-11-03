@@ -13,7 +13,7 @@ class RPScreen(Stimulus):
     def setup(self):
         # setup parameters
         self.size = (800, 480)     # window size
-        self.color = [127, 127, 127]  # default background color
+        self.color = [100, 100, 100]  # default background color
         self.loc = (0, 0)          # default starting location of stimulus surface
         self.fps = 30              # default presentation framerate
         self.phd_size = (50, 50)    # default photodiode signal size in pixels
@@ -29,20 +29,21 @@ class RPScreen(Stimulus):
         pygame.mouse.set_visible(0)
         pygame.display.toggle_fullscreen()
         self.pi = pigpio.pi()
-        self.thread_runner = threading.Thread(target=self.give_sound)
+        #self.thread_runner = threading.Thread(target=self.give_sound)
 
     def prepare(self):
         self._get_new_cond()
 
     def init(self):
+        self.unshow()
         self.isrunning = True
         self.timer.start()
         self.logger.log_stim()
 
-    def ready_sound(self):
-        self.thread_runner.start()
+    #def ready_sound(self):
+    #    self.thread_runner.start()
 
-    def give_sound(self):
+    def ready_sound(self):
         self.pi.hardware_PWM(self.sound_GPIO, self.sound_freq, 500000)
         time.sleep(.5)
         self.pi.hardware_PWM(self.sound_GPIO, 0, 0)
@@ -51,7 +52,6 @@ class RPScreen(Stimulus):
         pass
 
     def stop(self):
-        self.unshow()
         self.isrunning = False
 
     def unshow(self, color=False):
