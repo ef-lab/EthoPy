@@ -45,7 +45,7 @@ class RPScreen(Stimulus):
 
     def ready_sound(self):
         self.pi.hardware_PWM(self.sound_GPIO, self.sound_freq, 500000)
-        time.sleep(.5)
+        time.sleep(.25)
         self.pi.hardware_PWM(self.sound_GPIO, 0, 0)
 
     def present(self):
