@@ -17,7 +17,7 @@ class State(StateClass):
         self.stim = StimulusClass(self.logger, session_params, conditions, self.beh)
         self.params = session_params
         self.logger.log_conditions(conditions, self.stim.get_condition_tables())
-
+        self.logger.lock = False
         logger.update_setup_info('start_time', session_params['start_time'])
         logger.update_setup_info('stop_time', session_params['stop_time'])
 
@@ -108,6 +108,7 @@ class Trial(State):
         if self.timer.elapsed_time() >= self.stim.curr_cond['delay_duration'] and not self.resp_ready: # delay completed
             self.resp_ready = True
             self.stim.unshow([255,255,255])
+            self.stim.ready_sound()
         else:
             self.is_ready = self.beh.is_ready(self.timer.elapsed_time() + self.stim.curr_cond['init_duration'])  # update times
 

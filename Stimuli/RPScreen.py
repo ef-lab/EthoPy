@@ -1,5 +1,7 @@
 from Stimulus import *
 import os
+import pigpio
+import time,threading
 from time import sleep
 
 class RPScreen(Stimulus):
@@ -16,6 +18,8 @@ class RPScreen(Stimulus):
         self.fps = 30              # default presentation framerate
         self.phd_size = (50, 50)    # default photodiode signal size in pixels
         self.set_intensity(self.params['intensity'])
+        self.sound_GPIO = 18
+        self.sound_freq = 40000
 
         # setup pygame
         if not pygame.get_init():
@@ -24,7 +28,8 @@ class RPScreen(Stimulus):
         self.unshow()
         pygame.mouse.set_visible(0)
         pygame.display.toggle_fullscreen()
-
+        self.pi = pigpio.pi()
+        self.thread_runner = threading.Thread(target=self.give_sound)
 
     def prepare(self):
         self._get_new_cond()
@@ -33,6 +38,14 @@ class RPScreen(Stimulus):
         self.isrunning = True
         self.timer.start()
         self.logger.log_stim()
+
+    def ready_sound(self):
+        self.thread_runner.start()
+
+    def give_sound(self):
+        self.pi.hardware_PWM(self.sound_GPIO, self.sound_freq, 500000)
+        time.sleep(.5)
+        self.pi.hardware_PWM(self.sound_GPIO, 0, 0)
 
     def present(self):
         pass
@@ -68,4 +81,5 @@ class RPScreen(Stimulus):
         pygame.mouse.set_visible(1)
         pygame.display.quit()
         pygame.quit()
+        self.pi.stop()
 
