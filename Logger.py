@@ -22,7 +22,7 @@ class Logger:
         self.task_idx = []
         self.session_key = dict()
         self.setup = socket.gethostname()
-        self.lock = True
+        self.lock = False
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
         self.ip = s.getsockname()[0]

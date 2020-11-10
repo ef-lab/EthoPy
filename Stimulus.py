@@ -41,6 +41,10 @@ class Stimulus:
         """initialize stuff for each trial"""
         pass
 
+    def ready_stim(self):
+        """Stim Cue for ready"""
+        pass
+
     def present(self):
         """trial presentation method"""
         pass
