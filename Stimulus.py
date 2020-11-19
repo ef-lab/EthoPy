@@ -21,8 +21,10 @@ class Stimulus:
         self.curr_cond = []
         self.rew_probe = []
         self.curr_difficulty = 1
-        self.probes = np.array([d['probe'] for d in self.conditions])
-        self.difficulties = [cond['difficulty'] for cond in self.conditions]
+        if np.all(['probe' in cond for cond in conditions]):
+            self.probes = np.array([d['probe'] for d in self.conditions])
+        if np.all(['difficulty' in cond for cond in conditions]):
+            self.difficulties = [cond['difficulty'] for cond in self.conditions]
         self.timer = Timer()
 
     def get_condition_tables(self):
@@ -57,7 +59,12 @@ class Stimulus:
         """Get curr condition & create random block of all conditions
         Should be called within init_trial
         """
-        if self.params['trial_selection'] == 'block':
+        if self.params['trial_selection'] == 'fixed':
+            if len(self.conditions) == 0:
+                self.curr_cond = []
+            else:
+                self.curr_cond = self.conditions.pop()
+        elif self.params['trial_selection'] == 'block':
             if np.size(self.iter) == 0:
                 self.iter = np.random.permutation(np.size(self.conditions))
             cond = self.conditions[self.iter[0]]

@@ -288,6 +288,26 @@ class MovieCond(dj.Manual):
 
 
 @schema
+class BarCond(dj.Manual):
+    definition = """
+    # Fancy Bar stimulus conditions
+    -> Condition
+    ---
+    bar_width             : float  # degrees
+    bar_speed             : float  # degrees/sec
+    flash_speed           : float  # cycles/sec
+    grat_width            : float  # degrees
+    grat_freq             : float
+    grid_width            : float
+    grit_freq             : float
+    style                 : enum('checkerboard', 'grating')
+    direction             : float             # 1 for UD LR, -1 for DU RL
+    flatness_correction   : smallint    # 1 correct for flatness of monitor, 0 do not
+    intertrial_duration   : int
+    """
+
+
+@schema
 class RewardCond(dj.Manual):
     definition = """
     # reward probe conditions
