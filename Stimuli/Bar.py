@@ -25,9 +25,11 @@ class FancyBar(Stimulus):
         # setup pygame
         pygame.init()
         self.clock = pygame.time.Clock()
-        self.screen = pygame.display.set_mode(self.monRes)
+        #self.screen = pygame.display.set_mode(self.monRes, flags = pygame.SCALED | pygame.FULLSCREEN)
+        self.screen =  pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
         self.unshow()
         pygame.mouse.set_visible(0)
+        pygame.display.toggle_fullscreen()
 
     def prepare(self):
         self._get_new_cond()
@@ -80,7 +82,11 @@ class FancyBar(Stimulus):
             offset_cycles = self.cycles[0] + self.BarOffset
             offset_cycles[np.logical_or(offset_cycles < -0.5, offset_cycles > .5)] = 0.5  # threshold grading to create a single bar
             texture = np.uint8((np.cos(offset_cycles * 2 * np.pi) > -1) * self.fill(self.StimOffset)*254)
-            self.screen.blit(pygame.surfarray.make_surface(self.transform(np.tile(texture[:,:,np.newaxis],(1,3)))),(0,0))
+            new_surface = pygame.surfarray.make_surface(self.transform(np.tile(texture[:,:,np.newaxis],(1,3))))
+            screen_width = self.screen.get_width()
+            screen_height = self.screen.get_height()
+            pygame.transform.scale(new_surface, (screen_width, screen_height), self.screen)
+            #self.screen.blit(new_surface, (0, 0))
             self.flip()
             self.curr_frame += 1
             self.StimOffset += self.StimOffsetCyclesPerFrame
