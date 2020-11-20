@@ -17,7 +17,8 @@ class State(StateClass):
         self.stim = StimulusClass(self.logger, session_params, conditions, self.beh)
         self.params = session_params
         self.logger.log_conditions(conditions, self.stim.get_condition_tables())
-
+        self.sound_GPIO = 18
+        self.sound_freq = 40000
         logger.update_setup_info('start_time', session_params['start_time'])
         logger.update_setup_info('stop_time', session_params['stop_time'])
 
@@ -156,6 +157,7 @@ class InterTrial(State):
 class Reward(State):
     def run(self):
         self.beh.reward()
+        self.stim.reward_stim()
         self.stim.stop()
         print('Rewarding')
 
