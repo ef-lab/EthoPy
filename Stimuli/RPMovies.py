@@ -17,6 +17,8 @@ class RPMovies(Stimulus):
         self.fps = 30              # default presentation framerate
         self.phd_size = (50, 50)    # default photodiode signal size in pixels
         self.set_intensity(self.params['intensity'])
+        self.sound_GPIO = 18
+        self.sound_freq = 40000
 
         # setup pygame
         if not pygame.get_init():
@@ -25,6 +27,7 @@ class RPMovies(Stimulus):
         self.unshow()
         pygame.mouse.set_visible(0)
         pygame.display.toggle_fullscreen()
+        self.pi = pigpio.pi()
 
         # setup movies
         from omxplayer import OMXPlayer
@@ -107,6 +110,11 @@ class RPMovies(Stimulus):
         self.vid.pause()
         self.vid.set_position(self.curr_cond['skip_time'])
 
+    def reward_stim(self):                       
+        self.pi.hardware_PWM(self.sound_GPIO, self.sound_freq, 500000)
+        time.sleep(.25)
+        self.pi.hardware_PWM(self.sound_GPIO, 0, 0)
+    
     def close(self):
         """Close stuff"""
         pygame.mouse.set_visible(1)
