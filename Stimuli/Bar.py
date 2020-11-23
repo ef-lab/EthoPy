@@ -26,10 +26,21 @@ class FancyBar(Stimulus):
         pygame.init()
         self.clock = pygame.time.Clock()
         #self.screen = pygame.display.set_mode(self.monRes, flags = pygame.SCALED | pygame.FULLSCREEN)
-        self.screen =  pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        #self.screen =  pygame.display.set_mode((0, 0), pygame.FULLSCREEN) #Emina comment
+        self.screen = pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF | NOFRAME) #---> this works but minimizes when clicking (Emina)
+        
+        #Alternative (Emina)
+        #display_info = pygame.display.Info()
+        #size =  [display_info.current_w, display_info.current_h]
+        #import os 
+        
+        #os.environ["UBUNTU"] = "0"
+        #self.screen = pygame.display.set_mode(size, HWSURFACE | DOUBLEBUF | NOFRAME)
+        
         self.unshow()
         pygame.mouse.set_visible(0)
-        pygame.display.toggle_fullscreen()
+        #################### pygame.display.toggle_fullscreen() #commented to stop from automatically minimizing when clicking (Emina)
+        
 
     def prepare(self):
         self._get_new_cond()
@@ -39,6 +50,7 @@ class FancyBar(Stimulus):
         self.isrunning = True
         self.timer.start()
         self.curr_frame = 1
+
 
         # initialize hor/ver gradients
         caxis = 1 if self.curr_cond['axis'] == 'vertical' else 0
