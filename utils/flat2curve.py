@@ -52,3 +52,4 @@ def flat2curve(I, dist, mon_size, **kwargs):
         transform = lambda x: ndimage.map_coordinates(x, [vi.ravel() - 0.5, ui.ravel() - 0.5], order=1,
                                                       mode='nearest').reshape(x.shape)
     return (transform(I), transform)
+

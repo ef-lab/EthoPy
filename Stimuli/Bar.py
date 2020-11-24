@@ -19,17 +19,18 @@ class FancyBar(Stimulus):
         y_res = int(self.params['max_res'] / self.params['monitor_aspect'])
         self.monRes = [self.params['max_res'],int(y_res + np.ceil(y_res % 2))]
         self.FoV = np.arctan(np.array(monSize) / 2 / self.params['monitor_distance']) * 2 * 180 / np.pi  # in degrees
+        self.FoV[1] = self.FoV[0]/ self.params['monitor_aspect']
         self.color = [0,0,0]
         self.fps = 30              # default presentation framerate
 
         # setup pygame
         pygame.init()
         self.clock = pygame.time.Clock()
-        #self.screen = pygame.display.set_mode(self.monRes, flags = pygame.SCALED | pygame.FULLSCREEN)
-        self.screen =  pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        #self.screen =  pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        self.screen = pygame.display.set_mode(self.monRes)
         self.unshow()
         pygame.mouse.set_visible(0)
-        pygame.display.toggle_fullscreen()
+        #pygame.display.toggle_fullscreen()
 
     def prepare(self):
         self._get_new_cond()
@@ -42,11 +43,11 @@ class FancyBar(Stimulus):
 
         # initialize hor/ver gradients
         caxis = 1 if self.curr_cond['axis'] == 'vertical' else 0
-        z1 = np.linspace(-self.FoV[1], self.FoV[1], self.monRes[1]) * self.curr_cond['direction']
-        z2 = np.linspace(-self.FoV[0], self.FoV[0], self.monRes[0]) * self.curr_cond['direction']
+        Yspace = np.linspace(-self.FoV[1], self.FoV[1], self.monRes[1]) * self.curr_cond['direction']
+        Xspace = np.linspace(-self.FoV[0], self.FoV[0], self.monRes[0]) * self.curr_cond['direction']
         self.cycles = dict()
-        [self.cycles[abs(caxis - 1)], self.cycles[caxis]] = np.meshgrid(-z1/2/self.curr_cond['bar_width'],
-                                                                        -z2/2/self.curr_cond['bar_width'])
+        [self.cycles[abs(caxis - 1)], self.cycles[caxis]] = np.meshgrid(-Yspace/2/self.curr_cond['bar_width'],
+                                                                        -Xspace/2/self.curr_cond['bar_width'])
         if self.curr_cond['flatness_correction']:
             I_c, self.transform = flat2curve(self.cycles[0], self.params['monitor_distance'],
                                              self.params['monitor_size'], method='index',
@@ -62,7 +63,7 @@ class FancyBar(Stimulus):
 
         # compute fill parameters
         if self.curr_cond['style'] == 'checkerboard':  # create grid
-            [X, Y] = np.meshgrid(-z1 / 2 / self.curr_cond['grid_width'], -z2 / 2 / self.curr_cond['grid_width'])
+            [X, Y] = np.meshgrid(-Yspace / 2 / self.curr_cond['grid_width'], -Xspace / 2 / self.curr_cond['grid_width'])
             VG1 = np.cos(2 * np.pi * X) > 0  # vertical grading
             VG2 = np.cos((2 * np.pi * X) - np.pi) > 0  # vertical grading with pi offset
             HG = np.cos(2 * np.pi * Y) > 0  # horizontal grading
@@ -74,7 +75,7 @@ class FancyBar(Stimulus):
             self.fill = lambda x: np.cos(2 * np.pi * (self.cycles[1]*self.curr_cond['bar_width']/self.curr_cond['grat_width'] + x)) > 0  # vertical grading
         elif self.curr_cond['style'] == 'none':
             self.StimOffsetCyclesPerFrame = 1
-            self.fill = lambda x: x
+            self.fill = lambda x: 1
         self.StimOffset = 0  # intialize offsets
 
     def present(self):
@@ -85,8 +86,8 @@ class FancyBar(Stimulus):
             new_surface = pygame.surfarray.make_surface(self.transform(np.tile(texture[:,:,np.newaxis],(1,3))))
             screen_width = self.screen.get_width()
             screen_height = self.screen.get_height()
-            pygame.transform.scale(new_surface, (screen_width, screen_height), self.screen)
-            #self.screen.blit(new_surface, (0, 0))
+            #pygame.transform.scale(new_surface, (screen_width, screen_height), self.screen)
+            self.screen.blit(new_surface, (0, 0))
             self.flip()
             self.curr_frame += 1
             self.StimOffset += self.StimOffsetCyclesPerFrame
