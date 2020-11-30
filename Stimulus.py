@@ -47,6 +47,14 @@ class Stimulus:
         """Stim Cue for ready"""
         pass
 
+    def reward_stim(self):
+        """Stim Cue for reward"""
+        pass
+
+    def punish_stim(self):
+        """Stim Cue for punishment"""
+        pass
+
     def present(self):
         """trial presentation method"""
         pass
