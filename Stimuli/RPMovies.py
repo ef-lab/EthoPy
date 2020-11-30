@@ -15,7 +15,7 @@ class RPMovies(Stimulus):
         self.color = [127, 127, 127]  # default background color
         self.loc = (0, 0)          # default starting location of stimulus surface
         self.fps = 30              # default presentation framerate
-        self.
+        self.punish_hz = 4         # epileptic frequency
         self.phd_size = (50, 50)    # default photodiode signal size in pixels
         self.set_intensity(self.params['intensity'])
 
@@ -84,9 +84,9 @@ class RPMovies(Stimulus):
 
     def punish_stim(self):
         self.unshow([255, 255, 255])
-        time.sleep(.25)
+        time.sleep(1/self.punish_hz)
         self.unshow([0, 0, 0])
-        time.sleep(.25)
+        time.sleep(1/self.punish_hz)
 
     def flip(self):
         """ Main flip method"""
