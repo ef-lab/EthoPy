@@ -8,7 +8,7 @@ import bisect
 import itertools
 
 schema = dj.schema('lab_behavior')
-MovieTables = dj.create_virtual_module('movies.py', 'lab_stimuli')
+Stimuli = dj.create_virtual_module('Stimuli.py', 'lab_stimuli')
 Mice = dj.create_virtual_module('mice.py', 'lab_mice')
 
 
@@ -293,6 +293,7 @@ class BarCond(dj.Manual):
     # Fancy Bar stimulus conditions
     -> Condition
     ---
+    axis                  : enum('vertical','horizontal')
     bar_width             : float  # degrees
     bar_speed             : float  # degrees/sec
     flash_speed           : float  # cycles/sec
