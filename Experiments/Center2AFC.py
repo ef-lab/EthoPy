@@ -1,4 +1,4 @@
-from utils.Timer import *
+                from utils.Timer import *
 from StateMachine import *
 from datetime import datetime, timedelta
 
@@ -167,12 +167,13 @@ class Punish(State):
     def entry(self):
         self.beh.punish()
         self.stim.stop()
+        self.stim.unshow([0, 0, 0])
         self.timer.start()
         self.logger.update_state(self.__class__.__name__)
         print('Punishing')
 
-    def run(self):
-        self.punish_stim()
+    def run(self): pass
+       
 
     def next(self):
         if self.timer.elapsed_time() >= self.stim.curr_cond['timeout_duration']:
