@@ -173,7 +173,6 @@ class Punish(State):
         print('Punishing')
 
     def run(self): pass
-       
 
     def next(self):
         if self.timer.elapsed_time() >= self.stim.curr_cond['timeout_duration']:
