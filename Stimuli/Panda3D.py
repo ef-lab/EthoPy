@@ -6,8 +6,6 @@ from direct.task import Task
 import panda3d.core as core
 from panda3d.core import *
 from panda3d.core import ClockObject
-#from direct.stdpy import threading2 as threading
-from scipy import interpolate
 from panda3d.core import loadPrcFileData
 #loadPrcFileData("", "depth-bits 16\n")
 #loadPrcFileData('', 'fullscreen true')
@@ -15,7 +13,7 @@ class Panda3D(Stimulus, ShowBase):
     """ This class handles the presentation of Objects with Panda3D"""
 
     def get_condition_tables(self):
-        return []
+        return ['ObjectCond']
 
     def setup(self):
         # setup parameters
@@ -27,7 +25,7 @@ class Panda3D(Stimulus, ShowBase):
             os.makedirs(self.path)
         self.object_files = dict()
         for cond in self.conditions:
-            for obj_id in cond['object_id']:
+            for obj_id in cond['obj_id']:
                 object_info = self.logger.get_object(obj_id)
                 filename = self.path + object_info['file_name']
                 self.object_files[obj_id] = filename
@@ -58,8 +56,12 @@ class Panda3D(Stimulus, ShowBase):
             self.isrunning = False
             return
 
+    def init(self, period='trial'):
+        self.isrunning = True
+
         # Set Ambient Light
         self.ambientLight.setColor(self.curr_cond['ambient_color'])
+
         # Directional light 01
         self.directionalLight1.setColor(self.curr_cond['direct1_color'])
         self.directionalLight1NP.setHpr(self.curr_cond['direct1_dir'][0],
@@ -72,19 +74,20 @@ class Panda3D(Stimulus, ShowBase):
                                         self.curr_cond['direct2_dir'][2])
 
         self.objects = dict()
-        for idx, obj in enumerate(self.curr_cond['object_id']):
-            self.objects[obj] = Object(self, idx)
+        selected_obj = [p == period for p in self.curr_cond['obj_period']]
+        for idx, obj in enumerate(self.curr_cond['obj_id']):
+            if not selected_obj[idx]:
+                continue
+            self.objects[idx] = Object(self, self.get_cond('obj_', idx))
+        # self.windowType = 'onscreen'
+        # props = WindowProperties.getDefault()
+        # props.setSize(800, 400)
+        # props.setFullscreen(True)
+        # self.openDefaultWindow(props)
 
-        #self.windowType = 'onscreen'
-        #props = WindowProperties.getDefault()
-        #props.setSize(800, 400)
-        #props.setFullscreen(True)
-        #self.openDefaultWindow(props)
-
-    def init(self):
-        self.isrunning = True
-        self.timer.start()
-        self.logger.log_stim()
+        if period == 'trial':
+            self.timer.start()
+            self.logger.log_stim()
 
     def present(self):
         self.taskMgr.step()
@@ -92,9 +95,9 @@ class Panda3D(Stimulus, ShowBase):
             self.isrunning = False
 
     def stop(self):
-        for idx in self.curr_cond['object_id']:
-            self.taskMgr.remove("Obj%s-Task" % idx)
-            self.objects[idx].model.removeNode()
+        for idx, obj in self.objects.items():
+            self.taskMgr.remove(obj.name)
+            obj.model.removeNode()
         self.isrunning = False
 
     def set_intensity(self, intensity=None):
@@ -104,44 +107,43 @@ class Panda3D(Stimulus, ShowBase):
         os.system(cmd)
 
     def close(self):
-        """Close stuff"""
         self.destroy()
+
+    def get_cond(self, cond_name, idx=0):
+        return {k.split(cond_name, 1)[1]: v if type(v) is int or type(v) is float else v[idx]
+                for k, v in self.curr_cond.items() if k.startswith(cond_name)}
 
 
 class Object(Panda3D):
-    def __init__(self, env, idx):
-        self.env = env
-        self.model = self.env.loader.loadModel(self.env.object_files[self.env.curr_cond['object_id'][idx]])
-        self.model.reparentTo(self.env.render)
+    def __init__(self, env, cond):
+        self.duration = cond['dur']
+        self.model = env.loader.loadModel(env.object_files[cond['id']])
+        self.model.reparentTo(env.render)
+        hfov = env.camLens.get_fov() * np.pi / 360 # half field of view in radians
 
-        fov = self.env.camLens.get_fov()
-        #fov =  [40]
         # define object time parameters
-        self.rot_fun = self._make_lambda(self.env.curr_cond['obj_rot'][idx])
-        self.tilt_fun = self._make_lambda(self.env.curr_cond['obj_tilt'][idx])
-        self.yaw_fun = self._make_lambda(self.env.curr_cond['obj_yaw'][idx])
-        self.z_fun = self._make_lambda(self.env.curr_cond['obj_mag'][idx],
-                                       lambda x,t: 20/x)
-        self.x_fun = self._make_lambda(self.env.curr_cond['obj_pos_x'][idx],
-                                       lambda x,t: np.arctan(x * np.pi * fov[0] / 360) * self.z_fun(t))
-        self.y_fun = self._make_lambda(self.env.curr_cond['obj_pos_y'][idx],
-                                       lambda x,t: np.arctan(x * np.pi * fov[0] / 360) * self.z_fun(t))
-
-        # set initial params
-        self.model.setPos(self.x_fun(0), self.z_fun(0), self.y_fun(0))
-        self.model.setHpr(self.rot_fun(0), self.tilt_fun(0), self.yaw_fun(0))
-
+        self.rot_fun = self.time_fun(cond['rot'])
+        self.tilt_fun = self.time_fun(cond['tilt'])
+        self.yaw_fun = self.time_fun(cond['yaw'])
+        self.z_fun = self.time_fun(cond['mag'],   lambda x,t: 20/x)
+        self.x_fun = self.time_fun(cond['pos_x'], lambda x,t: np.arctan(x * hfov[0]) * self.z_fun(t))
+        self.y_fun = self.time_fun(cond['pos_y'], lambda x,t: np.arctan(x * hfov[0]) * self.z_fun(t))
         # add task object
-        self.env.taskMgr.add(self.objTask, "Obj%s-Task" % self.env.curr_cond['object_id'][idx])
+        self.name = "Obj%s-Task" % cond['id']
+        env.taskMgr.doMethodLater(cond['delay']/1000, self.objTask, self.name)
 
     def objTask(self, task):
         t = task.time
+        if t > self.duration:
+            task.remove()
+            self.model.removeNode()
+            return
         self.model.setHpr(self.rot_fun(t), self.tilt_fun(t), self.yaw_fun(t))
         self.model.setPos(self.x_fun(t), self.z_fun(t), self.y_fun(t))
         return Task.cont
 
-    def _make_lambda(self, param, fun=lambda x,t: x):
-        param = np.array([param]) if type(param) not in (list,tuple,dict, str, np.ndarray) else param
-        idx = np.linspace(0, self.env.curr_cond['stim_duration'], param.size)
+    def time_fun(self, param, fun=lambda x,t: x):
+        param = np.array([param]) if type(param) != np.ndarray else param
+        idx = np.linspace(0, self.duration/1000, param.size)
         return lambda t: np.interp(t, idx,fun(param, t))
-        #return lambda t: interpolate.splev(t, interpolate.splrep(idx, fun(param, t)))
+

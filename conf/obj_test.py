@@ -22,7 +22,7 @@ env_key = {
     'stim_duration'         : 5,
 }
 
-timepoints = 5
+timepoints = 1
 rand = lambda x: np.random.rand(x)
 repeat_n = 2
 conditions = []

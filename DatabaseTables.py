@@ -307,6 +307,30 @@ class BarCond(dj.Manual):
     intertrial_duration   : int
     """
 
+@schema
+class ObjectCond(dj.Manual):
+    definition = """
+    # Object stimuli conditions with Panda3D
+    -> Condition
+    ---
+    ambient_color         : tinyblob
+    direct1_color         : tinyblob
+    direct1_dir           : tinyblob
+    direct2_color         : tinyblob
+    direct2_dir           : tinyblob
+    intertrial_duration   : float
+    stim_duration         : float
+    obj_id                : blob
+    obj_pos_x             : blob
+    obj_pos_y             : blob
+    obj_mag               : blob
+    obj_rot               : blob
+    obj_tilt              : blob
+    obj_yaw               : blob
+    obj_delay             : blob
+    obj_dur               : blob
+    obj_period            : blob
+    """
 
 @schema
 class RewardCond(dj.Manual):
