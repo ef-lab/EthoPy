@@ -5,15 +5,12 @@ from direct.showbase.ShowBase import ShowBase
 from direct.task import Task
 import panda3d.core as core
 from panda3d.core import *
-from panda3d.core import ClockObject
-from panda3d.core import loadPrcFileData
-#loadPrcFileData("", "depth-bits 16\n")
-#loadPrcFileData('', 'fullscreen true')
+
 class Panda3D(Stimulus, ShowBase):
     """ This class handles the presentation of Objects with Panda3D"""
 
     def get_condition_tables(self):
-        return ['ObjectCond']
+        return ['ObjectCond','RewardCond']
 
     def setup(self):
         # setup parameters
