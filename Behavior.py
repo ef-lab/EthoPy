@@ -120,7 +120,7 @@ class DummyProbe(Behavior):
         self.ready_timer.start()
         self.ready = False
         self.probe = 0
-
+        pygame.init()
         super(DummyProbe, self).__init__(logger, params)
 
     def is_ready(self, init_duration):

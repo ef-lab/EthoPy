@@ -221,11 +221,15 @@ class Logger:
         return self.session_key
 
     def get_clip_info(self, key):
-        clip_info = (MovieTables.Movie() * MovieTables.Movie.Clip() & key & self.session_key).fetch1()
+        clip_info = (Stimuli.Movie() * Stimuli.Movie.Clip() & key & self.session_key).fetch1()
         return clip_info
 
-    def get_protocol(self):
-        task_idx = (SetupControl() & dict(setup=self.setup)).fetch1('task_idx')
+    def get_object(self, obj_id):
+        return (Stimuli.Objects() & ('obj_id=%d' % obj_id)).fetch1()
+
+    def get_protocol(self, task_idx=None):
+        if not task_idx:
+            task_idx = (SetupControl() & dict(setup=self.setup)).fetch1('task_idx')
         protocol = (Task() & dict(task_idx=task_idx)).fetch1('protocol')
         path, filename = os.path.split(protocol)
         if not path:

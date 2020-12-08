@@ -8,7 +8,7 @@ import bisect
 import itertools
 
 schema = dj.schema('lab_behavior')
-MovieTables = dj.create_virtual_module('movies.py', 'lab_stimuli')
+Stimuli = dj.create_virtual_module('Stimuli.py', 'lab_stimuli')
 Mice = dj.create_virtual_module('mice.py', 'lab_mice')
 
 
@@ -293,6 +293,7 @@ class BarCond(dj.Manual):
     # Fancy Bar stimulus conditions
     -> Condition
     ---
+    axis                  : enum('vertical','horizontal')
     bar_width             : float  # degrees
     bar_speed             : float  # degrees/sec
     flash_speed           : float  # cycles/sec
@@ -306,6 +307,30 @@ class BarCond(dj.Manual):
     intertrial_duration   : int
     """
 
+@schema
+class ObjectCond(dj.Manual):
+    definition = """
+    # Object stimuli conditions with Panda3D
+    -> Condition
+    ---
+    ambient_color         : tinyblob
+    direct1_color         : tinyblob
+    direct1_dir           : tinyblob
+    direct2_color         : tinyblob
+    direct2_dir           : tinyblob
+    intertrial_duration   : float
+    stim_duration         : float
+    obj_id                : blob
+    obj_pos_x             : blob
+    obj_pos_y             : blob
+    obj_mag               : blob
+    obj_rot               : blob
+    obj_tilt              : blob
+    obj_yaw               : blob
+    obj_delay             : blob
+    obj_dur               : blob
+    obj_period            : blob
+    """
 
 @schema
 class RewardCond(dj.Manual):

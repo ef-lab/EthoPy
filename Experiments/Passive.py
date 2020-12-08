@@ -10,7 +10,7 @@ class State(StateClass):
 
     def setup(self, logger, BehaviorClass, StimulusClass, session_params, conditions):
         self.logger = logger
-        self.logger.log_session(session_params, '2AFC')
+        self.logger.log_session(session_params, 'Passive')
         # Initialize params & Behavior/Stimulus objects
         self.beh = BehaviorClass(self.logger, session_params)
         self.stim = StimulusClass(self.logger, session_params, conditions, self.beh)
@@ -45,16 +45,17 @@ class Prepare(State):
 
 class PreTrial(State):
     def entry(self):
+        self.timer.start()
         self.stim.prepare()
         self.logger.update_state(self.__class__.__name__)
 
     def run(self): pass
 
     def next(self):
-        if self.stim.curr_cond: # if run out of conditions exit
-            return states['Trial']
-        else:
+        if not self.stim.curr_cond: # if run out of conditions exit
             return states['Exit']
+        else:
+            return states['Trial']
 
 
 class Trial(State):
@@ -74,9 +75,9 @@ class Trial(State):
             return states['Trial']
 
     def exit(self):
+        self.stim.stop()
         self.logger.log_trial()
         self.logger.ping()
-
 
 class InterTrial(State):
     def entry(self):
@@ -92,6 +93,7 @@ class InterTrial(State):
             return states['PreTrial']
         else:
             return states['InterTrial']
+
 
 class Exit(State):
     def run(self):
