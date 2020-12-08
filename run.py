@@ -7,6 +7,7 @@ logger.log_setup()                                                  # publish IP
 
 if len(sys.argv)>1:
     protocol = logger.get_protocol(int(sys.argv[1]))
+    logger.update_setup_status('running')
     exec(open(protocol).read())
 else:
     if os.uname()[4][:3] == 'arm':

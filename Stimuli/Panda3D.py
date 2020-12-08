@@ -79,25 +79,22 @@ class Panda3D(Stimulus, ShowBase):
             if not selected_obj[idx]:
                 continue
             self.objects[idx] = Object(self, self.get_cond('obj_', idx))
-        # self.windowType = 'onscreen'
-        # props = WindowProperties.getDefault()
-        # props.setSize(800, 400)
-        # props.setFullscreen(True)
-        # self.openDefaultWindow(props)
 
         if period == 'trial':
             self.timer.start()
             self.logger.log_stim()
 
     def present(self):
-        self.taskMgr.step()
-        if self.timer.elapsed_time() > self.curr_cond['stim_duration']*1000:
-            self.isrunning = False
+        self.flip()
+
+    def flip(self,n=1):
+        for i in range(0,n):
+            self.taskMgr.step()
 
     def stop(self):
         for idx, obj in self.objects.items():
-            self.taskMgr.remove(obj.name)
-            obj.model.removeNode()
+            obj.remove(obj.task)
+            self.flip(2) # clear double buffer
         self.isrunning = False
 
     def set_intensity(self, intensity=None):
@@ -116,10 +113,12 @@ class Panda3D(Stimulus, ShowBase):
 
 class Object(Panda3D):
     def __init__(self, env, cond):
+        self.env = env
+        self.timer = Timer()
         self.duration = cond['dur']
         self.model = env.loader.loadModel(env.object_files[cond['id']])
         self.model.reparentTo(env.render)
-        hfov = env.camLens.get_fov() * np.pi / 360 # half field of view in radians
+        hfov = self.env.camLens.get_fov() * np.pi / 360 # half field of view in radians
 
         # define object time parameters
         self.rot_fun = self.time_fun(cond['rot'])
@@ -128,19 +127,23 @@ class Object(Panda3D):
         self.z_fun = self.time_fun(cond['mag'],   lambda x,t: 20/x)
         self.x_fun = self.time_fun(cond['pos_x'], lambda x,t: np.arctan(x * hfov[0]) * self.z_fun(t))
         self.y_fun = self.time_fun(cond['pos_y'], lambda x,t: np.arctan(x * hfov[0]) * self.z_fun(t))
+
         # add task object
         self.name = "Obj%s-Task" % cond['id']
-        env.taskMgr.doMethodLater(cond['delay']/1000, self.objTask, self.name)
+        self.task = self.env.taskMgr.doMethodLater(cond['delay']/1000, self.objTask, self.name)
 
     def objTask(self, task):
-        t = task.time
-        if t > self.duration:
-            task.remove()
-            self.model.removeNode()
+        t = self.timer.elapsed_time()/1000
+        if t > self.duration/1000:
+            self.remove(task)
             return
         self.model.setHpr(self.rot_fun(t), self.tilt_fun(t), self.yaw_fun(t))
         self.model.setPos(self.x_fun(t), self.z_fun(t), self.y_fun(t))
         return Task.cont
+
+    def remove(self,task):
+        task.remove()
+        self.model.removeNode()
 
     def time_fun(self, param, fun=lambda x,t: x):
         param = np.array([param]) if type(param) != np.ndarray else param

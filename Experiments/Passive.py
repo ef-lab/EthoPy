@@ -48,23 +48,15 @@ class PreTrial(State):
         self.timer.start()
         self.stim.prepare()
         self.logger.update_state(self.__class__.__name__)
-        if self.stim.curr_cond:
-            self.stim.init('cue')
 
-    def run(self):
-        if self.stim.curr_cond:
-            self.stim.present()
+    def run(self): pass
 
     def next(self):
-        if  self.timer.elapsed_time() < 1000:
-            return states['PreTrial']
-        elif not self.stim.curr_cond: # if run out of conditions exit
+        if not self.stim.curr_cond: # if run out of conditions exit
             return states['Exit']
         else:
             return states['Trial']
 
-    def exit(self):
-        self.stim.stop()
 
 class Trial(State):
     def entry(self):
@@ -83,9 +75,9 @@ class Trial(State):
             return states['Trial']
 
     def exit(self):
+        self.stim.stop()
         self.logger.log_trial()
         self.logger.ping()
-        self.stim.stop()
 
 class InterTrial(State):
     def entry(self):
