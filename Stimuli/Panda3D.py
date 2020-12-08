@@ -35,6 +35,10 @@ class Panda3D(Stimulus, ShowBase):
 
         ShowBase.__init__(self,fStartDirect=True, windowType=None)
 
+        props = WindowProperties()
+        props.setCursorHidden(True)
+        self.win.requestProperties(props)
+
         # Create Ambient Light
         self.ambientLight = core.AmbientLight('ambientLight')
         self.ambientLightNP = self.render.attachNewNode(self.ambientLight)
