@@ -113,6 +113,8 @@ class Cue(State):
     def next(self):
         if self.probe > 0:
             return states['Abort']
+        elif not self.resp_ready and self.timer.elapsed_time() > self.stim.curr_cond['cue_duration']:
+            return states['Abort']
         elif self.resp_ready and self.timer.elapsed_time() > self.stim.curr_cond['cue_duration']:
             return states['Delay']
         else:
@@ -137,7 +139,9 @@ class Delay(State):
     def next(self):
         if self.probe > 0:
             return states['Abort']
-        elif self.resp_ready and self.timer.elapsed_time()  > self.stim.curr_cond['delay_duration']:
+        elif not self.resp_ready and self.timer.elapsed_time() > self.stim.curr_cond['delay_duration']:
+            return states['Abort']
+        elif self.resp_ready and self.timer.elapsed_time() > self.stim.curr_cond['delay_duration']:
             return states['Response']
         else:
             return states['Delay']

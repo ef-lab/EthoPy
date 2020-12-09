@@ -114,13 +114,13 @@ class RPProbe(Probe):
             self.timer_ready.start()
             if not self.ready:
                 self.ready = True
-                self.start_tmst = self.logger.log_position(self.ready, 'Probe status')
+                self.ready_tmst = self.logger.log_position(self.ready, 'Probe status')
                 print('in position')
         else:
             if self.ready:
                 self.ready = False
                 tmst = self.logger.log_position(self.ready, 'Probe status')
-                self.ready_dur = tmst - self.start_tmst
+                self.ready_dur = tmst - self.ready_tmst
                 print('off position')
 
     def in_position(self):
@@ -132,7 +132,7 @@ class RPProbe(Probe):
             ready_dur = self.ready_dur
         else:
             ready_dur = self.timer_ready.elapsed_time()
-        return self.ready, ready_dur, self.start_tmst
+        return self.ready, ready_dur, self.ready_tmst
 
     def __pwd_out(self, channel, duration, dutycycle):
         pwm = self.GPIO.PWM(channel, self.frequency)
