@@ -27,7 +27,8 @@ session_params = {
 
 # define environment conditions
 env_key = {
-    'ambient_color'         : (0.1, 0.1, 0.1, 1),
+    'background_color'      : (.41, .41, .41),
+    'ambient_color'         : (0, 0, 0, 1),
     'direct1_color'         : (0.8, 0.8, 0.8, 1),
     'direct1_dir'           : (0, -20, 0),
     'direct2_color'         : (0.2, 0.2, 0.2, 1),
@@ -35,6 +36,7 @@ env_key = {
     'init_ready'            : 0,
     'cue_ready'             : 0,
     'delay_ready'           : 0,
+    'resp_ready'            : 0,
     'intertrial_duration'   : 0,
     'cue_duration'          : 2000,
     'delay_duration'        : 5000,

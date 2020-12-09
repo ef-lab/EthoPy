@@ -42,6 +42,7 @@ class State(StateClass):
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
         self.StateMachine.status = self.logger.get_setup_info('status')
         self.logger.update_state(self.__class__.__name__)
+        self.timer.start()
 
     def run(self):
         self.StateMachine.run()
@@ -115,7 +116,7 @@ class Cue(State):
             return states['Abort']
         elif not self.resp_ready and self.timer.elapsed_time() > self.stim.curr_cond['cue_duration']:
             return states['Abort']
-        elif self.resp_ready and self.timer.elapsed_time() > self.stim.curr_cond['cue_duration']:
+        elif self.resp_ready:
             return states['Delay']
         else:
             return states['Cue']
@@ -141,7 +142,7 @@ class Delay(State):
             return states['Abort']
         elif not self.resp_ready and self.timer.elapsed_time() > self.stim.curr_cond['delay_duration']:
             return states['Abort']
-        elif self.resp_ready and self.timer.elapsed_time() > self.stim.curr_cond['delay_duration']:
+        elif self.resp_ready:
             return states['Response']
         else:
             return states['Delay']
@@ -157,9 +158,13 @@ class Response(State):
     def run(self):
         self.stim.present()  # Start Stimulus
         self.probe = self.beh.is_licking(self.period_start)
+        if self.beh.is_ready(self.stim.curr_cond['resp_ready'], self.period_start):
+            self.resp_ready = True
 
     def next(self):
-        if self.probe > 0 and not self.beh.is_correct(self.stim.curr_cond): # response to incorrect probe
+        if not self.resp_ready and self.probe > 0:
+            return states['Abort']
+        elif self.probe > 0 and not self.beh.is_correct(self.stim.curr_cond): # response to incorrect probe
             return states['Punish']
         elif self.probe > 0 and self.beh.is_correct(self.stim.curr_cond): # response to correct probe
             return states['Reward']

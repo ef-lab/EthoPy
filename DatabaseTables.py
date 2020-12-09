@@ -334,6 +334,7 @@ class ObjectCond(dj.Manual):
     # Object stimuli conditions with Panda3D
     -> Condition
     ---
+    background_color      : tinyblob
     ambient_color         : tinyblob
     direct1_color         : tinyblob
     direct1_dir           : tinyblob
@@ -346,6 +347,7 @@ class ObjectCond(dj.Manual):
     init_ready            : float
     cue_ready             : float
     delay_ready           : float
+    resp_ready            : float
     obj_id                : blob
     obj_pos_x             : blob
     obj_pos_y             : blob
