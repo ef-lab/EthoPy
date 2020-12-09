@@ -144,14 +144,24 @@ class Logger:
         self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
                             field='last_trial', value=self.last_trial, update=True))
 
+    def log_abort(self):
+        trial_key = dict(self.session_key,
+                         trial_idx=self.last_trial)
+        self.queue.put(dict(table='AbortedTrial', tuple=trial_key))
+
     def log_liquid(self, probe, reward_amount):
         timestamp = self.timer.elapsed_time()
         self.queue.put(dict(table='LiquidDelivery', tuple=dict(self.session_key, time=timestamp, probe=probe,
                                                                reward_amount=reward_amount)))
 
-    def log_stim(self):
+    def log_stim(self,period='Trial'):
         timestamp = self.timer.elapsed_time()
-        self.queue.put(dict(table='StimOnset', tuple=dict(self.session_key, time=timestamp)))
+        self.queue.put(dict(table='StimOnset', tuple=dict(self.session_key, time=timestamp, period=period)))
+
+    def log_period(self,period='Trial'):
+        timestamp = self.timer.elapsed_time()
+        self.queue.put(dict(table='PeriodOnset', tuple=dict(self.session_key, time=timestamp, period=period)))
+        return timestamp
 
     def log_lick(self, probe):
         timestamp = self.timer.elapsed_time()
@@ -179,6 +189,7 @@ class Logger:
                                                             time=timestamp,
                                                             in_position=in_position,
                                                             state=state)))
+        return timestamp
 
     def update_setup_status(self, status):
         key = (SetupControl() & dict(setup=self.setup)).fetch1()

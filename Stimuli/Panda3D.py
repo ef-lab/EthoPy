@@ -31,7 +31,6 @@ class Panda3D(Stimulus, ShowBase):
                     object_info['object'].tofile(filename)
 
         ShowBase.__init__(self,fStartDirect=True, windowType=None)
-
         props = WindowProperties()
         props.setCursorHidden(True)
         self.win.requestProperties(props)
@@ -57,9 +56,7 @@ class Panda3D(Stimulus, ShowBase):
             self.isrunning = False
             return
 
-    def init(self, period='trial'):
-        self.isrunning = True
-
+    def init(self, period=None):
         # Set Ambient Light
         self.ambientLight.setColor(self.curr_cond['ambient_color'])
 
@@ -73,17 +70,21 @@ class Panda3D(Stimulus, ShowBase):
         self.directionalLight2NP.setHpr(self.curr_cond['direct2_dir'][0],
                                         self.curr_cond['direct2_dir'][1],
                                         self.curr_cond['direct2_dir'][2])
-
         self.objects = dict()
-        selected_obj = [p == period for p in self.curr_cond['obj_period']]
+        if period:
+            selected_obj = [p == period for p in self.curr_cond['obj_period']]
+        else:
+            period = 'Trial'
+            selected_obj = [True for p in self.curr_cond['obj_id']]
         for idx, obj in enumerate(self.curr_cond['obj_id']):
             if not selected_obj[idx]:
                 continue
             self.objects[idx] = Object(self, self.get_cond('obj_', idx))
 
-        if period == 'trial':
+        self.logger.log_stim(period)
+        if not self.isrunning:
             self.timer.start()
-            self.logger.log_stim()
+            self.isrunning = True
 
     def present(self):
         self.flip()
@@ -97,6 +98,10 @@ class Panda3D(Stimulus, ShowBase):
             obj.remove(obj.task)
             self.flip(2) # clear double buffer
         self.isrunning = False
+
+    def punish_stim(self):
+        self.ambientLight.setColor((0,0,0,1))
+        self.flip(2)
 
     def set_intensity(self, intensity=None):
         if intensity is None:

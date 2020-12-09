@@ -21,8 +21,8 @@ class Behavior:
     def is_licking(self, since=0):
         return 0
 
-    def is_ready(self, init_duration):
-        return False, 0
+    def is_ready(self, init_duration, since=0):
+        return True, 0
 
     def is_hydrated(self):
         rew = np.nansum(self.reward_history)
@@ -82,12 +82,14 @@ class RPBehavior(Behavior):
             self.licked_probe = 0
         return self.licked_probe
 
-    def is_ready(self, duration):
+    def is_ready(self, duration, since=0):
+        ready, ready_time, tmst = self.probe.in_position()
         if duration == 0:
             return True
+        elif since==0:
+            return ready and ready_time > duration # in position for specified duration
         else:
-            ready, ready_time = self.probe.in_position()
-            return ready and ready_time > duration
+            return ready_time > duration and tmst >= since # has been in position for specified duration since timepoint
 
     def is_correct(self, condition):
         return np.any(np.equal(self.licked_probe, condition['probe']))
@@ -123,7 +125,7 @@ class DummyProbe(Behavior):
         pygame.init()
         super(DummyProbe, self).__init__(logger, params)
 
-    def is_ready(self, init_duration):
+    def is_ready(self, init_duration, since=0):
         self.__get_events()
         elapsed_time = self.ready_timer.elapsed_time()
         return self.ready and elapsed_time > init_duration

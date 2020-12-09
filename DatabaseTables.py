@@ -184,6 +184,15 @@ class Trial(dj.Manual):
 
 
 @schema
+class AbortedTrial(dj.Manual):
+    definition = """
+    # Aborted Trials
+    -> Session
+    trial_idx            : smallint                     # unique condition index
+    """
+
+
+@schema
 class CenterPort(dj.Manual):
     definition = """
     # Center port information
@@ -270,6 +279,18 @@ class StimOnset(dj.Manual):
     # Stimulus onset timestamps
     -> Session
     time			    : int 	            # time from session start (ms)
+    ---
+    period              : enum('Trial','Cue','Response')
+    """
+
+@schema
+class PeriodOnset(dj.Manual):
+    definition = """
+    # Trial period timestamps
+    -> Session
+    time			    : int 	            # time from session start (ms)
+    ---
+    period              : enum('Cue','Delay','Response','PreTrial','Trial','InterTrial','Reward','Punish')
     """
 
 
@@ -319,7 +340,12 @@ class ObjectCond(dj.Manual):
     direct2_color         : tinyblob
     direct2_dir           : tinyblob
     intertrial_duration   : float
-    stim_duration         : float
+    cue_duration          : float
+    delay_duration        : float
+    response_duration     : float
+    init_ready            : float
+    cue_ready             : float
+    delay_ready           : float
     obj_id                : blob
     obj_pos_x             : blob
     obj_pos_y             : blob
