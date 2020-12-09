@@ -27,7 +27,7 @@ session_params = {
 
 # define environment conditions
 env_key = {
-    'background_color'      : (.41, .41, .41, 1),
+    'background_color'      : (.41, .41, .41),
     'ambient_color'         : (0, 0, 0, 1),
     'direct1_color'         : (0.8, 0.8, 0.8, 1),
     'direct1_dir'           : (0, -20, 0),
@@ -84,5 +84,5 @@ for idx, obj_comb in enumerate(obj_combs):
 
 # run experiments
 exp = State()
-exp.setup(logger, DummyProbe, Panda3D, session_params, conditions)
+exp.setup(logger, RPBehavior, Panda3D, session_params, conditions)
 exp.run()
