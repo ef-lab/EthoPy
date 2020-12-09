@@ -10,6 +10,8 @@ class Probe:
         self.logger = logger
         self.probe = 0
         self.lick_tmst = 0
+        self.ready_tmst = 0
+        self.ready_dur =0
         self.ready = False
         self.timer_probe1 = Timer()
         self.timer_probe2 = Timer()
@@ -112,12 +114,13 @@ class RPProbe(Probe):
             self.timer_ready.start()
             if not self.ready:
                 self.ready = True
-                self.logger.log_position(self.ready, 'Probe status')
+                self.start_tmst = self.logger.log_position(self.ready, 'Probe status')
                 print('in position')
         else:
             if self.ready:
                 self.ready = False
-                self.logger.log_position(self.ready, 'Probe status')
+                tmst = self.logger.log_position(self.ready, 'Probe status')
+                self.ready_dur = tmst - self.start_tmst
                 print('off position')
 
     def in_position(self):
@@ -126,10 +129,10 @@ class RPProbe(Probe):
         if self.ready != ready:
             self.position_change()
         if not self.ready:
-            ready_time = 0
+            ready_dur = self.ready_dur
         else:
-            ready_time = self.timer_ready.elapsed_time()
-        return self.ready, ready_time
+            ready_dur = self.timer_ready.elapsed_time()
+        return self.ready, ready_dur, self.start_tmst
 
     def __pwd_out(self, channel, duration, dutycycle):
         pwm = self.GPIO.PWM(channel, self.frequency)
