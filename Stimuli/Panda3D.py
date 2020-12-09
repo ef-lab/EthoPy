@@ -58,6 +58,8 @@ class Panda3D(Stimulus, ShowBase):
             return
 
     def init(self, period=None):
+        self.background_color = self.curr_cond['background_color']
+
         # set background color
         self.set_background_color(self.curr_cond['background_color'][0],
                                   self.curr_cond['background_color'][1],
@@ -107,6 +109,12 @@ class Panda3D(Stimulus, ShowBase):
 
     def punish_stim(self):
         self.set_background_color(0, 0, 0)
+        self.flip(2)
+
+    def unshow(self):
+        self.set_background_color(self.background_color[0],
+                                  self.background_color[1],
+                                  self.background_color[2])
         self.flip(2)
 
     def set_intensity(self, intensity=None):

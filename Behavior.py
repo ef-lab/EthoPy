@@ -18,7 +18,7 @@ class Behavior:
         self.licked_probe = 0
         self.reward_amount = dict()
 
-    def is_licking(self, since=0):
+    def is_licking(self, since=False):
         return 0
 
     def is_ready(self, init_duration, since=0):
@@ -82,14 +82,16 @@ class RPBehavior(Behavior):
             self.licked_probe = 0
         return self.licked_probe
 
-    def is_ready(self, duration, since=0):
+    def is_ready(self, duration, since=False):
         ready, ready_time, tmst = self.probe.in_position()
         if duration == 0:
             return True
-        elif since==0:
+        elif not since:
             return ready and ready_time > duration # in position for specified duration
+        elif tmst >= since:
+            return ready_time > duration  # has been in position for specified duration since timepoint
         else:
-            return ready_time > duration and tmst >= since # has been in position for specified duration since timepoint
+            return (ready_time + tmst - since) > duration  # has been in position for specified duration since timepoint
 
     def is_correct(self, condition):
         return np.any(np.equal(self.licked_probe, condition['probe']))
@@ -112,6 +114,70 @@ class RPBehavior(Behavior):
 
     def prepare(self, condition):
         self.reward_amount = self.probe.calc_pulse_dur(condition['reward_amount'])
+
+
+class TouchBehavior(Behavior):
+    def __init__(self, logger, params):
+        from ft5406 import Touchscreen, TS_PRESS, TS_RELEASE
+        super(TouchBehavior, self).__init__(logger, params)
+
+        self.ts = Touchscreen()
+        for touch in self.ts.touches:
+            touch.on_press = self._touch_handler
+            touch.on_release = self._touch_handler
+        self.ts.run()
+
+    def is_licking(self, since=0):
+        licked_probe, tmst = self.probe.get_last_lick()
+        if tmst >= since and licked_probe:
+            self.licked_probe = licked_probe
+            self.resp_timer.start()
+        else:
+            self.licked_probe = 0
+        return self.licked_probe
+
+    def is_ready(self, duration, since=0):
+        ready, ready_time, tmst = self.probe.in_position()
+        if duration == 0:
+            return True
+        else:
+            return ready_time > duration and tmst >= since # has touched for specified duration since timepoint
+
+    def is_correct(self, condition):
+        return np.any(np.equal(self.licked_probe, condition['probe']))
+
+    def reward(self):
+        self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
+        self.probe.give_liquid(self.licked_probe)
+        self.logger.log_liquid(self.licked_probe, self.reward_amount[self.licked_probe])
+
+    def give_odor(self, delivery_port, odor_id, odor_dur, odor_dutycycle):
+        self.probe.give_odor(delivery_port, odor_id, odor_dur, odor_dutycycle)
+        self.logger.log_stim()
+
+    def cleanup(self):
+        self.probe.cleanup()
+
+    def prepare(self, condition):
+        self.reward_amount = self.probe.calc_pulse_dur(condition['reward_amount'])
+
+    def _touch_handler(self, event, touch):
+        if event == TS_PRESS:
+            self.button = []
+            for button in self.buttons:
+                if button.x+button.w > touch.x > button.x and button.y+button.h > touch.y > button.y:
+                    self.button = button
+                    self._draw_button(button, button.push_color)
+                    return
+        if event == TS_RELEASE:
+            button = self.button
+            if button:
+                self._draw_button(button)
+                button.pressed = True
+                if isinstance(button.action, str):
+                    exec(button.action)
+                else:
+                    button.action()
 
 
 class DummyProbe(Behavior):

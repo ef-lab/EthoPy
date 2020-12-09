@@ -154,6 +154,7 @@ class Response(State):
         self.logger.update_state(self.__class__.__name__)
         self.stim.init(self.__class__.__name__)
         self.period_start = self.logger.log_period(self.__class__.__name__)
+        self.resp_ready = False
 
     def run(self):
         self.stim.present()  # Start Stimulus
@@ -219,6 +220,9 @@ class Punish(State):
 
 
 class InterTrial(State):
+    def entry(self):
+        self.timer.start()
+
     def run(self):
         if self.beh.is_licking() & self.params.get('nolick_intertrial'):
             self.timer.start()
