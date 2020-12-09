@@ -34,6 +34,7 @@ class Panda3D(Stimulus, ShowBase):
         props = WindowProperties()
         props.setCursorHidden(True)
         self.win.requestProperties(props)
+        self.set_background_color(0, 0, 0)
 
         # Create Ambient Light
         self.ambientLight = core.AmbientLight('ambientLight')
@@ -57,6 +58,11 @@ class Panda3D(Stimulus, ShowBase):
             return
 
     def init(self, period=None):
+        # set background color
+        self.set_background_color(self.curr_cond['background_color'][0],
+                                  self.curr_cond['background_color'][1],
+                                  self.curr_cond['background_color'][2])
+
         # Set Ambient Light
         self.ambientLight.setColor(self.curr_cond['ambient_color'])
 
@@ -89,8 +95,8 @@ class Panda3D(Stimulus, ShowBase):
     def present(self):
         self.flip()
 
-    def flip(self,n=1):
-        for i in range(0,n):
+    def flip(self, n=1):
+        for i in range(0, n):
             self.taskMgr.step()
 
     def stop(self):
@@ -100,7 +106,7 @@ class Panda3D(Stimulus, ShowBase):
         self.isrunning = False
 
     def punish_stim(self):
-        self.ambientLight.setColor((0,0,0,1))
+        self.set_background_color(0, 0, 0)
         self.flip(2)
 
     def set_intensity(self, intensity=None):
@@ -147,11 +153,11 @@ class Object(Panda3D):
         self.model.setPos(self.x_fun(t), self.z_fun(t), self.y_fun(t))
         return Task.cont
 
-    def remove(self,task):
+    def remove(self, task):
         task.remove()
         self.model.removeNode()
 
-    def time_fun(self, param, fun=lambda x,t: x):
+    def time_fun(self, param, fun=lambda x, t: x):
         param = np.array([param]) if type(param) != np.ndarray else param
         idx = np.linspace(0, self.duration/1000, param.size)
         return lambda t: np.interp(t, idx,fun(param, t))
