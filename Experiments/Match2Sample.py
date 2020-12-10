@@ -116,12 +116,12 @@ class Cue(State):
             self.resp_ready = True
 
     def next(self):
-        if self.response:
-            return states['Abort']
-        elif not self.resp_ready and self.timer.elapsed_time() > self.stim.curr_cond['cue_duration']:
-            return states['Abort']
-        elif self.resp_ready:
+        if self.resp_ready:
             return states['Delay']
+        elif self.response:
+            return states['Abort']
+        elif self.timer.elapsed_time() > self.stim.curr_cond['cue_duration']:
+            return states['Abort']
         else:
             return states['Cue']
 
@@ -142,12 +142,12 @@ class Delay(State):
             self.resp_ready = True
 
     def next(self):
-        if self.response:
+        if self.resp_ready:
+            return states['Response']
+        elif self.response:
             return states['Abort']
         elif not self.resp_ready and self.timer.elapsed_time() > self.stim.curr_cond['delay_duration']:
             return states['Abort']
-        elif self.resp_ready:
-            return states['Response']
         else:
             return states['Delay']
 
@@ -167,12 +167,12 @@ class Response(State):
             self.resp_ready = True
 
     def next(self):
-        if not self.resp_ready and self.response:
+        if self.response and self.beh.is_correct() and self.resp_ready:  # correct response
+            return states['Reward']
+        elif not self.resp_ready and self.response:
             return states['Abort']
         elif self.response and not self.beh.is_correct():  # incorrect response
             return states['Punish']
-        elif self.response and self.beh.is_correct():  # correct response
-            return states['Reward']
         elif self.timer.elapsed_time() > self.stim.curr_cond['response_duration']:      # timed out
             return states['InterTrial']
         else:
