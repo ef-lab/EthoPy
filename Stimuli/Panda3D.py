@@ -10,7 +10,7 @@ class Panda3D(Stimulus, ShowBase):
     """ This class handles the presentation of Objects with Panda3D"""
 
     def get_condition_tables(self):
-        return ['ObjectCond','RewardCond']
+        return ['ObjectCond', 'RewardCond']
 
     def setup(self):
         # setup parameters
@@ -30,11 +30,12 @@ class Panda3D(Stimulus, ShowBase):
                     print('Saving %s ...' % filename)
                     object_info['object'].tofile(filename)
 
-        ShowBase.__init__(self,fStartDirect=True, windowType=None)
+        ShowBase.__init__(self, fStartDirect=True, windowType=None)
         props = WindowProperties()
         props.setCursorHidden(True)
         self.win.requestProperties(props)
         self.set_background_color(0, 0, 0)
+        self.disableMouse()
 
         # Create Ambient Light
         self.ambientLight = core.AmbientLight('ambientLight')
@@ -138,15 +139,15 @@ class Object(Panda3D):
         self.duration = cond['dur']
         self.model = env.loader.loadModel(env.object_files[cond['id']])
         self.model.reparentTo(env.render)
-        hfov = self.env.camLens.get_fov() * np.pi / 360 # half field of view in radians
+        hfov = self.env.camLens.get_fov() * np.pi / 180 # half field of view in radians
 
         # define object time parameters
         self.rot_fun = self.time_fun(cond['rot'])
         self.tilt_fun = self.time_fun(cond['tilt'])
         self.yaw_fun = self.time_fun(cond['yaw'])
-        self.z_fun = self.time_fun(cond['mag'],   lambda x,t: 20/x)
-        self.x_fun = self.time_fun(cond['pos_x'], lambda x,t: np.arctan(x * hfov[0]) * self.z_fun(t))
-        self.y_fun = self.time_fun(cond['pos_y'], lambda x,t: np.arctan(x * hfov[0]) * self.z_fun(t))
+        self.z_fun = self.time_fun(cond['mag'], lambda x, t: 20/x)
+        self.x_fun = self.time_fun(cond['pos_x'], lambda x, t: np.arctan(x * hfov[0]) * self.z_fun(t))
+        self.y_fun = self.time_fun(cond['pos_y'], lambda x, t: np.arctan(x * hfov[0]) * self.z_fun(t))
 
         # add task object
         self.name = "Obj%s-Task" % cond['id']

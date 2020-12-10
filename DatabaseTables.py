@@ -222,6 +222,17 @@ class Lick(dj.Manual):
 
 
 @schema
+class Touch(dj.Manual):
+    definition = """
+    # Lick timestamps
+    -> Session
+    time	     	  	: int           	# time from session start (ms)
+    loc_x               : int               # x touch location
+    loc_y               : int               # y touch location
+    """
+
+
+@schema
 class LiquidDelivery(dj.Manual):
     definition = """
     # Liquid delivery timestamps

@@ -18,6 +18,9 @@ class Behavior:
         self.licked_probe = 0
         self.reward_amount = dict()
 
+    def setup(self):
+        pass
+
     def is_licking(self, since=False):
         return 0
 
@@ -73,6 +76,9 @@ class RPBehavior(Behavior):
         self.probe = RPProbe(logger)
         super(RPBehavior, self).__init__(logger, params)
 
+    def setup(self):
+        self.probe.setup()
+
     def is_licking(self, since=0):
         licked_probe, tmst = self.probe.get_last_lick()
         if tmst >= since and licked_probe:
@@ -120,12 +126,21 @@ class TouchBehavior(Behavior):
     def __init__(self, logger, params):
         from ft5406 import Touchscreen, TS_PRESS, TS_RELEASE
         super(TouchBehavior, self).__init__(logger, params)
-
+        self.screen_sz = np.array([800, 480])
+        self.touch_area = 50  # +/- area in pixels that a touch can occur
+        self.buttons = dict()
+        self.buttons['any_loc'] = self.Button(self.screen_sz/2, 800)
+        self.loc2px = lambda x: self.screen_sz/2 + x*self.screen_sz[0]
+        self.px2loc = lambda x: x/self.screen_sz[0] - self.screen_sz/2
+        self.probe = RPProbe(logger)
         self.ts = Touchscreen()
         for touch in self.ts.touches:
             touch.on_press = self._touch_handler
             touch.on_release = self._touch_handler
+
+    def setup(self):
         self.ts.run()
+        self.probe.setup()
 
     def is_licking(self, since=0):
         licked_probe, tmst = self.probe.get_last_lick()
@@ -137,11 +152,10 @@ class TouchBehavior(Behavior):
         return self.licked_probe
 
     def is_ready(self, duration, since=0):
-        ready, ready_time, tmst = self.probe.in_position()
         if duration == 0:
             return True
         else:
-            return ready_time > duration and tmst >= since # has touched for specified duration since timepoint
+            return self.buttons['ready_loc'].tmst >= since
 
     def is_correct(self, condition):
         return np.any(np.equal(self.licked_probe, condition['probe']))
@@ -157,27 +171,30 @@ class TouchBehavior(Behavior):
 
     def cleanup(self):
         self.probe.cleanup()
+        self.ts.stop()
 
     def prepare(self, condition):
         self.reward_amount = self.probe.calc_pulse_dur(condition['reward_amount'])
+        self.buttons['ready_loc'] = self.Button(self.loc2px(condition['ready_loc']))
+        self.buttons['correct_loc'] = self.Button(self.loc2px(condition['correct_loc']))
 
     def _touch_handler(self, event, touch):
         if event == TS_PRESS:
-            self.button = []
-            for button in self.buttons:
-                if button.x+button.w > touch.x > button.x and button.y+button.h > touch.y > button.y:
-                    self.button = button
-                    self._draw_button(button, button.push_color)
-                    return
-        if event == TS_RELEASE:
-            button = self.button
-            if button:
-                self._draw_button(button)
-                button.pressed = True
-                if isinstance(button.action, str):
-                    exec(button.action)
-                else:
-                    button.action()
+            tmst = self.logger.log_touch(self.px2loc(touch))
+            for button in self.buttons.keys():
+                if self.buttons[button].is_pressed(touch):
+                    self.buttons[button].tmst = tmst
+
+    class Button:
+        def __init__(self, loc=[0, 0], touch_area=50):
+            self.loc = loc
+            self.tmst = None
+            self.touch_area = touch_area
+
+        def is_pressed(self, touch):
+            touch_x = self.loc[0] + self.touch_area > touch.x > self.loc[0] - self.touch_area
+            touch_y = self.loc[1] + self.touch_area > touch.y > self.loc[1] - self.touch_area
+            return touch_x and touch_y
 
 
 class DummyProbe(Behavior):

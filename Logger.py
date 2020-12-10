@@ -165,9 +165,12 @@ class Logger:
 
     def log_lick(self, probe):
         timestamp = self.timer.elapsed_time()
-        self.queue.put(dict(table='Lick', tuple=dict(self.session_key,
-                                                     time=timestamp,
-                                                     probe=probe)))
+        self.queue.put(dict(table='Lick', tuple=dict(self.session_key, time=timestamp, probe=probe)))
+        return timestamp
+
+    def log_touch(self, loc):
+        timestamp = self.timer.elapsed_time()
+        self.queue.put(dict(table='Touch', tuple=dict(self.session_key, time=timestamp, loc_x=loc[0], loc_y=loc[1])))
         return timestamp
 
     def log_pulse_weight(self, pulse_dur, probe, pulse_num, weight=0):
