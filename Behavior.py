@@ -18,9 +18,6 @@ class Behavior:
         self.licked_probe = 0
         self.reward_amount = dict()
 
-    def setup(self):
-        pass
-
     def is_licking(self, since=False):
         return 0
 
@@ -76,9 +73,6 @@ class RPBehavior(Behavior):
         self.probe = RPProbe(logger)
         super(RPBehavior, self).__init__(logger, params)
 
-    def setup(self):
-        self.probe.setup()
-
     def is_licking(self, since=0):
         licked_probe, tmst = self.probe.get_last_lick()
         if tmst >= since and licked_probe:
@@ -124,7 +118,7 @@ class RPBehavior(Behavior):
 
 class TouchBehavior(Behavior):
     def __init__(self, logger, params):
-        from ft5406 import Touchscreen, TS_PRESS, TS_RELEASE
+        import ft5406 as TS
         super(TouchBehavior, self).__init__(logger, params)
         self.screen_sz = np.array([800, 480])
         self.touch_area = 50  # +/- area in pixels that a touch can occur
@@ -133,14 +127,12 @@ class TouchBehavior(Behavior):
         self.loc2px = lambda x: self.screen_sz/2 + np.array(x)*self.screen_sz[0]
         self.px2loc = lambda x: x/self.screen_sz[0] - self.screen_sz/2
         self.probe = RPProbe(logger)
-        self.ts = Touchscreen()
+        self.ts = TS.Touchscreen()
+        self.ts_press_event = TS.TS_PRESS
         for touch in self.ts.touches:
             touch.on_press = self._touch_handler
             touch.on_release = self._touch_handler
-
-    def setup(self):
         self.ts.run()
-        self.probe.setup()
 
     def is_licking(self, since=0):
         licked_probe, tmst = self.probe.get_last_lick()
@@ -179,7 +171,7 @@ class TouchBehavior(Behavior):
         self.buttons['correct_loc'] = self.Button(self.loc2px(condition['correct_loc']))
 
     def _touch_handler(self, event, touch):
-        if event == TS_PRESS:
+        if event == self.ts_press_event:
             tmst = self.logger.log_touch(self.px2loc(touch))
             for button in self.buttons.keys():
                 if self.buttons[button].is_pressed(touch):
@@ -188,7 +180,7 @@ class TouchBehavior(Behavior):
     class Button:
         def __init__(self, loc=[0, 0], touch_area=50):
             self.loc = loc
-            self.tmst = None
+            self.tmst = 0
             self.touch_area = touch_area
 
         def is_pressed(self, touch):

@@ -28,9 +28,6 @@ class Probe:
                 (LiquidCalibration.PulseWeight() & key).fetch('pulse_dur', 'pulse_num', 'weight')
             self.weight_per_pulse[probe] = numpy.divide(weight, pulse_num)
 
-    def setup(self):
-        pass
-
     def give_air(self, probe, duration, log=True):
         pass
 
@@ -101,9 +98,6 @@ class RPProbe(Probe):
         self.PulseGen = pigpio.pulse
         self.Pulser.set_mode(self.channels['liquid'][1], pigpio.OUTPUT)
         self.Pulser.set_mode(self.channels['liquid'][2], pigpio.OUTPUT)
-        self.setup()
-
-    def setup(self):
         self.GPIO.add_event_detect(self.channels['lick'][2], self.GPIO.RISING,
                                    callback=self.probe2_licked, bouncetime=100)
         self.GPIO.add_event_detect(self.channels['lick'][1], self.GPIO.RISING,
