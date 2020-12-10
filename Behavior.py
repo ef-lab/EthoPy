@@ -130,6 +130,7 @@ class TouchBehavior(Behavior):
         self.probe = RPProbe(logger)
         self.ts = TS.Touchscreen()
         self.ts_press_event = TS.TS_PRESS
+        self.last_touch_tmst = 0
         for touch in self.ts.touches:
             touch.on_press = self._touch_handler
             touch.on_release = self._touch_handler
