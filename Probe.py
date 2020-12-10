@@ -85,7 +85,7 @@ class RPProbe(Probe):
         super(RPProbe, self).__init__(logger)
         from RPi import GPIO
         import pigpio
-        self.setup = int(''.join(list(filter(str.isdigit, socket.gethostname()))))
+        self.setup_name = int(''.join(list(filter(str.isdigit, socket.gethostname()))))
         self.GPIO = GPIO
         self.GPIO.setmode(self.GPIO.BCM)
         self.channels = {'air': {1: 24, 2: 25},
