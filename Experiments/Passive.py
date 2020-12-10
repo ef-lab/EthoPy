@@ -27,12 +27,12 @@ class State(StateClass):
             'InterTrial'   : InterTrial(self),
             'Exit'         : exitState}
 
-    def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
-        self.StateMachine.status = self.logger.get_setup_info('status')
-        self.logger.update_state(self.__class__.__name__)
-
     def run(self):
         self.StateMachine.run()
+
+    def updateStatus(self): # updates stateMachine from Database entry - override for timing critical transitions
+        self.StateMachine.status = self.logger.get_setup_info('status')
+        self.logger.update_state(self.__class__.__name__)
 
 
 class Prepare(State):
@@ -93,6 +93,9 @@ class InterTrial(State):
             return states['PreTrial']
         else:
             return states['InterTrial']
+
+    def exit(self):
+        self.updateStatus()
 
 
 class Exit(State):
