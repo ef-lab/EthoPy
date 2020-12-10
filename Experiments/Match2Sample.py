@@ -70,6 +70,7 @@ class Prepare(State):
         else:
             return states['PreTrial']
 
+
 class PreTrial(State):
     def entry(self):
         self.stim.prepare()

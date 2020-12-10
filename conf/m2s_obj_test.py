@@ -51,7 +51,7 @@ np.random.seed(0)
 obj_timepoints = 5
 obj_combs = [[1, 1], [1, 1], [2, 2], [2, 2]]
 rew_prob = [1, 2, 2, 1]
-obj_posX = [[0, -.5], [0, .5], [0, .5], [0, -.5]]
+obj_posX = [[0, -.25], [0, .25], [0, .25], [0, -.25]]
 for idx, obj_comb in enumerate(obj_combs):
     rot_f = lambda: interp(np.random.rand(obj_timepoints) *200)
     conditions += factorize({**env_key,
@@ -61,10 +61,10 @@ for idx, obj_comb in enumerate(obj_combs):
                             'obj_pos_x' : [obj_posX[idx]],
                             'obj_pos_y' : 0,
                             'obj_mag'   : .5,
-                            'obj_rot'   : [[rot_f(), rot_f(), rot_f()]],
+                            'obj_rot'   : [[rot_f(), rot_f()]],
                             'obj_tilt'  : 0,
                             'obj_yaw'   : 0,
-                            'obj_period': [['Cue', 'Response', 'Response']]})
+                            'obj_period': [['Cue', 'Response']]})
 
 obj_combs = [[1, 1, 2], [1, 2, 1], [2, 1, 2], [2, 2, 1]]
 rew_prob = [1, 2, 2, 1]
@@ -74,7 +74,7 @@ for idx, obj_comb in enumerate(obj_combs):
                             'difficulty': 2,
                             'obj_id'    : [obj_comb],
                             'probe'     : rew_prob[idx],
-                            'obj_pos_x' : [[0, -.5, .5]],
+                            'obj_pos_x' : [[0, -.25, .25]],
                             'obj_pos_y' : 0,
                             'obj_mag'   : .5,
                             'obj_rot'   : [[rot_f(), rot_f(), rot_f()]],
