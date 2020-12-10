@@ -94,19 +94,22 @@ class RPProbe(Probe):
                          'start': {1: 9}}  # 2
         self.frequency = 20
         self.pulses = dict()
-        self.setup()
-
-    def setup(self):
         self.GPIO.setup(list(self.channels['lick'].values()) + [self.channels['start'][1]],
                         self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         self.GPIO.setup(list(self.channels['air'].values()), self.GPIO.OUT, initial=self.GPIO.LOW)
-        self.GPIO.add_event_detect(self.channels['lick'][2], self.GPIO.RISING, callback=self.probe2_licked, bouncetime=100)
-        self.GPIO.add_event_detect(self.channels['lick'][1], self.GPIO.RISING, callback=self.probe1_licked, bouncetime=100)
-        self.GPIO.add_event_detect(self.channels['start'][1], self.GPIO.BOTH, callback=self.position_change, bouncetime=50)
         self.Pulser = pigpio.pi()
         self.PulseGen = pigpio.pulse
         self.Pulser.set_mode(self.channels['liquid'][1], pigpio.OUTPUT)
         self.Pulser.set_mode(self.channels['liquid'][2], pigpio.OUTPUT)
+        self.setup()
+
+    def setup(self):
+        self.GPIO.add_event_detect(self.channels['lick'][2], self.GPIO.RISING,
+                                   callback=self.probe2_licked, bouncetime=100)
+        self.GPIO.add_event_detect(self.channels['lick'][1], self.GPIO.RISING,
+                                   callback=self.probe1_licked, bouncetime=100)
+        self.GPIO.add_event_detect(self.channels['start'][1], self.GPIO.BOTH,
+                                    callback=self.position_change, bouncetime=50)
 
     def give_liquid(self, probe):
         self.thread.submit(self.pulse_out, probe)
