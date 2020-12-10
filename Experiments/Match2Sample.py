@@ -111,12 +111,12 @@ class Cue(State):
 
     def run(self):
         self.stim.present()
-        self.probe = self.beh.is_licking(self.period_start)
+        self.response = self.beh.response(self.period_start)
         if self.beh.is_ready(self.stim.curr_cond['cue_ready'], self.period_start):
             self.resp_ready = True
 
     def next(self):
-        if self.probe > 0:
+        if self.response:
             return states['Abort']
         elif not self.resp_ready and self.timer.elapsed_time() > self.stim.curr_cond['cue_duration']:
             return states['Abort']
@@ -137,12 +137,12 @@ class Delay(State):
         self.resp_ready = False
 
     def run(self):
-        self.probe = self.beh.is_licking(self.period_start)
+        self.response = self.beh.response(self.period_start)
         if self.beh.is_ready(self.stim.curr_cond['delay_ready'], self.period_start):
             self.resp_ready = True
 
     def next(self):
-        if self.probe > 0:
+        if self.response:
             return states['Abort']
         elif not self.resp_ready and self.timer.elapsed_time() > self.stim.curr_cond['delay_duration']:
             return states['Abort']
@@ -162,16 +162,16 @@ class Response(State):
 
     def run(self):
         self.stim.present()  # Start Stimulus
-        self.probe = self.beh.is_licking(self.period_start)
+        self.response = self.beh.response(self.period_start)
         if self.beh.is_ready(self.stim.curr_cond['resp_ready'], self.period_start):
             self.resp_ready = True
 
     def next(self):
-        if not self.resp_ready and self.probe > 0:
+        if not self.resp_ready and self.response:
             return states['Abort']
-        elif self.probe > 0 and not self.beh.is_correct(self.stim.curr_cond): # response to incorrect probe
+        elif self.response and not self.beh.is_correct():  # incorrect response
             return states['Punish']
-        elif self.probe > 0 and self.beh.is_correct(self.stim.curr_cond): # response to correct probe
+        elif self.response and self.beh.is_correct():  # correct response
             return states['Reward']
         elif self.timer.elapsed_time() > self.stim.curr_cond['response_duration']:      # timed out
             return states['InterTrial']

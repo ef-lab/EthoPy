@@ -22,7 +22,7 @@ session_params = {
     'staircase_window'   : 10,
     'stair_up'           : 0.7,
     'stair_down'         : 0.6,
-    'nolick_intertrial'  : False,
+    'noresponse_intertrial'  : False,
 }
 
 # define environment conditions

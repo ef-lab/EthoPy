@@ -123,9 +123,10 @@ class TouchBehavior(Behavior):
         self.screen_sz = np.array([800, 480])
         self.touch_area = 50  # +/- area in pixels that a touch can occur
         self.buttons = dict()
+        self.since = 0
         self.buttons['any_loc'] = self.Button(self.screen_sz/2, 800)
         self.loc2px = lambda x: self.screen_sz/2 + np.array(x)*self.screen_sz[0]
-        self.px2loc = lambda x: x/self.screen_sz[0] - self.screen_sz/2
+        self.px2loc = lambda x: np.array(x)/self.screen_sz[0] - self.screen_sz/2
         self.probe = RPProbe(logger)
         self.ts = TS.Touchscreen()
         self.ts_press_event = TS.TS_PRESS
@@ -143,14 +144,18 @@ class TouchBehavior(Behavior):
             self.licked_probe = 0
         return self.licked_probe
 
+    def response(self, since=0):
+        self.since = since
+        return self.is_licking(since) > 0 or self.last_touch_tmst >= since
+
     def is_ready(self, duration, since=0):
         if duration == 0:
             return True
         else:
             return self.buttons['ready_loc'].tmst >= since
 
-    def is_correct(self, condition):
-        return np.any(np.equal(self.licked_probe, condition['probe']))
+    def is_correct(self):
+        return self.buttons['correct_loc'].tmst >= self.since
 
     def reward(self):
         self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
@@ -172,20 +177,20 @@ class TouchBehavior(Behavior):
 
     def _touch_handler(self, event, touch):
         if event == self.ts_press_event:
-            tmst = self.logger.log_touch(self.px2loc(touch))
+            self.last_touch_tmst = self.logger.log_touch(self.px2loc([touch.x, touch.y]))
             for button in self.buttons.keys():
                 if self.buttons[button].is_pressed(touch):
-                    self.buttons[button].tmst = tmst
+                    self.buttons[button].tmst = self.last_touch_tmst
 
     class Button:
-        def __init__(self, loc=[0, 0], touch_area=50):
+        def __init__(self, loc=[0, 0], touch_area=(100, 200)):
             self.loc = loc
             self.tmst = 0
             self.touch_area = touch_area
 
         def is_pressed(self, touch):
-            touch_x = self.loc[0] + self.touch_area > touch.x > self.loc[0] - self.touch_area
-            touch_y = self.loc[1] + self.touch_area > touch.y > self.loc[1] - self.touch_area
+            touch_x = self.loc[0] + self.touch_area[0] > touch.x > self.loc[0] - self.touch_area[0]
+            touch_y = self.loc[1] + self.touch_area[1] > touch.y > self.loc[1] - self.touch_area[1]
             return touch_x and touch_y
 
 
