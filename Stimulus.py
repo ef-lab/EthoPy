@@ -66,12 +66,12 @@ class Stimulus:
         pass
 
     def _anti_bias(self, choice_h):
-        self.un_choices, choices_idx, choices_inv = np.unique(self.choices, axis=0,
+        self.un_choices, choices_idx, self.choices = np.unique(self.choices, axis=0,
                                                               return_index=True, return_inverse=True)
         choice_h_idx = [list(choices_idx[(self.un_choices == c).all(1)])[0] for c in choice_h]
-        if len(choice_h) < self.params['bias_window']: h = np.mean(choices_inv)
+        if len(choice_h) < self.params['bias_window']: h = np.mean(self.choices)
         else: np.array(choice_h_idx[-self.params['bias_window']:])
-        mn = np.min(choices_inv); mx = np.max(choices_inv)
+        mn = np.min(self.choices); mx = np.max(self.choices)
         return np.random.binomial(1, 1 - np.nanmean((h - mn) / (mx - mn))) * (mx - mn) + mn
 
     def _get_new_cond(self):
