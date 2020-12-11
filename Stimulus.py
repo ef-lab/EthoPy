@@ -23,8 +23,9 @@ class Stimulus:
         self.un_choices = []
         self.curr_difficulty = 1
         resp_cond = params['resp_cond'] if 'resp_cond' in params else 'probe'
+        fun = lambda x: [x] if resp_cond == 'probe' else lambda x: x
         if np.all([resp_cond in cond for cond in conditions]):
-            self.raw_choices = np.array([d[resp_cond] for d in conditions])
+            self.raw_choices = np.array([fun(d[resp_cond]) for d in conditions])
         if np.all(['difficulty' in cond for cond in conditions]):
             self.difficulties = [cond['difficulty'] for cond in self.conditions]
         self.timer = Timer()
