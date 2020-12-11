@@ -82,6 +82,9 @@ class RPBehavior(Behavior):
             self.licked_probe = 0
         return self.licked_probe
 
+    def response(self, since=0):
+        return self.is_licking(since) > 0
+
     def is_ready(self, duration, since=False):
         ready, ready_time, tmst = self.probe.in_position()
         if duration == 0:
@@ -123,6 +126,7 @@ class TouchBehavior(Behavior):
         self.screen_sz = np.array([800, 480])
         self.touch_area = 50  # +/- area in pixels that a touch can occur
         self.since = 0
+        self.has_touched = False
         self.buttons = list()
         self.loc2px = lambda x: self.screen_sz/2 + np.array(x)*self.screen_sz[0]
         self.px2loc = lambda x: np.array(x)/self.screen_sz[0] - self.screen_sz/2
@@ -147,11 +151,18 @@ class TouchBehavior(Behavior):
     def is_touching(self, since=0, group='choice'):
         if group == 'target':
             tmst = np.max([b.tmst if b.is_target else 0 for b in self.buttons])
+            self.touch = self.target_loc
         else:
-            tmst = np.max([b.tmst if b.group == group else 0 for b in self.buttons])
+            tmsts = [b.tmst if b.group == group else 0 for b in self.buttons]
+            mx_idx = np.argmax(tmsts)
+            tmst = tmsts[mx_idx]
+            if group == 'choice':
+                locs = [b.loc if b.group == group else 0 for b in self.buttons]
+                self.touch = locs[mx_idx]
         if tmst >= since:
             self.resp_timer.start()
-        return tmst >= since
+        self.has_touched = tmst >= since
+        return self.has_touched
 
     def response(self, since=0):
         self.since = since
@@ -169,14 +180,14 @@ class TouchBehavior(Behavior):
     def reward(self):
         if self.is_licking() > 0:
             self.probe.give_liquid(self.licked_probe)
-            self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
+            self.update_history(self.target_loc, self.reward_amount[self.licked_probe])
             self.logger.log_liquid(self.licked_probe, self.reward_amount[self.licked_probe])
             return True
         return False
 
     def punish(self):
-        probe = self.licked_probe if self.licked_probe > 0 else np.nan
-        self.update_history(probe)
+        touched_loc =  self.touch if self.has_touched else np.nan
+        self.update_history(touched_loc)
 
     def give_odor(self, delivery_port, odor_id, odor_dur, odor_dutycycle):
         self.probe.give_odor(delivery_port, odor_id, odor_dur, odor_dutycycle)
@@ -188,6 +199,7 @@ class TouchBehavior(Behavior):
 
     def prepare(self, condition, choices):
         self.reward_amount = self.probe.calc_pulse_dur(condition['reward_amount'])
+        self.target_loc = condition['correct_loc']
         buttons = list()
         buttons.append(self.Button(self.loc2px(condition['ready_loc']), 'ready'))
         for choice in choices:

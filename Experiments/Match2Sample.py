@@ -231,9 +231,10 @@ class Punish(State):
 class InterTrial(State):
     def entry(self):
         self.timer.start()
+        self.period_start = self.logger.log_period(self.__class__.__name__)
 
     def run(self):
-        if self.beh.is_licking() & self.params.get('noresponse_intertrial'):
+        if self.beh.response(self.period_start) & self.params.get('noresponse_intertrial'):
             self.timer.start()
 
     def next(self):
