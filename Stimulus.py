@@ -69,7 +69,8 @@ class Stimulus:
         self.un_choices, choices_idx, choices_inv = np.unique(self.choices, axis=0,
                                                               return_index=True, return_inverse=True)
         choice_h_idx = [list(choices_idx[(self.un_choices == c).all(1)])[0] for c in choice_h]
-        h = np.mean(choices_inv) if len(choice_h) < self.bias_window else np.array(choice_h_idx[-self.bias_window:])
+        if len(choice_h) < self.params['bias_window']: h = np.mean(choices_inv)
+        else: np.array(choice_h_idx[-self.params['bias_window']:])
         mn = np.min(choices_inv); mx = np.max(choices_inv)
         return np.random.binomial(1, 1 - np.nanmean((h - mn) / (mx - mn))) * (mx - mn) + mn
 
