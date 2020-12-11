@@ -191,7 +191,7 @@ class TouchBehavior(Behavior):
         buttons = list()
         buttons.append(self.Button(self.loc2px(condition['ready_loc']), 'ready'))
         for choice in choices:
-            is_target = True if condition['correct_loc'] == choice else False
+            is_target = True if (condition['correct_loc'] == choice).all() else False
             buttons.append(self.Button(self.loc2px(choice), 'choice', is_target))
         self.buttons = np.asarray(buttons, dtype=object)
 

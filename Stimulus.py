@@ -24,7 +24,7 @@ class Stimulus:
         self.curr_difficulty = 1
         resp_cond = params['resp_cond'] if 'resp_cond' in params else 'probe'
         if np.all([resp_cond in cond for cond in conditions]):
-            self.choices = np.array([d[resp_cond] for d in conditions])
+            self.raw_choices = np.array([d[resp_cond] for d in conditions])
         if np.all(['difficulty' in cond for cond in conditions]):
             self.difficulties = [cond['difficulty'] for cond in self.conditions]
         self.timer = Timer()
@@ -66,7 +66,7 @@ class Stimulus:
         pass
 
     def _anti_bias(self, choice_h):
-        self.un_choices, choices_idx, self.choices = np.unique(self.choices, axis=0,
+        self.un_choices, choices_idx, self.choices = np.unique(self.raw_choices, axis=0,
                                                               return_index=True, return_inverse=True)
         choice_h_idx = [list(choices_idx[(self.un_choices == c).all(1)])[0] for c in choice_h]
         if len(choice_h) < self.params['bias_window']: h = np.mean(self.choices)
