@@ -104,6 +104,7 @@ class RPBehavior(Behavior):
         self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
         self.probe.give_liquid(self.licked_probe)
         self.logger.log_liquid(self.licked_probe, self.reward_amount[self.licked_probe])
+        return True
 
     def give_odor(self, delivery_port, odor_id, odor_dur, odor_dutycycle):
         self.probe.give_odor(delivery_port, odor_id, odor_dur, odor_dutycycle)
