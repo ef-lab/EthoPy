@@ -92,13 +92,13 @@ class Stimulus:
         elif self.params['trial_selection'] == 'random':
             self.curr_cond = np.random.choice(self.conditions)
         elif self.params['trial_selection'] == 'bias':
-            idx = ~np.isnan(self.beh.choice_history)
+            idx = [~np.isnan(ch).any() for ch in self.beh.choice_history]
             choice_h = np.asarray(self.beh.choice_history, dtype=object)
             anti_bias = self._anti_bias(choice_h[idx])
             selected_conditions = [i for (i, v) in zip(self.conditions, self.choices == anti_bias) if v]
             self.curr_cond = np.random.choice(selected_conditions)
         elif self.params['trial_selection'] == 'staircase':
-            idx = ~np.isnan(self.beh.choice_history)
+            idx = [~np.isnan(ch).any() for ch in self.beh.choice_history]
             rew_h = np.asarray(self.beh.reward_history, dtype=object)
             choice_h = np.asarray(self.beh.choice_history, dtype=object)
             rew_h = rew_h[idx]
@@ -118,7 +118,7 @@ class Stimulus:
                                                        np.array(self.difficulties) == self.curr_difficulty)) if v]
             self.curr_cond = np.random.choice(selected_conditions)
         elif self.params['trial_selection'] == 'water_stairs':
-            rew_h = np.greater(self.beh.reward_history, 0)
+            rew_h = [np.greater(rw, 0).any() for rw in self.beh.reward_history]
             if self.iter == 1 or np.size(self.iter) == 0:
                 self.iter = self.params['staircase_window']
                 perf = np.nanmean(np.greater(rew_h[-self.params['staircase_window']:], 0))
