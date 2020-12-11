@@ -13,8 +13,8 @@ class Behavior:
         self.logger = logger
         self.rew_probe = 0
         self.choices = np.array(np.empty(0))
-        self.choice_history = np.array([])  # History term for bias calculation
-        self.reward_history = np.array([])  # History term for performance calculation
+        self.choice_history = list()  # History term for bias calculation
+        self.reward_history = list()  # History term for performance calculation
         self.licked_probe = 0
         self.reward_amount = dict()
 
@@ -59,8 +59,8 @@ class Behavior:
         pass
 
     def update_history(self, choice=np.nan, reward=np.nan):
-        self.choice_history = np.append(self.choice_history, choice)
-        self.reward_history = np.append(self.reward_history, reward)
+        self.choice_history.append(choice)
+        self.reward_history.append(reward)
         self.logger.update_total_liquid(np.nansum(self.reward_history))
 
     def prepare(self, condition, choices):
