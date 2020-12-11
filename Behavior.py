@@ -203,7 +203,7 @@ class TouchBehavior(Behavior):
                     self.buttons[idx].tmst = self.last_touch_tmst
 
     class Button:
-        def __init__(self, loc, group='choice', is_target=False, touch_area=(100, 200)):
+        def __init__(self, loc, group='choice', is_target=False, touch_area=(100, 300)):
             self.loc = loc
             self.tmst = 0
             self.touch_area = touch_area
