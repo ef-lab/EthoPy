@@ -17,6 +17,7 @@ class Behavior:
         self.reward_history = list()  # History term for performance calculation
         self.licked_probe = 0
         self.reward_amount = dict()
+        self.curr_cond = []
 
     def is_licking(self, since=False):
         return 0
@@ -70,7 +71,6 @@ class Behavior:
 class RPBehavior(Behavior):
     """ This class handles the behavior variables for RP """
     def __init__(self, logger, params):
-        self.curr_cond = []
         self.probe = RPProbe(logger)
         super(RPBehavior, self).__init__(logger, params)
 
@@ -180,10 +180,11 @@ class TouchBehavior(Behavior):
         return self.is_touching(self.since, 'target')
 
     def reward(self):
-        if self.is_licking() > 0:
-            self.probe.give_liquid(self.licked_probe)
-            self.update_history(self.target_loc, self.reward_amount[self.licked_probe])
-            self.logger.log_liquid(self.licked_probe, self.reward_amount[self.licked_probe])
+        licked_probe = self.is_licking()
+        if np.any(np.equal(licked_probe, self.curr_cond['probe'])):
+            self.probe.give_liquid(licked_probe)
+            self.update_history(self.target_loc, self.reward_amount[licked_probe])
+            self.logger.log_liquid(self.licked_probe, self.reward_amount[licked_probe])
             return True
         return False
 
@@ -200,6 +201,7 @@ class TouchBehavior(Behavior):
         self.ts.stop()
 
     def prepare(self, condition, choices):
+        self.curr_cond = condition
         self.reward_amount = self.probe.calc_pulse_dur(condition['reward_amount'])
         self.target_loc = condition['correct_loc']
         buttons = list()
