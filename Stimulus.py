@@ -93,13 +93,16 @@ class Stimulus:
             self.curr_cond = np.random.choice(self.conditions)
         elif self.params['trial_selection'] == 'bias':
             idx = ~np.isnan(self.beh.choice_history)
-            anti_bias = self._anti_bias(self.beh.choice_history[idx])
+            choice_h = np.asarray(self.beh.choice_history, dtype=object)
+            anti_bias = self._anti_bias(choice_h[idx])
             selected_conditions = [i for (i, v) in zip(self.conditions, self.choices == anti_bias) if v]
             self.curr_cond = np.random.choice(selected_conditions)
         elif self.params['trial_selection'] == 'staircase':
             idx = ~np.isnan(self.beh.choice_history)
-            rew_h = self.beh.reward_history[idx]
-            anti_bias = self._anti_bias(self.beh.choice_history[idx])
+            rew_h = np.asarray(self.beh.reward_history, dtype=object)
+            choice_h = np.asarray(self.beh.choice_history, dtype=object)
+            rew_h = rew_h[idx]
+            anti_bias = self._anti_bias(choice_h[idx])
             if self.iter == 1 or np.size(self.iter) == 0:
                 self.iter = self.params['staircase_window']
                 perf = np.nanmean(np.greater(rew_h[-self.params['staircase_window']:], 0))
