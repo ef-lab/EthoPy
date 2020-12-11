@@ -70,6 +70,7 @@ class Behavior:
 class RPBehavior(Behavior):
     """ This class handles the behavior variables for RP """
     def __init__(self, logger, params):
+        self.curr_cond = []
         self.probe = RPProbe(logger)
         super(RPBehavior, self).__init__(logger, params)
 
@@ -96,8 +97,8 @@ class RPBehavior(Behavior):
         else:
             return (ready_time + tmst - since) > duration  # has been in position for specified duration since timepoint
 
-    def is_correct(self, condition):
-        return np.any(np.equal(self.licked_probe, condition['probe']))
+    def is_correct(self):
+        return np.any(np.equal(self.licked_probe, self.curr_cond['probe']))
 
     def reward(self):
         self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
@@ -116,6 +117,7 @@ class RPBehavior(Behavior):
         self.probe.cleanup()
 
     def prepare(self, condition, choices):
+        self.curr_cond = condition
         self.reward_amount = self.probe.calc_pulse_dur(condition['reward_amount'])
 
 
