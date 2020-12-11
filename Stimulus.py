@@ -20,9 +20,11 @@ class Stimulus:
         self.iter = []
         self.curr_cond = []
         self.rew_probe = []
+        self.un_choices = []
         self.curr_difficulty = 1
-        if np.all(['probe' in cond for cond in conditions]):
-            self.probes = np.array([d['probe'] for d in self.conditions])
+        resp_cond = params['resp_cond'] if 'resp_cond' in params else 'probe'
+        if np.all([resp_cond in cond for cond in conditions]):
+            self.choices = np.array([d[resp_cond] for d in conditions])
         if np.all(['difficulty' in cond for cond in conditions]):
             self.difficulties = [cond['difficulty'] for cond in self.conditions]
         self.timer = Timer()
@@ -63,6 +65,14 @@ class Stimulus:
         """stop trial"""
         pass
 
+    def _anti_bias(self, choice_h):
+        self.un_choices, choices_idx, choices_inv = np.unique(self.choices, axis=0,
+                                                              return_index=True, return_inverse=True)
+        choice_h_idx = [list(choices_idx[(self.un_choices == c).all(1)])[0] for c in choice_h]
+        h = np.mean(choices_inv) if len(choice_h) < self.bias_window else np.array(choice_h_idx[-self.bias_window:])
+        mn = np.min(choices_inv); mx = np.max(choices_inv)
+        return np.random.binomial(1, 1 - np.nanmean((h - mn) / (mx - mn))) * (mx - mn) + mn
+
     def _get_new_cond(self):
         """Get curr condition & create random block of all conditions
         Should be called within init_trial
@@ -81,22 +91,14 @@ class Stimulus:
         elif self.params['trial_selection'] == 'random':
             self.curr_cond = np.random.choice(self.conditions)
         elif self.params['trial_selection'] == 'bias':
-            idx = ~np.isnan(self.beh.probe_history)
-            probe_h = self.beh.probe_history[idx]
-            h = np.array(probe_h[-self.params['bias_window']:])
-            if len(h) < self.params['bias_window']: h = np.mean(self.probes)
-            mn = np.min(self.probes); mx = np.max(self.probes)
-            bias_probe = np.random.binomial(1, 1 - np.nanmean((h - mn) / (mx - mn))) * (mx - mn) + mn
-            selected_conditions = [i for (i, v) in zip(self.conditions, self.probes == bias_probe) if v]
+            idx = ~np.isnan(self.beh.choice_history)
+            anti_bias = self._anti_bias(self.beh.choice_history[idx])
+            selected_conditions = [i for (i, v) in zip(self.conditions, self.choices == anti_bias) if v]
             self.curr_cond = np.random.choice(selected_conditions)
         elif self.params['trial_selection'] == 'staircase':
-            idx = ~np.isnan(self.beh.probe_history)
-            probe_h = self.beh.probe_history[idx]
+            idx = ~np.isnan(self.beh.choice_history)
             rew_h = self.beh.reward_history[idx]
-            h = np.array(probe_h[-self.params['bias_window']:])
-            if len(h) < self.params['bias_window']: h = np.mean(self.probes)
-            mn = np.min(self.probes); mx = np.max(self.probes)
-            bias_probe = np.random.binomial(1, 1 - np.nanmean((h - mn) / (mx - mn))) * (mx - mn) + mn
+            anti_bias = self._anti_bias(self.beh.choice_history[idx])
             if self.iter == 1 or np.size(self.iter) == 0:
                 self.iter = self.params['staircase_window']
                 perf = np.nanmean(np.greater(rew_h[-self.params['staircase_window']:], 0))
@@ -106,9 +108,9 @@ class Stimulus:
                     self.curr_difficulty -= 1
                 self.logger.update_difficulty(self.curr_difficulty)
             else:
-                if self.beh.probe_history[-1:] > 0:
+                if self.beh.choice_history[-1:]:
                     self.iter -= 1
-            selected_conditions = [i for (i, v) in zip(self.conditions, np.logical_and(self.probes == bias_probe,
+            selected_conditions = [i for (i, v) in zip(self.conditions, np.logical_and(self.choices == anti_bias,
                                                        np.array(self.difficulties) == self.curr_difficulty)) if v]
             self.curr_cond = np.random.choice(selected_conditions)
         elif self.params['trial_selection'] == 'water_stairs':

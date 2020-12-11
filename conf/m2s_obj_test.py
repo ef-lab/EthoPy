@@ -41,8 +41,9 @@ env_key = {
     'cue_duration'          : 2000,
     'delay_duration'        : 5000,
     'response_duration'     : 4000,
+    'punish_duration'       : 1000,
+    'reward_duration'       : 2000,
     'reward_amount'         : 8,
-    'timeout_duration'      : 1000,
     'obj_dur'               : 5000,
     'obj_delay'             : 0,
 }

@@ -75,7 +75,7 @@ class PreTrial(State):
     def entry(self):
         self.stim.prepare()
         self.logger.update_state(self.__class__.__name__)
-        self.beh.prepare(self.stim.curr_cond)
+        self.beh.prepare(self.stim.curr_cond, self.stim.un_choices)
         self.logger.init_trial(self.stim.curr_cond['cond_hash'])
         self.period_start = self.logger.log_period('PreTrial')
         self.resp_ready = False
@@ -180,13 +180,12 @@ class Response(State):
 
     def exit(self):
         self.stim.stop()
-        self.logger.log_trial()
         self.logger.ping()
-        self.beh.update_history()
 
 
 class Abort(State):
     def run(self):
+        self.beh.update_history()
         self.logger.log_trial()
         self.logger.log_abort()
 
@@ -195,26 +194,32 @@ class Abort(State):
 
 
 class Reward(State):
+    def entry(self):
+        self.logger.log_trial()
+        self.timer.start()
+
     def run(self):
-        self.beh.reward()
-        print('Rewarding')
+        self.rewarded = self.beh.reward()
 
     def next(self):
-        return states['InterTrial']
+        if self.rewarded or self.timer.elapsed_time() >= self.stim.curr_cond['reward_duration']:
+            return states['InterTrial']
+        else:
+            return states['Reward']
 
 
 class Punish(State):
     def entry(self):
+        self.logger.log_trial()
         self.beh.punish()
         self.timer.start()
         self.logger.update_state(self.__class__.__name__)
-        print('Punishing')
 
     def run(self):
         self.stim.punish_stim()
 
     def next(self):
-        if self.timer.elapsed_time() >= self.stim.curr_cond['timeout_duration']:
+        if self.timer.elapsed_time() >= self.stim.curr_cond['punish_duration']:
             return states['InterTrial']
         else:
             return states['Punish']
