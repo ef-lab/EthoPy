@@ -1,7 +1,8 @@
 from Stimulus import *
 import os
 from time import sleep
-
+import pygame
+from pygame.locals import *
 
 class SmellyMovies(Stimulus):
     """ This class handles the presentation of Visual (movies) and Olfactory (odors) stimuli"""

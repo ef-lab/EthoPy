@@ -1,8 +1,6 @@
 import numpy as np
 from utils.Timer import *
-import pygame
-from pygame.locals import *
-
+from utils.Generator import make_hash
 
 class Stimulus:
     """ This class handles the stimulus presentation
@@ -10,7 +8,6 @@ class Stimulus:
     """
 
     def __init__(self, logger, params, conditions, beh=False):
-        # initilize parameters
         self.params = params
         self.logger = logger
         self.conditions = conditions
@@ -23,12 +20,13 @@ class Stimulus:
         self.un_choices = []
         self.curr_difficulty = 1
         resp_cond = params['resp_cond'] if 'resp_cond' in params else 'probe'
-        fun = lambda x: [x] if resp_cond == 'probe' else lambda x: x
         if np.all([resp_cond in cond for cond in conditions]):
-            self.raw_choices = np.array([fun(d[resp_cond]) for d in conditions])
+            self.choices = np.array([make_hash(d[resp_cond]) for d in conditions])
         if np.all(['difficulty' in cond for cond in conditions]):
-            self.difficulties = [cond['difficulty'] for cond in self.conditions]
+            self.difficulties = np.array([cond['difficulty'] for cond in self.conditions])
         self.timer = Timer()
+        self.un_choices = np.unique(self.choices, axis=0)
+
 
     def get_condition_tables(self):
         """return condition tables"""
@@ -67,26 +65,19 @@ class Stimulus:
         pass
 
     def _anti_bias(self, choice_h):
-        self.un_choices, choices_idx, self.choices = np.unique(self.raw_choices, axis=0,
-                                                              return_index=True, return_inverse=True)
-        choice_h_idx = [list(choices_idx[(self.un_choices == c).all(1)])[0] for c in choice_h]
-        if len(choice_h) < self.params['bias_window']: h = np.mean(self.choices)
-        else: h = np.array(choice_h_idx[-self.params['bias_window']:])
-        mn = np.min(self.choices); mx = np.max(self.choices)
-        return np.random.binomial(1, 1 - np.nanmean((h - mn) / (mx - mn))) * (mx - mn) + mn
+        choice_h = np.array([make_hash(c) for c in choice_h[-self.params['bias_window']:]])
+        if len(choice_h) < self.params['bias_window']: choice_h = self.choices
+        P = 1 - np.array([np.mean(choice_h == un) for un in self.un_choices])
+        return np.random.choice(self.un_choices, 1, p=P/sum(P))
 
     def _get_new_cond(self):
         """Get curr condition & create random block of all conditions
         Should be called within init_trial
         """
         if self.params['trial_selection'] == 'fixed':
-            if len(self.conditions) == 0:
-                self.curr_cond = []
-            else:
-                self.curr_cond = self.conditions.pop()
+            self.curr_cond = [] if len(self.conditions) == 0 else self.conditions.pop()
         elif self.params['trial_selection'] == 'block':
-            if np.size(self.iter) == 0:
-                self.iter = np.random.permutation(np.size(self.conditions))
+            if np.size(self.iter) == 0: self.iter = np.random.permutation(np.size(self.conditions))
             cond = self.conditions[self.iter[0]]
             self.iter = self.iter[1:]
             self.curr_cond = cond
@@ -113,10 +104,9 @@ class Stimulus:
                     self.curr_difficulty -= 1
                 self.logger.update_difficulty(self.curr_difficulty)
             else:
-                if self.beh.choice_history[-1:]:
-                    self.iter -= 1
+                if self.beh.choice_history[-1:]: self.iter -= 1
             selected_conditions = [i for (i, v) in zip(self.conditions, np.logical_and(self.choices == anti_bias,
-                                                       np.array(self.difficulties) == self.curr_difficulty)) if v]
+                                                       self.difficulties == self.curr_difficulty)) if v]
             self.curr_cond = np.random.choice(selected_conditions)
         elif self.params['trial_selection'] == 'water_stairs':
             rew_h = [np.greater(rw, 0).any() for rw in self.beh.reward_history]
@@ -131,6 +121,6 @@ class Stimulus:
             else:
                 self.iter -= 1
             selected_conditions = [i for (i, v) in zip(self.conditions,
-                                                       np.array(self.difficulties) == self.curr_difficulty) if v]
+                                                       self.difficulties == self.curr_difficulty) if v]
             self.curr_cond = np.random.choice(selected_conditions)
 

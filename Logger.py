@@ -14,7 +14,7 @@ class Logger:
     """ This class handles the database logging"""
 
     def __init__(self):
-        self.last_trial = 0
+        self.curr_trial = 0
         self.queue = Queue()
         self.timer = Timer()
         self.trial_start = 0
@@ -69,7 +69,7 @@ class Logger:
     def log_session(self, session_params, exp_type=''):
         animal_id, task_idx = (SetupControl() & dict(setup=self.setup)).fetch1('animal_id', 'task_idx')
         self.task_idx = task_idx
-        self.last_trial = 0
+        self.curr_trial = 0
 
         # create session key
         self.session_key = dict()
@@ -92,7 +92,7 @@ class Logger:
         # start session time
         self.timer.start()
         (SetupControl() & dict(setup=self.setup))._update('current_session', self.session_key['session'])
-        (SetupControl() & dict(setup=self.setup))._update('last_trial', 0)
+        (SetupControl() & dict(setup=self.setup))._update('curr_trial', 0)
         (SetupControl() & dict(setup=self.setup))._update('total_liquid', 0)
 
     def log_conditions(self, conditions, condition_tables=['OdorCond', 'MovieCond', 'RewardCond']):
@@ -124,6 +124,7 @@ class Logger:
         if self.lock:
             self.thread_lock.acquire()
         # return trial start time
+        self.curr_trial += 1
         self.trial_start = self.timer.elapsed_time()
         return self.trial_start
 
@@ -132,21 +133,20 @@ class Logger:
             self.thread_lock.release()
         timestamp = self.timer.elapsed_time()
         trial_key = dict(self.session_key,
-                         trial_idx=self.last_trial+1,
+                         trial_idx=self.curr_trial,
                          cond_hash=self.curr_cond,
                          start_time=self.trial_start,
                          end_time=timestamp,
                          last_flip_count=last_flip_count)
         self.queue.put(dict(table='Trial', tuple=trial_key))
-        self.last_trial += 1
 
         # insert ping
         self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
-                            field='last_trial', value=self.last_trial, update=True))
+                            field='curr_trial', value=self.curr_trial, update=True))
 
     def log_abort(self):
         trial_key = dict(self.session_key,
-                         trial_idx=self.last_trial)
+                         trial_idx=self.curr_trial)
         self.queue.put(dict(table='AbortedTrial', tuple=trial_key))
 
     def log_liquid(self, probe, reward_amount):

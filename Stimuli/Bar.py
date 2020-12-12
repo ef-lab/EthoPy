@@ -1,6 +1,7 @@
 from Stimulus import *
 from utils.flat2curve import flat2curve
-
+import pygame
+from pygame.locals import *
 
 class FancyBar(Stimulus):
     """ This class handles the presentation of Movies"""
