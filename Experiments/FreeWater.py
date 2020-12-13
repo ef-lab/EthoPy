@@ -37,7 +37,7 @@ class State(StateClass):
             'Exit'         : exitState}
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
-        self.StateMachine.status = self.logger.get_setup_info('status')
+        self.StateMachine.status = self.logger.setup_status
         self.logger.update_state(self.__class__.__name__)
 
     def run(self):
@@ -83,7 +83,7 @@ class PreTrial(State):
         else:
             if self.timer.elapsed_time() > 5000:  # occasionally get control status
                 self.timer.start()
-                self.StateMachine.status = self.logger.get_setup_info('status')
+                self.StateMachine.status = self.logger.setup_status
                 self.logger.ping()
             return states['PreTrial']
 
@@ -152,7 +152,7 @@ class Reward(State):
 class Sleep(State):
     def entry(self):
         self.logger.update_state(self.__class__.__name__)
-        self.logger.update_setup_status('sleeping')
+        self.logger.update_setup_info('status', 'sleeping')
         self.stim.unshow([0, 0, 0])
 
     def run(self):
@@ -160,9 +160,9 @@ class Sleep(State):
         time.sleep(5)
 
     def next(self):
-        if self.is_sleep_time() and self.logger.get_setup_info('status') == 'sleeping':
+        if self.is_sleep_time() and self.logger.setup_status == 'sleeping':
             return states['Sleep']
-        elif self.logger.get_setup_info('status') == 'sleeping':  # if wake up then update session
+        elif self.logger.setup_status == 'sleeping':  # if wake up then update session
             self.logger.update_setup_status('running')
             return states['Exit']
         else:
@@ -172,7 +172,7 @@ class Sleep(State):
 class OffTime(State):
     def entry(self):
         self.logger.update_state(self.__class__.__name__)
-        self.logger.update_setup_status('offtime')
+        self.logger.update_setup_info('status', 'offtime')
         self.stim.unshow([0, 0, 0])
 
     def run(self):
@@ -182,7 +182,7 @@ class OffTime(State):
     def next(self):
         if self.is_sleep_time():
             return states['Sleep']
-        elif self.logger.get_setup_info('status') == 'stop':  # if wake up then update session
+        elif self.logger.setup_status == 'stop':  # if wake up then update session
             return states['Exit']
         else:
             return states['OffTime']

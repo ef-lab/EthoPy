@@ -34,7 +34,7 @@ env_key = {
     'direct2_color'         : (0.2, 0.2, 0.2, 1),
     'direct2_dir'           : (180, -20, 0),
     'init_ready'            : 0,
-    'cue_ready'             : 0,
+    'cue_ready'             : 500,
     'delay_ready'           : 0,
     'resp_ready'            : 0,
     'intertrial_duration'   : 0,
@@ -85,5 +85,5 @@ for idx, obj_comb in enumerate(obj_combs):
 
 # run experiments
 exp = State()
-exp.setup(logger, RPBehavior, Panda3D, session_params, conditions)
+exp.setup(logger, DummyProbe, Panda3D, session_params, conditions)
 exp.run()

@@ -91,9 +91,8 @@ class Stimulus:
             self.curr_cond = np.random.choice(selected_conditions)
         elif self.params['trial_selection'] == 'staircase':
             idx = [~np.isnan(ch).any() for ch in self.beh.choice_history]
-            rew_h = np.asarray(self.beh.reward_history, dtype=object)
+            rew_h = np.asarray(self.beh.reward_history, dtype=object); rew_h = rew_h[idx]
             choice_h = np.asarray(self.beh.choice_history, dtype=object)
-            rew_h = rew_h[idx]
             anti_bias = self._anti_bias(choice_h[idx])
             if self.iter == 1 or np.size(self.iter) == 0:
                 self.iter = self.params['staircase_window']
@@ -102,25 +101,9 @@ class Stimulus:
                     self.curr_difficulty += 1
                 elif perf < self.params['stair_down'] and self.curr_difficulty > min(self.difficulties):
                     self.curr_difficulty -= 1
-                self.logger.update_difficulty(self.curr_difficulty)
-            else:
-                if self.beh.choice_history[-1:]: self.iter -= 1
+                self.logger.update_setup_info('difficulty', self.curr_difficulty)
+            elif self.beh.choice_history[-1:]: self.iter -= 1
             selected_conditions = [i for (i, v) in zip(self.conditions, np.logical_and(self.choices == anti_bias,
                                                        self.difficulties == self.curr_difficulty)) if v]
-            self.curr_cond = np.random.choice(selected_conditions)
-        elif self.params['trial_selection'] == 'water_stairs':
-            rew_h = [np.greater(rw, 0).any() for rw in self.beh.reward_history]
-            if self.iter == 1 or np.size(self.iter) == 0:
-                self.iter = self.params['staircase_window']
-                perf = np.nanmean(np.greater(rew_h[-self.params['staircase_window']:], 0))
-                if perf > self.params['stair_up'] and self.curr_difficulty < max(self.difficulties):
-                    self.curr_difficulty += 1
-                elif perf < self.params['stair_down'] and self.curr_difficulty > min(self.difficulties):
-                    self.curr_difficulty -= 1
-                self.logger.update_difficulty(self.curr_difficulty)
-            else:
-                self.iter -= 1
-            selected_conditions = [i for (i, v) in zip(self.conditions,
-                                                       self.difficulties == self.curr_difficulty) if v]
             self.curr_cond = np.random.choice(selected_conditions)
 

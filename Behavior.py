@@ -26,23 +26,16 @@ class Behavior:
         return True, 0
 
     def is_hydrated(self):
-        rew = np.nansum(self.reward_history)
-        if self.params['max_reward']:
-            return rew >= self.params['max_reward']
-        else:
-            return False
+        return False
+
+    def response(self, since=0):
+        return self.is_licking(since) > 0
 
     def reward(self):
-        self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
-        self.logger.log_liquid(self.licked_probe, self.reward_amount[self.licked_probe])
-        print('Giving Water at probe:%1d' % self.licked_probe)
+        pass
 
     def punish(self):
-        if self.licked_probe > 0:
-            probe = self.licked_probe
-        else:
-            probe = np.nan
-        self.update_history(probe)
+        pass
 
     def give_odor(self, delivery_idx, odor_idx, odor_dur, odor_dutycycle):
         print('Odor %1d presentation for %d' % (odor_idx, odor_dur))
@@ -66,7 +59,6 @@ class Behavior:
 
     def prepare(self, condition, choices):
         pass
-
 
 class RPBehavior(Behavior):
     """ This class handles the behavior variables for RP """
@@ -100,6 +92,13 @@ class RPBehavior(Behavior):
     def is_correct(self):
         return np.any(np.equal(self.licked_probe, self.curr_cond['probe']))
 
+    def is_hydrated(self):
+        rew = np.nansum(self.reward_history)
+        if self.params['max_reward']:
+            return rew >= self.params['max_reward']
+        else:
+            return False
+
     def reward(self):
         self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
         self.probe.give_liquid(self.licked_probe)
@@ -120,6 +119,13 @@ class RPBehavior(Behavior):
     def prepare(self, condition, choices):
         self.curr_cond = condition
         self.reward_amount = self.probe.calc_pulse_dur(condition['reward_amount'])
+
+    def punish(self):
+        if self.licked_probe > 0:
+            probe = self.licked_probe
+        else:
+            probe = np.nan
+        self.update_history(probe)
 
 
 class TouchBehavior(Behavior):
@@ -166,6 +172,13 @@ class TouchBehavior(Behavior):
             self.resp_timer.start()
         self.has_touched = tmst >= since
         return self.has_touched
+
+    def is_hydrated(self):
+        rew = np.nansum(self.reward_history)
+        if self.params['max_reward']:
+            return rew >= self.params['max_reward']
+        else:
+            return False
 
     def response(self, since=0):
         self.since = since
@@ -244,10 +257,12 @@ class DummyProbe(Behavior):
         pygame.init()
         super(DummyProbe, self).__init__(logger, params)
 
-    def is_ready(self, init_duration, since=0):
+    def is_ready(self, duration, since=0):
+        if duration == 0:
+            return True
         self.__get_events()
         elapsed_time = self.ready_timer.elapsed_time()
-        return self.ready and elapsed_time > init_duration
+        return self.ready and elapsed_time >= duration
 
     def inactivity_time(self):  # in minutes
         return self.lick_timer.elapsed_time() / 1000 / 60
@@ -259,6 +274,27 @@ class DummyProbe(Behavior):
             self.resp_timer.start()
         self.licked_probe = probe
         return probe
+
+    def is_correct(self):
+        return np.any(np.equal(self.licked_probe, self.curr_cond['probe']))
+
+    def prepare(self, condition, choices):
+        self.curr_cond = condition
+        self.reward_amount = condition['reward_amount']
+
+    def reward(self):
+        self.update_history(self.licked_probe, self.reward_amount)
+        self.logger.log_liquid(self.licked_probe, self.reward_amount)
+        print('Giving Water at probe:%1d' % self.licked_probe)
+        return True
+
+    def punish(self):
+        print('punishing')
+        if self.licked_probe > 0:
+            probe = self.licked_probe
+        else:
+            probe = np.nan
+        self.update_history(probe)
 
     def __get_events(self):
         probe = 0
@@ -274,11 +310,12 @@ class DummyProbe(Behavior):
                     self.logger.log_lick(2)
                     print('Probe 2 activated!')
                     probe = 2
-                elif event.key == pygame.K_SPACE and self.ready:
-                    self.ready = False
-                    print('off position')
                 elif event.key == pygame.K_SPACE and not self.ready:
                     self.lick_timer.start()
                     self.ready = True
                     print('in position')
+            elif event.type == pygame.KEYUP:
+                if event.key == pygame.K_SPACE and self.ready:
+                    self.ready = False
+                    print('off position')
         return probe

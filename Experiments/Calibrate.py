@@ -54,4 +54,4 @@ class Calibrate:
         self.screen.draw('Done calibrating')
         time.sleep(5)
         self.screen.exit()
-        self.logger.update_setup_status('stop')
+        self.logger.update_setup_info('status', 'stop')

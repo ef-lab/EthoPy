@@ -55,6 +55,9 @@ class Movies(Stimulus):
         self.unshow()
         self.isrunning = False
 
+    def punish_stim(self):
+        self.unshow((0, 0, 0))
+
     def unshow(self, color=False):
         """update background color"""
         if not color:

@@ -31,7 +31,7 @@ class State(StateClass):
         self.StateMachine.run()
 
     def updateStatus(self): # updates stateMachine from Database entry - override for timing critical transitions
-        self.StateMachine.status = self.logger.get_setup_info('status')
+        self.StateMachine.status = self.logger.setup_status
         self.logger.update_state(self.__class__.__name__)
 
 
@@ -45,14 +45,13 @@ class Prepare(State):
 
 class PreTrial(State):
     def entry(self):
-        self.timer.start()
         self.stim.prepare()
-        self.logger.update_state(self.__class__.__name__)
+        super().entry()
 
     def run(self): pass
 
     def next(self):
-        if not self.stim.curr_cond: # if run out of conditions exit
+        if not self.stim.curr_cond:  # if run out of conditions exit
             return states['Exit']
         else:
             return states['Trial']
@@ -60,9 +59,8 @@ class PreTrial(State):
 
 class Trial(State):
     def entry(self):
-        self.logger.update_state(self.__class__.__name__)
         self.stim.init()
-        self.timer.start()  # trial start counter
+        super().entry()
         self.logger.init_trial(self.stim.curr_cond['cond_hash'])
 
     def run(self):
@@ -81,13 +79,13 @@ class Trial(State):
 
 class InterTrial(State):
     def entry(self):
-        self.timer.start()
+        super().entry()
 
     def run(self):
         pass
 
     def next(self):
-        if self.logger.get_setup_info('status') == 'stop':
+        if self.logger.setup_status == 'stop':
             return states['Exit']
         elif self.timer.elapsed_time() >= self.stim.curr_cond['intertrial_duration']:
             return states['PreTrial']
@@ -100,6 +98,6 @@ class InterTrial(State):
 
 class Exit(State):
     def run(self):
-        self.logger.update_setup_status('stop')
+        self.logger.update_setup_info('status', 'stop')
         self.beh.cleanup()
         self.stim.close()
