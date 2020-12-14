@@ -3,6 +3,8 @@ from StateMachine import *
 from datetime import datetime, timedelta
 from Stimulus import *
 import os
+import pygame
+from pygame.locals import *
 
 
 class State(StateClass):

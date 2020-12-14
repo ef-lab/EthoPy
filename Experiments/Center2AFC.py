@@ -103,16 +103,12 @@ class Trial(State):
 
     def next(self):
         if not self.resp_ready and self.response:                           # did not wait
-            print('did not wait')
             return states['Abort']
         elif self.response and not self.beh.is_correct():  # response to incorrect probe
-            print('wrong!')
             return states['Punish']
         elif self.response and self.beh.is_correct():  # response to correct probe
-            print('reward')
             return states['Reward']
         elif self.timer.elapsed_time() > self.stim.curr_cond['trial_duration']:      # timed out
-            print('timed out')
             return states['InterTrial']
         else:
             return states['Trial']
