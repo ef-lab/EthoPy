@@ -6,16 +6,17 @@ from direct.task import Task
 import panda3d.core as core
 from panda3d.core import *
 
+
 class Panda3D(Stimulus, ShowBase):
     """ This class handles the presentation of Objects with Panda3D"""
 
-    def get_condition_tables(self):
-        return ['ObjectCond', 'RewardCond']
+    def get_cond_tables(self):
+        return ['ObjectCond']
 
     def setup(self):
         # setup parameters
         self.path = 'objects/'     # default path to copy local stimuli
-        self.set_intensity(self.params['intensity'])
+        #self.set_intensity(self.params['intensity'])
 
         # store local copy of files
         if not os.path.isdir(self.path):  # create path if necessary
@@ -56,7 +57,6 @@ class Panda3D(Stimulus, ShowBase):
         self._get_new_cond()
         if not self.curr_cond:
             self.isrunning = False
-            return
 
     def init(self, period=None):
         self.background_color = self.curr_cond['background_color']
@@ -97,6 +97,8 @@ class Panda3D(Stimulus, ShowBase):
 
     def present(self):
         self.flip()
+        if 'stim_duration' in self.curr_cond and self.curr_cond['stim_duration'] < self.timer.elapsed_time():
+            self.isrunning = False
 
     def flip(self, n=1):
         for i in range(0, n):

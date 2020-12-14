@@ -54,7 +54,7 @@ obj_combs = [[1, 1], [1, 1], [2, 2], [2, 2]]
 rew_prob = [1, 2, 2, 1]
 obj_posX = [[0, -.25], [0, .25], [0, .25], [0, -.25]]
 for idx, obj_comb in enumerate(obj_combs):
-    rot_f = lambda: interp(np.random.rand(obj_timepoints) *200)
+    rot_f = lambda: interp(np.random.rand(obj_timepoints) * 200)
     conditions += factorize({**env_key,
                             'difficulty': 1,
                             'obj_id'    : [obj_comb],

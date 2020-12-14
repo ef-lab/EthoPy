@@ -22,7 +22,7 @@ class State(StateClass):
         self.params = session_params
         exitState = Exit(self)
         self.StateMachine = StateMachine(Prepare(self), exitState)
-        self.logger.log_conditions(conditions, ['RewardCond'])
+        self.logger.log_conditions(conditions, self.beh.get_cond_tables())
         self.logger.lock = False
 
         # Initialize states

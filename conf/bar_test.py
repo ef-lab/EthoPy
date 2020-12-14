@@ -40,5 +40,5 @@ for axis in ['horizontal', 'vertical']:
 
 # run experiment
 exp = State()
-exp.setup(logger, DummyProbe, FancyBar, session_params, conditions)
+exp.setup(logger, Behavior, FancyBar, session_params, conditions)
 exp.run()

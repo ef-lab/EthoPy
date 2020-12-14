@@ -22,10 +22,10 @@ class Stimulus:
         resp_cond = params['resp_cond'] if 'resp_cond' in params else 'probe'
         if np.all([resp_cond in cond for cond in conditions]):
             self.choices = np.array([make_hash(d[resp_cond]) for d in conditions])
+            self.un_choices = np.unique(self.choices, axis=0)
         if np.all(['difficulty' in cond for cond in conditions]):
             self.difficulties = np.array([cond['difficulty'] for cond in self.conditions])
         self.timer = Timer()
-        self.un_choices = np.unique(self.choices, axis=0)
 
 
     def get_condition_tables(self):

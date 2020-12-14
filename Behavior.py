@@ -2,6 +2,7 @@ from Probe import *
 from utils.Timer import *
 import pygame
 import numpy as np
+from datetime import datetime, timedelta
 
 
 class Behavior:
@@ -19,17 +20,11 @@ class Behavior:
         self.reward_amount = dict()
         self.curr_cond = []
 
-    def is_licking(self, since=False):
-        return 0
-
     def is_ready(self, init_duration, since=0):
         return True, 0
 
-    def is_hydrated(self):
-        return False
-
     def response(self, since=0):
-        return self.is_licking(since) > 0
+        return False
 
     def reward(self):
         pass
@@ -38,18 +33,15 @@ class Behavior:
         pass
 
     def give_odor(self, delivery_idx, odor_idx, odor_dur, odor_dutycycle):
-        print('Odor %1d presentation for %d' % (odor_idx, odor_dur))
-
-    def inactivity_time(self):  # in minutes
-        return 0
+        pass
 
     def cleanup(self):
         pass
 
-    def get_in_position(self):
-        pass
+    def get_cond_tables(self):
+        return []
 
-    def get_off_position(self):
+    def prepare(self, condition, choices):
         pass
 
     def update_history(self, choice=np.nan, reward=np.nan):
@@ -57,14 +49,32 @@ class Behavior:
         self.reward_history.append(reward)
         self.logger.update_total_liquid(np.nansum(self.reward_history))
 
-    def prepare(self, condition, choices):
-        pass
+    def is_sleep_time(self):
+        now = datetime.now()
+        start = now.replace(hour=0, minute=0, second=0) + self.logger.get_setup_info('start_time')
+        stop = now.replace(hour=0, minute=0, second=0) + self.logger.get_setup_info('stop_time')
+        if stop < start:
+            stop = stop + timedelta(days=1)
+        time_restriction = now < start or now > stop
+        return time_restriction
+
+    def is_hydrated(self):
+        rew = np.nansum(self.reward_history)
+        if self.params['max_reward']:
+            return rew >= self.params['max_reward']
+        else:
+            return False
+
 
 class RPBehavior(Behavior):
     """ This class handles the behavior variables for RP """
     def __init__(self, logger, params):
         self.probe = RPProbe(logger)
+        self.cond_tables = ['RewardCond']
         super(RPBehavior, self).__init__(logger, params)
+
+    def get_cond_tables(self):
+        return ['RewardCond']
 
     def is_licking(self, since=0):
         licked_probe, tmst = self.probe.get_last_lick()
@@ -92,13 +102,6 @@ class RPBehavior(Behavior):
     def is_correct(self):
         return np.any(np.equal(self.licked_probe, self.curr_cond['probe']))
 
-    def is_hydrated(self):
-        rew = np.nansum(self.reward_history)
-        if self.params['max_reward']:
-            return rew >= self.params['max_reward']
-        else:
-            return False
-
     def reward(self):
         self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
         self.probe.give_liquid(self.licked_probe)
@@ -121,10 +124,7 @@ class RPBehavior(Behavior):
         self.reward_amount = self.probe.calc_pulse_dur(condition['reward_amount'])
 
     def punish(self):
-        if self.licked_probe > 0:
-            probe = self.licked_probe
-        else:
-            probe = np.nan
+        probe = self.licked_probe if self.licked_probe > 0 else np.nan
         self.update_history(probe)
 
 
@@ -143,10 +143,14 @@ class TouchBehavior(Behavior):
         self.ts = TS.Touchscreen()
         self.ts_press_event = TS.TS_PRESS
         self.last_touch_tmst = 0
+
         for touch in self.ts.touches:
             touch.on_press = self._touch_handler
             touch.on_release = self._touch_handler
         self.ts.run()
+
+    def get_cond_tables(self):
+        return ['RewardCond']
 
     def is_licking(self, since=0):
         licked_probe, tmst = self.probe.get_last_lick()
@@ -203,7 +207,7 @@ class TouchBehavior(Behavior):
         return False
 
     def punish(self):
-        touched_loc =  self.touch if self.has_touched else np.nan
+        touched_loc = self.touch if self.has_touched else np.nan
         self.update_history(touched_loc)
 
     def give_odor(self, delivery_port, odor_id, odor_dur, odor_dutycycle):
@@ -257,6 +261,9 @@ class DummyProbe(Behavior):
         pygame.init()
         super(DummyProbe, self).__init__(logger, params)
 
+    def get_cond_tables(self):
+        return ['RewardCond']
+
     def is_ready(self, duration, since=0):
         if duration == 0:
             return True
@@ -290,10 +297,7 @@ class DummyProbe(Behavior):
 
     def punish(self):
         print('punishing')
-        if self.licked_probe > 0:
-            probe = self.licked_probe
-        else:
-            probe = np.nan
+        probe = self.licked_probe if self.licked_probe > 0 else np.nan
         self.update_history(probe)
 
     def __get_events(self):

@@ -15,7 +15,7 @@ class State(StateClass):
         self.beh = BehaviorClass(self.logger, session_params)
         self.stim = StimulusClass(self.logger, session_params, conditions, self.beh)
         self.params = session_params
-        self.logger.log_conditions(conditions, self.stim.get_condition_tables())
+        self.logger.log_conditions(conditions, self.stim.get_cond_tables())
         exitState = Exit(self)
         self.StateMachine = StateMachine(Prepare(self), exitState)
 
@@ -46,6 +46,7 @@ class Prepare(State):
 class PreTrial(State):
     def entry(self):
         self.stim.prepare()
+        if not self.stim.curr_cond: self.logger.update_setup_info('status', 'stop', nowait=True)
         super().entry()
 
     def run(self): pass

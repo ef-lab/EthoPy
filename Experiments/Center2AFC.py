@@ -16,7 +16,7 @@ class State(StateClass):
         self.beh = BehaviorClass(self.logger, session_params)
         self.stim = StimulusClass(self.logger, session_params, conditions, self.beh)
         self.params = session_params
-        self.logger.log_conditions(conditions, self.stim.get_condition_tables())
+        self.logger.log_conditions(conditions, self.stim.get_cond_tables() + self.beh.get_cond_tables())
 
         logger.update_setup_info('start_time', session_params['start_time'])
         logger.update_setup_info('stop_time', session_params['stop_time'])
@@ -69,6 +69,7 @@ class Prepare(State):
 class PreTrial(State):
     def entry(self):
         self.stim.prepare()
+        if not self.stim.curr_cond: self.logger.update_setup_info('status', 'stop', nowait=True)
         self.beh.prepare(self.stim.curr_cond, self.stim.un_choices)
         super().entry()
 
@@ -159,7 +160,7 @@ class Punish(State):
 
 class InterTrial(State):
     def run(self):
-        if self.beh.is_licking() & self.params.get('noresponse_intertrial'):
+        if self.beh.response() & self.params.get('noresponse_intertrial'):
             self.timer.start()
 
     def next(self):

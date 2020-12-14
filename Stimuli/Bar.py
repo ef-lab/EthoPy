@@ -10,7 +10,7 @@ class FancyBar(Stimulus):
         super().__init__(logger, params, conditions, beh)
         self.cycles = None
 
-    def get_condition_tables(self):
+    def get_cond_tables(self):
         return ['BarCond']
 
     def setup(self):

@@ -51,17 +51,11 @@ class Logger:
             self.thread_lock.acquire()
             item = self.queue.get()
             if 'update' in item:
-                try:
-                    eval('(self.insert_schema.' + item['table'] +
-                         '() & item["tuple"])._update(item["field"],item["value"])')
-                except:
-                    print('%s %s' % (item['field'], item['value']))
+                eval('(self.insert_schema.' + item['table'] +
+                     '() & item["tuple"])._update(item["field"],item["value"])')
             else:
-                try:
-                    eval('self.insert_schema.' + item['table'] +
-                         '.insert1(item["tuple"], ignore_extra_fields=True, skip_duplicates=True)')
-                except:
-                    print('%s %s' % (item['table'], item["tuple"]))
+                eval('self.insert_schema.' + item['table'] +
+                     '.insert1(item["tuple"], ignore_extra_fields=True, skip_duplicates=True)')
             self.thread_lock.release()
 
     def getter(self):
@@ -105,8 +99,9 @@ class Logger:
         self.update_setup_info('current_session', self.session_key['session'])
         self.update_setup_info('last_trial', 0)
         self.update_setup_info('total_liquid', 0)
-        self.update_setup_info('start_time', session_params['start_time'], nowait=True)
-        self.update_setup_info('stop_time', session_params['stop_time'], nowait=True)
+        if 'start_time' in session_params:
+            self.update_setup_info('start_time', session_params['start_time'], nowait=True)
+            self.update_setup_info('stop_time', session_params['stop_time'], nowait=True)
 
     def log_conditions(self, conditions, condition_tables=['OdorCond', 'MovieCond', 'RewardCond']):
         # iterate through all conditions and insert
@@ -239,10 +234,11 @@ class Logger:
 
     def update_setup_info(self, field, value, nowait=False):
         if nowait:
+            (SetupControl() & dict(setup=self.setup))._update(field, value)
+        else:
             self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
                                 field=field, value=value, update=True))
-        else:
-            (SetupControl() & dict(setup=self.setup))._update(field, value)
+
 
     def get_setup_info(self, field):
         info = (SetupControl() & dict(setup=self.setup)).fetch1(field)
