@@ -1,5 +1,5 @@
 from Stimulus import *
-import time, os, types,sys
+import time, os, types, sys
 import numpy as np
 from direct.showbase.ShowBase import ShowBase
 from direct.task import Task
@@ -16,7 +16,7 @@ class Panda3D(Stimulus, ShowBase):
     def setup(self):
         # setup parameters
         self.path = 'objects/'     # default path to copy local stimuli
-        #self.set_intensity(self.params['intensity'])
+        self.set_intensity(self.params['intensity'])
 
         # store local copy of files
         if not os.path.isdir(self.path):  # create path if necessary

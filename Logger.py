@@ -1,4 +1,4 @@
-import numpy, socket, json, os, pandas, pathlib
+import numpy, socket, json, os, pathlib
 from utils.Timer import *
 from utils.Generator import *
 from queue import Queue
@@ -167,7 +167,6 @@ class Logger:
         self.queue.put(dict(table='StimOnset', tuple=dict(self.session_key, time=timestamp, period=period)))
 
     def log_period(self, period='Trial'):
-        print(period)
         timestamp = self.timer.elapsed_time()
         self.queue.put(dict(table='PeriodOnset', tuple=dict(self.session_key, time=timestamp, period=period)))
         return timestamp

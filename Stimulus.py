@@ -2,6 +2,7 @@ import numpy as np
 from utils.Timer import *
 from utils.Generator import make_hash
 
+
 class Stimulus:
     """ This class handles the stimulus presentation
     use function overrides for each stimulus class
@@ -27,8 +28,7 @@ class Stimulus:
             self.difficulties = np.array([cond['difficulty'] for cond in self.conditions])
         self.timer = Timer()
 
-
-    def get_condition_tables(self):
+    def get_cond_tables(self):
         """return condition tables"""
         pass
 
@@ -67,8 +67,9 @@ class Stimulus:
     def _anti_bias(self, choice_h):
         choice_h = np.array([make_hash(c) for c in choice_h[-self.params['bias_window']:]])
         if len(choice_h) < self.params['bias_window']: choice_h = self.choices
-        P = 1 - np.array([np.mean(choice_h == un) for un in self.un_choices])
-        return np.random.choice(self.un_choices, 1, p=P/sum(P))
+        fixed_p = 1 - np.array([np.mean(choice_h == un) for un in self.un_choices])
+        if sum(fixed_p) == 0:  fixed_p = np.ones(np.shape(fixed_p))
+        return np.random.choice(self.un_choices, 1, p=fixed_p/sum(fixed_p))
 
     def _get_new_cond(self):
         """Get curr condition & create random block of all conditions

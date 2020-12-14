@@ -6,6 +6,7 @@ from time import sleep
 import pygame
 from pygame.locals import *
 
+
 class RPScreen(Stimulus):
     """ This class handles the presentation of Movies with an optimized library for Raspberry pi"""
 

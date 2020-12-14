@@ -172,8 +172,7 @@ class TouchBehavior(Behavior):
             if group == 'choice':
                 locs = [b.loc if b.group == group else 0 for b in self.buttons]
                 self.touch = locs[mx_idx]
-        if tmst >= since:
-            self.resp_timer.start()
+        if tmst >= since: self.resp_timer.start()
         self.has_touched = tmst >= since
         return self.has_touched
 
@@ -252,6 +251,7 @@ class TouchBehavior(Behavior):
 
 class DummyProbe(Behavior):
     def __init__(self, logger, params):
+        import pygame
         self.lick_timer = Timer()
         self.lick_timer.start()
         self.ready_timer = Timer()
@@ -259,28 +259,27 @@ class DummyProbe(Behavior):
         self.ready = False
         self.probe = 0
         pygame.init()
+        self.screen = pygame.display.set_mode((800, 480))
         super(DummyProbe, self).__init__(logger, params)
 
     def get_cond_tables(self):
         return ['RewardCond']
 
     def is_ready(self, duration, since=0):
-        if duration == 0:
-            return True
+        if duration == 0: return True
         self.__get_events()
         elapsed_time = self.ready_timer.elapsed_time()
         return self.ready and elapsed_time >= duration
 
-    def inactivity_time(self):  # in minutes
-        return self.lick_timer.elapsed_time() / 1000 / 60
-
-    def is_licking(self, since=0):
+    def is_licking(self,since=0):
         probe = self.__get_events()
-        # reset lick timer if licking is detected &
-        if probe > 0:
-            self.resp_timer.start()
+        if probe > 0: self.resp_timer.start()
         self.licked_probe = probe
         return probe
+
+    def response(self, since=0):
+        probe = self.is_licking(since)
+        return probe > 0
 
     def is_correct(self):
         return np.any(np.equal(self.licked_probe, self.curr_cond['probe']))
@@ -322,4 +321,7 @@ class DummyProbe(Behavior):
                 if event.key == pygame.K_SPACE and self.ready:
                     self.ready = False
                     print('off position')
+                    print(pygame.mouse.get_pos())
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                print(pygame.mouse.get_pos())
         return probe
