@@ -61,7 +61,7 @@ class Prepare(State):
 class PreTrial(State):
     def entry(self):
         self.stim.prepare()
-        self.beh.prepare(self.stim.curr_cond, self.stim.un_choices)
+        self.beh.prepare(self.stim.curr_cond)
         self.logger.init_trial(self.stim.curr_cond['cond_hash'])
         self.period_start = self.logger.log_period('PreTrial')
         self.resp_ready = False

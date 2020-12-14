@@ -41,7 +41,7 @@ class Behavior:
     def get_cond_tables(self):
         return []
 
-    def prepare(self, condition, choices):
+    def prepare(self, condition):
         pass
 
     def update_history(self, choice=np.nan, reward=np.nan):
@@ -119,7 +119,7 @@ class RPBehavior(Behavior):
     def cleanup(self):
         self.probe.cleanup()
 
-    def prepare(self, condition, choices):
+    def prepare(self, condition):
         self.curr_cond = condition
         self.reward_amount = self.probe.calc_pulse_dur(condition['reward_amount'])
 
@@ -218,15 +218,15 @@ class TouchBehavior(Behavior):
         self.probe.cleanup()
         self.ts.stop()
 
-    def prepare(self, condition, choices):
+    def prepare(self, condition):
         self.curr_cond = condition
         self.reward_amount = self.probe.calc_pulse_dur(condition['reward_amount'])
         self.target_loc = condition['correct_loc']
         buttons = list()
         buttons.append(self.Button(self.loc2px(condition['ready_loc']), 'ready'))
-        for choice in choices:
-            is_target = True if (condition['correct_loc'] == choice).all() else False
-            buttons.append(self.Button(self.loc2px(choice), 'choice', is_target))
+        for i, loc in enumerate(zip(condition['obj_pos_x'], condition['obj_pos_y'])):
+            is_target = True if (condition['correct_loc'] == np.array(loc)).all() else False
+            buttons.append(self.Button(self.loc2px(loc), 'choice', is_target))
         self.buttons = np.asarray(buttons, dtype=object)
 
     def _touch_handler(self, event, touch):
@@ -285,7 +285,7 @@ class DummyProbe(Behavior):
     def is_correct(self):
         return np.any(np.equal(self.licked_probe, self.curr_cond['probe']))
 
-    def prepare(self, condition, choices):
+    def prepare(self, condition):
         self.curr_cond = condition
         self.reward_amount = condition['reward_amount']
 

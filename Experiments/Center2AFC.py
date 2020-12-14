@@ -70,7 +70,7 @@ class PreTrial(State):
     def entry(self):
         self.stim.prepare()
         if not self.stim.curr_cond: self.logger.update_setup_info('status', 'stop', nowait=True)
-        self.beh.prepare(self.stim.curr_cond, self.stim.un_choices)
+        self.beh.prepare(self.stim.curr_cond)
         super().entry()
 
     def run(self): pass
