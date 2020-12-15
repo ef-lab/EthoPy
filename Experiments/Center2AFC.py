@@ -130,6 +130,7 @@ class Abort(State):
 
 class Reward(State):
     def run(self):
+        self.stim.reward_stim()
         self.beh.reward()
 
     def next(self):

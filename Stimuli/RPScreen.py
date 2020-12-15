@@ -45,13 +45,16 @@ class RPScreen(Stimulus):
         self.logger.log_stim()
 
     def ready_stim(self):
-        self.unshow([128,128,128])
+        self.unshow([128, 128, 128])
         self.pi.hardware_PWM(self.sound_GPIO, self.sound_freq, 500000)
         time.sleep(.25)
         self.pi.hardware_PWM(self.sound_GPIO, 0, 0)
 
     def present(self):
         pass
+
+    def reward_stim(self):
+        self.unshow([255, 255, 255])
 
     def stop(self):
         self.isrunning = False
