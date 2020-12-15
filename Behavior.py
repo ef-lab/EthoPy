@@ -27,7 +27,7 @@ class Behavior:
         return False
 
     def reward(self):
-        pass
+        return True
 
     def punish(self):
         pass
@@ -103,9 +103,9 @@ class RPBehavior(Behavior):
         return np.any(np.equal(self.licked_probe, self.curr_cond['probe']))
 
     def reward(self):
-        self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
         self.probe.give_liquid(self.licked_probe)
         self.logger.log_liquid(self.licked_probe, self.reward_amount[self.licked_probe])
+        self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
         return True
 
     def give_odor(self, delivery_port, odor_id, odor_dur, odor_dutycycle):

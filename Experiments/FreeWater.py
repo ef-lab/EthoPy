@@ -122,11 +122,23 @@ class Trial(State):
 
     def exit(self):
         self.logger.log_trial()
-        self.stim.unshow((0, 0, 0))
-        self.logger.ping()
+
+
+class Reward(State):
+    def run(self):
+        self.beh.reward()
+        self.stim.unshow([0, 0, 0])
+
+    def next(self):
+        return states['InterTrial']
 
 
 class InterTrial(State):
+
+    def entry(self):
+        super().entry()
+        self.logger.ping()
+
     def run(self):
         pass
 
@@ -139,15 +151,6 @@ class InterTrial(State):
             return states['PreTrial']
         else:
             return states['InterTrial']
-
-
-class Reward(State):
-    def run(self):
-        self.beh.reward()
-        self.stim.unshow([0, 0, 0])
-
-    def next(self):
-        return states['InterTrial']
 
 
 class Sleep(State):
