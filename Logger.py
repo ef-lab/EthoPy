@@ -218,9 +218,6 @@ class Logger:
             self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
                                 field=field, value=value, update=True))
 
-            self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
-                                field='total_liquid', value=total_rew, update=True))
-
     def get_setup_info(self, field):
         info = (SetupControl() & dict(setup=self.setup)).fetch1(field)
         return info
