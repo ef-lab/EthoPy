@@ -47,7 +47,7 @@ class Behavior:
     def update_history(self, choice=np.nan, reward=np.nan):
         self.choice_history.append(choice)
         self.reward_history.append(reward)
-        self.logger.update_total_liquid(np.nansum(self.reward_history))
+        self.logger.update_setup_info('total_liquid', np.nansum(self.reward_history))
 
     def is_sleep_time(self):
         now = datetime.now()

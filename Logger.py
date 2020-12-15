@@ -62,8 +62,8 @@ class Logger:
         while not self.thread_end.is_set():
             self.thread_lock.acquire()
             self.setup_status = (self.insert_schema.SetupControl() & dict(setup=self.setup)).fetch1('status')
-            time.sleep(1) # update once a second
             self.thread_lock.release()
+            time.sleep(1) # update once a second
 
     def log(self, table, data=dict()):
         self.queue.put(dict(table=table, tuple={**self.session_key, 'trial_idx': self.curr_trial,
@@ -217,6 +217,9 @@ class Logger:
         else:
             self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
                                 field=field, value=value, update=True))
+
+            self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
+                                field='total_liquid', value=total_rew, update=True))
 
     def get_setup_info(self, field):
         info = (SetupControl() & dict(setup=self.setup)).fetch1(field)
