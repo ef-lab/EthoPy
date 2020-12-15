@@ -40,7 +40,8 @@ class State(StateClass):
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
         self.StateMachine.status = self.logger.setup_status
-        self.logger.update_state(self.__class__.__name__)
+        self.logger.update_setup_info('state', self.__class__.__name__)
+        self.timer.start()
 
     def run(self):
         self.StateMachine.run()
@@ -72,8 +73,7 @@ class PreTrial(State):
     def entry(self):
         self.stim.prepare()
         self.beh.prepare(self.stim.curr_cond)
-        self.timer.start()
-        self.logger.update_state(self.__class__.__name__)
+        super().entry()
 
     def run(self): pass
 
@@ -101,8 +101,7 @@ class Trial(State):
 
     def entry(self):
         self.stim.unshow()
-        self.logger.update_state(self.__class__.__name__)
-        self.timer.start()  # trial start counter
+        super().entry()
         self.trial_start = self.logger.init_trial(self.stim.curr_cond['cond_hash'])
 
     def run(self):
@@ -153,7 +152,7 @@ class Reward(State):
 
 class Sleep(State):
     def entry(self):
-        self.logger.update_state(self.__class__.__name__)
+        self.logger.update_setup_info('state', self.__class__.__name__)
         self.logger.update_setup_info('status', 'sleeping')
         self.stim.unshow([0, 0, 0])
 
@@ -165,7 +164,7 @@ class Sleep(State):
         if self.is_sleep_time() and self.logger.setup_status == 'sleeping':
             return states['Sleep']
         elif self.logger.setup_status == 'sleeping':  # if wake up then update session
-            self.logger.update_setup_status('running')
+            self.logger.update_setup_info('statu', 'running')
             return states['Exit']
         else:
             return states['PreTrial']
@@ -173,7 +172,7 @@ class Sleep(State):
 
 class OffTime(State):
     def entry(self):
-        self.logger.update_state(self.__class__.__name__)
+        self.logger.update_setup_info('state', self.__class__.__name__)
         self.logger.update_setup_info('status', 'offtime')
         self.stim.unshow([0, 0, 0])
 

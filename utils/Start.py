@@ -22,8 +22,7 @@ class PyWelcome(Welcome):
         self.task = 0
         self.setup()
 
-        while logger.get_setup_info('status') != 'running' and logger.get_setup_info(
-                'status') != 'exit':  # wait for remote start
+        while logger.setup_status != 'running' and logger.setup_status != 'exit':  # wait for remote start
             self.eval_input()
             time.sleep(0.5)
             logger.ping()
@@ -79,7 +78,7 @@ class PyWelcome(Welcome):
             while not button.is_pressed():
                 time.sleep(0.2)
             if self.screen.numpad:
-                self.logger.log_animal_weight(int(self.screen.numpad))
+                self.logger.log_animal_weight(float(self.screen.numpad))
                 self.setup()
         elif self.state == 'start_experiment':
             self.logger.update_setup_info('status', 'running')
