@@ -58,7 +58,7 @@ class PyWelcome(Welcome):
             while not button.is_pressed():
                 time.sleep(0.2)
             if self.screen.numpad:
-                self.logger.update_setup_info('animal_id', int(self.screen.numpad))
+                self.logger.update_setup_info('animal_id', int(self.screen.numpad), nowait=True)
                 self.setup()
         elif self.state == 'change_task':
             self.cleanup()
@@ -68,7 +68,7 @@ class PyWelcome(Welcome):
             while not button.is_pressed():
                 time.sleep(0.2)
             if self.screen.numpad:
-                self.logger.update_setup_info('task_idx', int(self.screen.numpad))
+                self.logger.update_setup_info('task_idx', int(self.screen.numpad), nowait=True)
                 self.setup()
         elif self.state == 'weigh_animal':
             self.cleanup()
@@ -78,13 +78,13 @@ class PyWelcome(Welcome):
             while not button.is_pressed():
                 time.sleep(0.2)
             if self.screen.numpad:
-                self.logger.log_animal_weight(float(self.screen.numpad))
+                self.logger.log_animal_weight(float(self.screen.numpad), nowait=True)
                 self.setup()
         elif self.state == 'start_experiment':
-            self.logger.update_setup_info('status', 'running')
+            self.logger.update_setup_info('status', 'running', nowait=True)
             self.screen.ts.stop()
         elif self.state == 'exit':
-            self.logger.update_setup_info('status', 'exit')
+            self.logger.update_setup_info('status', 'exit', nowait=True)
             self.close()
         else:
             self.set_setup_info()
