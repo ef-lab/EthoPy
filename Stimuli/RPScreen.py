@@ -3,12 +3,15 @@ import os
 import pigpio
 import time,threading
 from time import sleep
+import pygame
+from pygame.locals import *
+
 
 class RPScreen(Stimulus):
     """ This class handles the presentation of Movies with an optimized library for Raspberry pi"""
 
-    def get_condition_tables(self):
-        return ['RewardCond']
+    def get_cond_tables(self):
+        return []
 
     def setup(self):
         # setup parameters
@@ -42,13 +45,17 @@ class RPScreen(Stimulus):
         self.logger.log_stim()
 
     def ready_stim(self):
-        self.unshow([128,128,128])
+        self.unshow([64, 64, 64])
+        # # #  this can go to reward stim for conditioning  # # #
         self.pi.hardware_PWM(self.sound_GPIO, self.sound_freq, 500000)
         time.sleep(.25)
         self.pi.hardware_PWM(self.sound_GPIO, 0, 0)
 
     def present(self):
         pass
+
+    def reward_stim(self):
+        self.unshow([255, 255, 255])
 
     def stop(self):
         self.isrunning = False

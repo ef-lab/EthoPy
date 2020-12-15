@@ -1,10 +1,9 @@
-import numpy, socket, json, os, pandas, pathlib
+import numpy, socket, json, os, pathlib
 from utils.Timer import *
 from utils.Generator import *
 from queue import Queue
 import time as systime
 from datetime import datetime, timedelta
-from threading import Lock
 import threading
 from DatabaseTables import *
 dj.config["enable_python_native_blobs"] = True
@@ -13,89 +12,101 @@ dj.config["enable_python_native_blobs"] = True
 class Logger:
     """ This class handles the database logging"""
 
-    def __init__(self):
-        self.last_trial = 0
+    def __init__(self, log_setup=False, protocol=False):
+        self.curr_trial = 0
         self.queue = Queue()
         self.timer = Timer()
         self.trial_start = 0
         self.curr_cond = []
         self.task_idx = []
         self.session_key = dict()
+        self.setup_status = 'ready'
+        self.is_pi = os.uname()[4][:3] == 'arm'
         self.setup = socket.gethostname()
         self.lock = False
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
         self.ip = s.getsockname()[0]
+        if log_setup: self.log_setup(protocol)
+
         path = os.path.dirname(os.path.abspath(__file__))
         fileobject = open(path + '/dj_local_conf.json')
         connect_info = json.loads(fileobject.read())
-        conn2 = dj.Connection(connect_info['database.host'], connect_info['database.user'],
+        insert_conn = dj.Connection(connect_info['database.host'], connect_info['database.user'],
                               connect_info['database.password'])
-        self.insert_schema = dj.create_virtual_module('beh.py', 'lab_behavior', connection=conn2)
+        self.insert_schema = dj.create_virtual_module('beh.py', 'lab_behavior', connection=insert_conn)
         self.thread_end = threading.Event()
-        self.thread_lock = Lock()
-        self.thread_runner = threading.Thread(target=self.inserter)  # max insertion rate of 10 events/sec
-        self.thread_runner.start()
+        self.thread_lock = threading.Lock()
+        self.inserter_thread = threading.Thread(target=self.inserter)  # max insertion rate of 10 events/sec
+        self.inserter_thread.start()
+        self.getter_thread = threading.Thread(target=self.getter)  # max insertion rate of 10 events/sec
+        self.getter_thread.start()
 
     def cleanup(self):
         self.thread_end.set()
 
     def inserter(self):
         while not self.thread_end.is_set():
-            if not self.queue.empty():
-                self.thread_lock.acquire()
-                item = self.queue.get()
-                if 'update' in item:
-                    eval('(self.insert_schema.' + item['table'] +
-                         '() & item["tuple"])._update(item["field"],item["value"])')
-                else:
-                    eval('self.insert_schema.'+item['table']+'.insert1(item["tuple"], ignore_extra_fields=True, skip_duplicates=True)')
-                self.thread_lock.release()
+            if self.queue.empty():  time.sleep(.5); continue
+            self.thread_lock.acquire()
+            item = self.queue.get()
+            if 'update' in item:
+                eval('(self.insert_schema.' + item['table'] +
+                     '() & item["tuple"])._update(item["field"],item["value"])')
             else:
-                time.sleep(.5)
+                eval('self.insert_schema.' + item['table'] +
+                     '.insert1(item["tuple"], ignore_extra_fields=True, skip_duplicates=True)')
+            self.thread_lock.release()
 
-    def log_setup(self):
+    def getter(self):
+        while not self.thread_end.is_set():
+            self.thread_lock.acquire()
+            self.setup_status = (self.insert_schema.SetupControl() & dict(setup=self.setup)).fetch1('status')
+            self.thread_lock.release()
+            time.sleep(1) # update once a second
+
+    def log(self, table, data=dict()):
+        self.queue.put(dict(table=table, tuple={**self.session_key, 'trial_idx': self.curr_trial,
+                                                'time': self.timer.elapsed_time(), **data}))
+
+    def log_setup(self, protocol=False):
         key = dict(setup=self.setup)
         # update values in case they exist
         if numpy.size((SetupControl() & dict(setup=self.setup)).fetch()):
             key = (SetupControl() & dict(setup=self.setup)).fetch1()
             (SetupControl() & dict(setup=self.setup)).delete_quick()
 
+        if protocol:
+            self.setup_status = 'running'
+            key['task_idx'] = protocol
+
         # insert new setup
-        key['ip'] = self.ip
-        key['status'] = 'ready'
-        SetupControl().insert1(key)
+        SetupControl().insert1({**key, 'ip': self.ip, 'status': self.setup_status})
 
     def log_session(self, session_params, exp_type=''):
         animal_id, task_idx = (SetupControl() & dict(setup=self.setup)).fetch1('animal_id', 'task_idx')
         self.task_idx = task_idx
-        self.last_trial = 0
+        self.curr_trial = 0
 
         # create session key
-        self.session_key = dict()
-        self.session_key['animal_id'] = animal_id
+        self.session_key = {'animal_id': animal_id}
         last_sessions = (Session() & self.session_key).fetch('session')
-        if numpy.size(last_sessions) == 0:
-            last_session = 0
-        else:
-            last_session = numpy.max(last_sessions)
-        self.session_key['session'] = last_session + 1
-
-        # get task parameters for session table
-        key = dict(self.session_key.items())
-        key['session_params'] = session_params
-        key['setup'] = self.setup
-        key['protocol'] = self.get_protocol()
-        key['experiment_type'] = exp_type
-        self.queue.put(dict(table='Session', tuple=key))
-
+        self.session_key['session'] = 0 if numpy.size(last_sessions) == 0 else numpy.max(last_sessions) + 1
+        self.queue.put(dict(table='Session', tuple={**self.session_key,
+                                                    'session_params': session_params,
+                                                    'setup': self.setup,
+                                                    'protocol': self.get_protocol(),
+                                                    'experiment_type': exp_type}))
         # start session time
         self.timer.start()
-        (SetupControl() & dict(setup=self.setup))._update('current_session', self.session_key['session'])
-        (SetupControl() & dict(setup=self.setup))._update('last_trial', 0)
-        (SetupControl() & dict(setup=self.setup))._update('total_liquid', 0)
+        self.update_setup_info('current_session', self.session_key['session'])
+        self.update_setup_info('last_trial', 0)
+        self.update_setup_info('total_liquid', 0)
+        if 'start_time' in session_params:
+            self.update_setup_info('start_time', session_params['start_time'], nowait=True)
+            self.update_setup_info('stop_time', session_params['stop_time'], nowait=True)
 
-    def log_conditions(self, conditions, condition_tables=['OdorCond', 'MovieCond', 'RewardCond']):
+    def log_conditions(self, conditions, condition_tables=[]):
         # iterate through all conditions and insert
         for cond in conditions:
             cond_hash = make_hash(cond)
@@ -104,19 +115,18 @@ class Logger:
             for condtable in condition_tables:
                 if condtable == 'RewardCond' and isinstance(cond['probe'], tuple):
                     for idx, probe in enumerate(cond['probe']):
-                        key = {'cond_hash': cond['cond_hash'],
-                               'probe': probe,
-                               'reward_amount': cond['reward_amount']}
-                        self.queue.put(dict(table=condtable, tuple=key))
+                        self.queue.put(dict(table=condtable, tuple={'cond_hash': cond['cond_hash'],
+                                                                    'probe': probe,
+                                                                    'reward_amount': cond['reward_amount']}))
                 else:
                     self.queue.put(dict(table=condtable, tuple=dict(cond.items())))
                     if condtable == 'OdorCond':
                         for idx, port in enumerate(cond['delivery_port']):
-                            key = {'cond_hash': cond['cond_hash'],
-                                   'dutycycle': cond['dutycycle'][idx],
-                                   'odor_id': cond['odor_id'][idx],
-                                   'delivery_port': port}
-                            self.queue.put(dict(table=condtable+'.Port', tuple=key))
+                            self.queue.put(dict(table=condtable+'.Port',
+                                                tuple={'cond_hash': cond['cond_hash'],
+                                                       'dutycycle': cond['dutycycle'][idx],
+                                                       'odor_id': cond['odor_id'][idx],
+                                                       'delivery_port': port}))
         return conditions
 
     def init_trial(self, cond_hash):
@@ -124,6 +134,7 @@ class Logger:
         if self.lock:
             self.thread_lock.acquire()
         # return trial start time
+        self.curr_trial += 1
         self.trial_start = self.timer.elapsed_time()
         return self.trial_start
 
@@ -132,21 +143,20 @@ class Logger:
             self.thread_lock.release()
         timestamp = self.timer.elapsed_time()
         trial_key = dict(self.session_key,
-                         trial_idx=self.last_trial+1,
+                         trial_idx=self.curr_trial,
                          cond_hash=self.curr_cond,
                          start_time=self.trial_start,
                          end_time=timestamp,
                          last_flip_count=last_flip_count)
         self.queue.put(dict(table='Trial', tuple=trial_key))
-        self.last_trial += 1
 
         # insert ping
         self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
-                            field='last_trial', value=self.last_trial, update=True))
+                            field='last_trial', value=self.curr_trial, update=True))
 
     def log_abort(self):
         trial_key = dict(self.session_key,
-                         trial_idx=self.last_trial)
+                         trial_idx=self.curr_trial)
         self.queue.put(dict(table='AbortedTrial', tuple=trial_key))
 
     def log_liquid(self, probe, reward_amount):
@@ -154,20 +164,23 @@ class Logger:
         self.queue.put(dict(table='LiquidDelivery', tuple=dict(self.session_key, time=timestamp, probe=probe,
                                                                reward_amount=reward_amount)))
 
-    def log_stim(self,period='Trial'):
+    def log_stim(self, period='Trial'):
         timestamp = self.timer.elapsed_time()
         self.queue.put(dict(table='StimOnset', tuple=dict(self.session_key, time=timestamp, period=period)))
 
-    def log_period(self,period='Trial'):
+    def log_period(self, period='Trial'):
         timestamp = self.timer.elapsed_time()
         self.queue.put(dict(table='PeriodOnset', tuple=dict(self.session_key, time=timestamp, period=period)))
         return timestamp
 
     def log_lick(self, probe):
         timestamp = self.timer.elapsed_time()
-        self.queue.put(dict(table='Lick', tuple=dict(self.session_key,
-                                                     time=timestamp,
-                                                     probe=probe)))
+        self.queue.put(dict(table='Lick', tuple=dict(self.session_key, time=timestamp, probe=probe)))
+        return timestamp
+
+    def log_touch(self, loc):
+        timestamp = self.timer.elapsed_time()
+        self.queue.put(dict(table='Touch', tuple=dict(self.session_key, time=timestamp, loc_x=loc[0], loc_y=loc[1])))
         return timestamp
 
     def log_pulse_weight(self, pulse_dur, probe, pulse_num, weight=0):
@@ -198,31 +211,12 @@ class Logger:
             (SetupControl() & dict(setup=self.setup))._update('status', status)
         return in_status
 
-    def update_setup_notes(self, note):
-        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
-                            field='notes', value=note, update=True))
-
-    def update_state(self, state):
-        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
-                            field='state', value=state, update=True))
-
-    def update_animal_id(self, animal_id):
-        (SetupControl() & dict(setup=self.setup))._update('animal_id', animal_id)
-
-    def update_task_idx(self, task_idx):
-        (SetupControl() & dict(setup=self.setup))._update('task_idx', task_idx)
-
-    def update_total_liquid(self, total_rew):
-        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
-                            field='total_liquid', value=total_rew, update=True))
-
-    def update_difficulty(self, difficulty):
-        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
-                            field='difficulty', value=difficulty, update=True))
-
-    def update_setup_info(self, field, value):
-        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
-                            field=field, value=value, update=True))
+    def update_setup_info(self, field, value, nowait=False):
+        if nowait:
+            (SetupControl() & dict(setup=self.setup))._update(field, value)
+        else:
+            self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
+                                field=field, value=value, update=True))
 
     def get_setup_info(self, field):
         info = (SetupControl() & dict(setup=self.setup)).fetch1(field)

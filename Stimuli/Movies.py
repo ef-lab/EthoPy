@@ -1,13 +1,14 @@
 from Stimulus import *
 import imageio, io
-
+import pygame
+from pygame.locals import *
 
 
 class Movies(Stimulus):
     """ This class handles the presentation of Movies"""
 
-    def get_condition_tables(self):
-        return ['MovieCond', 'RewardCond']
+    def get_cond_tables(self):
+        return ['MovieCond']
 
     def setup(self):
         # setup parameters
@@ -53,6 +54,9 @@ class Movies(Stimulus):
         self.vid.close()
         self.unshow()
         self.isrunning = False
+
+    def punish_stim(self):
+        self.unshow((0, 0, 0))
 
     def unshow(self, color=False):
         """update background color"""

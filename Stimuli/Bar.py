@@ -1,6 +1,7 @@
 from Stimulus import *
 from utils.flat2curve import flat2curve
-
+import pygame
+from pygame.locals import *
 
 class FancyBar(Stimulus):
     """ This class handles the presentation of Movies"""
@@ -9,7 +10,7 @@ class FancyBar(Stimulus):
         super().__init__(logger, params, conditions, beh)
         self.cycles = None
 
-    def get_condition_tables(self):
+    def get_cond_tables(self):
         return ['BarCond']
 
     def setup(self):

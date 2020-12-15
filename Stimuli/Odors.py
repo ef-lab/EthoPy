@@ -1,11 +1,11 @@
 from Stimulus import *
-
+import pygame
 
 class Odors(Stimulus):
     """ This class handles the presentation of Odors"""
 
     def get_condition_tables(self):
-        return ['OdorCond', 'RewardCond']
+        return ['OdorCond']
 
     def setup(self):
         # setup parameters

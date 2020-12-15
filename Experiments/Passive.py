@@ -15,7 +15,7 @@ class State(StateClass):
         self.beh = BehaviorClass(self.logger, session_params)
         self.stim = StimulusClass(self.logger, session_params, conditions, self.beh)
         self.params = session_params
-        self.logger.log_conditions(conditions, self.stim.get_condition_tables())
+        self.logger.log_conditions(conditions, self.stim.get_cond_tables())
         exitState = Exit(self)
         self.StateMachine = StateMachine(Prepare(self), exitState)
 
@@ -27,12 +27,12 @@ class State(StateClass):
             'InterTrial'   : InterTrial(self),
             'Exit'         : exitState}
 
-    def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
-        self.StateMachine.status = self.logger.get_setup_info('status')
-        self.logger.update_state(self.__class__.__name__)
-
     def run(self):
         self.StateMachine.run()
+
+    def updateStatus(self): # updates stateMachine from Database entry - override for timing critical transitions
+        self.StateMachine.status = self.logger.setup_status
+        self.logger.update_setup_info('state', self.__class__.__name__)
 
 
 class Prepare(State):
@@ -45,14 +45,14 @@ class Prepare(State):
 
 class PreTrial(State):
     def entry(self):
-        self.timer.start()
         self.stim.prepare()
-        self.logger.update_state(self.__class__.__name__)
+        if not self.stim.curr_cond: self.logger.update_setup_info('status', 'stop', nowait=True)
+        super().entry()
 
     def run(self): pass
 
     def next(self):
-        if not self.stim.curr_cond: # if run out of conditions exit
+        if not self.stim.curr_cond:  # if run out of conditions exit
             return states['Exit']
         else:
             return states['Trial']
@@ -60,9 +60,8 @@ class PreTrial(State):
 
 class Trial(State):
     def entry(self):
-        self.logger.update_state(self.__class__.__name__)
         self.stim.init()
-        self.timer.start()  # trial start counter
+        super().entry()
         self.logger.init_trial(self.stim.curr_cond['cond_hash'])
 
     def run(self):
@@ -79,24 +78,28 @@ class Trial(State):
         self.logger.log_trial()
         self.logger.ping()
 
+
 class InterTrial(State):
     def entry(self):
-        self.timer.start()
+        super().entry()
 
     def run(self):
         pass
 
     def next(self):
-        if self.logger.get_setup_info('status') == 'stop':
+        if self.logger.setup_status == 'stop':
             return states['Exit']
         elif self.timer.elapsed_time() >= self.stim.curr_cond['intertrial_duration']:
             return states['PreTrial']
         else:
             return states['InterTrial']
 
+    def exit(self):
+        self.updateStatus()
+
 
 class Exit(State):
     def run(self):
-        self.logger.update_setup_status('stop')
+        self.logger.update_setup_info('status', 'stop')
         self.beh.cleanup()
         self.stim.close()

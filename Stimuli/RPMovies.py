@@ -1,12 +1,14 @@
 from Stimulus import *
 import os
 from time import sleep
+import pygame
+from pygame.locals import *
 
 class RPMovies(Stimulus):
     """ This class handles the presentation of Movies with an optimized library for Raspberry pi"""
 
-    def get_condition_tables(self):
-        return ['MovieCond', 'RewardCond']
+    def get_cond_tables(self):
+        return ['MovieCond']
 
     def setup(self):
         # setup parameters
@@ -83,10 +85,7 @@ class RPMovies(Stimulus):
         self.flip()
 
     def punish_stim(self):
-        self.unshow([255, 255, 255])
-        time.sleep(1/self.punish_hz)
         self.unshow([0, 0, 0])
-        time.sleep(1/self.punish_hz)
 
     def flip(self):
         """ Main flip method"""

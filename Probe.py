@@ -82,7 +82,7 @@ class RPProbe(Probe):
         super(RPProbe, self).__init__(logger)
         from RPi import GPIO
         import pigpio
-        self.setup = int(''.join(list(filter(str.isdigit, socket.gethostname()))))
+        self.setup_name = int(''.join(list(filter(str.isdigit, socket.gethostname()))))
         self.GPIO = GPIO
         self.GPIO.setmode(self.GPIO.BCM)
         self.channels = {'air': {1: 24, 2: 25},
@@ -90,17 +90,20 @@ class RPProbe(Probe):
                          'lick': {1: 17, 2: 27},
                          'start': {1: 9}}  # 2
         self.frequency = 20
+        self.pulses = dict()
         self.GPIO.setup(list(self.channels['lick'].values()) + [self.channels['start'][1]],
                         self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         self.GPIO.setup(list(self.channels['air'].values()), self.GPIO.OUT, initial=self.GPIO.LOW)
-        self.GPIO.add_event_detect(self.channels['lick'][2], self.GPIO.RISING, callback=self.probe2_licked, bouncetime=100)
-        self.GPIO.add_event_detect(self.channels['lick'][1], self.GPIO.RISING, callback=self.probe1_licked, bouncetime=100)
-        self.GPIO.add_event_detect(self.channels['start'][1], self.GPIO.BOTH, callback=self.position_change, bouncetime=50)
         self.Pulser = pigpio.pi()
         self.PulseGen = pigpio.pulse
         self.Pulser.set_mode(self.channels['liquid'][1], pigpio.OUTPUT)
         self.Pulser.set_mode(self.channels['liquid'][2], pigpio.OUTPUT)
-        self.pulses = dict()
+        self.GPIO.add_event_detect(self.channels['lick'][2], self.GPIO.RISING,
+                                   callback=self.probe2_licked, bouncetime=100)
+        self.GPIO.add_event_detect(self.channels['lick'][1], self.GPIO.RISING,
+                                   callback=self.probe1_licked, bouncetime=100)
+        self.GPIO.add_event_detect(self.channels['start'][1], self.GPIO.BOTH,
+                                    callback=self.position_change, bouncetime=50)
 
     def give_liquid(self, probe):
         self.thread.submit(self.pulse_out, probe)

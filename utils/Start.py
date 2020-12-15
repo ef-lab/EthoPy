@@ -22,6 +22,12 @@ class PyWelcome(Welcome):
         self.task = 0
         self.setup()
 
+        while logger.setup_status != 'running' and logger.setup_status != 'exit':  # wait for remote start
+            self.eval_input()
+            time.sleep(0.5)
+            logger.ping()
+        self.close()
+
     def setup(self):
         self.cleanup()
         self.screen.add_button(name='Animal %d' % self.animal, action=self.change_animal,
@@ -52,7 +58,7 @@ class PyWelcome(Welcome):
             while not button.is_pressed():
                 time.sleep(0.2)
             if self.screen.numpad:
-                self.logger.update_animal_id(int(self.screen.numpad))
+                self.logger.update_setup_info('animal_id', int(self.screen.numpad), nowait=True)
                 self.setup()
         elif self.state == 'change_task':
             self.cleanup()
@@ -62,7 +68,7 @@ class PyWelcome(Welcome):
             while not button.is_pressed():
                 time.sleep(0.2)
             if self.screen.numpad:
-                self.logger.update_task_idx(int(self.screen.numpad))
+                self.logger.update_setup_info('task_idx', int(self.screen.numpad), nowait=True)
                 self.setup()
         elif self.state == 'weigh_animal':
             self.cleanup()
@@ -72,18 +78,18 @@ class PyWelcome(Welcome):
             while not button.is_pressed():
                 time.sleep(0.2)
             if self.screen.numpad:
-                self.logger.log_animal_weight(int(self.screen.numpad))
+                self.logger.log_animal_weight(float(self.screen.numpad), nowait=True)
                 self.setup()
         elif self.state == 'start_experiment':
-            self.logger.update_setup_status('running')
+            self.logger.update_setup_info('status', 'running', nowait=True)
             self.screen.ts.stop()
         elif self.state == 'exit':
-            self.logger.update_setup_status('exit')
+            self.logger.update_setup_info('status', 'exit', nowait=True)
             self.close()
         else:
-            self.update_setup_info()
+            self.set_setup_info()
 
-    def update_setup_info(self):
+    def set_setup_info(self):
         animal = self.logger.get_setup_info('animal_id')
         task = self.logger.get_setup_info('task_idx')
         if self.animal != animal or self.task != task:

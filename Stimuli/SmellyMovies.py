@@ -1,13 +1,15 @@
 from Stimulus import *
 import os
 from time import sleep
+import pygame
+from pygame.locals import *
 
 
 class SmellyMovies(Stimulus):
     """ This class handles the presentation of Visual (movies) and Olfactory (odors) stimuli"""
 
-    def get_condition_tables(self):
-        return ['MovieCond', 'OdorCond', 'RewardCond']
+    def get_cond_tables(self):
+        return ['MovieCond', 'OdorCond']
 
     def setup(self):
         # setup parameters

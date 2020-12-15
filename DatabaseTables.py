@@ -205,8 +205,8 @@ class CenterPort(dj.Manual):
     """
          
     def plot(self, **kwargs):
-        params = {'range':(0,1000),
-                  'bins':100, **kwargs}
+        params = {'range': (0, 1000),
+                  'bins': 100, **kwargs}
         d = np.diff(self.fetch('time'))
         plt.hist(d, params['bins'], range=params['range'])
 
@@ -218,6 +218,17 @@ class Lick(dj.Manual):
     -> Session
     time	     	  	: int           	# time from session start (ms)
     probe               : int               # probe number
+    """
+
+
+@schema
+class Touch(dj.Manual):
+    definition = """
+    # Lick timestamps
+    -> Session
+    time	     	  	: int           	# time from session start (ms)
+    loc_x               : int               # x touch location
+    loc_y               : int               # y touch location
     """
 
 
@@ -340,14 +351,6 @@ class ObjectCond(dj.Manual):
     direct1_dir           : tinyblob
     direct2_color         : tinyblob
     direct2_dir           : tinyblob
-    intertrial_duration   : float
-    cue_duration          : float
-    delay_duration        : float
-    response_duration     : float
-    init_ready            : float
-    cue_ready             : float
-    delay_ready           : float
-    resp_ready            : float
     obj_id                : blob
     obj_pos_x             : blob
     obj_pos_y             : blob
@@ -357,7 +360,6 @@ class ObjectCond(dj.Manual):
     obj_yaw               : blob
     obj_delay             : blob
     obj_dur               : blob
-    obj_period            : blob
     """
 
 @schema
