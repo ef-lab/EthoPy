@@ -218,19 +218,21 @@ class InterTrial(State):
             self.timer.start()
 
     def next(self):
-        if self.beh.is_sleep_time() or self.beh.is_hydrated():
-            return states['Offtime']
+        if self.beh.is_sleep_time():
+            return states['Sleep']
+        elif self.beh.is_hydrated():
+            return states['OffTime']
         elif self.timer.elapsed_time() >= self.stim.curr_cond['intertrial_duration']:
             return states['PreTrial']
         else:
             return states['InterTrial']
 
 
-class Offtime(State):
+class Sleep(State):
     def entry(self):
         self.logger.update_setup_info('state', type(self).__name__)
-        self.logger.update_setup_info('status', 'offtime')
-        self.stim.set_intensity(0)
+        self.logger.update_setup_info('status', 'sleeping')
+        self.stim.unshow([0, 0, 0])
 
     def run(self):
         self.logger.ping()
@@ -241,13 +243,33 @@ class Offtime(State):
             return states['Exit']
         elif self.logger.setup_status == 'wakeup' and not self.beh.is_sleep_time():
             return states['PreTrial']
-        elif self.logger.setup_status == 'offtime' and not self.beh.is_sleep_time():  # if wake up then update session
+        elif self.logger.setup_status == 'sleeping' and not self.beh.is_sleep_time():  # if wake up then update session
             return states['Exit']
         else:
-            return states['Offtime']
+            return states['Sleep']
 
     def exit(self):
-        if not self.logger.setup_status == 'stop': self.logger.update_setup_info('status', 'running')
+        if not self.logger.setup_status == 'stop':
+            self.logger.update_setup_info('status', 'running')
+
+
+class OffTime(State):
+    def entry(self):
+        self.logger.update_setup_info('state', type(self).__name__)
+        self.logger.update_setup_info('status', 'offtime')
+        self.stim.unshow([0, 0, 0])
+
+    def run(self):
+        self.logger.ping()
+        time.sleep(5)
+
+    def next(self):
+        if self.logger.setup_status == 'stop':  # if wake up then update session
+            return states['Exit']
+        elif self.beh.is_sleep_time():
+            return states['Sleep']
+        else:
+            return states['OffTime']
 
 
 class Exit(State):
