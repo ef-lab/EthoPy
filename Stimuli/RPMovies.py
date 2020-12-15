@@ -85,10 +85,7 @@ class RPMovies(Stimulus):
         self.flip()
 
     def punish_stim(self):
-        self.unshow([255, 255, 255])
-        time.sleep(1/self.punish_hz)
         self.unshow([0, 0, 0])
-        time.sleep(1/self.punish_hz)
 
     def flip(self):
         """ Main flip method"""

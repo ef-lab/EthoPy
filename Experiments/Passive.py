@@ -78,6 +78,7 @@ class Trial(State):
         self.logger.log_trial()
         self.logger.ping()
 
+
 class InterTrial(State):
     def entry(self):
         super().entry()

@@ -36,6 +36,7 @@ class State(StateClass):
             'Punish'       : Punish(self),
             'InterTrial'   : InterTrial(self),
             'Offtime'      : Offtime(self),
+            'Sleep'        : Sleep(self),
             'Exit'         : exitState}
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
@@ -53,7 +54,7 @@ class Prepare(State):
 
     def next(self):
         if self.beh.is_sleep_time():
-            return states['Offtime']
+            return states['Sleep']
         else:
             return states['PreTrial']
 
@@ -221,7 +222,7 @@ class InterTrial(State):
         if self.beh.is_sleep_time():
             return states['Sleep']
         elif self.beh.is_hydrated():
-            return states['OffTime']
+            return states['Offtime']
         elif self.timer.elapsed_time() >= self.stim.curr_cond['intertrial_duration']:
             return states['PreTrial']
         else:
@@ -253,7 +254,7 @@ class Sleep(State):
             self.logger.update_setup_info('status', 'running')
 
 
-class OffTime(State):
+class Offtime(State):
     def entry(self):
         self.logger.update_setup_info('state', type(self).__name__)
         self.logger.update_setup_info('status', 'offtime')
@@ -269,7 +270,7 @@ class OffTime(State):
         elif self.beh.is_sleep_time():
             return states['Sleep']
         else:
-            return states['OffTime']
+            return states['Offtime']
 
 
 class Exit(State):
