@@ -23,14 +23,14 @@ class StateClass:
 # move from State to State using a template method.
 class StateMachine:
     def __init__(self, initialState, exitState):
-        self.status = 'running'
+        self.running = True
         self.futureState = initialState
         self.currentState = initialState
         self.exitState = exitState
 
     # # # # Main state loop # # # # #
     def run(self):
-        while self.status in ['running', 'sleeping'] and self.futureState != self.exitState:
+        while self.running and self.futureState != self.exitState:
             if self.currentState != self.futureState:
                 self.currentState.exit()
                 self.currentState = self.futureState

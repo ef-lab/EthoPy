@@ -64,16 +64,17 @@ class PreTrial(State):
         self.beh.prepare(self.stim.curr_cond)
         super().entry()
 
-    def run(self): pass
+    def run(self):
+        if self.timer.elapsed_time() > 5000:  # occasionally get control status
+            self.timer.start()
+            self.logger.ping()
 
     def next(self):
         if self.beh.is_ready(self.stim.curr_cond['init_duration']):
             return states['Trial']
+        elif self.logger.setup_status in ['stop', 'exit']:
+            return states['Exit']
         else:
-            if self.timer.elapsed_time() > 5000: # occasionally get control status
-                self.timer.start()
-                self.StateMachine.status = self.logger.setup_status
-                self.logger.ping()
             return states['PreTrial']
 
 
@@ -184,6 +185,7 @@ class Sleep(State):
     def exit(self):
         if self.logger.setup_status not in ['stop', 'exit']:
             self.logger.update_setup_info('status', 'running', nowait=True)
+            self.logger.setup_status = 'running'
 
 
 class Offtime(State):
@@ -209,3 +211,4 @@ class Exit(State):
     def run(self):
         self.beh.cleanup()
         self.stim.close()
+        self.StateMachine.running = False
