@@ -279,4 +279,3 @@ class Exit(State):
     def run(self):
         self.beh.cleanup()
         self.stim.close()
-        self.StateMachine.running = False
