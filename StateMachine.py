@@ -30,11 +30,12 @@ class StateMachine:
 
     # # # # Main state loop # # # # #
     def run(self):
-        while (self.status == 'running' or self.status == 'sleeping') and self.futureState != self.exitState:
+        while self.status in ['running', 'sleeping'] and self.futureState != self.exitState:
             if self.currentState != self.futureState:
                 self.currentState.exit()
                 self.currentState = self.futureState
                 self.currentState.entry()
             self.currentState.run()
             self.futureState = self.currentState.next()
+        self.currentState.exit()
         self.exitState.run()
