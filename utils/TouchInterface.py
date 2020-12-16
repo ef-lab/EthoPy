@@ -23,7 +23,7 @@ class Button:
         return False
 
 
-class Interface:
+class TouchInterface:
     def __init__(self, **kwargs):
         # define interface parameters
         self.screen_size = kwargs.get('screen_size', (800, 480))

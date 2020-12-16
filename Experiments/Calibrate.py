@@ -1,6 +1,6 @@
 import pygame, numpy
-from Probe import *
-from utils.Interface import Interface
+from Interface import *
+from utils.TouchInterface import Interface
 
 
 class Calibrate:

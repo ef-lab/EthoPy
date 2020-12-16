@@ -1,4 +1,4 @@
-from Probe import *
+from Interface import *
 from utils.Timer import *
 import pygame
 import numpy as np
@@ -247,6 +247,83 @@ class TouchBehavior(Behavior):
             touch_x = self.loc[0] + self.touch_area[0] > touch.x > self.loc[0] - self.touch_area[0]
             touch_y = self.loc[1] + self.touch_area[1] > touch.y > self.loc[1] - self.touch_area[1]
             return touch_x and touch_y
+
+
+class VRBehavior(Behavior):
+    def __init__(self, logger, params):
+        self.probe = VRProbe(logger)
+        self.vr = VR2D(params['x_max'], params['y_max'], params['x0'], params['y0'], params['theta0'])
+        super(VRBehavior, self).__init__(logger, params)
+
+    def is_licking(self, since=0):
+        licked_probe, tmst = self.probe.get_last_lick()
+        if tmst >= since and licked_probe:
+            self.licked_probe = licked_probe
+            self.resp_timer.start()
+        else:
+            self.licked_probe = 0
+        return self.licked_probe
+
+    def is_ready(self, duration):
+        if duration == 0:
+            return True
+        else:
+            ready, ready_time = self.probe.in_position()
+            return ready and ready_time > duration
+
+    def is_correct(self, condition):
+        return np.any(np.equal(self.licked_probe, condition['probe']))
+
+    def get_position(self):
+        return self.vr.getPosition()
+
+    def reward(self):
+        self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
+        self.probe.give_liquid(self.licked_probe)
+        self.logger.log_liquid(self.licked_probe, self.reward_amount[self.licked_probe])
+
+    def present_odor(self, delivery_port, odor_id, dutycycle):
+        self.probe.present_odor(self, delivery_port, odor_id, dutycycle)
+        self.logger.log_stim()
+
+    def update_odor(self, delivery_port, dutycycle):
+        self.probe.update_odor(delivery_port, dutycycle)
+        self.logger.log_stim()
+
+    def inactivity_time(self):  # in minutes
+        return np.minimum(self.probe.timer_probe1.elapsed_time(),
+                          self.probe.timer_probe2.elapsed_time()) / 1000 / 60
+
+    def cleanup(self):
+        self.mouse1.close()
+        self.mouse2.close()
+        self.probe.cleanup()
+
+    def prepare(self, condition):
+        self.reward_amount = self.probe.calc_pulse_dur(condition['reward_amount'])
+        self.loc_x = condition['loc_x']
+        self.loc_y = condition['loc_y']
+        self.theta = condition['theta']
+
+
+    class MouseReader():
+        def __init__(self, path, dpm=31200):
+            self.dpm = dpm
+            self.queue = multiprocessing.Queue()
+            self.file = open(path, "rb")
+            self.thread_end = multiprocessing.Event()
+            self.thread_runner = multiprocessing.Process(target=self.reader, args=(self.queue,self.dpm,))
+            self.thread_runner.start()
+
+        def reader(self, queue, dpm):
+            while not self.thread_end.is_set():
+                data = self.file.read(3)  # Reads the 3 bytes
+                x, y = struct.unpack("2b", data[1:])
+                queue.put({'x': x / dpm, 'y': y / dpm, 'timestamp': time.time()})
+
+        def close(self):
+            self.thread_end.set()
+            self.thread_runner.join()
 
 
 class DummyProbe(Behavior):
