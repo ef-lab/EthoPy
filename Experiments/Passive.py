@@ -87,7 +87,7 @@ class InterTrial(State):
         pass
 
     def next(self):
-        if self.logger.setup_status == 'stop':
+        if self.logger.setup_status in ['stop', 'exit']:
             return states['Exit']
         elif self.timer.elapsed_time() >= self.stim.curr_cond['intertrial_duration']:
             return states['PreTrial']
@@ -100,6 +100,6 @@ class InterTrial(State):
 
 class Exit(State):
     def run(self):
-        self.logger.update_setup_info('status', 'stop')
+        self.logger.update_setup_info('status', 'stop', nowait=True)
         self.beh.cleanup()
         self.stim.close()

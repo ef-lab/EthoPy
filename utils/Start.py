@@ -14,9 +14,9 @@ class Welcome:
 
 class PyWelcome(Welcome):
     def __init__(self, logger):
-        from utils.Interface import Interface
+        from utils.TouchInterface import TouchInterface
         self.logger = logger
-        self.screen = Interface()
+        self.screen = TouchInterface()
         self.state = ''
         self.animal = 0
         self.task = 0
