@@ -79,10 +79,10 @@ class PreTrial(State):
     def next(self):
         if not self.stim.curr_cond:  # if run out of conditions exit
             return states['Exit']
-        elif self.beh.is_ready:
-            return states['Cue']
         elif self.logger.setup_status in ['stop', 'exit']:
             return states['Exit']
+        elif self.beh.is_ready:
+            return states['Cue']
         else:
             return states['PreTrial']
 
@@ -220,7 +220,9 @@ class InterTrial(State):
             self.timer.start()
 
     def next(self):
-        if self.beh.is_sleep_time():
+        if self.logger.setup_status in ['stop', 'exit']:
+            return states['Exit']
+        elif self.beh.is_sleep_time():
             return states['Sleep']
         elif self.beh.is_hydrated():
             return states['Offtime']
