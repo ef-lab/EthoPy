@@ -1,6 +1,6 @@
 import pygame, numpy
 from Interface import *
-from utils.TouchInterface import Interface
+from utils.TouchInterface import TouchInterface
 
 
 class Calibrate:
@@ -8,7 +8,7 @@ class Calibrate:
         self.params = params
         self.logger = logger
         self.size = (800, 480)     # window size
-        self.screen = Interface()
+        self.screen = TouchInterface()
 
     def run(self):
         """ Lickspout liquid delivery calibration """
