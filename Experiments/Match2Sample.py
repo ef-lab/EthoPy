@@ -139,7 +139,7 @@ class Response(State):
 
     def run(self):
         self.stim.present()  # Start Stimulus
-        self.response = self.beh.response(self.period_start)
+        self.response = self.beh.get_response(self.period_start)
         if self.beh.is_ready(self.stim.curr_cond['resp_ready'], self.period_start):
             self.resp_ready = True
 
