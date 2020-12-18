@@ -226,8 +226,8 @@ class VR2D(Interface):
         self.timestamp = 0
         self.phi_z1 = 1  # angle of z axis (rotation)
         self.phi_z2 = self.phi_z1
-        self.phi_y1 = 0.6  # angle of y1 axis (mouse1) .6
-        self.phi_y2 = self.phi_y1 + np.pi/2 + 0.3  # angle of y2 axis (mouse2)
+        self.phi_y1 = 0.75  # angle of y1 axis (mouse1) .6
+        self.phi_y2 = self.phi_y1 + np.pi/2  # angle of y2 axis (mouse2)
         self.ball_radius = ball_radius
         self.thread_end = threading.Event()
         self.thread_runner = threading.Thread(target=self.readMouse)
@@ -251,8 +251,8 @@ class VR2D(Interface):
             theta_step1 = (x1 - theta_contamination1)/(np.sin(self.phi_z1)**2)/self.ball_radius
             theta_step2 = (x2 - theta_contamination2)/(np.sin(self.phi_z2)**2)/self.ball_radius
 
-            xm = y2/(np.sin(self.phi_y2)**2)  # X axis (was sin(0)**2)
-            ym = y1/(np.cos(self.phi_y1)**2)  # y axis (was cos(3p/2)**2)
+            xm = y2 * np.cos(self.phi_y1) - y1 * np.sin(self.phi_y1)
+            ym = y2 * np.sin(self.phi_y1) + y1 * np.cos(self.phi_y1)
 
             self.theta += (theta_step2 + theta_step1)/2
             self.theta = np.mod(self.theta, 2*np.pi)
