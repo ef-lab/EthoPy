@@ -28,7 +28,6 @@ class Logger:
         s.connect(("8.8.8.8", 80))
         self.ip = s.getsockname()[0]
         if log_setup: self.log_setup(protocol)
-
         path = os.path.dirname(os.path.abspath(__file__))
         fileobject = open(path + '/dj_local_conf.json')
         connect_info = json.loads(fileobject.read())
@@ -43,6 +42,9 @@ class Logger:
         self.getter_thread.start()
 
     def cleanup(self):
+        while not self.queue.empty():
+            print('Waiting for que to empty... # %d' % self.queue.qsize())
+            time.sleep(2)
         self.thread_end.set()
 
     def inserter(self):
@@ -66,8 +68,10 @@ class Logger:
             time.sleep(1) # update once a second
 
     def log(self, table, data=dict()):
+        tmst = self.timer.elapsed_time()
         self.queue.put(dict(table=table, tuple={**self.session_key, 'trial_idx': self.curr_trial,
-                                                'time': self.timer.elapsed_time(), **data}))
+                                                'time': tmst, **data}))
+        return tmst
 
     def log_setup(self, protocol=False):
         key = dict(setup=self.setup)
@@ -91,7 +95,7 @@ class Logger:
         # create session key
         self.session_key = {'animal_id': animal_id}
         last_sessions = (Session() & self.session_key).fetch('session')
-        self.session_key['session'] = 0 if numpy.size(last_sessions) == 0 else numpy.max(last_sessions) + 1
+        self.session_key['session'] = 1 if numpy.size(last_sessions) == 0 else numpy.max(last_sessions) + 1
         self.queue.put(dict(table='Session', tuple={**self.session_key,
                                                     'session_params': session_params,
                                                     'setup': self.setup,
@@ -142,12 +146,8 @@ class Logger:
         if self.lock:
             self.thread_lock.release()
         timestamp = self.timer.elapsed_time()
-        trial_key = dict(self.session_key,
-                         trial_idx=self.curr_trial,
-                         cond_hash=self.curr_cond,
-                         start_time=self.trial_start,
-                         end_time=timestamp,
-                         last_flip_count=last_flip_count)
+        trial_key = dict(self.session_key, trial_idx=self.curr_trial, cond_hash=self.curr_cond,
+                         start_time=self.trial_start, end_time=timestamp, last_flip_count=last_flip_count)
         self.queue.put(dict(table='Trial', tuple=trial_key))
 
         # insert ping
@@ -168,11 +168,6 @@ class Logger:
         timestamp = self.timer.elapsed_time()
         self.queue.put(dict(table='StimOnset', tuple=dict(self.session_key, time=timestamp, period=period)))
 
-    def log_period(self, period='Trial'):
-        timestamp = self.timer.elapsed_time()
-        self.queue.put(dict(table='PeriodOnset', tuple=dict(self.session_key, time=timestamp, period=period)))
-        return timestamp
-
     def log_lick(self, probe):
         timestamp = self.timer.elapsed_time()
         self.queue.put(dict(table='Lick', tuple=dict(self.session_key, time=timestamp, probe=probe)))
@@ -187,10 +182,8 @@ class Logger:
         cal_key = dict(setup=self.setup, probe=probe, date=systime.strftime("%Y-%m-%d"))
         LiquidCalibration().insert1(cal_key, skip_duplicates=True)
         (LiquidCalibration.PulseWeight() & dict(cal_key, pulse_dur=pulse_dur)).delete_quick()
-        LiquidCalibration.PulseWeight().insert1(dict(cal_key,
-                                                     pulse_dur=pulse_dur,
-                                                     pulse_num=pulse_num,
-                                                     weight=weight))
+        LiquidCalibration.PulseWeight().insert1(dict(cal_key, pulse_dur=pulse_dur,
+                                                     pulse_num=pulse_num, weight=weight))
 
     def log_animal_weight(self, weight):
         key = dict(animal_id=self.get_setup_info('animal_id'), weight=weight)
@@ -198,18 +191,10 @@ class Logger:
 
     def log_position(self, in_position, state):
         timestamp = self.timer.elapsed_time()
-        self.queue.put(dict(table='CenterPort', tuple=dict(self.session_key,
-                                                            time=timestamp,
-                                                            in_position=in_position,
-                                                            state=state)))
+        self.queue.put(dict(table='CenterPort', tuple=dict(self.session_key, time=timestamp,
+                                                           in_position=in_position, state=state)))
         return timestamp
 
-    def update_setup_status(self, status):
-        key = (SetupControl() & dict(setup=self.setup)).fetch1()
-        in_status = key['status'] == status
-        if not in_status:
-            (SetupControl() & dict(setup=self.setup))._update('status', status)
-        return in_status
 
     def update_setup_info(self, field, value, nowait=False):
         if nowait:
@@ -219,11 +204,7 @@ class Logger:
                                 field=field, value=value, update=True))
 
     def get_setup_info(self, field):
-        info = (SetupControl() & dict(setup=self.setup)).fetch1(field)
-        return info
-
-    def get_session_key(self):
-        return self.session_key
+        return (SetupControl() & dict(setup=self.setup)).fetch1(field)
 
     def get_clip_info(self, key):
         clip_info = (Stimuli.Movie() * Stimuli.Movie.Clip() & key & self.session_key).fetch1()
