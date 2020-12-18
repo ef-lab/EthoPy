@@ -23,7 +23,7 @@ class Behavior:
     def is_ready(self, init_duration, since=0):
         return True, 0
 
-    def response(self, since=0):
+    def get_response(self, since=0):
         return False
 
     def reward(self):
@@ -85,7 +85,7 @@ class RPBehavior(Behavior):
             self.licked_probe = 0
         return self.licked_probe
 
-    def response(self, since=0):
+    def get_response(self, since=0):
         return self.is_licking(since) > 0
 
     def is_ready(self, duration, since=False):
@@ -183,7 +183,7 @@ class TouchBehavior(Behavior):
         else:
             return False
 
-    def response(self, since=0):
+    def get_response(self, since=0):
         self.since = since
         return self.is_licking(since) > 0 or self.is_touching(since)
 
@@ -354,7 +354,7 @@ class DummyProbe(Behavior):
         self.licked_probe = probe
         return probe
 
-    def response(self, since=0):
+    def get_response(self, since=0):
         probe = self.is_licking(since)
         return probe > 0
 

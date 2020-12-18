@@ -41,7 +41,7 @@ class State(StateClass):
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
         self.logger.update_setup_info('state', type(self).__name__)
-        self.StateMachine.status = self.logger.setup_status
+        self.period_start = self.logger.log('PeriodOnset', {'period': type(self).__name__})
         self.timer.start()
 
     def run(self):
@@ -65,14 +65,10 @@ class PreTrial(State):
         self.stim.prepare()
         self.beh.prepare(self.stim.curr_cond)
         self.logger.init_trial(self.stim.curr_cond['cond_hash'])
-        self.period_start = self.logger.log_period('PreTrial')
-        self.resp_ready = False
         super().entry()
         if not self.stim.curr_cond: self.logger.update_setup_info('status', 'stop', nowait=True)
 
     def run(self):
-        if self.beh.is_ready(self.stim.curr_cond['init_ready'], self.period_start):
-            self.resp_ready = True
         if self.timer.elapsed_time() > 5000:  # occasionally get control status
             self.timer.start()
             self.logger.ping()
@@ -82,7 +78,7 @@ class PreTrial(State):
             return states['Exit']
         elif self.logger.setup_status in ['stop', 'exit']:
             return states['Exit']
-        elif self.beh.is_ready:
+        elif self.beh.is_ready(self.stim.curr_cond['init_ready'], self.period_start):
             return states['Cue']
         else:
             return states['PreTrial']
@@ -93,7 +89,6 @@ class Cue(State):
         self.resp_ready = False
         super().entry()
         self.stim.init(type(self).__name__)
-        self.period_start = self.logger.log_period('Cue')
 
     def run(self):
         self.stim.present()
@@ -117,12 +112,11 @@ class Cue(State):
 
 class Delay(State):
     def entry(self):
-        super().entry()
-        self.period_start = self.logger.log_period('Delay')
         self.resp_ready = False
+        super().entry()
 
     def run(self):
-        self.response = self.beh.response(self.period_start)
+        self.response = self.beh.get_response(self.period_start)
         if self.beh.is_ready(self.stim.curr_cond['delay_ready'], self.period_start):
             self.resp_ready = True
 
@@ -139,10 +133,9 @@ class Delay(State):
 
 class Response(State):
     def entry(self):
+        self.resp_ready = False
         super().entry()
         self.stim.init(type(self).__name__)
-        self.period_start = self.logger.log_period(type(self).__name__)
-        self.resp_ready = False
 
     def run(self):
         self.stim.present()  # Start Stimulus
@@ -170,7 +163,6 @@ class Response(State):
 class Abort(State):
     def run(self):
         self.beh.update_history()
-        self.logger.log_trial()
         self.logger.log_abort()
 
     def next(self):
@@ -178,10 +170,6 @@ class Abort(State):
 
 
 class Reward(State):
-    def entry(self):
-        self.logger.log_trial()
-        super().entry()
-
     def run(self):
         self.rewarded = self.beh.reward()
 
@@ -194,7 +182,6 @@ class Reward(State):
 
 class Punish(State):
     def entry(self):
-        self.logger.log_trial()
         self.beh.punish()
         super().entry()
 
@@ -213,11 +200,11 @@ class Punish(State):
 
 class InterTrial(State):
     def entry(self):
+        self.logger.log_trial()
         super().entry()
-        self.period_start = self.logger.log_period(type(self).__name__)
 
     def run(self):
-        if self.beh.response(self.period_start) & self.params.get('noresponse_intertrial'):
+        if self.beh.get_response(self.period_start) & self.params.get('noresponse_intertrial'):
             self.timer.start()
 
     def next(self):
@@ -235,9 +222,9 @@ class InterTrial(State):
 
 class Sleep(State):
     def entry(self):
-        self.logger.update_setup_info('state', type(self).__name__)
         self.logger.update_setup_info('status', 'sleeping')
         self.stim.unshow([0, 0, 0])
+        super().entry()
 
     def run(self):
         self.logger.ping()
@@ -261,9 +248,9 @@ class Sleep(State):
 
 class Offtime(State):
     def entry(self):
-        self.logger.update_setup_info('state', type(self).__name__)
         self.logger.update_setup_info('status', 'offtime')
         self.stim.unshow([0, 0, 0])
+        super().entry()
 
     def run(self):
         self.logger.ping()

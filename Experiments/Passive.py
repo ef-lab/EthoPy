@@ -31,7 +31,6 @@ class State(StateClass):
         self.StateMachine.run()
 
     def updateStatus(self): # updates stateMachine from Database entry - override for timing critical transitions
-        self.StateMachine.status = self.logger.setup_status
         self.logger.update_setup_info('state', self.__class__.__name__)
 
 

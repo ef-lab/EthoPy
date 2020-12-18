@@ -78,7 +78,7 @@ class PyWelcome(Welcome):
             while not button.is_pressed():
                 time.sleep(0.2)
             if self.screen.numpad:
-                self.logger.log_animal_weight(float(self.screen.numpad), nowait=True)
+                self.logger.log_animal_weight(float(self.screen.numpad))
                 self.setup()
         elif self.state == 'start_experiment':
             self.logger.update_setup_info('status', 'running', nowait=True)
