@@ -61,6 +61,7 @@ class Prepare(State):
 
 class PreTrial(State):
     def entry(self):
+        self.logger.ping()
         self.stim.prepare()
         self.beh.prepare(self.stim.curr_cond)
         self.logger.init_trial(self.stim.curr_cond['cond_hash'])
