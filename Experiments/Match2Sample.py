@@ -92,7 +92,7 @@ class Cue(State):
 
     def run(self):
         self.stim.present()
-        self.response = self.beh.response(self.period_start)
+        self.response = self.beh.get_response(self.period_start)
         if self.beh.is_ready(self.stim.curr_cond['cue_ready'], self.period_start):
             self.resp_ready = True
 
