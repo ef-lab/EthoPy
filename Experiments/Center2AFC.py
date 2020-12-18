@@ -164,9 +164,6 @@ class InterTrial(State):
         else:
             return states['InterTrial']
 
-    def exit(self):
-        self.logger.ping()
-
 
 class Sleep(State):
     def entry(self):
