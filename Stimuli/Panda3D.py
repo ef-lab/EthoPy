@@ -57,8 +57,6 @@ class Panda3D(Stimulus, ShowBase):
         self._get_new_cond()
         if not self.curr_cond:
             self.isrunning = False
-
-    def init(self, period=None):
         self.background_color = self.curr_cond['background_color']
 
         # set background color
@@ -79,6 +77,9 @@ class Panda3D(Stimulus, ShowBase):
         self.directionalLight2NP.setHpr(self.curr_cond['direct2_dir'][0],
                                         self.curr_cond['direct2_dir'][1],
                                         self.curr_cond['direct2_dir'][2])
+        self.flip(2)
+
+    def init(self, period=None):
         self.objects = dict()
         if period:
             selected_obj = [p == period for p in self.curr_cond['obj_period']]
