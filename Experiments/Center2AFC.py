@@ -59,6 +59,7 @@ class Prepare(State):
 
 class PreTrial(State):
     def entry(self):
+        self.logger.ping()
         self.stim.prepare()
         if not self.stim.curr_cond: self.logger.update_setup_info('status', 'stop', nowait=True)
         self.beh.prepare(self.stim.curr_cond)
@@ -163,6 +164,9 @@ class InterTrial(State):
         else:
             return states['InterTrial']
 
+    def exit(self):
+        self.logger.ping()
+
 
 class Sleep(State):
     def entry(self):
@@ -197,7 +201,6 @@ class Offtime(State):
         self.stim.unshow([0, 0, 0])
 
     def run(self):
-        self.logger.ping()
         time.sleep(5)
 
     def next(self):
