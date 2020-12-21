@@ -38,6 +38,9 @@ class Interface:
     def give_odor(self, odor_idx, duration, log=True):
         pass
 
+    def give_sound(self, sound_freq, duration, dutycycle):
+        pass
+
     def get_last_lick(self):
         probe = self.probe
         self.probe = 0
@@ -83,7 +86,8 @@ class RPProbe(Interface):
         self.channels = {'air': {1: 24, 2: 25},
                          'liquid': {1: 22, 2: 23},
                          'lick': {1: 17, 2: 27},
-                         'start': {1: 9}}  # 2
+                         'start': {1: 9},
+                         'sound': {1: 18}}
         self.frequency = 20
         self.pulses = dict()
         self.GPIO.setup(list(self.channels['lick'].values()) + [self.channels['start'][1]],
@@ -93,6 +97,7 @@ class RPProbe(Interface):
         self.PulseGen = pigpio.pulse
         self.Pulser.set_mode(self.channels['liquid'][1], pigpio.OUTPUT)
         self.Pulser.set_mode(self.channels['liquid'][2], pigpio.OUTPUT)
+        self.Pulser.set_mode(self.channels['sound'][1], pigpio.OUTPUT)
         self.GPIO.add_event_detect(self.channels['lick'][2], self.GPIO.RISING,
                                    callback=self.probe2_licked, bouncetime=100)
         self.GPIO.add_event_detect(self.channels['lick'][1], self.GPIO.RISING,
@@ -106,6 +111,9 @@ class RPProbe(Interface):
     def give_odor(self, delivery_port, odor_id, odor_duration, dutycycle):
         for i, idx in enumerate(odor_id):
             self.thread.submit(self.__pwd_out, self.channels['air'][delivery_port[i]], odor_duration, dutycycle[i])
+
+    def give_sound(self, sound_freq=40000, duration=500, dutycycle=50):
+        self.thread.submit(self.__pwd_out, self.channels['air'][1], sound_freq, duration, dutycycle)
 
     def position_change(self, channel=0):
         if self.getStart():
@@ -138,6 +146,11 @@ class RPProbe(Interface):
         pwm.start(dutycycle)
         sleep(duration/1000)    # to add a  delay in seconds
         pwm.stop()
+
+    def __pwm_out(self, channel, freq, duration, dutycycle=50):
+        self.Pulser.hardware_PWM(channel, freq, dutycycle*10000)
+        sleep(duration/1000)    # to add a  delay in seconds
+        self.Pulser.hardware_PWM(channel, 0, 0)
 
     def create_pulse(self, probe, duration):
         if probe in self.pulses:
@@ -214,7 +227,7 @@ class VRProbe(Interface):
         self.Pulser.wave_clear()
 
 
-class VR2D(Interface):
+class Ball(Interface):
     def __init__(self, xmx=1, ymx=1, x0=0, y0=0, theta0=0, ball_radius=0.125):
         self.mouse1 = MouseReader("/dev/input/by-path/platform-3f980000.usb-usb-0:1.1.2:1.0-mouse")
         self.mouse2 = MouseReader("/dev/input/by-path/platform-3f980000.usb-usb-0:1.1.3:1.0-mouse")

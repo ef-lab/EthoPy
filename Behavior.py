@@ -26,6 +26,9 @@ class Behavior:
     def get_response(self, since=0):
         return False
 
+    def get_cond_tables(self):
+        return []
+
     def reward(self):
         return True
 
@@ -69,7 +72,7 @@ class Behavior:
 class RPBehavior(Behavior):
     """ This class handles the behavior variables for RP """
     def __init__(self, logger, params):
-        self.probe = RPProbe(logger)
+        self.interface = RPProbe(logger)
         self.cond_tables = ['RewardCond']
         super(RPBehavior, self).__init__(logger, params)
 
@@ -77,7 +80,7 @@ class RPBehavior(Behavior):
         return ['RewardCond']
 
     def is_licking(self, since=0):
-        licked_probe, tmst = self.probe.get_last_lick()
+        licked_probe, tmst = self.interface.get_last_lick()
         if tmst >= since and licked_probe:
             self.licked_probe = licked_probe
             self.resp_timer.start()
@@ -89,7 +92,7 @@ class RPBehavior(Behavior):
         return self.is_licking(since) > 0
 
     def is_ready(self, duration, since=False):
-        ready, ready_time, tmst = self.probe.in_position()
+        ready, ready_time, tmst = self.interface.in_position()
         if duration == 0:
             return True
         elif not since:
@@ -103,25 +106,25 @@ class RPBehavior(Behavior):
         return np.any(np.equal(self.licked_probe, self.curr_cond['probe']))
 
     def reward(self):
-        self.probe.give_liquid(self.licked_probe)
+        self.interface.give_liquid(self.licked_probe)
         self.logger.log_liquid(self.licked_probe, self.reward_amount[self.licked_probe])
         self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
         return True
 
     def give_odor(self, delivery_port, odor_id, odor_dur, odor_dutycycle):
-        self.probe.give_odor(delivery_port, odor_id, odor_dur, odor_dutycycle)
+        self.interface.give_odor(delivery_port, odor_id, odor_dur, odor_dutycycle)
         self.logger.log_stim()
 
     def inactivity_time(self):  # in minutes
-        return np.minimum(self.probe.timer_probe1.elapsed_time(),
-                          self.probe.timer_probe2.elapsed_time()) / 1000 / 60
+        return np.minimum(self.interface.timer_probe1.elapsed_time(),
+                          self.interface.timer_probe2.elapsed_time()) / 1000 / 60
 
     def cleanup(self):
-        self.probe.cleanup()
+        self.interface.cleanup()
 
     def prepare(self, condition):
         self.curr_cond = condition
-        self.reward_amount = self.probe.calc_pulse_dur(condition['reward_amount'])
+        self.reward_amount = self.interface.calc_pulse_dur(condition['reward_amount'])
 
     def punish(self):
         probe = self.licked_probe if self.licked_probe > 0 else np.nan
@@ -139,7 +142,7 @@ class TouchBehavior(Behavior):
         self.buttons = list()
         self.loc2px = lambda x: self.screen_sz/2 + np.array(x)*self.screen_sz[0]
         self.px2loc = lambda x: np.array(x)/self.screen_sz[0] - self.screen_sz/2
-        self.probe = RPProbe(logger)
+        self.interface = RPProbe(logger)
         self.ts = TS.Touchscreen()
         self.ts_press_event = TS.TS_PRESS
         self.last_touch_tmst = 0
@@ -153,7 +156,7 @@ class TouchBehavior(Behavior):
         return ['RewardCond']
 
     def is_licking(self, since=0):
-        licked_probe, tmst = self.probe.get_last_lick()
+        licked_probe, tmst = self.interface.get_last_lick()
         if tmst >= since and licked_probe:
             self.licked_probe = licked_probe
             self.resp_timer.start()
@@ -199,7 +202,7 @@ class TouchBehavior(Behavior):
     def reward(self):
         licked_probe = self.is_licking()
         if np.any(np.equal(licked_probe, self.curr_cond['probe'])):
-            self.probe.give_liquid(licked_probe)
+            self.interface.give_liquid(licked_probe)
             self.update_history(self.target_loc, self.reward_amount[licked_probe])
             self.logger.log_liquid(self.licked_probe, self.reward_amount[licked_probe])
             return True
@@ -210,16 +213,16 @@ class TouchBehavior(Behavior):
         self.update_history(touched_loc)
 
     def give_odor(self, delivery_port, odor_id, odor_dur, odor_dutycycle):
-        self.probe.give_odor(delivery_port, odor_id, odor_dur, odor_dutycycle)
+        self.interface.give_odor(delivery_port, odor_id, odor_dur, odor_dutycycle)
         self.logger.log_stim()
 
     def cleanup(self):
-        self.probe.cleanup()
+        self.interface.cleanup()
         self.ts.stop()
 
     def prepare(self, condition):
         self.curr_cond = condition
-        self.reward_amount = self.probe.calc_pulse_dur(condition['reward_amount'])
+        self.reward_amount = self.interface.calc_pulse_dur(condition['reward_amount'])
         self.target_loc = condition['correct_loc']
         buttons = list()
         buttons.append(self.Button(self.loc2px(condition['ready_loc']), 'ready'))
@@ -251,12 +254,12 @@ class TouchBehavior(Behavior):
 
 class VRBehavior(Behavior):
     def __init__(self, logger, params):
-        self.probe = VRProbe(logger)
-        self.vr = VR2D(params['x_max'], params['y_max'], params['x0'], params['y0'], params['theta0'])
+        self.interface = VRProbe(logger)
+        self.vr = Ball(params['x_max'], params['y_max'], params['x0'], params['y0'], params['theta0'])
         super(VRBehavior, self).__init__(logger, params)
 
     def is_licking(self, since=0):
-        licked_probe, tmst = self.probe.get_last_lick()
+        licked_probe, tmst = self.interface.get_last_lick()
         if tmst >= since and licked_probe:
             self.licked_probe = licked_probe
             self.resp_timer.start()
@@ -268,7 +271,7 @@ class VRBehavior(Behavior):
         if duration == 0:
             return True
         else:
-            ready, ready_time = self.probe.in_position()
+            ready, ready_time = self.interface.in_position()
             return ready and ready_time > duration
 
     def is_correct(self, condition):
@@ -279,28 +282,28 @@ class VRBehavior(Behavior):
 
     def reward(self):
         self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
-        self.probe.give_liquid(self.licked_probe)
+        self.interface.give_liquid(self.licked_probe)
         self.logger.log_liquid(self.licked_probe, self.reward_amount[self.licked_probe])
 
     def present_odor(self, delivery_port, odor_id, dutycycle):
-        self.probe.present_odor(self, delivery_port, odor_id, dutycycle)
+        self.interface.present_odor(self, delivery_port, odor_id, dutycycle)
         self.logger.log_stim()
 
     def update_odor(self, delivery_port, dutycycle):
-        self.probe.update_odor(delivery_port, dutycycle)
+        self.interface.update_odor(delivery_port, dutycycle)
         self.logger.log_stim()
 
     def inactivity_time(self):  # in minutes
-        return np.minimum(self.probe.timer_probe1.elapsed_time(),
-                          self.probe.timer_probe2.elapsed_time()) / 1000 / 60
+        return np.minimum(self.interface.timer_probe1.elapsed_time(),
+                          self.interface.timer_probe2.elapsed_time()) / 1000 / 60
 
     def cleanup(self):
         self.mouse1.close()
         self.mouse2.close()
-        self.probe.cleanup()
+        self.interface.cleanup()
 
     def prepare(self, condition):
-        self.reward_amount = self.probe.calc_pulse_dur(condition['reward_amount'])
+        self.reward_amount = self.interface.calc_pulse_dur(condition['reward_amount'])
         self.loc_x = condition['loc_x']
         self.loc_y = condition['loc_y']
         self.theta = condition['theta']
@@ -334,7 +337,7 @@ class DummyProbe(Behavior):
         self.ready_timer = Timer()
         self.ready_timer.start()
         self.ready = False
-        self.probe = 0
+        self.interface = 0
         pygame.init()
         self.screen = pygame.display.set_mode((800, 480))
         super(DummyProbe, self).__init__(logger, params)

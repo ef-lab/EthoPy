@@ -1,4 +1,4 @@
-from Experiments.Center2AFC import *
+from Experiments.FreeWater import *
 from Behavior import *
 from utils.Generator import *
 from Stimuli.RPScreen import *
@@ -10,7 +10,7 @@ session_params = {
     'stop_time'          : '23:50:00',
     'reward'             : 'water',
     'intensity'          : 64,
-    'max_reward'         : 1000,
+    'max_reward'         : 2000,
     'bias_window'        : 5,
     'staircase_window'   : 10,
     'stair_up'           : 0.70,
@@ -32,7 +32,7 @@ trial_params1 = {
 trial_params2 = {
     'difficulty'         : 2,
     'timeout_duration'   : 0,
-    'trial_duration'     : 2000,
+    'trial_duration'     : 10000,
     'intertrial_duration': 500,
     'init_duration'      : 200,
     'delay_duration'     : 0,
@@ -43,51 +43,18 @@ trial_params2 = {
 trial_params3 = {
     'difficulty'         : 3,
     'timeout_duration'   : 0,
-    'trial_duration'     : 2000,
+    'trial_duration'     : 5000,
     'intertrial_duration': 500,
     'init_duration'      : 200,
-    'delay_duration'     : 100,
-    'reward_amount'      : 3,
+    'delay_duration'     : 200,
+    'reward_amount'      : 4,
     'probe'              : [[1,2]],
 }
 
 trial_params4 = {
     'difficulty'         : 4,
     'timeout_duration'   : 0,
-    'trial_duration'     : 2000,
-    'intertrial_duration': 500,
-    'init_duration'      : 200,
-    'delay_duration'     : 200,
-    'reward_amount'      : 3,
-    'probe'              : [[1,2]],
-}
-
-trial_params5 = {
-    'difficulty'         : 5,
-    'timeout_duration'   : 0,
-    'trial_duration'     : 2000,
-    'intertrial_duration': 500,
-    'init_duration'      : 200,
-    'delay_duration'     : 300,
-    'reward_amount'      : 5,
-    'probe'              : [[1,2]],
-}
-
-trial_params6 = {
-    'difficulty'         : 6,
-    'timeout_duration'   : 0,
-    'trial_duration'     : 2000,
-    'intertrial_duration': 500,
-    'init_duration'      : 200,
-    'delay_duration'     : 400,
-    'reward_amount'      : 5,
-    'probe'              : [[1,2]],
-}
-
-trial_params7 = {
-    'difficulty'         : 7,
-    'timeout_duration'   : 0,
-    'trial_duration'     : 2000,
+    'trial_duration'     : 3000,
     'intertrial_duration': 500,
     'init_duration'      : 200,
     'delay_duration'     : 500,
@@ -95,19 +62,15 @@ trial_params7 = {
     'probe'              : [[1,2]],
 }
 
-conds1 = factorize(trial_params1);
-conds2 = factorize(trial_params2);
-conds3 = factorize(trial_params3);
-conds4 = factorize(trial_params4);
-conds5 = factorize(trial_params5);
-conds6 = factorize(trial_params6);
-conds7 = factorize(trial_params7);
+conds1 = factorize(trial_params1)
+conds2 = factorize(trial_params2)
+conds3 = factorize(trial_params3)
+conds4 = factorize(trial_params4)
 
-conditions = conds1 + conds2 + conds3 + conds4 + conds5 + conds6 + conds7
-
+conditions = conds1 + conds2 + conds3 + conds4
 # run experiment
 exp = State()
-exp.setup(logger, RPProbe, RPScreen, session_params, conditions)
+exp.setup(logger, DummyProbe, Stimulus, session_params, conditions)
 exp.run()
 
 
