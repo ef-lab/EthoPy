@@ -115,15 +115,13 @@ class Panda3D(Stimulus, ShowBase):
         self.set_background_color(0, 0, 0)
         self.flip(2)
 
-    def unshow(self):
-        self.set_background_color(self.background_color[0],
-                                  self.background_color[1],
-                                  self.background_color[2])
+    def unshow(self, color=None):
+        if not color: color = self.background_color
+        self.set_background_color(color[0], color[1], color[2])
         self.flip(2)
 
     def set_intensity(self, intensity=None):
-        if intensity is None:
-            intensity = self.params['intensity']
+        if not intensity: intensity = self.params['intensity']
         cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % intensity
         os.system(cmd)
 

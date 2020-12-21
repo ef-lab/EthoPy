@@ -1,4 +1,4 @@
-import numpy, socket, json, os, pathlib
+import numpy, socket, json, os, pathlib, sys
 from utils.Timer import *
 from utils.Generator import *
 from queue import Queue
@@ -52,12 +52,19 @@ class Logger:
             if self.queue.empty():  time.sleep(.5); continue
             self.thread_lock.acquire()
             item = self.queue.get()
-            if 'update' in item:
-                eval('(self.insert_schema.' + item['table'] +
-                     '() & item["tuple"])._update(item["field"],item["value"])')
-            else:
-                eval('self.insert_schema.' + item['table'] +
-                     '.insert1(item["tuple"], ignore_extra_fields=True, skip_duplicates=True)')
+            try:
+                if 'update' in item:
+                    eval('(self.insert_schema.' + item['table'] +
+                         '() & item["tuple"])._update(item["field"],item["value"])')
+                else:
+                    eval('self.insert_schema.' + item['table'] +
+                         '.insert1(item["tuple"], ignore_extra_fields=True, skip_duplicates=True)')
+            except:
+                self.thread_end.set()
+                print("Database error with the following key:")
+                print(item)
+                time.sleep(2)
+                sys.exit(0)
             self.thread_lock.release()
 
     def getter(self):
@@ -65,12 +72,11 @@ class Logger:
             self.thread_lock.acquire()
             self.setup_status = (self.insert_schema.SetupControl() & dict(setup=self.setup)).fetch1('status')
             self.thread_lock.release()
-            time.sleep(1) # update once a second
+            time.sleep(1)  # update once a second
 
     def log(self, table, data=dict()):
         tmst = self.timer.elapsed_time()
-        self.queue.put(dict(table=table, tuple={**self.session_key, 'trial_idx': self.curr_trial,
-                                                'time': tmst, **data}))
+        self.queue.put(dict(table=table, tuple={**self.session_key, 'trial_idx': self.curr_trial, 'time': tmst, **data}))
         return tmst
 
     def log_setup(self, protocol=False):
@@ -79,12 +85,9 @@ class Logger:
         if numpy.size((SetupControl() & dict(setup=self.setup)).fetch()):
             key = (SetupControl() & dict(setup=self.setup)).fetch1()
             (SetupControl() & dict(setup=self.setup)).delete_quick()
-
         if protocol:
             self.setup_status = 'running'
             key['task_idx'] = protocol
-
-        # insert new setup
         SetupControl().insert1({**key, 'ip': self.ip, 'status': self.setup_status})
 
     def log_session(self, session_params, exp_type=''):
@@ -135,16 +138,13 @@ class Logger:
 
     def init_trial(self, cond_hash):
         self.curr_cond = cond_hash
-        if self.lock:
-            self.thread_lock.acquire()
-        # return trial start time
+        if self.lock: self.thread_lock.acquire()
         self.curr_trial += 1
         self.trial_start = self.timer.elapsed_time()
-        return self.trial_start
+        return self.trial_start    # return trial start time
 
     def log_trial(self, last_flip_count=0):
-        if self.lock:
-            self.thread_lock.release()
+        if self.lock: self.thread_lock.release()
         timestamp = self.timer.elapsed_time()
         trial_key = dict(self.session_key, trial_idx=self.curr_trial, cond_hash=self.curr_cond,
                          start_time=self.trial_start, end_time=timestamp, last_flip_count=last_flip_count)
@@ -155,9 +155,7 @@ class Logger:
                             field='last_trial', value=self.curr_trial, update=True))
 
     def log_abort(self):
-        trial_key = dict(self.session_key,
-                         trial_idx=self.curr_trial)
-        self.queue.put(dict(table='AbortedTrial', tuple=trial_key))
+        self.queue.put(dict(table='AbortedTrial', tuple=dict(self.session_key, trial_idx=self.curr_trial)))
 
     def log_liquid(self, probe, reward_amount):
         timestamp = self.timer.elapsed_time()
@@ -194,7 +192,6 @@ class Logger:
         self.queue.put(dict(table='CenterPort', tuple=dict(self.session_key, time=timestamp,
                                                            in_position=in_position, state=state)))
         return timestamp
-
 
     def update_setup_info(self, field, value, nowait=False):
         if nowait:
