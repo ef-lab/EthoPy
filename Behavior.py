@@ -228,7 +228,8 @@ class TouchBehavior(Behavior):
         buttons.append(self.Button(self.loc2px(condition['ready_loc']), 'ready'))
         for i, loc in enumerate(zip(condition['obj_pos_x'], condition['obj_pos_y'])):
             is_target = True if (condition['correct_loc'] == np.array(loc)).all() else False
-            buttons.append(self.Button(self.loc2px(loc), 'choice', is_target))
+            touch_area = condition['touch_area'][i] if 'touch_area' in condition else (100, 300)
+            buttons.append(self.Button(self.loc2px(loc), 'choice', is_target, touch_area))
         self.buttons = np.asarray(buttons, dtype=object)
 
     def _touch_handler(self, event, touch):
