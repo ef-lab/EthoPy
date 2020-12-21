@@ -64,6 +64,7 @@ class Logger:
                 print("Database error with the following key:")
                 print(item)
                 time.sleep(2)
+                self.setup_status = 'exit'
                 sys.exit(0)
             self.thread_lock.release()
 
