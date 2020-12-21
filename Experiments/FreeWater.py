@@ -59,8 +59,10 @@ class Prepare(State):
 class PreTrial(State):
     def entry(self):
         self.stim.prepare()
-        if not self.stim.curr_cond: self.logger.update_setup_info('status', 'stop', nowait=True)
-        self.beh.prepare(self.stim.curr_cond)
+        if not self.stim.curr_cond:
+            self.logger.update_setup_info('status', 'stop', nowait=True)
+        else:
+            self.beh.prepare(self.stim.curr_cond)
         super().entry()
 
     def run(self):
@@ -69,10 +71,10 @@ class PreTrial(State):
             self.logger.ping()
 
     def next(self):
-        if self.beh.is_ready(self.stim.curr_cond['init_duration']):
-            return states['Trial']
-        elif self.logger.setup_status in ['stop', 'exit']:
+        if self.logger.setup_status in ['stop', 'exit'] or not self.stim.curr_cond:
             return states['Exit']
+        elif self.beh.is_ready(self.stim.curr_cond['init_duration']):
+            return states['Trial']
         else:
             return states['PreTrial']
 

@@ -30,7 +30,7 @@ class Stimulus:
 
     def get_cond_tables(self):
         """return condition tables"""
-        pass
+        return []
 
     def setup(self):
         """setup stimulation for presentation before experiment starts"""
@@ -38,7 +38,7 @@ class Stimulus:
 
     def prepare(self, conditions=False):
         """prepares stuff for presentation before trial starts"""
-        pass
+        self._get_new_cond()
 
     def init(self, cond=False):
         """initialize stuff for each trial"""
