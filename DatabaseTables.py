@@ -295,13 +295,13 @@ class StimOnset(dj.Manual):
     """
 
 @schema
-class PeriodOnset(dj.Manual):
+class StateOnset(dj.Manual):
     definition = """
     # Trial period timestamps
     -> Session
     time			    : int 	            # time from session start (ms)
     ---
-    period              : enum('Cue','Delay','Response','PreTrial','Trial','InterTrial','Reward','Punish')
+    state               : enum('Cue','Delay','Response','PreTrial','Trial','InterTrial','Reward','Punish', 'Abort','Sleep','Offtime','Exit')
     """
 
 
