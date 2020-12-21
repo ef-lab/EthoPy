@@ -39,7 +39,7 @@ class State(StateClass):
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
         self.logger.update_setup_info('state', type(self).__name__)
-        self.period_start = self.logger.log('PeriodOnset', {'period': type(self).__name__})
+        self.period_start = self.logger.log('StateOnset', {'state': type(self).__name__})
         self.timer.start()
 
     def run(self):
