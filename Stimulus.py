@@ -23,9 +23,11 @@ class Stimulus:
         resp_cond = params['resp_cond'] if 'resp_cond' in params else 'probe'
         if np.all([resp_cond in cond for cond in conditions]):
             self.choices = np.array([make_hash(d[resp_cond]) for d in conditions])
-            self.un_choices = np.unique(self.choices, axis=0)
+            self.un_choices, un_idx = np.unique(self.choices, axis=0, return_index=True)
+        else: un_idx=False
         if np.all(['difficulty' in cond for cond in conditions]):
             self.difficulties = np.array([cond['difficulty'] for cond in self.conditions])
+            if un_idx: self.un_difficulties = self.difficulties[un_idx]
         self.timer = Timer()
 
     def get_cond_tables(self):
@@ -64,10 +66,10 @@ class Stimulus:
         """stop trial"""
         pass
 
-    def _anti_bias(self, choice_h):
+    def _anti_bias(self, choice_h, un_choices):
         choice_h = np.array([make_hash(c) for c in choice_h[-self.params['bias_window']:]])
         if len(choice_h) < self.params['bias_window']: choice_h = self.choices
-        fixed_p = 1 - np.array([np.mean(choice_h == un) for un in self.un_choices])
+        fixed_p = 1 - np.array([np.mean(choice_h == un) for un in un_choices])
         if sum(fixed_p) == 0:  fixed_p = np.ones(np.shape(fixed_p))
         return np.random.choice(self.un_choices, 1, p=fixed_p/sum(fixed_p))
 
@@ -87,14 +89,13 @@ class Stimulus:
         elif self.params['trial_selection'] == 'bias':
             idx = [~np.isnan(ch).any() for ch in self.beh.choice_history]
             choice_h = np.asarray(self.beh.choice_history, dtype=object)
-            anti_bias = self._anti_bias(choice_h[idx])
+            anti_bias = self._anti_bias(choice_h[idx], self.un_choices)
             selected_conditions = [i for (i, v) in zip(self.conditions, self.choices == anti_bias) if v]
             self.curr_cond = np.random.choice(selected_conditions)
         elif self.params['trial_selection'] == 'staircase':
             idx = [~np.isnan(ch).any() for ch in self.beh.choice_history]
             rew_h = np.asarray(self.beh.reward_history, dtype=object); rew_h = rew_h[idx]
             choice_h = np.asarray(self.beh.choice_history, dtype=object)
-            anti_bias = self._anti_bias(choice_h[idx])
             if self.iter == 1 or np.size(self.iter) == 0:
                 self.iter = self.params['staircase_window']
                 perf = np.nanmean(np.greater(rew_h[-self.params['staircase_window']:], 0))
@@ -104,6 +105,7 @@ class Stimulus:
                     self.curr_difficulty -= 1
                 self.logger.update_setup_info('difficulty', self.curr_difficulty)
             elif self.beh.choice_history[-1:]: self.iter -= 1
+            anti_bias = self._anti_bias(choice_h[idx],self.un_choices[self.un_difficulties == self.curr_difficulty])
             selected_conditions = [i for (i, v) in zip(self.conditions, np.logical_and(self.choices == anti_bias,
                                                        self.difficulties == self.curr_difficulty)) if v]
             self.curr_cond = np.random.choice(selected_conditions)
