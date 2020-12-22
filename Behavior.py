@@ -225,11 +225,11 @@ class TouchBehavior(Behavior):
         self.reward_amount = self.interface.calc_pulse_dur(condition['reward_amount'])
         self.target_loc = condition['correct_loc']
         buttons = list()
-        buttons.append(self.Button(self.loc2px(condition['ready_loc']), 'ready'))
+        buttons.append(self.Button(self.loc2px(condition['ready_loc']), 'ready',self.screen_sz))
         for i, loc in enumerate(zip(condition['obj_pos_x'], condition['obj_pos_y'])):
             is_target = True if (condition['correct_loc'] == np.array(loc)).all() else False
             touch_area = condition['touch_area'][i] if 'touch_area' in condition else (100, 300)
-            buttons.append(self.Button(self.loc2px(loc), 'choice', is_target, touch_area))
+            buttons.append(self.Button(self.loc2px(loc), 'choice',self.screen_sz, is_target, touch_area))
         self.buttons = np.asarray(buttons, dtype=object)
 
     def _touch_handler(self, event, touch):
@@ -240,8 +240,9 @@ class TouchBehavior(Behavior):
                     self.buttons[idx].tmst = self.last_touch_tmst
 
     class Button:
-        def __init__(self, loc, group='choice', is_target=False, touch_area=(100, 300)):
+        def __init__(self, loc, group='choice', screen_sz=(800, 480), is_target=False, touch_area=(100, 300)):
             self.loc = loc
+            self.screen_sz = screen_sz
             self.tmst = 0
             self.touch_area = touch_area
             self.group = group
