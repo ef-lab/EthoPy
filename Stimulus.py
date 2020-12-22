@@ -71,7 +71,7 @@ class Stimulus:
         if len(choice_h) < self.params['bias_window']: choice_h = self.choices
         fixed_p = 1 - np.array([np.mean(choice_h == un) for un in un_choices])
         if sum(fixed_p) == 0:  fixed_p = np.ones(np.shape(fixed_p))
-        return np.random.choice(self.un_choices, 1, p=fixed_p/sum(fixed_p))
+        return np.random.choice(un_choices, 1, p=fixed_p/sum(fixed_p))
 
     def _get_new_cond(self):
         """Get curr condition & create random block of all conditions
