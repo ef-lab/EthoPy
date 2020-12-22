@@ -250,7 +250,7 @@ class TouchBehavior(Behavior):
 
         def is_pressed(self, touch):
             touch_x = self.loc[0] + self.touch_area[0]/2 > touch.x > self.loc[0] - self.touch_area[0]/2
-            touch_y = self.loc[1] + self.touch_area[1]/2 > self.screen_sz - touch.y > self.loc[1] - self.touch_area[1]/2
+            touch_y = self.loc[1] + self.touch_area[1]/2 > self.screen_sz[1] - touch.y > self.loc[1] - self.touch_area[1]/2
             return touch_x and touch_y
 
 
