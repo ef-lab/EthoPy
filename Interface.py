@@ -229,8 +229,8 @@ class VRProbe(Interface):
 
 class Ball(Interface):
     def __init__(self, xmx=1, ymx=1, x0=0, y0=0, theta0=0, ball_radius=0.125):
-        self.mouse1 = MouseReader("/dev/input/by-path/platform-3f980000.usb-usb-0:1.1.2:1.0-mouse")
-        self.mouse2 = MouseReader("/dev/input/by-path/platform-3f980000.usb-usb-0:1.1.3:1.0-mouse")
+        self.mouse1 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.3:1.0-mouse",dpm)
+        self.mouse2 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0-mouse",dpm)
         self.loc_x = x0
         self.loc_y = y0
         self.theta = theta0
@@ -239,7 +239,7 @@ class Ball(Interface):
         self.timestamp = 0
         self.phi_z1 = 1  # angle of z axis (rotation)
         self.phi_z2 = self.phi_z1
-        self.phi_y1 = 0.75  # angle of y1 axis (mouse1) .6
+        self.phi_y1 = np.pi - 0.13  # angle of y1 axis (mouse1) .6
         self.phi_y2 = self.phi_y1 + np.pi/2  # angle of y2 axis (mouse2)
         self.ball_radius = ball_radius
         self.thread_end = threading.Event()
@@ -257,10 +257,9 @@ class Ball(Interface):
                 data2 = self.mouse2.queue.get()
                 x2 += data2['x']; y2 += data2['y']; tmst2 = data2['timestamp']
 
-            theta_contamination1 = (y2*np.sign(np.sin(self.phi_y2 - self.phi_y1)) *
-                                    (np.sin(self.phi_y2 - self.phi_y1)**2)*(np.sin(self.phi_z1)**2))
-            theta_contamination2 = (y1*np.sign(np.sin(self.phi_y1 - self.phi_y2)) *
-                                    (np.sin(self.phi_y1 - self.phi_y2)**2)*(np.sin(self.phi_z2)**2))
+            theta_contamination1 = y2*(np.sin(self.phi_z1)**2)
+            theta_contamination2 = -y1*(np.sin(self.phi_z2)**2)
+
             theta_step1 = (x1 - theta_contamination1)/(np.sin(self.phi_z1)**2)/self.ball_radius
             theta_step2 = (x2 - theta_contamination2)/(np.sin(self.phi_z2)**2)/self.ball_radius
 
@@ -270,8 +269,8 @@ class Ball(Interface):
             self.theta += (theta_step2 + theta_step1)/2
             self.theta = np.mod(self.theta, 2*np.pi)
 
-            x = xm*np.sin(self.theta) + ym*np.cos(self.theta)
-            y = xm*np.cos(self.theta) - ym*np.sin(self.theta)
+            x = -xm*np.sin(self.theta) - ym*np.cos(self.theta)
+            y = -xm*np.cos(self.theta) + ym*np.sin(self.theta)
 
             self.loc_x = min(self.loc_x + np.double(x), self.xmx)
             self.loc_y = min(self.loc_y + np.double(y), self.ymx)
