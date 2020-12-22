@@ -27,7 +27,7 @@ class Stimulus:
         else: un_idx=False
         if np.all(['difficulty' in cond for cond in conditions]):
             self.difficulties = np.array([cond['difficulty'] for cond in self.conditions])
-            if un_idx: self.un_difficulties = self.difficulties[un_idx]
+            if np.any(un_idx): self.un_difficulties = self.difficulties[un_idx]
         self.timer = Timer()
 
     def get_cond_tables(self):
