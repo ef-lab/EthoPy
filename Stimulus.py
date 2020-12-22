@@ -24,10 +24,10 @@ class Stimulus:
         if np.all([resp_cond in cond for cond in conditions]):
             self.choices = np.array([make_hash(d[resp_cond]) for d in conditions])
             self.un_choices, un_idx = np.unique(self.choices, axis=0, return_index=True)
-        else: un_idx=False
         if np.all(['difficulty' in cond for cond in conditions]):
             self.difficulties = np.array([cond['difficulty'] for cond in self.conditions])
-            if np.any(un_idx): self.un_difficulties = self.difficulties[un_idx]
+            if np.all([resp_cond in cond for cond in conditions]):
+                self.un_difficulties = self.difficulties[un_idx]
         self.timer = Timer()
 
     def get_cond_tables(self):
@@ -105,7 +105,7 @@ class Stimulus:
                     self.curr_difficulty -= 1
                 self.logger.update_setup_info('difficulty', self.curr_difficulty)
             elif self.beh.choice_history[-1:]: self.iter -= 1
-            anti_bias = self._anti_bias(choice_h[idx],self.un_choices[self.un_difficulties == self.curr_difficulty])
+            anti_bias = self._anti_bias(choice_h[idx], self.un_choices[self.un_difficulties == self.curr_difficulty])
             selected_conditions = [i for (i, v) in zip(self.conditions, np.logical_and(self.choices == anti_bias,
                                                        self.difficulties == self.curr_difficulty)) if v]
             self.curr_cond = np.random.choice(selected_conditions)
