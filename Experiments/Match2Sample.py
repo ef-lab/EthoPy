@@ -172,6 +172,10 @@ class Abort(State):
 
 
 class Reward(State):
+    def entry(self):
+        self.stim.reward_stim()
+        super().entry()
+
     def run(self):
         self.rewarded = self.beh.reward()
 

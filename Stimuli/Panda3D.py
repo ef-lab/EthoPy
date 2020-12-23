@@ -112,8 +112,10 @@ class Panda3D(Stimulus, ShowBase):
         self.isrunning = False
 
     def punish_stim(self):
-        self.set_background_color(0, 0, 0)
-        self.flip(2)
+        self.unshow((0, 0, 0))
+
+    def reward_stim(self):
+        self.unshow((0.5, 0.5, 0.5))
 
     def unshow(self, color=None):
         if not color: color = self.background_color
