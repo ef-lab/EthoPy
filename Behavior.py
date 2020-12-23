@@ -257,8 +257,14 @@ class TouchBehavior(Behavior):
 class VRBehavior(Behavior):
     def __init__(self, logger, params):
         self.interface = VRProbe(logger)
-        self.vr = Ball(params['x_max'], params['y_max'], params['x0'], params['y0'], params['theta0'])
         super(VRBehavior, self).__init__(logger, params)
+
+    def prepare(self, condition):
+        self.reward_amount = self.interface.calc_pulse_dur(condition['reward_amount'])
+        self.vr = Ball(condition['x_max'], condition['y_max'], condition['x0'], condition['y0'], condition['theta0'])
+        self.loc_x0 = condition['loc_x0']
+        self.loc_y0 = condition['loc_y0']
+        self.theta0 = condition['theta0']
 
     def is_licking(self, since=0):
         licked_probe, tmst = self.interface.get_last_lick()
@@ -270,19 +276,19 @@ class VRBehavior(Behavior):
         return self.licked_probe
 
     def is_ready(self):
-        x,y = self.get_position()
+        x, y = self.get_position()
         in_position = ((self.resp_loc_x - x)**2 + (self.resp_loc_y - y)**2)**.5 < self.radius     
 
     def is_correct(self, condition):
-         x,y = self.get_position()
+        x, y = self.get_position()
         in_position = ((self.correct_loc[0] - x)**2 + (self.correct_loc[1] - y)**2)**.5 < self.radius   
 
     def get_position(self):
         return self.vr.getPosition()
 
     def reward(self):
-        self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
         self.interface.give_liquid(self.licked_probe)
+        self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
         self.logger.log_liquid(self.licked_probe, self.reward_amount[self.licked_probe])
 
     def present_odor(self, delivery_port, odor_id, dutycycle):
@@ -297,32 +303,6 @@ class VRBehavior(Behavior):
         self.mouse1.close()
         self.mouse2.close()
         self.interface.cleanup()
-
-    def prepare(self, condition):
-        self.reward_amount = self.interface.calc_pulse_dur(condition['reward_amount'])
-        self.loc_x0 = condition['loc_x0']
-        self.loc_y0 = condition['loc_y0']
-        self.theta0 = condition['theta0']
-
-
-    class MouseReader():
-        def __init__(self, path, dpm=31200):
-            self.dpm = dpm
-            self.queue = multiprocessing.Queue()
-            self.file = open(path, "rb")
-            self.thread_end = multiprocessing.Event()
-            self.thread_runner = multiprocessing.Process(target=self.reader, args=(self.queue,self.dpm,))
-            self.thread_runner.start()
-
-        def reader(self, queue, dpm):
-            while not self.thread_end.is_set():
-                data = self.file.read(3)  # Reads the 3 bytes
-                x, y = struct.unpack("2b", data[1:])
-                queue.put({'x': x / dpm, 'y': y / dpm, 'timestamp': time.time()})
-
-        def close(self):
-            self.thread_end.set()
-            self.thread_runner.join()
 
 
 class DummyProbe(Behavior):
