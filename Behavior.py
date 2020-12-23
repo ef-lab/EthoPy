@@ -269,15 +269,13 @@ class VRBehavior(Behavior):
             self.licked_probe = 0
         return self.licked_probe
 
-    def is_ready(self, duration):
-        if duration == 0:
-            return True
-        else:
-            ready, ready_time = self.interface.in_position()
-            return ready and ready_time > duration
+    def is_ready(self):
+        x,y = self.get_position()
+        in_position = ((self.resp_loc_x - x)**2 + (self.resp_loc_y - y)**2)**.5 < self.radius     
 
     def is_correct(self, condition):
-        return np.any(np.equal(self.licked_probe, condition['probe']))
+         x,y = self.get_position()
+        in_position = ((self.correct_loc[0] - x)**2 + (self.correct_loc[1] - y)**2)**.5 < self.radius   
 
     def get_position(self):
         return self.vr.getPosition()
@@ -295,10 +293,6 @@ class VRBehavior(Behavior):
         self.interface.update_odor(delivery_port, dutycycle)
         self.logger.log_stim()
 
-    def inactivity_time(self):  # in minutes
-        return np.minimum(self.interface.timer_probe1.elapsed_time(),
-                          self.interface.timer_probe2.elapsed_time()) / 1000 / 60
-
     def cleanup(self):
         self.mouse1.close()
         self.mouse2.close()
@@ -306,9 +300,9 @@ class VRBehavior(Behavior):
 
     def prepare(self, condition):
         self.reward_amount = self.interface.calc_pulse_dur(condition['reward_amount'])
-        self.loc_x = condition['loc_x']
-        self.loc_y = condition['loc_y']
-        self.theta = condition['theta']
+        self.loc_x0 = condition['loc_x0']
+        self.loc_y0 = condition['loc_y0']
+        self.theta0 = condition['theta0']
 
 
     class MouseReader():
