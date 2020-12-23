@@ -62,8 +62,6 @@ class PreTrial(State):
         if not self.stim.curr_cond: self.logger.update_setup_info('status', 'stop', nowait=True)
 
     def run(self):
-        if self.beh.is_ready(self.stim.curr_cond['init_ready'], self.period_start):
-            self.resp_ready = True
         if self.timer.elapsed_time() > 5000:  # occasionally get control status
             self.timer.start()
             self.logger.ping()
@@ -73,10 +71,8 @@ class PreTrial(State):
             return states['Exit']
         elif self.logger.setup_status in ['stop', 'exit']:
             return states['Exit']
-        elif self.resp_ready:
-            return states['Trial']
         else:
-            return states['PreTrial']
+            return states['Trial']
 
 
 class Trial(State):

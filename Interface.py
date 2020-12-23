@@ -186,7 +186,7 @@ class VRProbe(Interface):
         self.channels = {'odor': {1: 6, 2: 13, 3: 19, 4: 26},
                          'liquid': {1: 22},
                          'lick': {1: 17}}
-        self.frequency = 100
+        self.frequency = 10
         self.GPIO.setup(list(self.channels['lick'].values()) + [self.channels['start'][1]],
                         self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         self.GPIO.setup(list(self.channels['odor'].values()), self.GPIO.OUT, initial=self.GPIO.LOW)
@@ -199,9 +199,9 @@ class VRProbe(Interface):
     def give_liquid(self, probe):
         self.thread.submit(self.pulse_out, probe)
 
-    def present_odor(self, dutycycles):
-        for dutycycle, idx in enumerate(dutycycles):
-            self.pwm[idx] = self.GPIO.PWM(self.channels['odor'][idx], self.frequency)
+    def start_odor(self, dutycycle=50):
+        for channel in self.channels['odor']:
+            self.pwm[idx] = self.GPIO.PWM(channel, self.frequency)
             self.pwm[idx].ChangeFrequency(self.frequency)
             self.pwm[idx].start(dutycycle)
 
