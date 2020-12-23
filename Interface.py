@@ -103,7 +103,7 @@ class RPProbe(Interface):
         self.GPIO.add_event_detect(self.channels['lick'][1], self.GPIO.RISING,
                                    callback=self.probe1_licked, bouncetime=100)
         self.GPIO.add_event_detect(self.channels['start'][1], self.GPIO.BOTH,
-                                    callback=self.position_change, bouncetime=50)
+                                   callback=self.position_change, bouncetime=50)
 
     def give_liquid(self, probe):
         self.thread.submit(self.pulse_out, probe)
@@ -200,13 +200,13 @@ class VRProbe(Interface):
         self.thread.submit(self.pulse_out, probe)
 
     def start_odor(self, dutycycle=50):
-        for channel in self.channels['odor']:
+        for idx, channel in enumerate(self.channels['odor']):
             self.pwm[idx] = self.GPIO.PWM(channel, self.frequency)
             self.pwm[idx].ChangeFrequency(self.frequency)
             self.pwm[idx].start(dutycycle)
 
     def update_odor(self, dutycycles):  # for 2D olfactory setup
-        for dutycycle, idx in enumerate(dutycycles):
+        for idx, dutycycle in enumerate(dutycycles):
             self.pwm[idx].ChangeDutyCycle(dutycycle)
 
     def create_pulse(self, probe, duration):
@@ -229,8 +229,8 @@ class VRProbe(Interface):
 
 class Ball(Interface):
     def __init__(self, xmx=1, ymx=1, x0=0, y0=0, theta0=0, ball_radius=0.125):
-        self.mouse1 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.3:1.0-mouse",dpm)
-        self.mouse2 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0-mouse",dpm)
+        self.mouse1 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.3:1.0-mouse")
+        self.mouse2 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0-mouse")
         self.loc_x = x0
         self.loc_y = y0
         self.theta = theta0

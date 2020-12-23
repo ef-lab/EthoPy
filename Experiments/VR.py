@@ -77,22 +77,21 @@ class PreTrial(State):
 
 class Trial(State):
     def entry(self):
-        self.resp_ready = False
         super().entry()
-        self.stim.init(type(self).__name__)
+        self.stim.init()
 
     def run(self):
-        self.stim.present()  # Start Stimulus
+        self.stim.present()
         self.response = self.beh.is_licking(self.period_start)
 
     def next(self):
-        if self.response and self.beh.is_correct() and self.resp_ready:  # correct response
+        if self.response and self.beh.is_correct():  # correct response
             return states['Reward']
         elif not self.beh.is_ready() and self.response:
             return states['Abort']
         elif self.response and not self.beh.is_correct():  # incorrect response
             return states['Punish']
-        elif self.timer.elapsed_time() > self.stim.curr_cond['response_duration']: # timed out
+        elif self.timer.elapsed_time() > self.stim.curr_cond['response_duration']:  # timed out
             return states['InterTrial']
         else:
             return states['Trial']
@@ -113,13 +112,10 @@ class Abort(State):
 
 class Reward(State):
     def run(self):
-        self.rewarded = self.beh.reward()
+        self.beh.reward()
 
     def next(self):
-        if self.rewarded or self.timer.elapsed_time() >= self.stim.curr_cond['reward_duration']:
-            return states['InterTrial']
-        else:
-            return states['Reward']
+        return states['InterTrial']
 
 
 class Punish(State):
