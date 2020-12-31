@@ -164,11 +164,6 @@ class Sleep(State):
         else:
             return states['Sleep']
 
-    def exit(self):
-        if self.logger.setup_status not in ['stop', 'exit']:
-            self.logger.update_setup_info('status', 'running', nowait=True)
-            self.logger.setup_status = 'running'
-
 
 class Offtime(State):
     def entry(self):

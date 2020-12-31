@@ -77,5 +77,4 @@ class RPScreen(Stimulus):
         pygame.mouse.set_visible(1)
         pygame.display.quit()
         pygame.quit()
-        self.pi.stop()
 
