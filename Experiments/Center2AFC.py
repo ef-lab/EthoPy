@@ -170,7 +170,6 @@ class InterTrial(State):
 class Sleep(State):
     def entry(self):
         super().entry()
-        self.logger.update_setup_info('status', 'sleeping')
         self.stim.unshow([0, 0, 0])
 
     def run(self):
@@ -182,7 +181,7 @@ class Sleep(State):
             return states['Exit']
         elif self.logger.setup_status == 'wakeup' and not self.beh.is_sleep_time():
             return states['PreTrial']
-        elif self.logger.setup_status == 'sleeping' and not self.beh.is_sleep_time():  # if wake up then update session
+        elif not self.beh.is_sleep_time():  # if wake up then update session
             return states['Exit']
         else:
             return states['Sleep']
@@ -196,7 +195,6 @@ class Sleep(State):
 class Offtime(State):
     def entry(self):
         super().entry()
-        self.logger.update_setup_info('status', 'offtime')
         self.stim.unshow([0, 0, 0])
 
     def run(self):
