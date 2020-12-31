@@ -243,20 +243,14 @@ class Sleep(State):
             return states['Exit']
         elif self.logger.setup_status == 'wakeup' and not self.beh.is_sleep_time():
             return states['PreTrial']
-        elif self.logger.setup_status == 'sleeping' and not self.beh.is_sleep_time():  # if wake up then update session
+        elif not self.beh.is_sleep_time():  # if wake up then update session
             return states['Exit']
         else:
             return states['Sleep']
 
-    def exit(self):
-        if self.logger.setup_status not in ['stop', 'exit']:
-            self.logger.update_setup_info('status', 'running', nowait=True)
-            self.logger.setup_status = 'running'
-
 
 class Offtime(State):
     def entry(self):
-        self.logger.update_setup_info('status', 'offtime')
         self.stim.unshow([0, 0, 0])
         super().entry()
 
