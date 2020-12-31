@@ -105,6 +105,8 @@ class Cue(State):
             return states['Abort']
         elif self.timer.elapsed_time() > self.stim.curr_cond['cue_duration']:
             return states['Abort']
+        elif self.logger.setup_status in ['stop', 'exit']:  # if wake up then update session
+            return states['Exit']
         else:
             return states['Cue']
 
