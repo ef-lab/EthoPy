@@ -18,13 +18,9 @@ class State(StateClass):
         self.params = session_params
         self.logger.log_conditions(conditions, self.stim.get_cond_tables() + self.beh.get_cond_tables())
 
-        logger.update_setup_info('start_time', session_params['start_time'])
-        logger.update_setup_info('stop_time', session_params['stop_time'])
-
+        # Initialize states
         exitState = Exit(self)
         self.StateMachine = StateMachine(Prepare(self), exitState)
-
-        # Initialize states
         global states
         states = {
             'PreTrial'     : PreTrial(self),
