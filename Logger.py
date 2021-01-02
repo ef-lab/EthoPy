@@ -16,6 +16,7 @@ class Logger:
         self.curr_trial = 0
         self.queue = Queue()
         self.timer = Timer()
+        self.ptimer = Timer()
         self.trial_start = 0
         self.curr_cond = []
         self.task_idx = []
@@ -43,7 +44,7 @@ class Logger:
 
     def cleanup(self):
         while not self.queue.empty():
-            print('Waiting for que to empty... # %d' % self.queue.qsize())
+            print('Waiting for empty queue... qsize: %d' % self.queue.qsize())
             time.sleep(2)
         self.thread_end.set()
 
@@ -71,7 +72,8 @@ class Logger:
     def getter(self):
         while not self.thread_end.is_set():
             self.thread_lock.acquire()
-            self.setup_status = (self.insert_schema.SetupControl() & dict(setup=self.setup)).fetch1('status')
+            self.setup_status, self.start_time, self.stop_time = \
+                (self.insert_schema.SetupControl() & dict(setup=self.setup)).fetch1('status', 'start_time', 'stop_time')
             self.thread_lock.release()
             time.sleep(1)  # update once a second
 
@@ -113,6 +115,8 @@ class Logger:
         if 'start_time' in session_params:
             self.update_setup_info('start_time', session_params['start_time'], nowait=True)
             self.update_setup_info('stop_time', session_params['stop_time'], nowait=True)
+            self.start_time = session_params['start_time']
+            self.stop_time = session_params['stop_time']
 
     def log_conditions(self, conditions, condition_tables=[]):
         # iterate through all conditions and insert
@@ -197,6 +201,7 @@ class Logger:
     def update_setup_info(self, field, value, nowait=False):
         if nowait:
             (SetupControl() & dict(setup=self.setup))._update(field, value)
+            if field == 'status': self.setup_status = value
         else:
             self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
                                 field=field, value=value, update=True))
@@ -221,11 +226,12 @@ class Logger:
             protocol = str(path) + '/conf/' + filename
         return protocol
 
-    def ping(self):
-        lp = str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
-                            field='last_ping', value=lp, update=True))
-        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
-                            field='queue_size', value=self.queue.qsize(), update=True))
-
+    def ping(self, period=5000):
+        if self.ptimer.elapsed_time() > period:  # occasionally get control status
+            lp = str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
+                                field='last_ping', value=lp, update=True))
+            self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
+                                field='queue_size', value=self.queue.qsize(), update=True))
+            self.ptimer.start()
 

@@ -9,10 +9,11 @@ from utils.Generator import *
 # define session parameters
 session_params = {
     'trial_selection'    : 'staircase',
-    'start_time'         : '10:00:00',
+    'start_time'         : '08:00:00',
     'stop_time'          : '22:00:00',
     'reward'             : 'water',
     'intensity'          : 64,
+    'min_reward'         : 100,
     'max_reward'         : 3000,
     'bias_window'        : 5,
     'staircase_window'   : 10,
@@ -106,5 +107,5 @@ conditions = vo_conds + vo_conds + v_conds + v_conds + o_conds
 
 # run experiment
 exp = State()
-exp.setup(logger, RPBehavior, SmellyMovies, session_params, conditions)
+exp.setup(logger, DummyProbe, SmellyMovies, session_params, conditions)
 exp.run()
