@@ -18,6 +18,7 @@ session_params = {
     'reward'             : 'water',
     'intensity'          : 64,
     'max_reward'         : 3000,
+    'min_reward'         : 100,
     'bias_window'        : 5,
     'staircase_window'   : 10,
     'stair_up'           : 0.7,

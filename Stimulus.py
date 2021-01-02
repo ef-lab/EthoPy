@@ -108,7 +108,7 @@ class Stimulus:
                 elif perf < self.params['stair_down'] and self.curr_difficulty > min(self.difficulties):
                     self.curr_difficulty -= 1
                 self.logger.update_setup_info('difficulty', self.curr_difficulty)
-            elif self.beh.choice_history[-1:]: self.iter -= 1
+            elif self.beh.choice_history[-1:][0] > 0: self.iter -= 1
             anti_bias = self._anti_bias(choice_h[idx], self.un_choices[self.un_difficulties == self.curr_difficulty])
             selected_conditions = [i for (i, v) in zip(self.conditions, np.logical_and(self.choices == anti_bias,
                                                        self.difficulties == self.curr_difficulty)) if v]

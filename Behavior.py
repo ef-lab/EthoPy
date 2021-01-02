@@ -17,6 +17,7 @@ class Behavior:
         self.choice_history = list()  # History term for bias calculation
         self.reward_history = list()  # History term for performance calculation
         self.licked_probe = 0
+        self.total_reward = 0
         self.reward_amount = dict()
         self.curr_cond = []
 
@@ -50,21 +51,23 @@ class Behavior:
     def update_history(self, choice=np.nan, reward=np.nan):
         self.choice_history.append(choice)
         self.reward_history.append(reward)
+        self.total_reward = np.nansum(self.reward_history)
         self.logger.update_setup_info('total_liquid', np.nansum(self.reward_history))
 
     def is_sleep_time(self):
         now = datetime.now()
-        start = now.replace(hour=0, minute=0, second=0) + self.logger.get_setup_info('start_time')
-        stop = now.replace(hour=0, minute=0, second=0) + self.logger.get_setup_info('stop_time')
+        start = now.replace(hour=0, minute=0, second=0) + self.logger.start_time
+        stop = now.replace(hour=0, minute=0, second=0) + self.logger.stop_time
         if stop < start:
             stop = stop + timedelta(days=1)
         time_restriction = now < start or now > stop
         return time_restriction
 
-    def is_hydrated(self):
-        rew = np.nansum(self.reward_history)
-        if self.params['max_reward']:
-            return rew >= self.params['max_reward']
+    def is_hydrated(self, rew=False):
+        if rew:
+            return self.total_reward >= rew
+        elif self.params['max_reward']:
+            return self.total_reward >= self.params['max_reward']
         else:
             return False
 
