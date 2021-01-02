@@ -116,7 +116,6 @@ class Logger:
             self.update_setup_info('start_time', session_params['start_time'], nowait=True)
             self.update_setup_info('stop_time', session_params['stop_time'], nowait=True)
             self.start_time,self.stop_time = (SetupControl() & dict(setup=self.setup)).fetch1('start_time', 'stop_time')
-            self.stop_time = session_params['stop_time']
 
     def log_conditions(self, conditions, condition_tables=[]):
         # iterate through all conditions and insert
