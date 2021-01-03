@@ -231,7 +231,9 @@ class Hydrate(State):
         self.logger.ping()
 
     def next(self):
-        if self.beh.is_hydrated(self.params['min_reward']):
+        if self.logger.setup_status in ['stop', 'exit']:  # if wake up then update session
+            return states['Exit']
+        elif self.beh.is_hydrated(self.params['min_reward']) or not self.beh.is_sleep_time():
             return states['Offtime']
         else:
             return states['Hydrate']

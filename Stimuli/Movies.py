@@ -21,6 +21,7 @@ class Movies(Stimulus):
 
         # setup pygame
         pygame.init()
+        print('setting up screen')
         self.screen = pygame.display.set_mode(self.size)
         self.unshow()
         pygame.mouse.set_visible(0)

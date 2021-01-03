@@ -13,7 +13,7 @@ conditions = []
 # define session parameters
 session_params = {
     'trial_selection'    : 'staircase',
-    'start_time'         : '00:00:00',
+    'start_time'         : '12:00:00',
     'stop_time'          : '23:59:00',
     'reward'             : 'water',
     'intensity'          : 64,
@@ -23,7 +23,7 @@ session_params = {
     'staircase_window'   : 10,
     'stair_up'           : 0.7,
     'stair_down'         : 0.6,
-    'noresponse_intertrial'  : False,
+    'noresponse_intertrial'  : True,
 }
 
 # define environment conditions
