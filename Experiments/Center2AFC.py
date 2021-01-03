@@ -100,6 +100,8 @@ class Trial(State):
             return states['Reward']
         elif self.timer.elapsed_time() > self.stim.curr_cond['trial_duration']:      # timed out
             return states['InterTrial']
+        elif self.logger.setup_status in ['stop', 'exit']:
+            return states['Exit']
         else:
             return states['Trial']
 

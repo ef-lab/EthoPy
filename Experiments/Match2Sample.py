@@ -151,6 +151,8 @@ class Response(State):
             return states['Punish']
         elif self.timer.elapsed_time() > self.stim.curr_cond['response_duration']:      # timed out
             return states['InterTrial']
+        elif self.logger.setup_status in ['stop', 'exit']:
+            return states['Exit']
         else:
             return states['Response']
 
