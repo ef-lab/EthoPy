@@ -61,7 +61,7 @@ class RPMovies(Stimulus):
             sleep(0.2)
             self.vid.pause()
         self.timer.start()
-        self.logger.log_stim()
+        self.logger.log('StimOnset')
 
     def present(self):
         if self.timer.elapsed_time() > self.curr_cond['movie_duration']:

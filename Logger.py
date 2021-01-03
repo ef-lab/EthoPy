@@ -14,6 +14,8 @@ class Logger:
 
     def __init__(self, log_setup=False, protocol=False):
         self.curr_trial = 0
+        self.curr_state = ''
+        self.total_reward = 0
         self.queue = Queue()
         self.timer = Timer()
         self.ptimer = Timer()
@@ -53,6 +55,7 @@ class Logger:
             if self.queue.empty():  time.sleep(.5); continue
             self.thread_lock.acquire()
             item = self.queue.get()
+            #print(item)
             try:
                 if 'update' in item:
                     eval('(self.insert_schema.' + item['table'] +
@@ -154,48 +157,12 @@ class Logger:
                          start_time=self.trial_start, end_time=timestamp, last_flip_count=last_flip_count)
         self.queue.put(dict(table='Trial', tuple=trial_key))
 
-        # insert ping
-        self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
-                            field='last_trial', value=self.curr_trial, update=True))
-
-    def log_abort(self):
-        self.queue.put(dict(table='AbortedTrial', tuple=dict(self.session_key, trial_idx=self.curr_trial)))
-
-    def log_liquid(self, probe, reward_amount):
-        timestamp = self.timer.elapsed_time()
-        self.queue.put(dict(table='LiquidDelivery', tuple=dict(self.session_key, time=timestamp, probe=probe,
-                                                               reward_amount=reward_amount)))
-
-    def log_stim(self, period='Trial'):
-        timestamp = self.timer.elapsed_time()
-        self.queue.put(dict(table='StimOnset', tuple=dict(self.session_key, time=timestamp, period=period)))
-
-    def log_lick(self, probe):
-        timestamp = self.timer.elapsed_time()
-        self.queue.put(dict(table='Lick', tuple=dict(self.session_key, time=timestamp, probe=probe)))
-        return timestamp
-
-    def log_touch(self, loc):
-        timestamp = self.timer.elapsed_time()
-        self.queue.put(dict(table='Touch', tuple=dict(self.session_key, time=timestamp, loc_x=loc[0], loc_y=loc[1])))
-        return timestamp
-
     def log_pulse_weight(self, pulse_dur, probe, pulse_num, weight=0):
         cal_key = dict(setup=self.setup, probe=probe, date=systime.strftime("%Y-%m-%d"))
         LiquidCalibration().insert1(cal_key, skip_duplicates=True)
         (LiquidCalibration.PulseWeight() & dict(cal_key, pulse_dur=pulse_dur)).delete_quick()
         LiquidCalibration.PulseWeight().insert1(dict(cal_key, pulse_dur=pulse_dur,
                                                      pulse_num=pulse_num, weight=weight))
-
-    def log_animal_weight(self, weight):
-        key = dict(animal_id=self.get_setup_info('animal_id'), weight=weight)
-        Mice.MouseWeight().insert1(key)
-
-    def log_position(self, in_position, state):
-        timestamp = self.timer.elapsed_time()
-        self.queue.put(dict(table='CenterPort', tuple=dict(self.session_key, time=timestamp,
-                                                           in_position=in_position, state=state)))
-        return timestamp
 
     def update_setup_info(self, field, value, nowait=False):
         if nowait:
@@ -226,11 +193,12 @@ class Logger:
         return protocol
 
     def ping(self, period=5000):
-        if self.ptimer.elapsed_time() > period:  # occasionally get control status
+        if self.ptimer.elapsed_time() >= period:  # occasionally get control status
             lp = str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-            self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
-                                field='last_ping', value=lp, update=True))
-            self.queue.put(dict(table='SetupControl', tuple=dict(setup=self.setup),
-                                field='queue_size', value=self.queue.qsize(), update=True))
+            self.update_setup_info('last_ping', lp)
+            self.update_setup_info('queue_size', self.queue.qsize())
+            self.update_setup_info('last_trial', self.curr_trial)
+            self.update_setup_info('total_liquid', self.total_reward)
+            self.update_setup_info('state', self.curr_state)
             self.ptimer.start()
 

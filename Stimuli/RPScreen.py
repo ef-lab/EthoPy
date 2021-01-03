@@ -33,8 +33,6 @@ class RPScreen(Stimulus):
     def init(self):
         self.isrunning = True
         self.timer.start()
-        self.logger.log_stim()
-        self.logger.log_stim()
 
     def ready_stim(self):
         self.unshow([64, 64, 64])

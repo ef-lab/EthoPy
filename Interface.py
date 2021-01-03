@@ -47,12 +47,12 @@ class Interface:
         return probe, self.lick_tmst
 
     def probe1_licked(self, channel):
-        self.lick_tmst = self.logger.log_lick(1)
+        self.lick_tmst = self.logger.log('Lick', dict(probe=1))
         self.timer_probe1.start()
         self.probe = 1
 
     def probe2_licked(self, channel):
-        self.lick_tmst = self.logger.log_lick(2)
+        self.lick_tmst = self.logger.log('Lick', dict(probe=2))
         self.timer_probe2.start()
         self.probe = 2
 
@@ -120,12 +120,12 @@ class RPProbe(Interface):
             self.timer_ready.start()
             if not self.ready:
                 self.ready = True
-                self.ready_tmst = self.logger.log_position(self.ready, 'Probe status')
+                self.ready_tmst = self.logger.log('CenterPort', dict(in_position=self.ready))
                 print('in position')
         else:
             if self.ready:
                 self.ready = False
-                tmst = self.logger.log_position(self.ready, 'Probe status')
+                tmst = self.logger.log('CenterPort', dict(in_position=self.ready))
                 self.ready_dur = tmst - self.ready_tmst
                 print('off position')
 
