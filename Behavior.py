@@ -17,7 +17,6 @@ class Behavior:
         self.choice_history = list()  # History term for bias calculation
         self.reward_history = list()  # History term for performance calculation
         self.licked_probe = 0
-        self.total_reward = 0
         self.reward_amount = dict()
         self.curr_cond = []
 
@@ -51,8 +50,7 @@ class Behavior:
     def update_history(self, choice=np.nan, reward=np.nan):
         self.choice_history.append(choice)
         self.reward_history.append(reward)
-        self.total_reward = np.nansum(self.reward_history)
-        self.logger.update_setup_info('total_liquid', np.nansum(self.reward_history))
+        self.logger.total_reward = np.nansum(self.reward_history)
 
     def is_sleep_time(self):
         now = datetime.now()
@@ -65,9 +63,9 @@ class Behavior:
 
     def is_hydrated(self, rew=False):
         if rew:
-            return self.total_reward >= rew
+            return self.logger.total_reward >= rew
         elif self.params['max_reward']:
-            return self.total_reward >= self.params['max_reward']
+            return self.logger.total_reward >= self.params['max_reward']
         else:
             return False
 
@@ -110,13 +108,14 @@ class RPBehavior(Behavior):
 
     def reward(self):
         self.interface.give_liquid(self.licked_probe)
-        self.logger.log_liquid(self.licked_probe, self.reward_amount[self.licked_probe])
+        self.logger.log('LiquidDelivery', dict(probe=self.licked_probe,
+                                               reward_amount=self.reward_amount[self.licked_probe]))
         self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
         return True
 
     def give_odor(self, delivery_port, odor_id, odor_dur, odor_dutycycle):
         self.interface.give_odor(delivery_port, odor_id, odor_dur, odor_dutycycle)
-        self.logger.log_stim()
+        self.logger.log('StimOnset')
 
     def inactivity_time(self):  # in minutes
         return np.minimum(self.interface.timer_probe1.elapsed_time(),
@@ -207,7 +206,8 @@ class TouchBehavior(Behavior):
         if np.any(np.equal(licked_probe, self.curr_cond['probe'])):
             self.interface.give_liquid(licked_probe)
             self.update_history(self.target_loc, self.reward_amount[licked_probe])
-            self.logger.log_liquid(self.licked_probe, self.reward_amount[licked_probe])
+            self.logger.log('LiquidDelivery', dict(probe=self.licked_probe,
+                                                   reward_amount=self.reward_amount[self.licked_probe]))
             return True
         return False
 
@@ -217,7 +217,7 @@ class TouchBehavior(Behavior):
 
     def give_odor(self, delivery_port, odor_id, odor_dur, odor_dutycycle):
         self.interface.give_odor(delivery_port, odor_id, odor_dur, odor_dutycycle)
-        self.logger.log_stim()
+        self.logger.log('StimOnset')
 
     def cleanup(self):
         self.interface.cleanup()
@@ -237,7 +237,8 @@ class TouchBehavior(Behavior):
 
     def _touch_handler(self, event, touch):
         if event == self.ts_press_event:
-            self.last_touch_tmst = self.logger.log_touch(self.px2loc([touch.x, self.screen_sz[1] - touch.y]))
+            loc = self.px2loc([touch.x, self.screen_sz[1] - touch.y])
+            self.last_touch_tmst = self.logger.log('Touch', dict(loc_x=loc[0], loc_y=loc[1]))
             for idx, button in enumerate(self.buttons):
                 if self.buttons[idx].is_pressed(touch):
                     self.buttons[idx].tmst = self.last_touch_tmst
@@ -292,15 +293,15 @@ class VRBehavior(Behavior):
     def reward(self):
         self.interface.give_liquid(self.licked_probe)
         self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
-        self.logger.log_liquid(self.licked_probe, self.reward_amount[self.licked_probe])
+        self.logger.log('LiquidDelivery', dict(probe=self.licked_probe,
+                                               reward_amount=self.reward_amount[self.licked_probe]))
 
     def present_odor(self, delivery_port, odor_id, dutycycle):
         self.interface.present_odor(self, delivery_port, odor_id, dutycycle)
-        self.logger.log_stim()
+        self.logger.log('StimOnset')
 
     def update_odor(self, delivery_port, dutycycle):
         self.interface.update_odor(delivery_port, dutycycle)
-        self.logger.log_stim()
 
     def cleanup(self):
         self.mouse1.close()
@@ -349,7 +350,8 @@ class DummyProbe(Behavior):
 
     def reward(self):
         self.update_history(self.licked_probe, self.reward_amount)
-        self.logger.log_liquid(self.licked_probe, self.reward_amount)
+        self.logger.log('LiquidDelivery', dict(probe=self.licked_probe,
+                                               reward_amount=self.reward_amount))
         print('Giving Water at probe:%1d' % self.licked_probe)
         return True
 
@@ -364,12 +366,12 @@ class DummyProbe(Behavior):
         for event in events:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
-                    self.logger.log_lick(1)
+                    self.logger.log('Lick', dict(probe=1))
                     print('Probe 1 activated!')
                     probe = 1
                     self.lick_timer.start()
                 elif event.key == pygame.K_RIGHT:
-                    self.logger.log_lick(2)
+                    self.logger.log('Lick', dict(probe=2))
                     print('Probe 2 activated!')
                     probe = 2
                 elif event.key == pygame.K_SPACE and not self.ready:

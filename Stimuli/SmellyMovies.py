@@ -62,7 +62,7 @@ class SmellyMovies(Stimulus):
             self.vid.pause()
         self.beh.give_odor(delivery_port, odor_id, odor_dur, odor_dutycycle)
         self.timer.start()
-        self.logger.log_stim()
+        self.logger.log('StimOnset')
 
     def present(self):
         if self.timer.elapsed_time() > self.curr_cond['movie_duration']:

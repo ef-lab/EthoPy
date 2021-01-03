@@ -32,7 +32,7 @@ class State(StateClass):
             'Exit'         : exitState}
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
-        self.logger.update_setup_info('state', type(self).__name__)
+        self.logger.curr_state = type(self).__name__
         self.period_start = self.logger.log('StateOnset', {'state': type(self).__name__})
         self.timer.start()
 
@@ -105,7 +105,7 @@ class Trial(State):
 class Abort(State):
     def run(self):
         self.beh.update_history()
-        self.logger.log_abort()
+        self.logger.log('AbortedTrial')
 
     def next(self):
         return states['InterTrial']
@@ -171,3 +171,4 @@ class Exit(State):
     def run(self):
         self.beh.cleanup()
         self.stim.close()
+        self.logger.ping(0)

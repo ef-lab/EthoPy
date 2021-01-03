@@ -102,3 +102,4 @@ class Exit(State):
         self.logger.update_setup_info('status', 'stop', nowait=True)
         self.beh.cleanup()
         self.stim.close()
+        self.logger.ping(0)

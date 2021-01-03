@@ -90,8 +90,7 @@ class Panda3D(Stimulus, ShowBase):
             if not selected_obj[idx]:
                 continue
             self.objects[idx] = Object(self, self.get_cond('obj_', idx))
-
-        self.logger.log_stim(period)
+        self.logger.log('StimOnset', dict(period=period))
         if not self.isrunning:
             self.timer.start()
             self.isrunning = True
