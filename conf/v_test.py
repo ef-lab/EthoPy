@@ -9,7 +9,7 @@ from utils.Generator import *
 # define session parameters
 session_params = {
     'trial_selection'    : 'staircase',
-    'start_time'         : '08:00:00',
+    'start_time'         : '12:00:00',
     'stop_time'          : '22:00:00',
     'reward'             : 'water',
     'intensity'          : 64,
@@ -20,6 +20,7 @@ session_params = {
     'staircase_window'   : 10,
     'stair_up'           : 0.7,
     'stair_down'         : 0.6,
+    'noresponse_intertrial': True,
 }
 
 v_conds = [];
