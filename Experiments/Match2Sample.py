@@ -31,6 +31,7 @@ class State(StateClass):
             'Reward'       : Reward(self),
             'Punish'       : Punish(self),
             'InterTrial'   : InterTrial(self),
+            'Hydrate'      : Hydrate(self),
             'Offtime'      : Offtime(self),
             'Exit'         : exitState}
 
@@ -212,14 +213,28 @@ class InterTrial(State):
     def next(self):
         if self.logger.setup_status in ['stop', 'exit']:
             return states['Exit']
-        elif self.beh.is_sleep_time():
-            return states['Offtime']
-        elif self.beh.is_hydrated():
+        elif self.beh.is_sleep_time() and not self.beh.is_hydrated(self.params['min_reward']):
+            return states['Hydrate']
+        elif self.beh.is_sleep_time() or self.beh.is_hydrated():
             return states['Offtime']
         elif self.timer.elapsed_time() >= self.stim.curr_cond['intertrial_duration']:
             return states['PreTrial']
         else:
             return states['InterTrial']
+
+
+class Hydrate(State):
+    def run(self):
+        if self.beh.get_response():
+            self.beh.reward()
+            time.sleep(1)
+        self.logger.ping()
+
+    def next(self):
+        if self.beh.is_hydrated(self.params['min_reward']):
+            return states['Offtime']
+        else:
+            return states['Hydrate']
 
 
 class Offtime(State):
@@ -228,9 +243,6 @@ class Offtime(State):
         self.stim.unshow([0, 0, 0])
 
     def run(self):
-        response = self.beh.get_response()
-        if not self.beh.is_hydrated(self.params['min_reward']) and response:
-            self.beh.reward()
         if self.logger.setup_status != 'sleeping' and self.beh.is_sleep_time():
             self.logger.update_setup_info('status', 'sleeping')
         self.logger.ping()
