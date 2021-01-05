@@ -4,7 +4,8 @@ from time import sleep
 import pygame
 from pygame.locals import *
 import datajoint as dj
-Stimulus = dj.create_virtual_module('lab_stim.py', 'lab_stimuli')
+Stimuli = dj.create_virtual_module('lab_stim.py', 'lab_stimuli')
+
 
 class SmellyMovies(Stimulus):
     """ This class handles the presentation of Visual (movies) and Olfactory (odors) stimuli"""
@@ -114,7 +115,7 @@ class SmellyMovies(Stimulus):
 
     @staticmethod
     def get_clip_info(key):
-        return (Stimulus.Movie() * Stimulus.Movie.Clip() & key).fetch1()
+        return (Stimuli.Movie() * Stimuli.Movie.Clip() & key).fetch1()
 
     def close(self):
         """Close stuff"""
