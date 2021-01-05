@@ -107,13 +107,13 @@ class Logger:
 
     def log_pulse_weight(self, pulse_dur, probe, pulse_num, weight=0):
         key = dict(setup=self.setup, probe=probe, date=systime.strftime("%Y-%m-%d"))
-        self.put(table='LiquidCalibration', tuple=key, priority=1)
+        self.put(table='LiquidCalibration', tuple=key, priority=5)
         self.put(table='LiquidCalibration.PulseWeight',
                  tuple=dict(key, pulse_dur=pulse_dur, pulse_num=pulse_num, weight=weight))
 
     def update_setup_info(self, tuple):
         self.setup_info = {**(SetupControl() & dict(setup=self.setup)).fetch1(), **tuple}
-        self.put(table='SetupControl', tuple=self.setup_info, replace=True, priority=1)
+        self.put(table='SetupControl', tuple=self.setup_info, replace=True, priority=5)
         self.setup_status = self.setup_info['status']
 
     def get_setup_info(self, field):
