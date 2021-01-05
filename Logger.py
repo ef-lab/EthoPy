@@ -15,8 +15,8 @@ class Logger:
     setup, is_pi = socket.gethostname(), os.uname()[4][:3] == 'arm'
 
     def __init__(self, protocol=False):
-        self.curr_state, self.lock, self.ping_timer, self.queue = '', False, Timer(), PriorityQueue()
-        self.curr_trial, self.total_reward = 0, 0
+        self.curr_state, self.lock, self.queue, self.curr_trial, self.total_reward = '', False, PriorityQueue(), 0, 0
+        self.ping_timer, self.session_timer = Timer(), Timer()
         self.setup_status = 'running' if protocol else 'ready'
         self.log_setup(protocol)
         fileobject = open(os.path.dirname(os.path.abspath(__file__)) + '/dj_local_conf.json')
@@ -72,7 +72,7 @@ class Logger:
             tdelta = lambda t: datetime.strptime(t, "%H:%M:%S") - datetime.strptime("00:00:00", "%H:%M:%S")
             key = {**key, 'start_time': tdelta(params['start_time']), 'stop_time': tdelta(params['stop_time'])}
         self.update_setup_info(key)
-        self.session_timer = Timer()  # start session time
+        self.session_timer.start()  # start session time
 
     def log_conditions(self, conditions, condition_tables=[]):
         for cond in conditions:
