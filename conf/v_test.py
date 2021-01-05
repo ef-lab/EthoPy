@@ -3,7 +3,7 @@
 
 from Experiments.Center2AFC import *
 from Behavior import *
-from Stimuli.Movies import *
+from Stimuli.Movies import PCMovies
 from utils.Generator import *
 
 # define session parameters
@@ -13,9 +13,8 @@ session_params = {
     'stop_time'          : '22:00:00',
     'reward'             : 'water',
     'intensity'          : 64,
-    'min_reward'         : 100,
     'max_reward'         : 3000,
-    'min_reward': 300,
+    'min_reward'         : 300,
     'bias_window'        : 5,
     'staircase_window'   : 10,
     'stair_up'           : 0.7,
@@ -77,5 +76,5 @@ conditions = v_conds
 
 # run experiment
 exp = State()
-exp.setup(logger, DummyProbe, Movies, session_params, conditions)
+exp.setup(logger, DummyProbe, PCMovies, session_params, conditions)
 exp.run()

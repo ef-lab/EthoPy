@@ -3,6 +3,7 @@ from utils.flat2curve import flat2curve
 import pygame
 from pygame.locals import *
 
+
 class FancyBar(Stimulus):
     """ This class handles the presentation of Movies"""
 
@@ -21,7 +22,7 @@ class FancyBar(Stimulus):
         self.monRes = [self.params['max_res'],int(y_res + np.ceil(y_res % 2))]
         self.FoV = np.arctan(np.array(monSize) / 2 / self.params['monitor_distance']) * 2 * 180 / np.pi  # in degrees
         self.FoV[1] = self.FoV[0]/ self.params['monitor_aspect']
-        self.color = [0,0,0]
+        self.color = [0, 0, 0]
         self.fps = 30              # default presentation framerate
 
         # setup pygame
@@ -100,23 +101,19 @@ class FancyBar(Stimulus):
         self.isrunning = False
 
     def unshow(self, color=False):
-        """update background color"""
         if not color:
             color = self.color
         self.screen.fill(color)
         self.flip()
 
     def flip(self):
-        """ Main flip method"""
         pygame.display.update()
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
-
         self.flip_count += 1
 
     def close(self):
-        """Close stuff"""
         pygame.mouse.set_visible(1)
         pygame.display.quit()
         pygame.quit()

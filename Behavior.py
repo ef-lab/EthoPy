@@ -54,8 +54,8 @@ class Behavior:
 
     def is_sleep_time(self):
         now = datetime.now()
-        start = now.replace(hour=0, minute=0, second=0) + self.logger.start_time
-        stop = now.replace(hour=0, minute=0, second=0) + self.logger.stop_time
+        start = now.replace(hour=0, minute=0, second=0) + self.logger.setup_info['start_time']
+        stop = now.replace(hour=0, minute=0, second=0) + self.logger.setup_info['stop_time']
         if stop < start:
             stop = stop + timedelta(days=1)
         time_restriction = now < start or now > stop

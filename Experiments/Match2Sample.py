@@ -61,7 +61,7 @@ class PreTrial(State):
         self.beh.prepare(self.stim.curr_cond)
         self.logger.init_trial(self.stim.curr_cond['cond_hash'])
         super().entry()
-        if not self.stim.curr_cond: self.logger.update_setup_info('status', 'stop', nowait=True)
+        if not self.stim.curr_cond: self.logger.update_setup_info({'status': 'stop'})
 
     def run(self):
         if self.beh.is_ready(self.stim.curr_cond['init_ready'], self.period_start):
@@ -248,7 +248,7 @@ class Offtime(State):
 
     def run(self):
         if self.logger.setup_status != 'sleeping' and self.beh.is_sleep_time():
-            self.logger.update_setup_info('status', 'sleeping')
+            self.logger.update_setup_info({'status': 'sleeping'})
         self.logger.ping()
         time.sleep(1)
 
@@ -266,7 +266,7 @@ class Offtime(State):
 
     def exit(self):
         if self.logger.setup_status in ['wakeup', 'sleeping']:
-            self.logger.update_setup_info('status', 'running', nowait=True)
+            self.logger.update_setup_info({'status': 'running'})
 
 
 class Exit(State):

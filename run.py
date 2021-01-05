@@ -4,7 +4,7 @@ from utils.Start import *
 
 global logger
 protocol = int(sys.argv[1]) if len(sys.argv) > 1 else False
-logger = Logger(log_setup=True, protocol=protocol)   # setup logger
+logger = Logger(protocol=protocol)   # setup logger
 
 # # # # Waiting for instructions loop # # # # #
 while not logger.setup_status == 'exit':
@@ -13,7 +13,7 @@ while not logger.setup_status == 'exit':
         exec(open(logger.get_protocol()).read())
         if protocol: break
         elif logger.setup_status not in ['exit', 'running']:  # restart if session ended
-            logger.update_setup_info('status', 'ready', nowait=True)  # restart
+            logger.update_setup_info({'status': 'ready'})  # restart
     time.sleep(2)
 
 # # # # # Exit # # # # #
