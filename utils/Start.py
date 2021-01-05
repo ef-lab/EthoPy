@@ -34,7 +34,7 @@ class PyWelcome(Welcome):
                                    x=250, y=80, w=200, h=100, color=(0, 0, 0), font_size=30)
         self.screen.add_button(name='Task %d' % self.task, action=self.change_task,
                                x=250, y=160, w=200, h=100, color=(0, 0, 0), font_size=30)
-        self.screen.draw('%s %s' % (self.logger.ip, self.logger.setup), 0, 0, 150, 100, (128, 128, 128), size=15)
+        self.screen.draw('%s %s' % (self.logger.get_ip(), self.logger.setup), 0, 0, 150, 100, (128, 128, 128), size=15)
         self.screen.add_button(name='Start experiment', action=self.start_experiment,
                                x=250, y=330, w=200, h=100, color=(0, 128, 0))
         self.screen.add_button(name='Restart', action=self.reboot, x=700, y=340, w=100, h=70,
