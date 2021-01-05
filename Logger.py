@@ -1,4 +1,4 @@
-import numpy, socket, json, os, pathlib, threading
+import numpy, socket, json, os, pathlib, threading, functools
 from utils.Timer import *
 from utils.Generator import *
 from queue import PriorityQueue
@@ -37,7 +37,7 @@ class Logger:
             if self.queue.empty():  time.sleep(.5); continue
             item = self.queue.get()
             ignore, skip = (False, False) if item.replace else (True, True)
-            table = getattr(self.background_schema, item.table)
+            table = self.rgetattr(self.background_schema, item.table)
             self.thread_lock.acquire()
             table.insert1(item.tuple, ignore_extra_fields=ignore, skip_duplicates=skip, replace=item.replace)
             self.thread_lock.release()
@@ -144,6 +144,11 @@ class Logger:
         except Exception: IP = '127.0.0.1'
         finally: s.close()
         return IP
+
+    @staticmethod
+    def rgetattr(obj, attr, *args):
+        def _getattr(obj, attr): return getattr(obj, attr, *args)
+        return functools.reduce(_getattr, [obj] + attr.split('.'))
 
 
 @dataclass(order=True)
