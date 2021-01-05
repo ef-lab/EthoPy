@@ -107,7 +107,7 @@ class Logger:
 
     def log_pulse_weight(self, pulse_dur, probe, pulse_num, weight=0):
         key = dict(setup=self.setup, probe=probe, date=systime.strftime("%Y-%m-%d"))
-        self.put(table='LiquidCalibration', tuple=key)
+        self.put(table='LiquidCalibration', tuple=key, priority=1)
         self.put(table='LiquidCalibration.PulseWeight',
                  tuple=dict(key, pulse_dur=pulse_dur, pulse_num=pulse_num, weight=weight))
 

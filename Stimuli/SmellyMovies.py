@@ -3,7 +3,8 @@ import os
 from time import sleep
 import pygame
 from pygame.locals import *
-
+import datajoint as dj
+Stimulus = dj.create_virtual_module('lab_stim.py', 'lab_stimuli')
 
 class SmellyMovies(Stimulus):
     """ This class handles the presentation of Visual (movies) and Olfactory (odors) stimuli"""
@@ -36,7 +37,7 @@ class SmellyMovies(Stimulus):
         if not os.path.isdir(self.path):  # create path if necessary
             os.makedirs(self.path)
         for condm in self.conditions:
-            clip_info = self.logger.get_clip_info(dict((k, condm[k]) for k in ('movie_name', 'clip_number')))
+            clip_info = self.get_clip_info(dict((k, condm[k]) for k in ('movie_name', 'clip_number')))
             filename = self.path + clip_info['file_name']
             if not os.path.isfile(filename):
                 print('Saving %s ...' % filename)
@@ -110,6 +111,10 @@ class SmellyMovies(Stimulus):
                         dbus_name='org.mpris.MediaPlayer2.omxplayer1')
         self.vid.pause()
         self.vid.set_position(self.curr_cond['skip_time'])
+
+    @staticmethod
+    def get_clip_info(key):
+        return (Stimulus.Movie() * Stimulus.Movie.Clip() & key).fetch1()
 
     def close(self):
         """Close stuff"""

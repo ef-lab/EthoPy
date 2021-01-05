@@ -59,12 +59,14 @@ class Movies(Stimulus):
             if event.type == QUIT: pygame.quit()
         self.flip_count += 1
 
-    def close(self):
+    @staticmethod
+    def close():
         pygame.mouse.set_visible(1)
         pygame.display.quit()
         pygame.quit()
 
-    def get_clip_info(self, key):
+    @staticmethod
+    def get_clip_info(key):
         return (Movie() * Movie.Clip() & key).fetch1()
 
     def encode_photodiode(self):
