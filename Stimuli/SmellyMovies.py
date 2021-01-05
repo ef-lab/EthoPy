@@ -103,7 +103,7 @@ class SmellyMovies(Stimulus):
         os.system(cmd)
 
     def _init_player(self):
-        clip_info = self.logger.get_clip_info(self.curr_cond)
+        clip_info = self.get_clip_info(self.curr_cond)
         self.filename = self.path + clip_info['file_name']
         try:
             self.vid.load(self.filename)
