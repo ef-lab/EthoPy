@@ -55,7 +55,7 @@ class PreTrial(State):
     def entry(self):
         self.stim.prepare()
         if not self.stim.curr_cond:
-            self.logger.update_setup_info('status', 'stop', nowait=True)
+            self.logger.update_setup_info({'status': 'stop'})
         else:
             self.beh.prepare(self.stim.curr_cond)
         super().entry()
@@ -145,8 +145,8 @@ class Offtime(State):
         response = self.beh.get_response()
         if not self.beh.is_hydrated(self.params['min_reward']) and response:
             self.beh.reward()
-        if self.logger.setup_status != 'sleeping' and self.beh.is_sleep_time():
-            self.logger.update_setup_info('status', 'sleeping')
+        if self.logger.setup_status not in ['sleeping', 'wakeup'] and self.beh.is_sleep_time():
+            self.logger.update_setup_info({'status': 'sleeping'})
         self.logger.ping()
         time.sleep(1)
 
@@ -164,7 +164,7 @@ class Offtime(State):
 
     def exit(self):
         if self.logger.setup_status in ['wakeup', 'sleeping']:
-            self.logger.update_setup_info('status', 'running', nowait=True)
+            self.logger.update_setup_info({'status': 'running'})
 
 
 class Exit(State):

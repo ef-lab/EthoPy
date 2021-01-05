@@ -17,10 +17,6 @@ class State(StateClass):
         self.stim = StimulusClass(self.logger, session_params, conditions, self.beh)
         self.params = session_params
         self.logger.log_conditions(conditions, self.stim.get_cond_tables() + self.beh.get_cond_tables())
-
-        logger.update_setup_info('start_time', session_params['start_time'])
-        logger.update_setup_info('stop_time', session_params['stop_time'])
-
         exitState = Exit(self)
         self.StateMachine = StateMachine(Prepare(self), exitState)
 
@@ -59,7 +55,7 @@ class PreTrial(State):
         self.beh.prepare(self.stim.curr_cond)
         self.logger.init_trial(self.stim.curr_cond['cond_hash'])
         super().entry()
-        if not self.stim.curr_cond: self.logger.update_setup_info('status', 'stop', nowait=True)
+        if not self.stim.curr_cond: self.logger.update_setup_info({'status': 'stop'})
 
     def run(self):
         if self.timer.elapsed_time() > 5000:  # occasionally get control status

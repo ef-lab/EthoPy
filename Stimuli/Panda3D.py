@@ -5,6 +5,20 @@ from direct.showbase.ShowBase import ShowBase
 from direct.task import Task
 import panda3d.core as core
 from panda3d.core import *
+import datajoint as dj
+
+lab_stim = dj.schema('lab_stimuli')
+
+@lab_stim
+class Objects(dj.Lookup):
+    definition = """
+    # object information
+    obj_id               : int                          # object ID
+    ---
+    description          : varchar(256)                 # description
+    object=null          : longblob                     # 3d file
+    file_name=null       : varchar(255)   
+    """
 
 
 class Panda3D(Stimulus, ShowBase):
@@ -24,7 +38,7 @@ class Panda3D(Stimulus, ShowBase):
         self.object_files = dict()
         for cond in self.conditions:
             for obj_id in cond['obj_id']:
-                object_info = self.logger.get_object(obj_id)
+                object_info = (Objects() & ('obj_id=%d' % obj_id)).fetch1()
                 filename = self.path + object_info['file_name']
                 self.object_files[obj_id] = filename
                 if not os.path.isfile(filename):
@@ -172,4 +186,3 @@ class Object(Panda3D):
         param = np.array([param]) if type(param) != np.ndarray else param
         idx = np.linspace(0, self.duration/1000, param.size)
         return lambda t: np.interp(t, idx,fun(param, t))
-

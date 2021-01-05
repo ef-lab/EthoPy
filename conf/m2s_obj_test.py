@@ -13,7 +13,7 @@ conditions = []
 # define session parameters
 session_params = {
     'trial_selection'    : 'staircase',
-    'start_time'         : '12:00:00',
+    'start_time'         : '08:00:00',
     'stop_time'          : '23:59:00',
     'reward'             : 'water',
     'intensity'          : 64,
