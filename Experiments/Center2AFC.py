@@ -187,7 +187,7 @@ class Offtime(State):
         self.stim.unshow([0, 0, 0])
 
     def run(self):
-        if self.logger.setup_status != 'sleeping' and self.beh.is_sleep_time():
+        if self.logger.setup_status not in ['sleeping', 'wakeup'] and self.beh.is_sleep_time():
             self.logger.update_setup_info({'status': 'sleeping'})
         self.logger.ping()
         time.sleep(1)

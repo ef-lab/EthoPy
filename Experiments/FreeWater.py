@@ -145,7 +145,7 @@ class Offtime(State):
         response = self.beh.get_response()
         if not self.beh.is_hydrated(self.params['min_reward']) and response:
             self.beh.reward()
-        if self.logger.setup_status != 'sleeping' and self.beh.is_sleep_time():
+        if self.logger.setup_status not in ['sleeping', 'wakeup'] and self.beh.is_sleep_time():
             self.logger.update_setup_info({'status': 'sleeping'})
         self.logger.ping()
         time.sleep(1)
