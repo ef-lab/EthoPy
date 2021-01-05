@@ -23,7 +23,9 @@ class Logger:
         connect_info = json.loads(fileobject.read())
         background_conn = dj.Connection(connect_info['database.host'], connect_info['database.user'],
                                         connect_info['database.password'])
-        self.background_schema = dj.create_virtual_module('beh.py', 'lab_behavior', connection=background_conn)
+        self.schemata = dict()
+        self.schemata['lab'] = dj.create_virtual_module('beh.py', 'lab_behavior', connection=background_conn)
+        self.schemata['mice'] = dj.create_virtual_module('mice.py', 'lab_mice', connection=background_conn)
         self.thread_end, self.thread_lock = threading.Event(),  threading.Lock()
         self.inserter_thread = threading.Thread(target=self.inserter)
         self.getter_thread = threading.Thread(target=self.getter)
@@ -37,7 +39,7 @@ class Logger:
             if self.queue.empty():  time.sleep(.5); continue
             item = self.queue.get()
             ignore, skip = (False, False) if item.replace else (True, True)
-            table = self.rgetattr(self.background_schema, item.table)
+            table = self.rgetattr(self.schemata[item.schema], item.table)
             self.thread_lock.acquire()
             table.insert1(item.tuple, ignore_extra_fields=ignore, skip_duplicates=skip, replace=item.replace)
             self.thread_lock.release()
@@ -45,7 +47,7 @@ class Logger:
     def getter(self):
         while not self.thread_end.is_set():
             self.thread_lock.acquire()
-            self.setup_info = (self.background_schema.SetupControl() & dict(setup=self.setup)).fetch1()
+            self.setup_info = (self.schemata['lab'].SetupControl() & dict(setup=self.setup)).fetch1()
             self.thread_lock.release()
             self.setup_status = self.setup_info['status']
             time.sleep(1)  # update once a second
@@ -157,5 +159,6 @@ class PrioritizedItem:
     tuple: Any = datafield(compare=False)
     field: str = datafield(compare=False, default='')
     value: Any = datafield(compare=False, default='')
+    schema: str = datafield(compare=False, default='lab')
     replace: bool = datafield(compare=False, default=False)
     priority: int = datafield(default=50)

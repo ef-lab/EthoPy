@@ -78,7 +78,7 @@ class PyWelcome(Welcome):
             while not button.is_pressed():
                 time.sleep(0.2)
             if self.screen.numpad:
-                self.logger.log('Mice.MouseWeight', dict(weight=float(self.screen.numpad)))
+                self.logger.put(table='MouseWeight', tuple=dict(weight=float(self.screen.numpad)), schema='mice')
                 self.setup()
         elif self.state == 'start_experiment':
             self.logger.update_setup_info({'status': 'running'})

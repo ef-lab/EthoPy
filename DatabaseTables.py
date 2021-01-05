@@ -8,8 +8,6 @@ import bisect
 import itertools
 
 schema = dj.schema('lab_behavior')
-Mice = dj.create_virtual_module('mice.py', 'lab_mice')
-
 
 @schema
 class SetupControl(dj.Lookup):
