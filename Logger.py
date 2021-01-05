@@ -16,6 +16,7 @@ class Logger:
 
     def __init__(self, protocol=False):
         self.curr_state, self.lock, self.ping_timer, self.queue = '', False, Timer(), PriorityQueue()
+        self.curr_trial, self.total_reward = 0, 0
         self.setup_status = 'running' if protocol else 'ready'
         self.log_setup(protocol)
         fileobject = open(os.path.dirname(os.path.abspath(__file__)) + '/dj_local_conf.json')
