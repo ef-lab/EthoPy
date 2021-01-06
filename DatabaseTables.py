@@ -8,31 +8,27 @@ import bisect
 import itertools
 
 schema = dj.schema('lab_behavior')
-Stimuli = dj.create_virtual_module('Stimuli.py', 'lab_stimuli')
-Mice = dj.create_virtual_module('mice.py', 'lab_mice')
-
-
-def erd():
-    """for convenience"""
-    dj.ERD(schema).draw()
-
 
 @schema
 class SetupControl(dj.Lookup):
     definition = """
-    #
+    # Control table 
     setup                : varchar(256)                 # Setup name
     ---
     ip                   : varchar(16)                  # setup IP address
-    status="ready"       : enum('ready','running','stop','sleeping','offtime','exit') 
+    status="exit"        : enum('ready','running','stop','sleeping','exit','offtime','wakeup') 
     animal_id=null       : int                          # animal id
     task_idx=null        : int                          # task identification number
-    last_ping            : timestamp                    
+    last_ping="current_timestamp()" : timestamp                    
     notes=null           : varchar(256)                 
     current_session=null : int                          
     last_trial=null      : int                          
-    total_liquid=null    : float     
-    state=null           : varchar(256)  
+    total_liquid=null    : float                        
+    state=null           : varchar(255)                 
+    difficulty=null      : smallint                     
+    start_time=null      : time                         
+    stop_time=null       : time                         
+    queue_size=null      : int     
     """
 
 
@@ -295,13 +291,13 @@ class StimOnset(dj.Manual):
     """
 
 @schema
-class PeriodOnset(dj.Manual):
+class StateOnset(dj.Manual):
     definition = """
     # Trial period timestamps
     -> Session
     time			    : int 	            # time from session start (ms)
     ---
-    period              : enum('Cue','Delay','Response','PreTrial','Trial','InterTrial','Reward','Punish')
+    state               : enum('Cue','Delay','Response','PreTrial','Trial','InterTrial','Reward','Punish', 'Abort','Sleep','Offtime','Exit')
     """
 
 

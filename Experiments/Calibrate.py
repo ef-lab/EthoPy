@@ -22,7 +22,7 @@ class Calibrate:
                 button = self.screen.add_button(name='OK', x=300, y=300, w=200, h=100, color=(0, 128, 0))
                 while not button.is_pressed():
                     time.sleep(0.2)
-                    if self.logger.get_setup_info('status') == 'stop':
+                    if self.logger.setup_status == 'stop':
                         valve.cleanup()
                         self.screen.exit()
                         return
@@ -52,6 +52,6 @@ class Calibrate:
         valve.cleanup()
         self.screen.cleanup()
         self.screen.draw('Done calibrating')
+        self.logger.update_setup_info({'status': 'stop'})
         time.sleep(5)
         self.screen.exit()
-        self.logger.update_setup_info('status', 'stop')

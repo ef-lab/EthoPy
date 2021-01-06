@@ -5,6 +5,20 @@ from direct.showbase.ShowBase import ShowBase
 from direct.task import Task
 import panda3d.core as core
 from panda3d.core import *
+import datajoint as dj
+
+lab_stim = dj.schema('lab_stimuli')
+
+@lab_stim
+class Objects(dj.Lookup):
+    definition = """
+    # object information
+    obj_id               : int                          # object ID
+    ---
+    description          : varchar(256)                 # description
+    object=null          : longblob                     # 3d file
+    file_name=null       : varchar(255)   
+    """
 
 
 class Panda3D(Stimulus, ShowBase):
@@ -24,7 +38,7 @@ class Panda3D(Stimulus, ShowBase):
         self.object_files = dict()
         for cond in self.conditions:
             for obj_id in cond['obj_id']:
-                object_info = self.logger.get_object(obj_id)
+                object_info = (Objects() & ('obj_id=%d' % obj_id)).fetch1()
                 filename = self.path + object_info['file_name']
                 self.object_files[obj_id] = filename
                 if not os.path.isfile(filename):
@@ -57,8 +71,6 @@ class Panda3D(Stimulus, ShowBase):
         self._get_new_cond()
         if not self.curr_cond:
             self.isrunning = False
-
-    def init(self, period=None):
         self.background_color = self.curr_cond['background_color']
 
         # set background color
@@ -79,6 +91,9 @@ class Panda3D(Stimulus, ShowBase):
         self.directionalLight2NP.setHpr(self.curr_cond['direct2_dir'][0],
                                         self.curr_cond['direct2_dir'][1],
                                         self.curr_cond['direct2_dir'][2])
+        self.flip(2)
+
+    def init(self, period=None):
         self.objects = dict()
         if period:
             selected_obj = [p == period for p in self.curr_cond['obj_period']]
@@ -89,8 +104,7 @@ class Panda3D(Stimulus, ShowBase):
             if not selected_obj[idx]:
                 continue
             self.objects[idx] = Object(self, self.get_cond('obj_', idx))
-
-        self.logger.log_stim(period)
+        self.logger.log('StimOnset', dict(period=period))
         if not self.isrunning:
             self.timer.start()
             self.isrunning = True
@@ -111,18 +125,18 @@ class Panda3D(Stimulus, ShowBase):
         self.isrunning = False
 
     def punish_stim(self):
-        self.set_background_color(0, 0, 0)
-        self.flip(2)
+        self.unshow((0, 0, 0))
 
-    def unshow(self):
-        self.set_background_color(self.background_color[0],
-                                  self.background_color[1],
-                                  self.background_color[2])
+    def reward_stim(self):
+        self.unshow((0.5, 0.5, 0.5))
+
+    def unshow(self, color=None):
+        if not color: color = self.background_color
+        self.set_background_color(color[0], color[1], color[2])
         self.flip(2)
 
     def set_intensity(self, intensity=None):
-        if intensity is None:
-            intensity = self.params['intensity']
+        if not intensity: intensity = self.params['intensity']
         cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % intensity
         os.system(cmd)
 
@@ -172,4 +186,3 @@ class Object(Panda3D):
         param = np.array([param]) if type(param) != np.ndarray else param
         idx = np.linspace(0, self.duration/1000, param.size)
         return lambda t: np.interp(t, idx,fun(param, t))
-

@@ -1,6 +1,7 @@
 from Stimulus import *
 import pygame
 
+
 class Odors(Stimulus):
     """ This class handles the presentation of Odors"""
 

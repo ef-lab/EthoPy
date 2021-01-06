@@ -18,13 +18,9 @@ class State(StateClass):
         self.params = session_params
         self.logger.log_conditions(conditions, self.stim.get_cond_tables() + self.beh.get_cond_tables())
 
-        logger.update_setup_info('start_time', session_params['start_time'])
-        logger.update_setup_info('stop_time', session_params['stop_time'])
-
+        # Initialize states
         exitState = Exit(self)
         self.StateMachine = StateMachine(Prepare(self), exitState)
-
-        # Initialize states
         global states
         states = {
             'PreTrial'     : PreTrial(self),
@@ -33,13 +29,13 @@ class State(StateClass):
             'InterTrial'   : InterTrial(self),
             'Reward'       : Reward(self),
             'Punish'       : Punish(self),
-            'Sleep'        : Sleep(self),
             'Offtime'      : Offtime(self),
+            'Hydrate'      : Hydrate(self),
             'Exit'         : exitState}
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
-        self.StateMachine.status = self.logger.setup_status
-        self.logger.update_setup_info('state', type(self).__name__)
+        self.logger.curr_state = type(self).__name__
+        self.period_start = self.logger.log('StateOnset', {'state': type(self).__name__})
         self.timer.start()
 
     def run(self):
@@ -51,30 +47,31 @@ class Prepare(State):
         self.stim.setup()  # prepare stimulus
 
     def next(self):
-        if self.beh.is_sleep_time():
-            return states['Sleep']
+        if self.logger.setup_status in ['stop', 'exit']:
+            return states['Exit']
+        elif self.beh.is_sleep_time():
+            return states['Offtime']
         else:
             return states['PreTrial']
 
 
 class PreTrial(State):
     def entry(self):
-        self.logger.ping()
         self.stim.prepare()
-        if not self.stim.curr_cond: self.logger.update_setup_info('status', 'stop', nowait=True)
-        self.beh.prepare(self.stim.curr_cond)
+        if not self.stim.curr_cond:
+            self.logger.update_setup_info({'status': 'stop'})
+        else:
+            self.beh.prepare(self.stim.curr_cond)
         super().entry()
 
     def run(self):
-        if self.timer.elapsed_time() > 5000:  # occasionally get control status
-            self.timer.start()
-            self.logger.ping()
+        self.logger.ping()
 
     def next(self):
-        if self.beh.is_ready(self.stim.curr_cond['init_duration']):
-            return states['Trial']
-        elif self.logger.setup_status in ['stop', 'exit']:
+        if self.logger.setup_status in ['stop', 'exit'] or not self.stim.curr_cond:
             return states['Exit']
+        elif self.beh.is_ready(self.stim.curr_cond['init_duration']):
+            return states['Trial']
         else:
             return states['PreTrial']
 
@@ -88,20 +85,23 @@ class Trial(State):
 
     def run(self):
         self.stim.present()  # Start Stimulus
-        self.response = self.beh.response(self.trial_start)
+        self.logger.ping()
+        self.response = self.beh.get_response(self.trial_start)
         if self.beh.is_ready(self.stim.curr_cond['delay_duration'], self.trial_start):
             self.resp_ready = True
             self.stim.ready_stim()
 
     def next(self):
-        if not self.resp_ready and self.response:                           # did not wait
+        if not self.resp_ready and self.response:          # did not wait
             return states['Abort']
         elif self.response and not self.beh.is_correct():  # response to incorrect probe
             return states['Punish']
-        elif self.response and self.beh.is_correct():  # response to correct probe
+        elif self.response and self.beh.is_correct():      # response to correct probe
             return states['Reward']
         elif self.timer.elapsed_time() > self.stim.curr_cond['trial_duration']:      # timed out
             return states['InterTrial']
+        elif self.logger.setup_status in ['stop', 'exit']:
+            return states['Exit']
         else:
             return states['Trial']
 
@@ -114,7 +114,7 @@ class Trial(State):
 class Abort(State):
     def run(self):
         self.beh.update_history()
-        self.logger.log_abort()
+        self.logger.log('AbortedTrial')
 
     def next(self):
         return states['InterTrial']
@@ -149,15 +149,15 @@ class Punish(State):
 
 class InterTrial(State):
     def run(self):
-        if self.beh.response() & self.params.get('noresponse_intertrial'):
+        if self.beh.get_response(self.period_start) & self.params.get('noresponse_intertrial'):
             self.timer.start()
 
     def next(self):
         if self.logger.setup_status in ['stop', 'exit']:
             return states['Exit']
-        elif self.beh.is_sleep_time():
-            return states['Sleep']
-        elif self.beh.is_hydrated():
+        elif self.beh.is_sleep_time() and not self.beh.is_hydrated(self.params['min_reward']):
+            return states['Hydrate']
+        elif self.beh.is_sleep_time() or self.beh.is_hydrated():
             return states['Offtime']
         elif self.timer.elapsed_time() >= self.stim.curr_cond['intertrial_duration']:
             return states['PreTrial']
@@ -165,15 +165,32 @@ class InterTrial(State):
             return states['InterTrial']
 
 
-class Sleep(State):
+class Hydrate(State):
+    def run(self):
+        if self.beh.get_response():
+            self.beh.reward()
+            time.sleep(1)
+        self.logger.ping()
+
+    def next(self):
+        if self.logger.setup_status in ['stop', 'exit']:  # if wake up then update session
+            return states['Exit']
+        elif self.beh.is_hydrated(self.params['min_reward']) or not self.beh.is_sleep_time():
+            return states['Offtime']
+        else:
+            return states['Hydrate']
+
+
+class Offtime(State):
     def entry(self):
-        self.logger.update_setup_info('state', type(self).__name__)
-        self.logger.update_setup_info('status', 'sleeping')
+        super().entry()
         self.stim.unshow([0, 0, 0])
 
     def run(self):
+        if self.logger.setup_status not in ['sleeping', 'wakeup'] and self.beh.is_sleep_time():
+            self.logger.update_setup_info({'status': 'sleeping'})
         self.logger.ping()
-        time.sleep(5)
+        time.sleep(1)
 
     def next(self):
         if self.logger.setup_status in ['stop', 'exit']:  # if wake up then update session
@@ -182,34 +199,18 @@ class Sleep(State):
             return states['PreTrial']
         elif self.logger.setup_status == 'sleeping' and not self.beh.is_sleep_time():  # if wake up then update session
             return states['Exit']
-        else:
-            return states['Sleep']
-
-    def exit(self):
-        if self.logger.setup_status not in ['stop', 'exit']:
-            self.logger.update_setup_info('status', 'running', nowait=True)
-            self.logger.setup_status = 'running'
-
-
-class Offtime(State):
-    def entry(self):
-        self.logger.update_setup_info('state', type(self).__name__)
-        self.logger.update_setup_info('status', 'offtime')
-        self.stim.unshow([0, 0, 0])
-
-    def run(self):
-        time.sleep(5)
-
-    def next(self):
-        if self.logger.setup_status in ['stop', 'exit']:  # if wake up then update session
+        elif not self.beh.is_hydrated() and not self.beh.is_sleep_time():
             return states['Exit']
-        elif self.beh.is_sleep_time():
-            return states['Sleep']
         else:
             return states['Offtime']
+
+    def exit(self):
+        if self.logger.setup_status in ['wakeup', 'sleeping']:
+            self.logger.update_setup_info({'status': 'running'})
 
 
 class Exit(State):
     def run(self):
         self.beh.cleanup()
         self.stim.close()
+        self.logger.ping(0)

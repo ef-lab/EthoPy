@@ -31,8 +31,7 @@ class State(StateClass):
         self.StateMachine.run()
 
     def updateStatus(self): # updates stateMachine from Database entry - override for timing critical transitions
-        self.StateMachine.status = self.logger.setup_status
-        self.logger.update_setup_info('state', self.__class__.__name__)
+        self.logger.update_setup_info({'state': self.__class__.__name__})
 
 
 class Prepare(State):
@@ -46,7 +45,7 @@ class Prepare(State):
 class PreTrial(State):
     def entry(self):
         self.stim.prepare()
-        if not self.stim.curr_cond: self.logger.update_setup_info('status', 'stop', nowait=True)
+        if not self.stim.curr_cond: self.logger.update_setup_info({'status': 'stop'})
         super().entry()
 
     def run(self): pass
@@ -100,6 +99,7 @@ class InterTrial(State):
 
 class Exit(State):
     def run(self):
-        self.logger.update_setup_info('status', 'stop', nowait=True)
+        self.logger.update_setup_info({'status': 'stop'})
         self.beh.cleanup()
         self.stim.close()
+        self.logger.ping(0)
