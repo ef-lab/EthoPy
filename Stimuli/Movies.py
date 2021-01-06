@@ -4,38 +4,7 @@ from time import sleep
 import pygame
 from pygame.locals import *
 import datajoint as dj
-lab_stim = dj.schema('lab_stimuli')
-
-
-@lab_stim
-class Movie(dj.Lookup):
-    definition = """
-    # movies used for generating clips and stills
-    movie_name           : char(8)                      # short movie title
-    ---
-    path                 : varchar(255)                 
-    -> Stimuli.MovieClass
-    original_file        : varchar(255)                 
-    file_template        : varchar(255)                 # filename template with full path
-    file_duration        : float                        # (s) duration of each file (must be equal)
-    codec="-c:v libx264 -preset slow -crf 5" : varchar(255)                 
-    movie_description    : varchar(255)                 # full movie title
-    frame_rate=30        : float                        # frames per second
-    frame_width=256      : int                          # pixels
-    frame_height=144     : int                          # pixels
-    """
-
-    class Clip(dj.Part):
-        definition = """
-        # clips from movies
-        -> Stimuli.Movie
-        clip_number          : int                          # clip index
-        ---
-        file_name            : varchar(255)                 # full file name
-        clip                 : longblob                     
-        parent_file_name=null : varchar(255)                 
-        duration=null        : smallint                     # duration in seconds
-        """
+stim = dj.create_virtual_module('lab_stim.py', 'lab_stimuli')
 
 
 class Movies(Stimulus):
@@ -44,48 +13,6 @@ class Movies(Stimulus):
     def get_cond_tables(self):
         return ['MovieCond']
 
-    def punish_stim(self):
-        self.unshow((0, 0, 0))
-
-    def unshow(self, color=False):
-        if not color:
-            color = self.color
-        self.screen.fill(color)
-        self.flip()
-
-    def flip(self):
-        pygame.display.update()
-        for event in pygame.event.get():
-            if event.type == QUIT: pygame.quit()
-        self.flip_count += 1
-
-    @staticmethod
-    def close():
-        pygame.mouse.set_visible(1)
-        pygame.display.quit()
-        pygame.quit()
-
-    @staticmethod
-    def get_clip_info(key):
-        return (Movie() * Movie.Clip() & key).fetch1()
-
-    def encode_photodiode(self):
-        """Encodes the flip number n in the flip amplitude.
-        Every 32 sequential flips encode 32 21-bit flip numbers.
-        Thus each n is a 21-bit flip number:
-        FFFFFFFFFFFFFFFFCCCCP
-        P = parity, only P=1 encode bits
-        C = the position within F
-        F = the current block of 32 flips
-        """
-        n = self.flip_count + 1
-        amp = 127 * (n & 1) * (2 - (n & (1 << (((np.int64(np.floor(n / 2)) & 15) + 6) - 1)) != 0))
-        surf = pygame.Surface(self.phd_size)
-        surf.fill((amp, amp, amp))
-        self.screen.blit(surf, (0, 0))
-
-
-class PCMovies(Movies):
     def setup(self):
         # setup parameters
         self.path = 'stimuli/'     # default path to copy local stimuli
@@ -130,6 +57,46 @@ class PCMovies(Movies):
         self.vid.close()
         self.unshow()
         self.isrunning = False
+
+    def punish_stim(self):
+        self.unshow((0, 0, 0))
+
+    def unshow(self, color=False):
+        if not color:
+            color = self.color
+        self.screen.fill(color)
+        self.flip()
+
+    def flip(self):
+        pygame.display.update()
+        for event in pygame.event.get():
+            if event.type == QUIT: pygame.quit()
+        self.flip_count += 1
+
+    @staticmethod
+    def close():
+        pygame.mouse.set_visible(1)
+        pygame.display.quit()
+        pygame.quit()
+
+    @staticmethod
+    def get_clip_info(key):
+        return (stim.Movie() * stim.Movie.Clip() & key).fetch1()
+
+    def encode_photodiode(self):
+        """Encodes the flip number n in the flip amplitude.
+        Every 32 sequential flips encode 32 21-bit flip numbers.
+        Thus each n is a 21-bit flip number:
+        FFFFFFFFFFFFFFFFCCCCP
+        P = parity, only P=1 encode bits
+        C = the position within F
+        F = the current block of 32 flips
+        """
+        n = self.flip_count + 1
+        amp = 127 * (n & 1) * (2 - (n & (1 << (((np.int64(np.floor(n / 2)) & 15) + 6) - 1)) != 0))
+        surf = pygame.Surface(self.phd_size)
+        surf.fill((amp, amp, amp))
+        self.screen.blit(surf, (0, 0))
 
 
 class RPMovies(Movies):
@@ -217,5 +184,3 @@ class RPMovies(Movies):
                         dbus_name='org.mpris.MediaPlayer2.omxplayer1')
         self.vid.pause()
         self.vid.set_position(self.curr_cond['skip_time'])
-
-

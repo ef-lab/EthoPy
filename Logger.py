@@ -57,11 +57,12 @@ class Logger:
         self.put(table=table, tuple={**self.session_key, 'trial_idx': self.curr_trial, 'time': tmst, **data})
         return tmst
 
-    def log_setup(self, protocol=False):
+    def log_setup(self, task_idx=False):
         rel = SetupControl() & dict(setup=self.setup)
-        key = rel.fetch1() if numpy.size(rel.fetch()) else dict(setup=self.setup)  # update values in case they exist
-        if protocol: key['task_idx'] = protocol
-        self.update_setup_info({**key, 'ip': self.get_ip(), 'status': self.setup_status})
+        key = rel.fetch1() if numpy.size(rel.fetch()) else dict(setup=self.setup)
+        if task_idx: key['task_idx'] = task_idx
+        key = {**key, 'ip': self.get_ip(), 'status': self.setup_status}
+        self.put(table='SetupControl', tuple=key, replace=True, priority=1)
 
     def log_session(self, params, exp_type=''):
         self.curr_trial, self.total_reward, self.session_key = 0, 0, {'animal_id': self.get_setup_info('animal_id')}
@@ -113,8 +114,8 @@ class Logger:
         self.put(table='LiquidCalibration.PulseWeight',
                  tuple=dict(key, pulse_dur=pulse_dur, pulse_num=pulse_num, weight=weight))
 
-    def update_setup_info(self, tuple):
-        self.setup_info = {**(SetupControl() & dict(setup=self.setup)).fetch1(), **tuple}
+    def update_setup_info(self, info):
+        self.setup_info = {**(SetupControl() & dict(setup=self.setup)).fetch1(), **info}
         self.put(table='SetupControl', tuple=self.setup_info, replace=True, priority=5)
         self.setup_status = self.setup_info['status']
 

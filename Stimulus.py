@@ -16,20 +16,18 @@ class Stimulus:
         self.isrunning = False
         self.flip_count = 0
         self.iter = []
-        self.curr_cond = []
+        self.curr_cond = dict()
         self.rew_probe = []
         self.un_choices = []
         self.curr_difficulty = 1
-        diff_flag = False
         resp_cond = params['resp_cond'] if 'resp_cond' in params else 'probe'
         if np.all(['difficulty' in cond for cond in conditions]):
             self.difficulties = np.array([cond['difficulty'] for cond in self.conditions])
             diff_flag = True
+        else: diff_flag = False
         if np.all([resp_cond in cond for cond in conditions]):
-            if diff_flag:
-                self.choices = np.array([make_hash([d[resp_cond], d['difficulty']]) for d in conditions])
-            else:
-                self.choices = np.array([make_hash(d[resp_cond]) for d in conditions])
+            if diff_flag: self.choices = np.array([make_hash([d[resp_cond], d['difficulty']]) for d in conditions])
+            else: self.choices = np.array([make_hash(d[resp_cond]) for d in conditions])
             self.un_choices, un_idx = np.unique(self.choices, axis=0, return_index=True)
             if diff_flag: self.un_difficulties = self.difficulties[un_idx]
         self.timer = Timer()
@@ -113,4 +111,3 @@ class Stimulus:
             selected_conditions = [i for (i, v) in zip(self.conditions, np.logical_and(self.choices == anti_bias,
                                                        self.difficulties == self.curr_difficulty)) if v]
             self.curr_cond = np.random.choice(selected_conditions)
-

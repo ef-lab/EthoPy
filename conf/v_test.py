@@ -3,13 +3,13 @@
 
 from Experiments.Center2AFC import *
 from Behavior import *
-from Stimuli.Movies import PCMovies
+from Stimuli.Movies import Movies
 from utils.Generator import *
 
 # define session parameters
 session_params = {
     'trial_selection'    : 'staircase',
-    'start_time'         : '12:00:00',
+    'start_time'         : '07:00:00',
     'stop_time'          : '22:00:00',
     'reward'             : 'water',
     'intensity'          : 64,
@@ -76,5 +76,5 @@ conditions = v_conds
 
 # run experiment
 exp = State()
-exp.setup(logger, DummyProbe, PCMovies, session_params, conditions)
+exp.setup(logger, DummyProbe, Movies, session_params, conditions)
 exp.run()
