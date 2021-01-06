@@ -14,7 +14,8 @@ class State(StateClass):
         self.logger.log_session(session_params, '2AFC')
         # Initialize params & Behavior/Stimulus objects
         self.beh = BehaviorClass(self.logger, session_params)
-        self.stim = StimulusClass(self.logger, session_params, conditions, self.beh)
+        self.stim = StimulusClass()
+        self.stim.setup(self.logger, session_params, conditions, self.beh)
         self.params = session_params
         self.logger.log_conditions(conditions, self.stim.get_cond_tables() + self.beh.get_cond_tables())
 
@@ -44,7 +45,7 @@ class State(StateClass):
 
 class Prepare(State):
     def run(self):
-        self.stim.setup()  # prepare stimulus
+        pass#self.stim.setup()  # prepare stimulus
 
     def next(self):
         if self.logger.setup_status in ['stop', 'exit']:
