@@ -8,11 +8,12 @@ class Stimulus:
     use function overrides for each stimulus class
     """
 
-    def __init__(self, logger, params, conditions, beh=False):
-        self.params = params
-        self.logger = logger
-        self.conditions = conditions
-        self.beh = beh
+    def get_cond_tables(self):
+        """return condition tables"""
+        return []
+
+    def setup(self, logger, params, conditions, beh=False):
+        """setup stimulation for presentation before experiment starts"""
         self.isrunning = False
         self.flip_count = 0
         self.iter = []
@@ -20,6 +21,10 @@ class Stimulus:
         self.rew_probe = []
         self.un_choices = []
         self.curr_difficulty = 1
+        self.params = params
+        self.logger = logger
+        self.conditions = conditions
+        self.beh = beh
         resp_cond = params['resp_cond'] if 'resp_cond' in params else 'probe'
         if np.all(['difficulty' in cond for cond in conditions]):
             self.difficulties = np.array([cond['difficulty'] for cond in self.conditions])
@@ -31,14 +36,6 @@ class Stimulus:
             self.un_choices, un_idx = np.unique(self.choices, axis=0, return_index=True)
             if diff_flag: self.un_difficulties = self.difficulties[un_idx]
         self.timer = Timer()
-
-    def get_cond_tables(self):
-        """return condition tables"""
-        return []
-
-    def setup(self):
-        """setup stimulation for presentation before experiment starts"""
-        pass
 
     def prepare(self, conditions=False):
         """prepares stuff for presentation before trial starts"""

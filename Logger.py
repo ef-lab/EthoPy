@@ -26,6 +26,7 @@ class Logger:
         self.schemata = dict()
         self.schemata['lab'] = dj.create_virtual_module('beh.py', 'lab_behavior', connection=background_conn)
         self.schemata['mice'] = dj.create_virtual_module('mice.py', 'lab_mice', connection=background_conn)
+        self.schemata['stim'] = dj.create_virtual_module('stim.py', 'lab_stimuli', connection=background_conn)
         self.thread_end, self.thread_lock = threading.Event(),  threading.Lock()
         self.inserter_thread = threading.Thread(target=self.inserter)
         self.getter_thread = threading.Thread(target=self.getter)
@@ -95,6 +96,11 @@ class Logger:
                                      tuple={'cond_hash': cond['cond_hash'], 'dutycycle': cond['dutycycle'][idx],
                                             'odor_id': cond['odor_id'][idx], 'delivery_port': port})
         return conditions
+
+    def log_condition(self, condition, condition_table='Condition', schema='lab'):
+        condition.update({'cond_hash': make_hash(condition)})
+        self.put(table=condition_table, tuple=condition.copy(), schema=schema)
+        return condition
 
     def init_trial(self, cond_hash):
         self.curr_trial += 1

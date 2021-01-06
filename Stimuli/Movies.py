@@ -4,18 +4,43 @@ from time import sleep
 import pygame
 from pygame.locals import *
 import datajoint as dj
-stim = dj.create_virtual_module('lab_stim.py', 'lab_stimuli')
+stimuli = dj.create_virtual_module('stimuli.py', 'lab_stimuli', create_tables=True)
+exp = dj.create_virtual_module('exp.py', 'lab_behavior', create_tables=True)
 
 
-class Movies(Stimulus):
-    """ This class handles the presentation of Movies"""
+class Movies(Stimulus, dj.Manual):
+    definition = """
+    # movie clip conditions
+    cond_hash            : char(24)                     # unique condition hash
+    ---
+    movie_name           : char(8)                      # short movie title
+    clip_number          : int                          # clip index
+    movie_duration       : smallint                     # movie duration
+    skip_time            : smallint                     # start time in clip
+    static_frame         : smallint                     # static frame presentation
+    """
+
+    class Trial(dj.Part):
+        definition = """
+        # Stimulus onset timestamps
+        -> exp.Trial
+        -> stimuli.Movies
+        ---
+        start_time          : timestamp                 # start time
+        end_time            : timestamp                 # end time
+        """
+
+    default_key = dict(movie_duration=10, skip_time=0, static_frame=False)
+    required_fields = ['movie_name', 'clip_number', 'movie_duration', 'skip_time', 'static_frame']
 
     def get_cond_tables(self):
         return ['MovieCond']
 
-    def setup(self):
+    def setup(self, logger, params, conditions, beh=False):
+        super().setup(logger, params, conditions, beh)
+
         # setup parameters
-        self.path = 'stimuli/'     # default path to copy local stimuli
+        self.path = 'stimuli/'     # default path to copy local  stimuli
         self.size = (400, 240)     # window size
         self.color = [127, 127, 127]  # default background color
         self.loc = (0, 0)          # default starting location of stimulus surface
@@ -27,6 +52,11 @@ class Movies(Stimulus):
         self.screen = pygame.display.set_mode(self.size)
         self.unshow()
         pygame.mouse.set_visible(0)
+
+        for condition in conditions:
+            cond = {**self.default_key, **condition}
+            key = {sel_key: cond[sel_key] for sel_key in self.required_fields}
+            self.logger.log_condition(key, 'Movies', 'stim')
 
     def prepare(self):
         self._get_new_cond()
@@ -81,7 +111,7 @@ class Movies(Stimulus):
 
     @staticmethod
     def get_clip_info(key):
-        return (stim.Movie() * stim.Movie.Clip() & key).fetch1()
+        return (stimuli.Movie() * stimuli.Movie.Clip() & key).fetch1()
 
     def encode_photodiode(self):
         """Encodes the flip number n in the flip amplitude.
@@ -184,3 +214,5 @@ class RPMovies(Movies):
                         dbus_name='org.mpris.MediaPlayer2.omxplayer1')
         self.vid.pause()
         self.vid.set_position(self.curr_cond['skip_time'])
+
+
