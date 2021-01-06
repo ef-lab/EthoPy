@@ -19,93 +19,119 @@ session_params = {
     'staircase_window'   : 10,
     'stair_up'           : 0.7,
     'stair_down'         : 0.6,
+    'noresponse_intertrial': True,
 }
 
-vo_conds = []; v_conds = []; o_conds = []
+vo_conds = [];
+v_conds = [];
+o_conds = []
 
 # define stimulus conditions
-odor_ratios = {1: [[100, 0]],
-               2: [[0, 100]]}
-objects = {1: 'obj1v6',
-           2: 'obj2v6'}
+odor_ratios = {2: [[100, 0]],
+               1: [[0, 100]]}
+objects = {1: 'obj4v6',
+           2: 'obj3v6'}
 v_dur = 4000
 o_dur = 500
-key = {
+
+trial_params = {
     'difficulty': 1,
-    'odor_id'            : [[1, 2]],
-    'delivery_port'      : [[1, 2]],
-    'clip_number'        : 1,
-    'skip_time'          : [0, 1, 2, 3],
-    'static_frame'       : False,
-    'timeout_duration'   : 4000,
-    'trial_duration'     : 5000,
-    'intertrial_duration': 0,
-    'init_duration'      : 100,
-    'delay_duration'     : 0,
-    'reward_amount'      : 8,
+    'timeout_duration': 6000,
+    'trial_duration': 5000,
+    'intertrial_duration': 500,
+    'init_duration': 100,
+    'delay_duration': 500,
+    'reward_amount': 3,
+}
+
+v_params = {
+    'clip_number': 1,
+    'skip_time': [0],
+    'static_frame': False,
+    'movie_duration': 4000,
+}
+
+o_params = {
+    'odor_id': [[1, 3]],
+    'delivery_port': [[1, 2]],
+    'odor_duration': 500
 }
 
 for probe in [1, 2]:
-    for ratio in odor_ratios[probe]:
-        vo_conds += factorize({**key, 'probe'  : probe,
-                               'movie_name'    : objects[probe],
-                               'dutycycle'     : [ratio],
-                               'movie_duration': v_dur,
-                               'odor_duration' : o_dur})
-        o_conds += factorize({**key, 'probe'   : probe,
-                              'movie_name'     : objects[probe],
-                              'dutycycle'      : [ratio],
-                              'movie_duration' : 0,
-                              'odor_duration'  : o_dur})
-    v_conds += factorize({**key, 'probe'  : probe,
-                          'movie_name'    : objects[probe],
-                          'dutycycle'     : [[0, 0]],
-                          'movie_duration': v_dur,
-                          'odor_duration' : 0})
+    vo_conds += factorize({**trial_params, **o_params, **v_params,
+                           'probe': probe,
+                           'movie_name': objects[probe],
+                           'dutycycle': odor_ratios[probe]})
+    o_conds += factorize({**trial_params, **o_params,
+                          'probe': probe,
+                          'movie_name': objects[probe],
+                          'dutycycle': odor_ratios[probe],
+                          'clip_number': 1,
+                          'skip_time': 0,
+                          'static_frame': False,
+                          'movie_duration': 0})
+    v_conds += factorize({**trial_params, **v_params,
+                          'probe': probe,
+                          'movie_name': objects[probe],
+                          'odor_id': [[1, 3]],
+                          'delivery_port': [[1, 2]],
+                          'dutycycle': [[0, 0]],
+                          'odor_duration': 0})
 
 # define stimulus conditions
-odor_ratios = {1: [[100, 0], [85, 15], [65, 35], [50, 50]],
-               2: [[0, 100], [15, 85], [35, 65], [50, 50]]}
-objects = {1: 'obj1v6',
-           2: 'obj2v6'}
-v_dur = 4000
-o_dur = 500
-key = {
+odor_ratios = {2: [[100, 0], [85, 15], [65, 35], [50, 50]],
+               1: [[0, 100], [15, 85], [35, 65], [50, 50]]}
+objects = {1: 'obj4v6',
+           2: 'obj3v6'}
+
+trial_params = {
     'difficulty': 2,
-    'odor_id'            : [[1, 2]],
-    'delivery_port'      : [[1, 2]],
-    'clip_number'        : [1, 2],
-    'skip_time'          : [0, 1, 2, 3],
-    'static_frame'       : False,
-    'timeout_duration'   : 4000,
-    'trial_duration'     : 5000,
+    'timeout_duration': 3000,
+    'trial_duration': 5000,
     'intertrial_duration': 0,
-    'init_duration'      : 100,
-    'delay_duration'     : 0,
-    'reward_amount'      : 5,
+    'init_duration': 100,
+    'delay_duration': 500,
+    'reward_amount': 4,
+}
+
+v_params = {
+    'clip_number': 1,
+    'skip_time': [0, 0.5, 1],
+    'static_frame': False,
+    'movie_duration': 4000,
+}
+
+o_params = {
+    'odor_id': [[1, 3]],
+    'delivery_port': [[1, 2]],
+    'odor_duration': 500
 }
 
 for probe in [1, 2]:
-    for ratio in odor_ratios[probe]:
-        vo_conds += factorize({**key, 'probe'  : probe,
-                               'movie_name'    : objects[probe],
-                               'dutycycle'     : [ratio],
-                               'movie_duration': v_dur,
-                               'odor_duration' : o_dur})
-        o_conds += factorize({**key, 'probe'   : probe,
-                              'movie_name'     : objects[probe],
-                              'dutycycle'      : [ratio],
-                              'movie_duration' : 0,
-                              'odor_duration'  : o_dur})
-    v_conds += factorize({**key, 'probe'  : probe,
-                          'movie_name'    : objects[probe],
-                          'dutycycle'     : [[0, 0]],
-                          'movie_duration': v_dur,
-                          'odor_duration' : 0})
+    vo_conds += factorize({**trial_params, **o_params, **v_params,
+                           'probe': probe,
+                           'movie_name': objects[probe],
+                           'dutycycle': odor_ratios[probe]})
+    o_conds += factorize({**trial_params, **o_params,
+                          'probe': probe,
+                          'movie_name': objects[probe],
+                          'dutycycle': odor_ratios[probe],
+                          'clip_number': 1,
+                          'skip_time': 0,
+                          'static_frame': False,
+                          'movie_duration': 0})
+    v_conds += factorize({**trial_params, **v_params,
+                          'probe': probe,
+                          'movie_name': objects[probe],
+                          'odor_id': [[1, 3]],
+                          'delivery_port': [[1, 2]],
+                          'dutycycle': [[0, 0]],
+                          'odor_duration': 0})
 
-conditions = vo_conds + vo_conds + v_conds + v_conds + o_conds
+conditions = vo_conds + v_conds + o_conds
 
 # run experiment
 exp = State()
 exp.setup(logger, DummyProbe, SmellyMovies, session_params, conditions)
 exp.run()
+
