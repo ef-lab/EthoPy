@@ -1,5 +1,5 @@
 from Stimulus import *
-import io, os, imageio
+import io, os
 from time import sleep
 import pygame
 from pygame.locals import *
@@ -15,6 +15,7 @@ class Movies(Stimulus):
 
     def setup(self):
         # setup parameters
+        import imageio
         self.path = 'stimuli/'     # default path to copy local stimuli
         self.size = (400, 240)     # window size
         self.color = [127, 127, 127]  # default background color
@@ -175,7 +176,7 @@ class RPMovies(Movies):
         os.system(cmd)
 
     def _init_player(self):
-        clip_info = self.logger.get_clip_info(self.curr_cond)
+        clip_info = self.get_clip_info(self.curr_cond)
         self.filename = self.path + clip_info['file_name']
         try:
             self.vid.load(self.filename)
