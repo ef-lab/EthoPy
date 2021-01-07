@@ -91,8 +91,7 @@ class Movies(Stimulus, dj.Manual):
         self.unshow()
         stim_stop = self.logger.session_timer.elapsed_time()
         self.isrunning = False
-        key = dict(self.logger.session_key, trial_idx=self.logger.curr_trial,
-                   cond_hash=self.hash_dict[self.curr_cond['cond_hash']],
+        key = dict(self.logger.trial_key, cond_hash=self.hash_dict[self.curr_cond['cond_hash']],
                    start_time=self.stim_start, end_time=stim_stop)
         self.logger.put(table='Movies.Trial', tuple=key, schema='stim')
 
