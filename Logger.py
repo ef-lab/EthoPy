@@ -70,7 +70,7 @@ class Logger:
         self.session_key['session'] = 1 if numpy.size(last_sessions) == 0 else numpy.max(last_sessions) + 1
         self.put(table='Session', tuple={**self.session_key, 'session_params': params, 'setup': self.setup,
                                          'protocol': self.get_protocol(), 'experiment_type': exp_type}, priority=1)
-        key = {'session': self.session_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 0}
+        key = {'session': self.session_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1}
         if 'start_time' in params:
             tdelta = lambda t: datetime.strptime(t, "%H:%M:%S") - datetime.strptime("00:00:00", "%H:%M:%S")
             key = {**key, 'start_time': tdelta(params['start_time']), 'stop_time': tdelta(params['stop_time'])}
