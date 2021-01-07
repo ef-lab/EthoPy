@@ -151,14 +151,13 @@ class Trial(dj.Manual):
 
         # correct trials
         correct_trials = ((LiquidDelivery * self).proj(
-            selected='ABS(time - end_time)<200 AND (time - start_time)>0') & 'selected > 0')
+            selected='ABS(time - end_time)<500 AND (time - start_time)>0') & 'selected > 0')
 
         # missed trials
-        incorrect_trials = ((Lick * self).proj(
-            selected='(time <= end_time) AND (time > start_time)') & 'selected > 0') - (self & correct_trials)
+        missed_trials = (self & AbortedTrial).proj()
 
         # incorrect trials
-        missed_trials = ((self - correct_trials) - incorrect_trials).proj()
+        incorrect_trials = ((self - correct_trials) - missed_trials).proj()
 
         # plot trials
         fig = plt.figure(figsize=(10, 4), tight_layout=True)
