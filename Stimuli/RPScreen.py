@@ -30,7 +30,7 @@ class RPScreen(Stimulus):
         self.unshow()
         self._get_new_cond()
 
-    def init(self):
+    def start(self):
         self.isrunning = True
         self.timer.start()
 

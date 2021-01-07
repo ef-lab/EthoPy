@@ -12,14 +12,12 @@ dj.config["enable_python_native_blobs"] = True
 
 
 class Logger:
+    setup, is_pi = socket.gethostname(), os.uname()[4][:3] == 'arm'
 
     def __init__(self, protocol=False):
-        self.setup, self.is_pi = socket.gethostname(), os.uname()[4][:3] == 'arm'
         self.curr_state, self.lock, self.queue, self.curr_trial, self.total_reward = '', False, PriorityQueue(), 0, 0
-        self.session_key = dict()
-        self.ping_timer, self.logger_timer = Timer(), Timer()
+        self.ping_timer, self.session_timer = Timer(), Timer()
         self.setup_status = 'running' if protocol else 'ready'
-        self.log_setup(protocol)
         fileobject = open(os.path.dirname(os.path.abspath(__file__)) + '/dj_local_conf.json')
         connect_info = json.loads(fileobject.read())
         background_conn = dj.Connection(connect_info['database.host'], connect_info['database.user'],
@@ -32,20 +30,26 @@ class Logger:
         self.inserter_thread = threading.Thread(target=self.inserter)
         self.getter_thread = threading.Thread(target=self.getter)
         self.inserter_thread.start()
+        self.log_setup(protocol)
         self.getter_thread.start()
-        self.logger_timer.start()  # start session time
 
-    def put(self, **kwargs): self.queue.put(PrioritizedItem(**kwargs))
+    def put(self, **kwargs):
+        item = PrioritizedItem(**kwargs)
+        self.queue.put(item)
+        if not item.block: self.queue.task_done()
+        else: self.queue.join()
 
     def inserter(self):
         while not self.thread_end.is_set():
             if self.queue.empty():  time.sleep(.5); continue
             item = self.queue.get()
+            print(item)
             ignore, skip = (False, False) if item.replace else (True, True)
             table = self.rgetattr(self.schemata[item.schema], item.table)
             self.thread_lock.acquire()
             table.insert1(item.tuple, ignore_extra_fields=ignore, skip_duplicates=skip, replace=item.replace)
             self.thread_lock.release()
+            if item.block: self.queue.task_done()
 
     def getter(self):
         while not self.thread_end.is_set():
@@ -56,7 +60,7 @@ class Logger:
             time.sleep(1)  # update once a second
 
     def log(self, table, data=dict()):
-        tmst = self.logger_timer.elapsed_time()
+        tmst = self.session_timer.elapsed_time()
         self.put(table=table, tuple={**self.session_key, 'trial_idx': self.curr_trial, 'time': tmst, **data})
         return tmst
 
@@ -65,7 +69,7 @@ class Logger:
         key = rel.fetch1() if numpy.size(rel.fetch()) else dict(setup=self.setup)
         if task_idx: key['task_idx'] = task_idx
         key = {**key, 'ip': self.get_ip(), 'status': self.setup_status}
-        SetupControl.insert1(key, replace=True)
+        self.put(table='SetupControl', tuple=key, replace=True, priority=1, block=True)
 
     def log_session(self, params, exp_type=''):
         self.curr_trial, self.total_reward, self.session_key = 0, 0, {'animal_id': self.get_setup_info('animal_id')}
@@ -73,17 +77,17 @@ class Logger:
         self.session_key['session'] = 1 if numpy.size(last_sessions) == 0 else numpy.max(last_sessions) + 1
         self.put(table='Session', tuple={**self.session_key, 'session_params': params, 'setup': self.setup,
                                          'protocol': self.get_protocol(), 'experiment_type': exp_type}, priority=1)
-        key = {'session': self.session_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1}
+        key = {'current_session': self.session_key['session'], 'last_trial': 0, 'total_liquid': 0}
         if 'start_time' in params:
             tdelta = lambda t: datetime.strptime(t, "%H:%M:%S") - datetime.strptime("00:00:00", "%H:%M:%S")
             key = {**key, 'start_time': tdelta(params['start_time']), 'stop_time': tdelta(params['stop_time'])}
         self.update_setup_info(key)
-        self.logger_timer.start()  # start session time
+        self.session_timer.start()  # start session time
 
     def log_conditions(self, conditions, condition_tables=[]):
         for cond in conditions:
             cond_hash = make_hash(cond)
-            self.put(table='Condition', tuple=dict(cond_hash=cond_hash, cond_tuple=cond.copy()), priority=5)
+            self.put(table='Condition', tuple=dict(cond_hash=cond_hash, cond_tuple=cond.copy()))
             cond.update({'cond_hash': cond_hash})
             for condtable in condition_tables:
                 if condtable == 'RewardCond' and isinstance(cond['probe'], tuple):
@@ -102,50 +106,41 @@ class Logger:
     def log_condition(self, condition, condition_table='Condition', schema='lab'):
         condition.update({'cond_hash': make_hash(condition)})
         self.put(table=condition_table, tuple=condition.copy(), schema=schema)
-        return condition
+        return condition['cond_hash']
 
-    def init_trial(self, cond_hash):
+    def log_trial(self, cond_hash):
         self.curr_trial += 1
-        if self.lock: self.thread_lock.acquire()
-        self.curr_cond, self.trial_start = cond_hash, self.logger_timer.elapsed_time()
-        return self.trial_start    # return trial start time
-
-    def log_trial(self, last_flip_count=0):
-        if self.lock: self.thread_lock.release()
-        timestamp = self.logger_timer.elapsed_time()
+        self.curr_cond, self.trial_start = cond_hash, self.session_timer.elapsed_time()
         self.put(table='Trial', tuple=dict(self.session_key, trial_idx=self.curr_trial, cond_hash=self.curr_cond,
-                                    start_time=self.trial_start, end_time=timestamp, last_flip_count=last_flip_count))
+                                    start_time=self.trial_start, end_time=0))
+        return self.trial_start    # return trial start time
 
     def log_pulse_weight(self, pulse_dur, probe, pulse_num, weight=0):
         key = dict(setup=self.setup, probe=probe, date=systime.strftime("%Y-%m-%d"))
         self.put(table='LiquidCalibration', tuple=key, priority=5)
         self.put(table='LiquidCalibration.PulseWeight',
-                 tuple=dict(key, pulse_dur=pulse_dur, pulse_num=pulse_num, weight=weight), replace=True)
+                 tuple=dict(key, pulse_dur=pulse_dur, pulse_num=pulse_num, weight=weight))
 
     def update_setup_info(self, info):
         self.setup_info = {**(SetupControl() & dict(setup=self.setup)).fetch1(), **info}
-        self.put(table='SetupControl', tuple=self.setup_info, replace=True, priority=1)
+        self.put(table='SetupControl', tuple=self.setup_info, replace=True, priority=5)
         self.setup_status = self.setup_info['status']
-        if 'status' in info:
-            while self.get_setup_info('status') != info['status']: time.sleep(.5)
 
-    def get_setup_info(self, field): return (SetupControl() & dict(setup=self.setup)).fetch1(field)
+    def get_setup_info(self, field):
+        return (SetupControl() & dict(setup=self.setup)).fetch1(field)
 
     def get_protocol(self, task_idx=None):
         if not task_idx: task_idx = self.get_setup_info('task_idx')
-        if len(Task() & dict(task_idx=task_idx)) > 0:
-            protocol = (Task() & dict(task_idx=task_idx)).fetch1('protocol')
-            path, filename = os.path.split(protocol)
-            if not path: protocol = str(pathlib.Path(__file__).parent.absolute()) + '/conf/' + filename
-            return protocol
-        else:
-            return False
+        protocol = (Task() & dict(task_idx=task_idx)).fetch1('protocol')
+        path, filename = os.path.split(protocol)
+        if not path: protocol = str(pathlib.Path(__file__).parent.absolute()) + '/conf/' + filename
+        return protocol
 
     def ping(self, period=5000):
         if self.ping_timer.elapsed_time() >= period:  # occasionally update control table
             self.ping_timer.start()
-            self.update_setup_info({'last_ping': str(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-                                    'queue_size': self.queue.qsize(), 'trials': self.curr_trial,
+            self.update_setup_info({'last_ping': str(datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]),
+                                    'queue_size': self.queue.qsize(), 'last_trial': self.curr_trial,
                                     'total_liquid': self.total_reward, 'state': self.curr_state})
 
     def cleanup(self):
@@ -174,4 +169,5 @@ class PrioritizedItem:
     value: Any = datafield(compare=False, default='')
     schema: str = datafield(compare=False, default='lab')
     replace: bool = datafield(compare=False, default=False)
+    block: bool = datafield(compare=False, default=False)
     priority: int = datafield(default=50)

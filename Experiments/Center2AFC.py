@@ -15,9 +15,9 @@ class State(StateClass):
         # Initialize params & Behavior/Stimulus objects
         self.beh = BehaviorClass(self.logger, session_params)
         self.stim = StimulusClass()
-        self.stim.setup(self.logger, session_params, conditions, self.beh)
         self.params = session_params
-        self.logger.log_conditions(conditions, self.stim.get_cond_tables() + self.beh.get_cond_tables())
+        conditions = self.logger.log_conditions(conditions, self.stim.get_cond_tables() + self.beh.get_cond_tables())
+        self.stim.setup(self.logger, session_params, conditions, self.beh)
 
         # Initialize states
         exitState = Exit(self)
@@ -81,8 +81,8 @@ class Trial(State):
     def entry(self):
         self.resp_ready = False
         super().entry()
-        self.stim.init()
-        self.trial_start = self.logger.init_trial(self.stim.curr_cond['cond_hash'])
+        self.stim.start()
+        self.trial_start = self.logger.log_trial(self.stim.curr_cond['cond_hash'])
 
     def run(self):
         self.stim.present()  # Start Stimulus
@@ -107,7 +107,6 @@ class Trial(State):
             return states['Trial']
 
     def exit(self):
-        self.logger.log_trial()
         self.stim.stop()  # stop stimulus when timeout
         self.logger.ping()
 

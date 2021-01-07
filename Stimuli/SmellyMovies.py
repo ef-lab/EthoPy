@@ -7,7 +7,7 @@ class SmellyMovies(RPMovies):
     def get_cond_tables(self):
         return ['MovieCond', 'OdorCond']
 
-    def init(self):
+    def start(self):
         delivery_port = self.curr_cond['delivery_port']
         odor_id = self.curr_cond['odor_id']
         odor_dur = self.curr_cond['odor_duration']

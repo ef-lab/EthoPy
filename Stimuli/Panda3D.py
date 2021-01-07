@@ -6,10 +6,11 @@ from direct.task import Task
 import panda3d.core as core
 from panda3d.core import *
 import datajoint as dj
+stimuli = dj.create_virtual_module('stimuli.py', 'lab_stimuli', create_tables=True)
+exp = dj.create_virtual_module('exp.py', 'lab_behavior', create_tables=True)
 
-lab_stim = dj.schema('lab_stimuli')
 
-@lab_stim
+@stimuli.schema
 class Objects(dj.Lookup):
     definition = """
     # object information
@@ -21,8 +22,46 @@ class Objects(dj.Lookup):
     """
 
 
-class Panda3D(Stimulus, ShowBase):
+@stimuli.schema
+class Panda3D(Stimulus, ShowBase, dj.Manual):
     """ This class handles the presentation of Objects with Panda3D"""
+    definition = """
+    # environment conditions
+    cond_hash            : char(24)                     # unique condition hash
+    ---
+    background_color      : tinyblob
+    ambient_color         : tinyblob
+    direct1_color         : tinyblob
+    direct1_dir           : tinyblob
+    direct2_color         : tinyblob
+    direct2_dir           : tinyblob
+    """
+
+    class Object(dj.Part):
+        definition = """
+        # object conditions
+        -> Panda3D
+        -> stimuli.Objects
+        ---
+        obj_pos_x             : blob
+        obj_pos_y             : blob
+        obj_mag               : blob
+        obj_rot               : blob
+        obj_tilt              : blob
+        obj_yaw               : blob
+        obj_delay             : blob
+        obj_dur               : blob
+        """
+
+    class Trial(dj.Part):
+        definition = """
+        # Stimulus onset timestamps
+        -> exp.Trial
+        -> Panda3D
+        ---
+        start_time           : int                          # start time from session start (ms)
+        end_time             : int                          # end time from session start (ms)
+        """
 
     def get_cond_tables(self):
         return ['ObjectCond']
@@ -93,7 +132,7 @@ class Panda3D(Stimulus, ShowBase):
                                         self.curr_cond['direct2_dir'][2])
         self.flip(2)
 
-    def init(self, period=None):
+    def start(self, period=None):
         self.objects = dict()
         if period:
             selected_obj = [p == period for p in self.curr_cond['obj_period']]

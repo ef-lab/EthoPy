@@ -76,7 +76,7 @@ class Trial(State):
     def entry(self):
         self.resp_ready = False
         super().entry()
-        self.stim.init()
+        self.stim.start()
         self.trial_start = self.logger.init_trial(self.stim.curr_cond['cond_hash'])
 
     def run(self):
