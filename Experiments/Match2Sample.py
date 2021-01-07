@@ -83,7 +83,7 @@ class Cue(State):
     def entry(self):
         self.resp_ready = False
         super().entry()
-        self.stim.init(type(self).__name__)
+        self.stim.start(type(self).__name__)
 
     def run(self):
         self.stim.present()
@@ -133,7 +133,7 @@ class Response(State):
     def entry(self):
         self.resp_ready = False
         super().entry()
-        self.stim.init(type(self).__name__)
+        self.stim.start(type(self).__name__)
 
     def run(self):
         self.stim.present()  # Start Stimulus

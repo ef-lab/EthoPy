@@ -41,8 +41,8 @@ class Stimulus:
         """prepares stuff for presentation before trial starts"""
         self._get_new_cond()
 
-    def init(self, cond=False):
-        """initialize stuff for each trial"""
+    def start(self, cond=False):
+        """start trial"""
         pass
 
     def ready_stim(self):

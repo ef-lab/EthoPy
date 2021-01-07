@@ -74,7 +74,7 @@ class PreTrial(State):
 class Trial(State):
     def entry(self):
         super().entry()
-        self.stim.init()
+        self.stim.start()
 
     def run(self):
         self.stim.present()

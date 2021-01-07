@@ -8,6 +8,7 @@ stimuli = dj.create_virtual_module('stimuli.py', 'lab_stimuli', create_tables=Tr
 exp = dj.create_virtual_module('exp.py', 'lab_behavior', create_tables=True)
 
 
+@stimuli.schema
 class Movies(Stimulus, dj.Manual):
     definition = """
     # movie clip conditions
@@ -24,10 +25,10 @@ class Movies(Stimulus, dj.Manual):
         definition = """
         # Stimulus onset timestamps
         -> exp.Trial
-        -> stimuli.Movies
+        -> Movies
         ---
-        start_time          : timestamp                 # start time
-        end_time            : timestamp                 # end time
+        start_time           : int                          # start time from session start (ms)
+        end_time             : int                          # end time from session start (ms)
         """
 
     default_key = dict(movie_duration=10, skip_time=0, static_frame=False)
@@ -53,23 +54,25 @@ class Movies(Stimulus, dj.Manual):
         self.unshow()
         pygame.mouse.set_visible(0)
 
+        self.hash_dict = dict()
         for condition in conditions:
             cond = {**self.default_key, **condition}
             key = {sel_key: cond[sel_key] for sel_key in self.required_fields}
-            self.logger.log_condition(key, 'Movies', 'stim')
+            self.hash_dict[condition['cond_hash']] = self.logger.log_condition(key, 'Movies', 'stim')
 
     def prepare(self):
         self._get_new_cond()
-
-    def init(self):
         self.curr_frame = 1
         self.clock = pygame.time.Clock()
         clip_info = self.get_clip_info(self.curr_cond)
         self.vid = imageio.get_reader(io.BytesIO(clip_info['clip'].tobytes()), 'ffmpeg')
         self.vsize = (clip_info['frame_width'], clip_info['frame_height'])
         self.pos = np.divide(self.size, 2) - np.divide(self.vsize, 2)
+
+    def start(self):
         self.isrunning = True
         self.timer.start()
+        self.stim_start = self.logger.session_timer.elapsed_time()
 
     def present(self):
         if self.timer.elapsed_time() < self.curr_cond['movie_duration']:
@@ -86,7 +89,12 @@ class Movies(Stimulus, dj.Manual):
     def stop(self):
         self.vid.close()
         self.unshow()
+        stim_stop = self.logger.session_timer.elapsed_time()
         self.isrunning = False
+        key = dict(self.logger.session_key, trial_idx=self.logger.curr_trial,
+                   cond_hash=self.hash_dict[self.curr_cond['cond_hash']],
+                   start_time=self.stim_start, end_time=stim_stop)
+        self.logger.put(table='Movies.Trial', tuple=key, schema='stim')
 
     def punish_stim(self):
         self.unshow((0, 0, 0))
@@ -171,7 +179,7 @@ class RPMovies(Movies):
         self._get_new_cond()
         self._init_player()
 
-    def init(self):
+    def start(self):
         self.isrunning = True
         try:
             self.vid.play()

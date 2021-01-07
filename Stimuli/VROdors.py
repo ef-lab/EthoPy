@@ -8,7 +8,7 @@ class VROdors(Stimulus):
     def prepare(self):
         self._get_new_cond()
 
-    def init(self):
+    def start(self):
         odor_id = self.params['odor_id']
         self.beh.start_odor()
         self.isrunning = True
