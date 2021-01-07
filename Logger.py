@@ -18,7 +18,6 @@ class Logger:
         self.curr_state, self.lock, self.queue, self.curr_trial, self.total_reward = '', False, PriorityQueue(), 0, 0
         self.ping_timer, self.session_timer = Timer(), Timer()
         self.setup_status = 'running' if protocol else 'ready'
-        self.log_setup(protocol)
         fileobject = open(os.path.dirname(os.path.abspath(__file__)) + '/dj_local_conf.json')
         connect_info = json.loads(fileobject.read())
         background_conn = dj.Connection(connect_info['database.host'], connect_info['database.user'],
@@ -30,6 +29,7 @@ class Logger:
         self.inserter_thread = threading.Thread(target=self.inserter)
         self.getter_thread = threading.Thread(target=self.getter)
         self.inserter_thread.start()
+        self.log_setup(protocol)
         self.getter_thread.start()
 
     def put(self, **kwargs): self.queue.put(PrioritizedItem(**kwargs))
@@ -70,7 +70,7 @@ class Logger:
         self.session_key['session'] = 1 if numpy.size(last_sessions) == 0 else numpy.max(last_sessions) + 1
         self.put(table='Session', tuple={**self.session_key, 'session_params': params, 'setup': self.setup,
                                          'protocol': self.get_protocol(), 'experiment_type': exp_type}, priority=1)
-        key = {'current_session': self.session_key['session'], 'last_trial': 0, 'total_liquid': 0}
+        key = {'session': self.session_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 0}
         if 'start_time' in params:
             tdelta = lambda t: datetime.strptime(t, "%H:%M:%S") - datetime.strptime("00:00:00", "%H:%M:%S")
             key = {**key, 'start_time': tdelta(params['start_time']), 'stop_time': tdelta(params['stop_time'])}
@@ -133,7 +133,7 @@ class Logger:
         if self.ping_timer.elapsed_time() >= period:  # occasionally update control table
             self.ping_timer.start()
             self.update_setup_info({'last_ping': str(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-                                    'queue_size': self.queue.qsize(), 'last_trial': self.curr_trial,
+                                    'queue_size': self.queue.qsize(), 'trials': self.curr_trial,
                                     'total_liquid': self.total_reward, 'state': self.curr_state})
 
     def cleanup(self):
