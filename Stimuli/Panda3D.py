@@ -24,17 +24,9 @@ class Objects(dj.Lookup):
 
 @stimuli.schema
 class Panda3D(Stimulus, ShowBase, dj.Manual):
-    """ This class handles the presentation of Objects with Panda3D"""
     definition = """
-    # environment conditions
+    # This class handles the presentation of Objects with Panda3D
     cond_hash            : char(24)                     # unique condition hash
-    ---
-    background_color      : tinyblob
-    ambient_color         : tinyblob
-    direct1_color         : tinyblob
-    direct1_dir           : tinyblob
-    direct2_color         : tinyblob
-    direct2_dir           : tinyblob
     """
 
     class Object(dj.Part):
@@ -51,6 +43,19 @@ class Panda3D(Stimulus, ShowBase, dj.Manual):
         obj_yaw               : blob
         obj_delay             : blob
         obj_dur               : blob
+        """
+
+    class Lights(dj.Part):
+        definition = """
+        # object conditions
+        -> Panda3D
+        ---
+        background_color      : tinyblob
+        ambient_color         : tinyblob
+        direct1_color         : tinyblob
+        direct1_dir           : tinyblob
+        direct2_color         : tinyblob
+        direct2_dir           : tinyblob
         """
 
     class Trial(dj.Part):
@@ -224,4 +229,4 @@ class Object(Panda3D):
     def time_fun(self, param, fun=lambda x, t: x):
         param = np.array([param]) if type(param) != np.ndarray else param
         idx = np.linspace(0, self.duration/1000, param.size)
-        return lambda t: np.interp(t, idx,fun(param, t))
+        return lambda t: np.interp(t, idx, fun(param, t))

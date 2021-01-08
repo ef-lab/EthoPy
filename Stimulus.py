@@ -7,6 +7,8 @@ class Stimulus:
     """ This class handles the stimulus presentation
     use function overrides for each stimulus class
     """
+    stim_start: int
+    stim_stop: int
 
     def get_cond_tables(self):
         """return condition tables"""
@@ -64,6 +66,12 @@ class Stimulus:
     def stop(self):
         """stop trial"""
         pass
+
+    def log_stimulus(self, table):
+        stim_stop = self.logger.session_timer.elapsed_time()
+        key = dict(self.logger.trial_key, cond_hash=self.hash_dict[self.curr_cond['cond_hash']],
+                   start_time=self.stim_start, end_time=stim_stop)
+        self.logger.put(table=table, tuple=key, schema='stim')
 
     def _anti_bias(self, choice_h, un_choices):
         choice_h = np.array([make_hash(c) for c in choice_h[-self.params['bias_window']:]])

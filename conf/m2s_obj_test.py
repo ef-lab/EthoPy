@@ -6,7 +6,7 @@ from Stimuli.Panda3D import *
 from utils.Generator import *
 from scipy import interpolate
 
-interp = lambda x: interpolate.splev(np.linspace(0, len(x), 100),
+interp = lambda x: interpolate.splev(np.linspace(0, len(x), 1),
                                      interpolate.splrep(np.linspace(0, len(x), len(x)), x)) if len(x) > 3 else x
 conditions = []
 
@@ -51,22 +51,22 @@ env_key = {
 
 np.random.seed(0)
 obj_timepoints = 5
-obj_combs = [[1, 1], [1, 1], [2, 2], [2, 2]]
+obj_combs = [(1, 1), (1, 1), (2, 2), (2, 2)]
 rew_prob = [1, 2, 2, 1]
-obj_posX = [[0, -.25], [0, .25], [0, .25], [0, -.25]]
+obj_posX = [(0, -.25), (0, .25), (0, .25), (0, -.25)]
 for idx, obj_comb in enumerate(obj_combs):
     rot_f = lambda: interp(np.random.rand(obj_timepoints) * 200)
     conditions += factorize({**env_key,
                             'difficulty': 1,
-                            'obj_id'    : [obj_comb],
+                            'obj_id'    : obj_comb,
                             'probe'     : rew_prob[idx],
-                            'obj_pos_x' : [obj_posX[idx]],
+                            'obj_pos_x' : obj_posX[idx],
                             'obj_pos_y' : 0,
                             'obj_mag'   : .5,
-                            'obj_rot'   : [[rot_f(), rot_f()]],
+                            'obj_rot'   : (rot_f(), rot_f()),
                             'obj_tilt'  : 0,
                             'obj_yaw'   : 0,
-                            'obj_period': [['Cue', 'Response']]})
+                            'obj_period': ('Cue', 'Response')})
 
 obj_combs = [[1, 1, 2], [1, 2, 1], [2, 1, 2], [2, 2, 1]]
 rew_prob = [1, 2, 2, 1]

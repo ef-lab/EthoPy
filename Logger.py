@@ -105,10 +105,23 @@ class Logger:
                                             'odor_id': cond['odor_id'][idx], 'delivery_port': port})
         return conditions
 
-    def log_condition(self, condition, condition_table='Condition', schema='lab'):
-        condition.update({'cond_hash': make_hash(condition)})
-        self.put(table=condition_table, tuple=condition.copy(), schema=schema)
-        return condition['cond_hash']
+    def log_conditions2(self, conditions, condition_tables, schema):
+        fields, hash_dict = list(), dict()
+        for ctable in condition_tables:
+            table = self.rgetattr(self.schemata[schema], ctable)
+            fields += list(name for name in table().heading if name in table())
+        for condition in conditions:
+            key = {sel_key: condition[sel_key] for sel_key in fields}
+            condition.update({'cond_hash': make_hash(key)})
+            hash_dict[condition['cond_hash']] = condition['cond_hash']
+            self.put(table=condition_tables[0], tuple=condition.copy(), schema=schema)
+            for ctable in condition_tables[1:]:  # insert dependant condition tables
+                primary_field = [field for field in self.rgetattr(self.schemata[schema], ctable).primary_key
+                                 if field != 'cond_hash']
+                for idx, pcond in enumerate(condition[primary_field]):
+                    key = {k: v if type(v) is int or type(v) is float else v[idx] for k, v in condition.items()}
+                self.put(table=ctable, tuple=key, schema=schema)
+        return conditions, condition['cond_hash']
 
     def log_trial(self, cond_hash):
         self.trial_key['trial_idx'] += 1
