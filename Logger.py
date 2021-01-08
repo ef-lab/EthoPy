@@ -80,7 +80,7 @@ class Logger:
     def log_conditions(self, conditions, condition_tables=[]):
         for cond in conditions:
             cond_hash = make_hash(cond)
-            self.put(table='Condition', tuple=dict(cond_hash=cond_hash, cond_tuple=cond.copy()))
+            self.put(table='Condition', tuple=dict(cond_hash=cond_hash, cond_tuple=cond.copy()), priority=5)
             cond.update({'cond_hash': cond_hash})
             for condtable in condition_tables:
                 if condtable == 'RewardCond' and isinstance(cond['probe'], tuple):
