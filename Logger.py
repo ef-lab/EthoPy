@@ -18,6 +18,7 @@ class Logger:
         self.curr_state, self.lock, self.queue, self.curr_trial, self.total_reward = '', False, PriorityQueue(), 0, 0
         self.ping_timer, self.session_timer = Timer(), Timer()
         self.setup_status = 'running' if protocol else 'ready'
+        self.log_setup(protocol)
         fileobject = open(os.path.dirname(os.path.abspath(__file__)) + '/dj_local_conf.json')
         connect_info = json.loads(fileobject.read())
         background_conn = dj.Connection(connect_info['database.host'], connect_info['database.user'],
@@ -29,7 +30,6 @@ class Logger:
         self.inserter_thread = threading.Thread(target=self.inserter)
         self.getter_thread = threading.Thread(target=self.getter)
         self.inserter_thread.start()
-        self.log_setup(protocol)
         self.getter_thread.start()
 
     def put(self, **kwargs): self.queue.put(PrioritizedItem(**kwargs))
@@ -62,7 +62,7 @@ class Logger:
         key = rel.fetch1() if numpy.size(rel.fetch()) else dict(setup=self.setup)
         if task_idx: key['task_idx'] = task_idx
         key = {**key, 'ip': self.get_ip(), 'status': self.setup_status}
-        self.put(table='SetupControl', tuple=key, replace=True, priority=1)
+        SetupControl.insert1(key, replace=True)
 
     def log_session(self, params, exp_type=''):
         self.curr_trial, self.total_reward, self.session_key = 0, 0, {'animal_id': self.get_setup_info('animal_id')}
@@ -119,8 +119,7 @@ class Logger:
         self.put(table='SetupControl', tuple=self.setup_info, replace=True, priority=5)
         self.setup_status = self.setup_info['status']
 
-    def get_setup_info(self, field):
-        return (SetupControl() & dict(setup=self.setup)).fetch1(field)
+    def get_setup_info(self, field): return (SetupControl() & dict(setup=self.setup)).fetch1(field)
 
     def get_protocol(self, task_idx=None):
         if not task_idx: task_idx = self.get_setup_info('task_idx')
