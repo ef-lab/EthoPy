@@ -33,6 +33,7 @@ class Movies(Stimulus, dj.Manual):
 
     default_key = dict(movie_duration=10, skip_time=0, static_frame=False)
     required_fields = ['movie_name', 'clip_number', 'movie_duration', 'skip_time', 'static_frame']
+    cond_tables = ['Movies']
 
     def get_cond_tables(self):
         return ['MovieCond']
@@ -89,11 +90,8 @@ class Movies(Stimulus, dj.Manual):
     def stop(self):
         self.vid.close()
         self.unshow()
-        stim_stop = self.logger.session_timer.elapsed_time()
+        self.log_stimulus('Movies.Trial')
         self.isrunning = False
-        key = dict(self.logger.trial_key, cond_hash=self.hash_dict[self.curr_cond['cond_hash']],
-                   start_time=self.stim_start, end_time=stim_stop)
-        self.logger.put(table='Movies.Trial', tuple=key, schema='stim')
 
     def punish_stim(self):
         self.unshow((0, 0, 0))
