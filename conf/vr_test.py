@@ -3,7 +3,7 @@
 from Experiments.VR import *
 from Behavior import *
 from Stimuli.VROdors import *
-from utils.Generator import *
+from utils.generator import *
 
 
 conditions = []

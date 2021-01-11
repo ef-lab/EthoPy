@@ -3,7 +3,7 @@
 from Experiments.Passive import *
 from Behavior import *
 from Stimuli.Bar import *
-from utils.Generator import *
+from utils.generator import *
 
 # define session parameters
 session_params = {
