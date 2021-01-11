@@ -207,6 +207,7 @@ class Offtime(State):
     def exit(self):
         if self.logger.setup_status in ['wakeup', 'sleeping']:
             self.logger.update_setup_info({'status': 'running'})
+            self.logger.setup_status = 'running'
 
 
 class Exit(State):
