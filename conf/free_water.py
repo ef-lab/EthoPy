@@ -1,6 +1,6 @@
 from Experiments.FreeWater import *
 from Behavior import *
-from utils.Generator import *
+from utils.generator import *
 from Stimuli.RPScreen import *
 
 # define session parameters

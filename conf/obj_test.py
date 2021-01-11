@@ -3,7 +3,7 @@
 from Experiments.Passive import *
 from Behavior import *
 from Stimuli.Panda3D import *
-from utils.Generator import *
+from utils.generator import *
 from scipy import interpolate
 
 # define session parameters

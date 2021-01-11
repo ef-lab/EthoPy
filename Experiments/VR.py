@@ -1,5 +1,5 @@
 from utils.Timer import *
-from StateMachine import *
+from Experiment import *
 
 
 class State(StateClass):

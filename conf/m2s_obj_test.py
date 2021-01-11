@@ -3,12 +3,14 @@
 from Experiments.Match2Sample import *
 from Behavior import *
 from Stimuli.Panda3D import *
-from utils.Generator import *
+from utils.generator import *
 from scipy import interpolate
 
 interp = lambda x: interpolate.splev(np.linspace(0, len(x), 1),
                                      interpolate.splrep(np.linspace(0, len(x), len(x)), x)) if len(x) > 3 else x
 conditions = []
+
+exp = Experiment()
 
 # define session parameters
 session_params = {
@@ -85,6 +87,6 @@ for idx, obj_comb in enumerate(obj_combs):
                             'obj_period': [['Cue', 'Response', 'Response']]})
 
 # run experiments
-exp = State()
-exp.setup(logger, DummyProbe, Panda3D, session_params, conditions)
+
+exp.setup(logger, DummyProbe, session_params, conditions)
 exp.run()
