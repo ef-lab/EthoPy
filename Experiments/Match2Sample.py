@@ -150,7 +150,7 @@ class Response(State):
         elif self.response and not self.beh.is_correct():  # incorrect response
             return states['Punish']
         elif self.timer.elapsed_time() > self.stim.curr_cond['response_duration']:      # timed out
-            return states['InterTrial']
+            return states['Abort']
         elif self.logger.setup_status in ['stop', 'exit']:
             return states['Exit']
         else:
