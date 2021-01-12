@@ -14,7 +14,7 @@ while not logger.setup_status == 'exit':
         if protocol: break
         elif logger.setup_status not in ['exit', 'running']:  # restart if session ended
             logger.update_setup_info({'status': 'ready'})  # restart
-    time.sleep(2)
+    time.sleep(.1)
 
 # # # # # Exit # # # # #
 logger.cleanup()

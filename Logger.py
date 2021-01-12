@@ -18,6 +18,7 @@ class Logger:
         self.curr_state, self.lock, self.queue, self.curr_trial, self.total_reward = '', False, PriorityQueue(), 0, 0
         self.ping_timer, self.session_timer = Timer(), Timer()
         self.setup_status = 'running' if protocol else 'ready'
+        self.log_setup(protocol)
         fileobject = open(os.path.dirname(os.path.abspath(__file__)) + '/dj_local_conf.json')
         connect_info = json.loads(fileobject.read())
         background_conn = dj.Connection(connect_info['database.host'], connect_info['database.user'],
@@ -29,7 +30,6 @@ class Logger:
         self.inserter_thread = threading.Thread(target=self.inserter)
         self.getter_thread = threading.Thread(target=self.getter)
         self.inserter_thread.start()
-        self.log_setup(protocol)
         self.getter_thread.start()
 
     def put(self, **kwargs): self.queue.put(PrioritizedItem(**kwargs))
@@ -62,7 +62,7 @@ class Logger:
         key = rel.fetch1() if numpy.size(rel.fetch()) else dict(setup=self.setup)
         if task_idx: key['task_idx'] = task_idx
         key = {**key, 'ip': self.get_ip(), 'status': self.setup_status}
-        self.put(table='SetupControl', tuple=key, replace=True, priority=1)
+        SetupControl.insert1(key, replace=True)
 
     def log_session(self, params, exp_type=''):
         self.curr_trial, self.total_reward, self.session_key = 0, 0, {'animal_id': self.get_setup_info('animal_id')}
@@ -80,7 +80,7 @@ class Logger:
     def log_conditions(self, conditions, condition_tables=[]):
         for cond in conditions:
             cond_hash = make_hash(cond)
-            self.put(table='Condition', tuple=dict(cond_hash=cond_hash, cond_tuple=cond.copy()))
+            self.put(table='Condition', tuple=dict(cond_hash=cond_hash, cond_tuple=cond.copy()), priority=5)
             cond.update({'cond_hash': cond_hash})
             for condtable in condition_tables:
                 if condtable == 'RewardCond' and isinstance(cond['probe'], tuple):
@@ -116,11 +116,12 @@ class Logger:
 
     def update_setup_info(self, info):
         self.setup_info = {**(SetupControl() & dict(setup=self.setup)).fetch1(), **info}
-        self.put(table='SetupControl', tuple=self.setup_info, replace=True, priority=5)
+        self.put(table='SetupControl', tuple=self.setup_info, replace=True, priority=1)
         self.setup_status = self.setup_info['status']
+        if 'status' in info:
+            while self.get_setup_info('status') != self.setup_status: time.sleep(.5)
 
-    def get_setup_info(self, field):
-        return (SetupControl() & dict(setup=self.setup)).fetch1(field)
+    def get_setup_info(self, field): return (SetupControl() & dict(setup=self.setup)).fetch1(field)
 
     def get_protocol(self, task_idx=None):
         if not task_idx: task_idx = self.get_setup_info('task_idx')
