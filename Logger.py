@@ -116,8 +116,10 @@ class Logger:
 
     def update_setup_info(self, info):
         self.setup_info = {**(SetupControl() & dict(setup=self.setup)).fetch1(), **info}
-        self.put(table='SetupControl', tuple=self.setup_info, replace=True, priority=5)
+        self.put(table='SetupControl', tuple=self.setup_info, replace=True, priority=1)
         self.setup_status = self.setup_info['status']
+        if 'status' in info:
+            while self.get_setup_info('status') != self.setup_status: time.sleep(.5)
 
     def get_setup_info(self, field): return (SetupControl() & dict(setup=self.setup)).fetch1(field)
 
