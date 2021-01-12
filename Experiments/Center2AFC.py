@@ -99,7 +99,7 @@ class Trial(State):
         elif self.response and self.beh.is_correct():      # response to correct probe
             return states['Reward']
         elif self.timer.elapsed_time() > self.stim.curr_cond['trial_duration']:      # timed out
-            return states['InterTrial']
+            return states['Abort']
         elif self.logger.setup_status in ['stop', 'exit']:
             return states['Exit']
         else:
