@@ -8,6 +8,7 @@ import bisect
 import itertools
 
 schema = dj.schema('lab_behavior')
+Mice = dj.create_virtual_module('mice.py', 'lab_mice')
 
 @schema
 class SetupControl(dj.Lookup):
@@ -238,7 +239,7 @@ class LiquidDelivery(dj.Manual):
 
     def plot(self):
         
-        animals =  Mice.Mice() & self
+        animals = Mice.Mice() - Mice.Death() & 'animal_id != 0' & self
 
         for animal in animals:
 
@@ -264,7 +265,7 @@ class LiquidDelivery(dj.Manual):
             # construct tuples (unique_date, total_reward_per_day)
             dates_liqs_unique = [(dt, sum(v for d,v in grp)) for dt, grp in itertools.groupby(tuples_list,
                                                             key=lambda x: x[0])]
-            print('last date: {}, amount: {}'.format(dates_liqs_unique[-1][0], dates_liqs_unique[-1][1]))
+            print('animal_id: {}, last date: {}, amount: {}'.format(animal['animal_id'], dates_liqs_unique[-1][0], dates_liqs_unique[-1][1]))
 
             dates_to_plot = [tpls[0] for tpls in dates_liqs_unique]
             liqs_to_plot = [tpls[1] for tpls in dates_liqs_unique]
