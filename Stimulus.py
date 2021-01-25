@@ -98,7 +98,8 @@ class Stimulus:
         elif self.params['trial_selection'] == 'staircase':
             idx = [~np.isnan(ch).any() for ch in self.beh.choice_history]
             rew_h = np.asarray(self.beh.reward_history); rew_h = rew_h[idx]
-            choice_h = [[c, d] for c, d in zip(np.asarray(self.beh.choice_history)[idx], np.asarray(self.dif_h)[idx])]
+            choice_h = np.int64(np.asarray(self.beh.choice_history)[idx])
+            choice_h = [[c, d] for c, d in zip(choice_h, np.asarray(self.dif_h)[idx])]
             if self.iter == 1 or np.size(self.iter) == 0:
                 self.iter = self.params['staircase_window']
                 perf = np.nanmean(np.greater(rew_h[-self.params['staircase_window']:], 0))
