@@ -166,7 +166,7 @@ class Trial(dj.Manual):
 
         # correct trials
         correct_trials = ((LiquidDelivery * self).proj(
-            selected='ABS(time - end_time)<500 AND (time - start_time)>0') & 'selected > 0')
+            selected='ABS(time - end_time)<200 AND (time - start_time)>0') & 'selected > 0')
 
         # missed trials
         missed_trials = (self & AbortedTrial).proj()
