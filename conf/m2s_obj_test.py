@@ -24,6 +24,7 @@ session_params = {
     'stair_up'              : 0.7,
     'stair_down'            : 0.55,
     'noresponse_intertrial' : True,
+    'incremental_punishment': True,
 }
 
 # define environment conditions
@@ -38,12 +39,12 @@ env_key = {
     'cue_ready'             : 100,
     'delay_ready'           : 0,
     'resp_ready'            : 0,
-    'intertrial_duration'   : 1500,
+    'intertrial_duration'   : 150,
     'cue_duration'          : 240000,
     'delay_duration'        : 0,
     'response_duration'     : 5000,
     'reward_duration'       : 2000,
-    'punish_duration'       : 4000,
+    'punish_duration'       : 400,
     'obj_dur'               : 240000,
     'obj_delay'             : 0,
 }
@@ -51,7 +52,7 @@ env_key = {
 np.random.seed(0)
 
 # one static object
-obj_combs = [[2, 2], [2, 2]]#, [2, 2], [2, 2]]
+obj_combs = [[7, 7], [8, 8]]#, [2, 2], [2, 2]]
 rew_prob = [1, 2]
 obj_posX = [[0, -.25], [0, .25]]
 for idx, obj_comb in enumerate(obj_combs):
@@ -157,5 +158,5 @@ for idx, obj_comb in enumerate(obj_combs):
 
 # run experiments
 exp = State()
-exp.setup(logger, RPBehavior, Panda3D, session_params, conditions)
+exp.setup(logger, DummyProbe, Panda3D, session_params, conditions)
 exp.run()

@@ -52,6 +52,10 @@ class Behavior:
         self.reward_history.append(reward)
         self.logger.total_reward = np.nansum(self.reward_history)
 
+    def get_false_history(self, h=10):
+        idx = np.logical_and(np.isnan(self.reward_history), ~np.isnan(self.choice_history))
+        return np.sum(np.cumprod(np.flip(idx[-h:])))
+
     def is_sleep_time(self):
         now = datetime.now()
         start = now.replace(hour=0, minute=0, second=0) + self.logger.setup_info['start_time']
