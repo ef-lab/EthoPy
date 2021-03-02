@@ -13,8 +13,8 @@ conditions = []
 # define session parameters
 session_params = {
     'trial_selection'       : 'staircase',
-    'start_time'            : '00:00:00',
-    'stop_time'             : '23:00:00',
+    'start_time'            : '13:00:00',
+    'stop_time'             : '21:50:00',
     'reward'                : 'water',
     'intensity'             : 64,
     'max_reward'            : 3000,
@@ -39,12 +39,12 @@ env_key = {
     'cue_ready'             : 100,
     'delay_ready'           : 0,
     'resp_ready'            : 0,
-    'intertrial_duration'   : 150,
+    'intertrial_duration'   : 1000,
     'cue_duration'          : 240000,
     'delay_duration'        : 0,
     'response_duration'     : 5000,
     'reward_duration'       : 2000,
-    'punish_duration'       : 400,
+    'punish_duration'       : 1000,
     'obj_dur'               : 240000,
     'obj_delay'             : 0,
 }
@@ -52,12 +52,12 @@ env_key = {
 np.random.seed(0)
 
 # one static object
-obj_combs = [[7, 7], [8, 8]]#, [2, 2], [2, 2]]
+obj_combs = [[3, 3], [3, 3]]#, [2, 2], [2, 2]]
 rew_prob = [1, 2]
 obj_posX = [[0, -.25], [0, .25]]
 for idx, obj_comb in enumerate(obj_combs):
     conditions += factorize({**env_key,
-                            'difficulty': 1,
+                            'difficulty': 0,
                             'reward_amount': 5,
                             'obj_id'    : [obj_comb],
                             'probe'     : rew_prob[idx],
@@ -71,8 +71,26 @@ for idx, obj_comb in enumerate(obj_combs):
 
 
 # two static objects (1 target + 1 distractor)
-obj_combs = [[2, 4, 2], [2, 2, 4]]
+obj_combs = [[3, 4, 3], [3, 3, 4]]
 rew_prob = [2, 1]
+for idx, obj_comb in enumerate(obj_combs):
+    conditions += factorize({**env_key,
+                            'difficulty': 1,
+                            'reward_amount': 5,
+                            'obj_id'    : [obj_comb],
+                            'probe'     : rew_prob[idx],
+                            'obj_pos_x' : [[0, -.25, .25]],
+                            'obj_pos_y' : 0,
+                            'obj_mag'   : .5,
+                            'obj_rot'   : 0,
+                            'obj_tilt'  : 0,
+                            'obj_yaw'   : 0,
+                            'obj_period': [['Cue', 'Response', 'Response']]})
+
+
+# two static objects (1 target + 2 distractors)
+obj_combs = [[3, 4, 3], [3, 3, 4],[3, 1, 3], [3, 3, 1]]
+rew_prob = [2, 1, 2, 1]
 for idx, obj_comb in enumerate(obj_combs):
     conditions += factorize({**env_key,
                             'difficulty': 2,
@@ -88,26 +106,8 @@ for idx, obj_comb in enumerate(obj_combs):
                             'obj_period': [['Cue', 'Response', 'Response']]})
 
 
-# two static objects (1 target + 2 distractors)
-obj_combs = [[2, 4, 2], [2, 2, 4],[2, 1, 2], [2, 2, 1]]
-rew_prob = [2, 1, 2, 1]
-for idx, obj_comb in enumerate(obj_combs):
-    conditions += factorize({**env_key,
-                            'difficulty': 3,
-                            'reward_amount': 5,
-                            'obj_id'    : [obj_comb],
-                            'probe'     : rew_prob[idx],
-                            'obj_pos_x' : [[0, -.25, .25]],
-                            'obj_pos_y' : 0,
-                            'obj_mag'   : .5,
-                            'obj_rot'   : 0,
-                            'obj_tilt'  : 0,
-                            'obj_yaw'   : 0,
-                            'obj_period': [['Cue', 'Response', 'Response']]})
-
-
 # two rotating objects (1 target + 2 distractors) + tilt + yaw
-obj_combs = [[2, 4, 2], [2, 2, 4],[2, 1, 2], [2, 2, 1]]
+obj_combs = [[3, 4, 3], [3, 3, 4],[3, 1, 3], [3, 3, 1]]
 rew_prob = [2, 1, 2, 1]
 reps = 4
 for idx, obj_comb in enumerate(obj_combs):
@@ -116,7 +116,7 @@ for idx, obj_comb in enumerate(obj_combs):
         tilt_f = lambda: interp(np.random.rand(3)*20)
         yaw_f = lambda: interp(np.random.rand(2)*10)
         conditions += factorize({**env_key,
-                                'difficulty': 4,
+                                'difficulty': 3,
                                 'reward_amount': 5,
                                 'obj_id'    : [obj_comb],
                                 'probe'     : rew_prob[idx],
@@ -131,7 +131,7 @@ for idx, obj_comb in enumerate(obj_combs):
 
 # two rotating objects + changing light
 obj_timepoints = 5
-obj_combs = [[2, 4, 2], [2, 2, 4],[2, 1, 2], [2, 2, 1]]
+obj_combs = [[3, 4, 3], [3, 3, 4],[3, 1, 3], [3, 3, 1]]
 rew_prob = [2, 1, 2, 1]
 reps = 4
 for idx, obj_comb in enumerate(obj_combs):
@@ -142,7 +142,7 @@ for idx, obj_comb in enumerate(obj_combs):
         dir1_f = lambda: np.array([0, -20, 0]) + np.random.randn(3)*30
         dir2_f = lambda: np.array([180, -20, 0]) + np.random.randn(3)*30
         conditions += factorize({**env_key,
-                                'difficulty'    : 5,
+                                'difficulty'    : 4,
                                 'reward_amount' : 5,
                                 'obj_id'        : [obj_comb],
                                 'probe'         : rew_prob[idx],
@@ -160,3 +160,5 @@ for idx, obj_comb in enumerate(obj_combs):
 exp = State()
 exp.setup(logger, DummyProbe, Panda3D, session_params, conditions)
 exp.run()
+
+
