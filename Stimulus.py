@@ -20,11 +20,11 @@ class Stimulus:
         self.dif_h = list()
         self.rew_probe = []
         self.un_choices = []
-        self.cur_dif = 1
         resp_cond = params['resp_cond'] if 'resp_cond' in params else 'probe'
         if np.all(['difficulty' in cond for cond in conditions]):
             self.difs = np.array([cond['difficulty'] for cond in self.conditions])
             diff_flag = True
+            self.cur_dif = min(self.difs)
         else: diff_flag = False
         if np.all([resp_cond in cond for cond in conditions]):
             if diff_flag: self.choices = np.array([make_hash([d[resp_cond], d['difficulty']]) for d in conditions])
@@ -104,7 +104,7 @@ class Stimulus:
                 self.iter = self.params['staircase_window']
                 perf = np.nanmean(np.greater(rew_h[-self.params['staircase_window']:], 0))
                 if   perf > self.params['stair_up']   and self.cur_dif < max(self.difs):  self.cur_dif += 1
-                elif perf < self.params['stair_down'] and self.cur_dif > min(self.difs):  self.cur_dif -= 1
+                elif perf < self.params['stair_down'] and self.cur_dif > 1:  self.cur_dif -= 1
                 self.logger.update_setup_info({'difficulty': self.cur_dif})
             elif np.size(self.beh.choice_history) and self.beh.choice_history[-1:][0] > 0: self.iter -= 1
             anti_bias = self._anti_bias(choice_h, self.un_choices[self.un_difs == self.cur_dif])
