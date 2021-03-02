@@ -156,7 +156,7 @@ class Trial(dj.Manual):
                   'trial_bins': 10,
                   'range': 0.9,
                   'xlim': (-1,),
-                  'ylim': (0.4,), **kwargs}
+                  'ylim': (-0.6,), **kwargs}
 
         def plot_trials(trials, **kwargs):
             conds, trial_idxs = ((Trial & trials) * Condition()).fetch('cond_tuple', 'trial_idx')
