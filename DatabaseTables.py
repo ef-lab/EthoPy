@@ -48,7 +48,7 @@ class Task(dj.Lookup):
 @schema
 class Session(dj.Manual):
     definition = """
-    # Behavior session infod
+    # Behavior session info
     animal_id            : int                          # animal id
     session              : smallint                     # session number
     ---
@@ -61,6 +61,18 @@ class Session(dj.Manual):
     experiment_type=null : varchar(256)                 
     """
 
+@schema
+class Files(dj.Manual):
+    definition = """
+    # File session info
+    -> Session
+    program              : varchar(256)
+    ---
+    filename=null        : varchar(256)                # file
+    source_path=null     : varchar(512)                # local path
+    target_path=null     : varchar(512)                # remote drive path
+    timestamp            : timestamp                   # timestamp
+    """
 
 @schema
 class Condition(dj.Manual):
