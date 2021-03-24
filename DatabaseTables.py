@@ -3,7 +3,7 @@ import datajoint as dj
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import numpy as np
-from datetime import datetime, timedelta
+import datetime
 import bisect
 import itertools
 import pandas as pd
@@ -164,11 +164,16 @@ class Trial(dj.Manual):
         plt.show()
 
     def plotDifficulty(self, **kwargs):
+
+        # minimum difficulty
+        conds = (self * Condition()).fetch('cond_tuple')
+        min_difficulty = np.min([cond['difficulty'] for cond in conds])
+
         params = {'probe_colors': [[1, 0, 0], [0, .5, 1]],
                   'trial_bins': 10,
                   'range': 0.9,
                   'xlim': (-1,),
-                  'ylim': (-0.6,), **kwargs}
+                  'ylim': (min_difficulty-0.6,), **kwargs}
 
         def plot_trials(trials, **kwargs):
             conds, trial_idxs = ((Trial & trials) * Condition()).fetch('cond_tuple', 'trial_idx')
@@ -192,7 +197,7 @@ class Trial(dj.Manual):
                                                               len(np.unique(missed_trials.fetch('trial_idx')))))
 
         # plot trials
-        fig = plt.figure(figsize=(10, 4), tight_layout=True)
+        fig = plt.figure(figsize=(10, 5), tight_layout=True)
         plot_trials(correct_trials, s=4, c=np.array(params['probe_colors'])[correct_trials.fetch('probe') - 1])
         plot_trials(incorrect_trials, s=4, marker='o', facecolors='none', edgecolors=[.3, .3, .3], linewidths=.5)
         plot_trials(missed_trials, s=.1, c=[[0, 0, 0]])
@@ -279,12 +284,11 @@ class LiquidDelivery(dj.Manual):
 
             # convert timestamps to dates
             tstmps = liquids[0].tolist()
-            dates = [datetime.date(d) for d in tstmps] 
+            dates = [d.date() for d in tstmps]
             
             # find first index for plot, i.e. for last 15 days
-            last_tmst = liquids[0][-1]
-            last_date =  datetime.date(last_tmst)
-            starting_date = last_date - timedelta(days=15) # keep only last 15 days
+            last_date = dates[-1]
+            starting_date = last_date - datetime.timedelta(days=15) # keep only last 15 days
             starting_idx = bisect.bisect_right(dates, starting_date)
             
             # keep only 15 last days 
