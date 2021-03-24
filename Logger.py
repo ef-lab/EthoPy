@@ -16,6 +16,7 @@ class Logger:
 
     def __init__(self, protocol=False):
         self.curr_state, self.lock, self.queue, self.curr_trial, self.total_reward = '', False, PriorityQueue(), 0, 0
+        self.session_key = dict()
         self.ping_timer, self.session_timer = Timer(), Timer()
         self.setup_status = 'running' if protocol else 'ready'
         self.log_setup(protocol)
