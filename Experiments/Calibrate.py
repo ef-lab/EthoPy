@@ -45,13 +45,18 @@ class Calibrate:
                     self.screen.draw('Enter weight for probe %d' % probe, 0, 0, 400, 300)
                     self.screen.add_numpad()
                     button = self.screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))
-                    while not button.is_pressed():
+                    exit_button = self.screen.add_button(name='X', x=750, y=0, w=50, h=50, color=(25, 25, 25));
+                    exit_flag = False
+                    while not button.is_pressed() or self.screen.numpad == '':
                         time.sleep(0.2)
-                    self.logger.log_pulse_weight(self.params['duration'][cal_idx], probe,
-                                                 self.params['pulsenum'][cal_idx], float(self.screen.numpad))  # insert
+                        if exit_button.is_pressed(): exit_flag = True; break
+                    if self.screen.numpad and not exit_flag:
+                        self.logger.log_pulse_weight(self.params['duration'][cal_idx], probe,
+                                                     self.params['pulsenum'][cal_idx], float(self.screen.numpad))  # insert
         valve.cleanup()
         self.screen.cleanup()
         self.screen.draw('Done calibrating')
+        self.screen.exit()
         self.logger.update_setup_info({'status': 'ready'})
         time.sleep(2)
-        self.screen.exit()
+
