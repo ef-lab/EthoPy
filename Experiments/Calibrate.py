@@ -12,7 +12,7 @@ class Calibrate:
 
     def run(self):
         """ Lickspout liquid delivery calibration """
-        valve = RPProbe(self.logger)
+        valve = RPProbe(self.logger, callbacks=False)
         print('Running calibration')
 
         for cal_idx in range(0, numpy.size(self.params['pulsenum'])):
@@ -56,7 +56,7 @@ class Calibrate:
         valve.cleanup()
         self.screen.cleanup()
         self.screen.draw('Done calibrating')
-        self.screen.exit()
         self.logger.update_setup_info({'status': 'ready'})
         time.sleep(2)
+        self.screen.exit()
 
