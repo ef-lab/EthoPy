@@ -52,6 +52,6 @@ class Calibrate:
         valve.cleanup()
         self.screen.cleanup()
         self.screen.draw('Done calibrating')
-        self.logger.update_setup_info({'status': 'stop'})
-        time.sleep(5)
+        self.logger.update_setup_info({'status': 'ready'})
+        time.sleep(2)
         self.screen.exit()
