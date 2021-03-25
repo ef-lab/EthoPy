@@ -55,9 +55,12 @@ class PyWelcome(Welcome):
             self.screen.draw('Enter animal ID', 0, 0, 400, 280)
             self.screen.add_numpad()
             button = self.screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))
-            while not button.is_pressed():
+            exit_button = self.screen.add_button(name='X', x=750, y=0, w=50, h=50, color=(25, 25, 25))
+            exit_flag = False
+            while not button.is_pressed() or self.screen.numpad == '':
                 time.sleep(0.2)
-            if self.screen.numpad:
+                if exit_button.is_pressed(): exit_flag = True; break
+            if self.screen.numpad and not exit_flag:
                 self.logger.update_setup_info({'animal_id': int(self.screen.numpad)})
                 self.setup()
         elif self.state == 'change_task':
@@ -65,9 +68,11 @@ class PyWelcome(Welcome):
             self.screen.draw('Enter task idx', 0, 0, 400, 280)
             self.screen.add_numpad()
             button = self.screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))
-            while not button.is_pressed():
+            exit_button = self.screen.add_button(name='X', x=750, y=0, w=50, h=50, color=(25, 25, 25));exit_flag = False
+            while not button.is_pressed() or self.screen.numpad == '':
                 time.sleep(0.2)
-            if self.screen.numpad:
+                if exit_button.is_pressed(): exit_flag = True; break
+            if self.screen.numpad and not exit_flag:
                 self.logger.update_setup_info({'task_idx': int(self.screen.numpad)})
                 self.setup()
         elif self.state == 'weigh_animal':
@@ -75,9 +80,12 @@ class PyWelcome(Welcome):
             self.screen.draw('Enter animal weight', 0, 0, 400, 280)
             self.screen.add_numpad()
             button = self.screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))
-            while not button.is_pressed():
+            exit_button = self.screen.add_button(name='X', x=750, y=0, w=50, h=50, color=(25, 25, 25));
+            exit_flag = False
+            while not button.is_pressed() or self.screen.numpad == '':
                 time.sleep(0.2)
-            if self.screen.numpad:
+                if exit_button.is_pressed(): exit_flag = True; break
+            if self.screen.numpad and not exit_flag:
                 self.logger.put(table='MouseWeight', tuple=dict(self.logger.session_key,
                                                                 weight=float(self.screen.numpad)), schema='mice')
                 self.setup()
