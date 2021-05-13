@@ -291,7 +291,7 @@ class LiquidDelivery(dj.Manual):
             
             # find first index for plot, i.e. for last 15 days
             last_date = dates[-1]
-            starting_date = last_date - datetime.timedelta(days=15) # keep only last 15 days
+            starting_date = last_date - timedelta(days=15) # keep only last 15 days
             starting_idx = bisect.bisect_right(dates, starting_date)
             
             # keep only 15 last days 
