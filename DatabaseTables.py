@@ -3,7 +3,7 @@ import datajoint as dj
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import numpy as np
-import datetime
+from datetime import datetime, timedelta
 import bisect
 import itertools
 import pandas as pd
