@@ -29,7 +29,7 @@ class Panda3D(Stimulus, ShowBase):
 
     def setup(self):
         # setup parameters
-        self.path = 'objects/'     # default path to copy local stimuli
+        self.path = os.path.dirname(os.path.abspath(__file__)) + '/objects/'     # default path to copy local stimuli
         self.set_intensity(self.params['intensity'])
 
         # store local copy of files

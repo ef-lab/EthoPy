@@ -120,7 +120,7 @@ class Delay(State):
             self.resp_ready = True
 
     def next(self):
-        if self.resp_ready:
+        if self.resp_ready and self.timer.elapsed_time() > self.stim.curr_cond['delay_duration']: # this specifies the minimum amount of time we want to spend in the delay period contrary to the cue_duration FIX IT
             return states['Response']
         elif self.response:
             return states['Abort']

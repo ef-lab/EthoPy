@@ -12,10 +12,11 @@ dj.config["enable_python_native_blobs"] = True
 
 
 class Logger:
-    setup, is_pi = socket.gethostname(), os.uname()[4][:3] == 'arm'
 
     def __init__(self, protocol=False):
+        self.setup, self.is_pi = socket.gethostname(), os.uname()[4][:3] == 'arm'
         self.curr_state, self.lock, self.queue, self.curr_trial, self.total_reward = '', False, PriorityQueue(), 0, 0
+        self.session_key = dict()
         self.ping_timer, self.session_timer = Timer(), Timer()
         self.setup_status = 'running' if protocol else 'ready'
         self.log_setup(protocol)
@@ -54,7 +55,10 @@ class Logger:
 
     def log(self, table, data=dict()):
         tmst = self.session_timer.elapsed_time()
-        self.put(table=table, tuple={**self.session_key, 'trial_idx': self.curr_trial, 'time': tmst, **data})
+        if self.session_key:
+            self.put(table=table, tuple={**self.session_key, 'trial_idx': self.curr_trial, 'time': tmst, **data})
+        else:
+            print('No session key! Cannot log data into %s' % table)
         return tmst
 
     def log_setup(self, task_idx=False):
@@ -119,7 +123,7 @@ class Logger:
         self.put(table='SetupControl', tuple=self.setup_info, replace=True, priority=1)
         self.setup_status = self.setup_info['status']
         if 'status' in info:
-            while self.get_setup_info('status') != self.setup_status: time.sleep(.5)
+            while self.get_setup_info('status') != info['status']: time.sleep(.5)
 
     def get_setup_info(self, field): return (SetupControl() & dict(setup=self.setup)).fetch1(field)
 
