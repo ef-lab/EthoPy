@@ -86,7 +86,7 @@ class PyWelcome(Welcome):
                 time.sleep(0.2)
                 if exit_button.is_pressed(): exit_flag = True; break
             if self.screen.numpad and not exit_flag:
-                self.logger.put(table='MouseWeight', tuple=dict(self.logger.get_setup_info('animal_id'),
+                self.logger.put(table='MouseWeight', tuple=dict(animal_id=self.logger.get_setup_info('animal_id'),
                                                                 weight=float(self.screen.numpad)), schema='mice')
                 self.setup()
         elif self.state == 'start_experiment':
