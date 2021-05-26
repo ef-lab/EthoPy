@@ -129,7 +129,7 @@ class Logger:
 
     def get_protocol(self, task_idx=None):
         if not task_idx: task_idx = self.get_setup_info('task_idx')
-        if (Task() & dict(task_idx=task_idx)).len() > 0:
+        if len(Task() & dict(task_idx=task_idx)) > 0:
             protocol = (Task() & dict(task_idx=task_idx)).fetch1('protocol')
             path, filename = os.path.split(protocol)
             if not path: protocol = str(pathlib.Path(__file__).parent.absolute()) + '/conf/' + filename
