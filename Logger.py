@@ -129,10 +129,13 @@ class Logger:
 
     def get_protocol(self, task_idx=None):
         if not task_idx: task_idx = self.get_setup_info('task_idx')
-        protocol = (Task() & dict(task_idx=task_idx)).fetch1('protocol')
-        path, filename = os.path.split(protocol)
-        if not path: protocol = str(pathlib.Path(__file__).parent.absolute()) + '/conf/' + filename
-        return protocol
+        if (Task() & dict(task_idx=task_idx)).len() > 0:
+            protocol = (Task() & dict(task_idx=task_idx)).fetch1('protocol')
+            path, filename = os.path.split(protocol)
+            if not path: protocol = str(pathlib.Path(__file__).parent.absolute()) + '/conf/' + filename
+            return protocol
+        else:
+            return False
 
     def ping(self, period=5000):
         if self.ping_timer.elapsed_time() >= period:  # occasionally update control table
