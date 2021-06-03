@@ -116,7 +116,7 @@ class Logger:
         key = dict(setup=self.setup, probe=probe, date=systime.strftime("%Y-%m-%d"))
         self.put(table='LiquidCalibration', tuple=key, priority=5)
         self.put(table='LiquidCalibration.PulseWeight',
-                 tuple=dict(key, pulse_dur=pulse_dur, pulse_num=pulse_num, weight=weight))
+                 tuple=dict(key, pulse_dur=pulse_dur, pulse_num=pulse_num, weight=weight), replace=True)
 
     def update_setup_info(self, info):
         self.setup_info = {**(SetupControl() & dict(setup=self.setup)).fetch1(), **info}
