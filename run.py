@@ -10,7 +10,7 @@ logger = Logger(protocol=protocol)   # setup logger
 while not logger.setup_status == 'exit':
     if logger.is_pi and logger.setup_status != 'running': PyWelcome(logger)
     if logger.setup_status == 'running':   # run experiment unless stopped
-        exec(open(logger.get_protocol()).read())
+        exec(open(logger.get_protocol()).read()) if logger.get_protocol() else logger.update_setup_info({'status': 'ready'})
         if protocol:  logger.update_setup_info({'status': 'exit'}); break
         elif logger.setup_status not in ['exit', 'running']:  # restart if session ended
             logger.update_setup_info({'status': 'ready'})  # restart

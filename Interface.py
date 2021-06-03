@@ -88,6 +88,7 @@ class RPProbe(Interface):
                          'lick': {1: 17, 2: 27},
                          'start': {1: 9},
                          'sound': {1: 18}}
+        self.callbacks = callbacks
         self.frequency = 20
         self.pulses = dict()
         self.GPIO.setup(list(self.channels['lick'].values()) + [self.channels['start'][1]],
@@ -165,15 +166,16 @@ class RPProbe(Interface):
     def pulse_out(self, probe):
         self.Pulser.wave_send_once(self.pulses[probe])
 
-    def cleanup(self):
-        self.GPIO.remove_event_detect(self.channels['lick'][1])
-        self.GPIO.remove_event_detect(self.channels['lick'][2])
-        self.GPIO.remove_event_detect(self.channels['start'][1])
-        self.GPIO.cleanup()
-        self.Pulser.wave_clear()
-
     def getStart(self):
         return not self.GPIO.input(self.channels['start'][1])
+
+    def cleanup(self):
+        self.Pulser.wave_clear()
+        if self.callbacks:
+            self.GPIO.remove_event_detect(self.channels['lick'][1])
+            self.GPIO.remove_event_detect(self.channels['lick'][2])
+            self.GPIO.remove_event_detect(self.channels['start'][1])
+        self.GPIO.cleanup()
 
 
 class VRProbe(Interface):

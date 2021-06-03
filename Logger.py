@@ -116,7 +116,7 @@ class Logger:
         key = dict(setup=self.setup, probe=probe, date=systime.strftime("%Y-%m-%d"))
         self.put(table='LiquidCalibration', tuple=key, priority=5)
         self.put(table='LiquidCalibration.PulseWeight',
-                 tuple=dict(key, pulse_dur=pulse_dur, pulse_num=pulse_num, weight=weight))
+                 tuple=dict(key, pulse_dur=pulse_dur, pulse_num=pulse_num, weight=weight), replace=True)
 
     def update_setup_info(self, info):
         self.setup_info = {**(SetupControl() & dict(setup=self.setup)).fetch1(), **info}
@@ -129,10 +129,13 @@ class Logger:
 
     def get_protocol(self, task_idx=None):
         if not task_idx: task_idx = self.get_setup_info('task_idx')
-        protocol = (Task() & dict(task_idx=task_idx)).fetch1('protocol')
-        path, filename = os.path.split(protocol)
-        if not path: protocol = str(pathlib.Path(__file__).parent.absolute()) + '/conf/' + filename
-        return protocol
+        if len(Task() & dict(task_idx=task_idx)) > 0:
+            protocol = (Task() & dict(task_idx=task_idx)).fetch1('protocol')
+            path, filename = os.path.split(protocol)
+            if not path: protocol = str(pathlib.Path(__file__).parent.absolute()) + '/conf/' + filename
+            return protocol
+        else:
+            return False
 
     def ping(self, period=5000):
         if self.ping_timer.elapsed_time() >= period:  # occasionally update control table
