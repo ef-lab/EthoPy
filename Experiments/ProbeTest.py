@@ -13,22 +13,22 @@ class ProbeTest:
 
     def run(self):
         """ Lickspout liquid delivery test """
-        valve = RPProbe(self.logger, callbacks=True)
+        self.valve = RPProbe(self.logger, callbacks=True)
         print('Running probe test')
         for probe in self.params['probes']:
             self.result[probe] = False
             tmst = self.logger.logger_timer.elapsed_time()
             for cal_idx in range(0, numpy.size(self.params['pulsenum'])):
                 self.screen.cleanup()
-                valve.create_pulse(probe, self.params['duration'][cal_idx])
+                self.valve.create_pulse(probe, self.params['duration'][cal_idx])
                 pulse = 0
                 while pulse < self.params['pulsenum'][cal_idx] and not self.result[probe]:
                     self.screen.cleanup()
                     msg = 'Pulse %d/%d' % (pulse + 1, self.params['pulsenum'][cal_idx])
                     self.screen.draw(msg)
                     print(msg)
-                    valve.create_pulse(probe, self.params['duration'][cal_idx])
-                    valve.pulse_out(probe)  # release liquid
+                    self.valve.create_pulse(probe, self.params['duration'][cal_idx])
+                    self.valve.pulse_out(probe)  # release liquid
                     time.sleep(self.params['duration'][cal_idx] / 1000 + self.params['pulse_interval'][cal_idx] / 1000)
                     pulse += 1  # update trial
                     if self.get_response(tmst):
@@ -44,13 +44,13 @@ class ProbeTest:
 
         self.screen.cleanup()
         self.screen.draw('Done testing!')
-        valve.cleanup()
+        self.valve.cleanup()
         self.logger.update_setup_info({'status': 'ready'})
         time.sleep(2)
         self.screen.exit()
 
     def get_response(self, since=0):
-        licked_probe, tmst = self.interface.get_last_lick()
+        licked_probe, tmst = self.valve.get_last_lick()
         if tmst >= since and licked_probe:
             self.licked_probe = licked_probe
         else:
