@@ -56,10 +56,7 @@ class Logger:
 
     def log(self, table, data=dict()):
         tmst = self.logger_timer.elapsed_time()
-        if self.session_key:
-            self.put(table=table, tuple={**self.session_key, 'trial_idx': self.curr_trial, 'time': tmst, **data})
-        else:
-            print('No session key! Cannot log data into %s' % table)
+        self.put(table=table, tuple={**self.session_key, 'trial_idx': self.curr_trial, 'time': tmst, **data})
         return tmst
 
     def log_setup(self, task_idx=False):
