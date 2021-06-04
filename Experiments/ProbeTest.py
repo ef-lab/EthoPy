@@ -3,7 +3,7 @@ from Interface import *
 from utils.TouchInterface import TouchInterface
 
 
-class Calibrate:
+class ProbeTest:
     def __init__(self, logger, params):
         self.params = params
         self.logger = logger
