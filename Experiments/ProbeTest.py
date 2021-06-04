@@ -13,7 +13,7 @@ class ProbeTest:
 
     def run(self):
         """ Lickspout liquid delivery test """
-        self.valve = RPProbe(self.logger, callbacks=True)
+        self.valve = RPProbe(self.logger, callbacks=True, logging=False)
         print('Running probe test')
         for probe in self.params['probes']:
             self.result[probe] = False
@@ -34,14 +34,15 @@ class ProbeTest:
                     if self.get_response(tmst):
                         self.result[probe] = True
                         self.screen.cleanup()
-                        self.screen.draw('Probe %d test passed!' % probe, 0, 0, 400, 300)
+                        self.screen.draw('Probe %d test passed!' % probe)
                         self.logger.log('ProbeTest', dict(setup=self.logger.setup, probe=probe, result='Passed'))
                         time.sleep(1)
                 if self.result[probe]:
                     break
             if not self.result[probe]:
+                self.screen.draw('Probe %d test failed!' % probe)
                 self.logger.log('ProbeTest', dict(setup=self.logger.setup, probe=probe, result='Failed'))
-
+                time.sleep(1)
         self.screen.cleanup()
         self.screen.draw('Done testing!')
         self.valve.cleanup()
