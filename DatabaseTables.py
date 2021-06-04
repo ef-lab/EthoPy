@@ -49,11 +49,12 @@ class Task(dj.Lookup):
 class ProbeTest(dj.Manual):
     definition = """
     # Lick timestamps
-    setup               : varchar(256)                 # Setup name
-    probe               : int               # probe number
-    timestamp           : timestamp  
+    setup                 : varchar(256)                 # Setup name
+    probe                 : int               # probe number
+    timestamp             : timestamp  
     ___
-    result=null         : enum('Passed','Failed','Error')
+    result=null           : enum('Passed','Failed')
+    pulses=null           : int
     """
 
 @schema
