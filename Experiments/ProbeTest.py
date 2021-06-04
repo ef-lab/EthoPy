@@ -40,6 +40,7 @@ class ProbeTest:
                 if self.result[probe]:
                     break
             if not self.result[probe]:
+                self.screen.cleanup()
                 self.screen.draw('Probe %d test failed!' % probe)
                 self.logger.log('ProbeTest', dict(setup=self.logger.setup, probe=probe, result='Failed'))
                 time.sleep(1)
