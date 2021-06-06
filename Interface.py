@@ -53,7 +53,7 @@ class Interface:
         self.probe = 1
 
     def probe2_licked(self, channel):
-        self.lick_tmst = self.logger.log('Lick', dict(probe=1)) if self.logging else self.logger.logger_timer.elapsed_time()
+        self.lick_tmst = self.logger.log('Lick', dict(probe=2)) if self.logging else self.logger.logger_timer.elapsed_time()
         self.timer_probe2.start()
         self.probe = 2
 
