@@ -168,7 +168,10 @@ class Abort(State):
         self.logger.log('AbortedTrial')
 
     def next(self):
-        return states['InterTrial']
+        if self.timer.elapsed_time() >= self.stim.curr_cond['abort_duration']:
+            return states['InterTrial']
+        else:
+            return states['Abort']
 
 
 class Reward(State):
