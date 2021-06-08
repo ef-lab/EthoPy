@@ -7,14 +7,15 @@ from datetime import datetime
 from dataclasses import dataclass
 from dataclasses import field as datafield
 from typing import Any
-from DatabaseTables import *
+import datajoint as dj
+from Experiment import *
 dj.config["enable_python_native_blobs"] = True
 
 
 class Logger:
     setup, is_pi = socket.gethostname(), os.uname()[4][:3] == 'arm'
     trial_key, schemata = dict(), dict()
-    lock, queue, ping_timer = False, PriorityQueue(), Timer()
+    lock, queue, ping_timer, logger_timer = False, PriorityQueue(), Timer(), Timer()
 
     def __init__(self, protocol=False):
         self.setup_status = 'running' if protocol else 'ready'
@@ -31,7 +32,7 @@ class Logger:
         self.inserter_thread.start()
         self.log_setup(protocol)
         self.getter_thread.start()
-        self.logger_timer.start()  # start session time
+        self.logger_timer.start()
 
     def put(self, **kwargs):
         item = PrioritizedItem(**kwargs)
@@ -54,7 +55,7 @@ class Logger:
     def getter(self):
         while not self.thread_end.is_set():
             self.thread_lock.acquire()
-            self.setup_info = (self.schemata['lab'].SetupControl() & dict(setup=self.setup)).fetch1()
+            self.setup_info = (SetupControl() & dict(setup=self.setup)).fetch1()
             self.thread_lock.release()
             self.setup_status = self.setup_info['status']
             time.sleep(1)  # update once a second

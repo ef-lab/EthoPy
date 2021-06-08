@@ -1,16 +1,13 @@
 from Stimulus import *
-import time, os, types, sys
+import os
 import numpy as np
 from direct.showbase.ShowBase import ShowBase
 from direct.task import Task
 import panda3d.core as core
-from panda3d.core import *
-import datajoint as dj
-stimuli = dj.create_virtual_module('stimuli.py', 'lab_stimuli', create_tables=True)
-exp = dj.create_virtual_module('exp.py', 'lab_behavior', create_tables=True)
+from utils.Timer import *
 
 
-@stimuli.schema
+@stimulus.schema
 class Objects(dj.Lookup):
     definition = """
     # object information
@@ -22,7 +19,7 @@ class Objects(dj.Lookup):
     """
 
     
-@stimuli.schema
+@stimulus.schema
 class Panda3D(Stimulus, ShowBase, dj.Manual):
     definition = """
     # This class handles the presentation of Objects with Panda3D
@@ -90,7 +87,7 @@ class Panda3D(Stimulus, ShowBase, dj.Manual):
                     object_info['object'].tofile(filename)
 
         ShowBase.__init__(self, fStartDirect=True, windowType=None)
-        props = WindowProperties()
+        props = core.WindowProperties()
         props.setCursorHidden(True)
         self.win.requestProperties(props)
         self.set_background_color(0, 0, 0)
