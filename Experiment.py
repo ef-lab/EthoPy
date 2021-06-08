@@ -18,6 +18,7 @@ class Session(dj.Manual):
     protocol=null        : varchar(256)                 # protocol file
     experiment_type=null : varchar(256)                 
     """
+
     curr_state, curr_trial, total_reward, cur_dif, flip_count = '', 0, 0, 1, 0
     rew_probe, un_choices, difficulties, iter, curr_cond, dif_h = [], [], [], [], dict(), list()
 

@@ -4,7 +4,7 @@
 from Experiments.Center2AFC import *
 from Behavior import *
 from Stimuli.Odors import *
-from utils.Generator import *
+from utils.generator import *
 
 # define session parameters
 session_params = {

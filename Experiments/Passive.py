@@ -1,5 +1,5 @@
 from utils.Timer import *
-from StateMachine import *
+from Experiment import *
 
 
 class State(StateClass):
@@ -59,7 +59,7 @@ class PreTrial(State):
 
 class Trial(State):
     def entry(self):
-        self.stim.init()
+        self.stim.start()
         super().entry()
         self.logger.init_trial(self.stim.curr_cond['cond_hash'])
 

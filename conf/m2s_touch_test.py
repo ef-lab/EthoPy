@@ -3,7 +3,7 @@
 from Experiments.Match2Sample import *
 from Behavior import *
 from Stimuli.Panda3D import *
-from utils.Generator import *
+from utils.generator import *
 from scipy import interpolate
 
 interp = lambda x: interpolate.splev(np.linspace(0, len(x), 100),

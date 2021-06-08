@@ -4,13 +4,13 @@
 from Experiments.Center2AFC import *
 from Behavior import *
 from Stimuli.Movies import Movies
-from utils.Generator import *
+from utils.generator import *
 
 # define session parameters
 session_params = {
     'trial_selection'    : 'staircase',
-    'start_time'         : '07:00:00',
-    'stop_time'          : '22:00:00',
+    'start_time'         : '05:00:00',
+    'stop_time'          : '23:30:00',
     'reward'             : 'water',
     'intensity'          : 64,
     'max_reward'         : 3000,
@@ -31,7 +31,7 @@ v_dur = 4000
 key = {
     'difficulty': 1,
     'clip_number'        : 1,
-    'skip_time'          : [0, 1, 2, 3],
+    'skip_time'          : [0, 1],
     'static_frame'       : False,
     'timeout_duration'   : 4000,
     'trial_duration'     : 5000,
@@ -55,7 +55,7 @@ o_dur = 500
 key = {
     'difficulty': 2,
     'clip_number'        : [1, 2],
-    'skip_time'          : [0, 1, 2, 3],
+    'skip_time'          : [0, 1],
     'static_frame'       : False,
     'timeout_duration'   : 4000,
     'trial_duration'     : 5000,
