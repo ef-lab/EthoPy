@@ -2,8 +2,45 @@ import numpy as np
 from utils.Timer import *
 from utils.generator import make_hash
 import datajoint as dj
+experiment = dj.create_virtual_module('exp', 'test_experiment', create_tables=True)
 
 
+@experiment.schema
+class SetupControl(dj.Lookup):
+    definition = """
+    # Control table 
+    setup                : varchar(256)                 # Setup name
+    ---
+    status="exit"        : enum('ready','running','stop','sleeping','exit','offtime','wakeup') 
+    animal_id=null       : int                          # animal id
+    task_idx=null        : int                          # task identification number
+    session=null         : int                          
+    trials=null          : int                          
+    total_liquid=null    : float                        
+    state=null           : varchar(255)                 
+    difficulty=null      : smallint                     
+    start_time=null      : time                         
+    stop_time=null       : time                         
+    last_ping="current_timestamp()" : timestamp                    
+    notes=null           : varchar(256)                 
+    queue_size=null      : int                          
+    ip                   : varchar(16)                  # setup IP address
+    """
+
+
+@experiment.schema
+class Task(dj.Lookup):
+    definition = """
+    # Behavioral experiment parameters
+    task_idx             : int                          # task identification number
+    ---
+    protocol             : varchar(4095)                # stimuli to be presented (array of dictionaries)
+    description=""       : varchar(2048)                # task description
+    timestamp            : timestamp    
+    """
+
+
+@experiment.schema
 class Session(dj.Manual):
     definition = """
     # Behavior session info
@@ -88,8 +125,62 @@ class Session(dj.Manual):
             self.dif_h.append(self.cur_dif)
 
 
-# A State has an operation, and can be moved
-# into the next State given an Input
+@experiment.schema
+class Trial(dj.Manual):
+    definition = """
+    # Trial information
+    -> Session
+    trial_idx            : smallint                     # unique condition index
+    ---
+    -> Condition
+    start_time           : int                          # start time from session start (ms)
+    end_time             : int                          # end time from session start (ms)
+    """
+
+
+@experiment.schema
+class AbortedTrial(dj.Manual):
+    definition = """
+    # Aborted Trials
+    -> Session
+    trial_idx            : smallint                     # unique condition index
+    """
+
+
+@experiment.schema
+class Files(dj.Manual):
+    definition = """
+    # File session info
+    -> Session
+    program              : varchar(256)
+    ---
+    filename=null        : varchar(256)                # file
+    source_path=null     : varchar(512)                # local path
+    target_path=null     : varchar(512)                # remote drive path
+    timestamp            : timestamp                   # timestamp
+    """
+
+
+@experiment.schema
+class Condition(dj.Manual):
+    definition = """
+    # unique stimulus conditions
+    cond_hash             : char(24)                 # unique condition hash
+    ---
+    cond_tuple=null        : blob      
+    """
+
+
+@experiment.schema
+class StateOnset(dj.Manual):
+    definition = """
+    # Trial period timestamps
+    -> Session
+    time			    : int 	            # time from session start (ms)
+    ---
+    state               : varchar(64)
+    """
+
 class StateClass:
     state_timer = Timer()
 

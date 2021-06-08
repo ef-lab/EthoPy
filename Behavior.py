@@ -3,6 +3,45 @@ from utils.Timer import *
 import pygame
 import numpy as np
 from datetime import datetime, timedelta
+import datajoint as dj
+behavior = dj.create_virtual_module('behavior', 'test_behavior', create_tables=True)
+
+
+@behavior.schema
+class CenterPort(dj.Manual):
+    definition = """
+    # Center port information
+    -> Session
+    time	     	   	: int           	# time from session start (ms)
+    ---
+    in_position          : smallint
+    state=null           : varchar(256)  
+    timestamp            : timestamp    
+    """
+
+
+@behavior.schema
+class Lick(dj.Manual):
+    definition = """
+    # Lick timestamps
+    -> Session
+    time	     	  	: int           	# time from session start (ms)
+    probe               : int               # probe number
+    """
+
+
+@behavior.schema
+class Touch(dj.Manual):
+    definition = """
+    # Lick timestamps
+    -> Session
+    time	     	  	: int           	# time from session start (ms)
+    loc_x               : int               # x touch location
+    loc_y               : int               # y touch location
+    """
+
+
+
 
 
 class Behavior:

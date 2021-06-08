@@ -1,16 +1,13 @@
 from Stimulus import *
-import time, os, types, sys
+import os
 import numpy as np
 from direct.showbase.ShowBase import ShowBase
 from direct.task import Task
 import panda3d.core as core
-from panda3d.core import *
-import datajoint as dj
+from utils.Timer import *
 
-stimuli = dj.create_virtual_module('stimuli.py', 'test_stimuli', create_tables=True)
-exp = dj.create_virtual_module('exp.py', 'test_behavior', create_tables=True)
 
-@stimuli
+@stimulus.schema
 class Objects(dj.Lookup):
     definition = """
     # object information
@@ -21,7 +18,8 @@ class Objects(dj.Lookup):
     file_name=null       : varchar(255)   
     """
 
-
+    
+@stimulus.schema
 class Panda3D(Stimulus, ShowBase, dj.Manual):
     definition = """
     # This class handles the presentation of Objects with Panda3D
@@ -89,7 +87,7 @@ class Panda3D(Stimulus, ShowBase, dj.Manual):
                     object_info['object'].tofile(filename)
 
         ShowBase.__init__(self, fStartDirect=True, windowType=None)
-        props = WindowProperties()
+        props = core.WindowProperties()
         props.setCursorHidden(True)
         self.win.requestProperties(props)
         self.set_background_color(0, 0, 0)
@@ -136,7 +134,7 @@ class Panda3D(Stimulus, ShowBase, dj.Manual):
                                         self.curr_cond['direct2_dir'][2])
         self.flip(2)
 
-    def init(self, period=None):
+    def start(self, period=None):
         self.objects = dict()
         if period:
             selected_obj = [p == period for p in self.curr_cond['obj_period']]
@@ -228,4 +226,4 @@ class Object(Panda3D):
     def time_fun(self, param, fun=lambda x, t: x):
         param = np.array([param]) if type(param) != np.ndarray else param
         idx = np.linspace(0, self.duration/1000, param.size)
-        return lambda t: np.interp(t, idx,fun(param, t))
+        return lambda t: np.interp(t, idx, fun(param, t))

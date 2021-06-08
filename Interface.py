@@ -1,9 +1,8 @@
-from DatabaseTables import *
 from time import sleep
 import numpy as np
 from utils.Timer import *
 from concurrent.futures import ThreadPoolExecutor
-import threading, multiprocessing,struct, time, socket
+import threading, multiprocessing, struct, time, socket
 
 
 class Interface:
