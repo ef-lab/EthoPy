@@ -6,11 +6,11 @@ from direct.task import Task
 import panda3d.core as core
 from panda3d.core import *
 import datajoint as dj
-stimuli = dj.create_virtual_module('stimuli.py', 'lab_stimuli', create_tables=True)
-exp = dj.create_virtual_module('exp.py', 'lab_behavior', create_tables=True)
 
+stimuli = dj.create_virtual_module('stimuli.py', 'test_stimuli', create_tables=True)
+exp = dj.create_virtual_module('exp.py', 'test_behavior', create_tables=True)
 
-@stimuli.schema
+@stimuli
 class Objects(dj.Lookup):
     definition = """
     # object information
@@ -22,7 +22,6 @@ class Objects(dj.Lookup):
     """
 
 
-@stimuli.schema
 class Panda3D(Stimulus, ShowBase, dj.Manual):
     definition = """
     # This class handles the presentation of Objects with Panda3D
@@ -137,7 +136,7 @@ class Panda3D(Stimulus, ShowBase, dj.Manual):
                                         self.curr_cond['direct2_dir'][2])
         self.flip(2)
 
-    def start(self, period=None):
+    def init(self, period=None):
         self.objects = dict()
         if period:
             selected_obj = [p == period for p in self.curr_cond['obj_period']]
@@ -229,4 +228,4 @@ class Object(Panda3D):
     def time_fun(self, param, fun=lambda x, t: x):
         param = np.array([param]) if type(param) != np.ndarray else param
         idx = np.linspace(0, self.duration/1000, param.size)
-        return lambda t: np.interp(t, idx, fun(param, t))
+        return lambda t: np.interp(t, idx,fun(param, t))
