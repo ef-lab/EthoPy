@@ -85,7 +85,7 @@ class Trial(State):
             return states['Reward']
         elif not self.beh.is_ready() and self.response:
             return states['Abort']
-        elif self.response and not self.beh.is_correct():  # incorrect response
+        elif self.response and not self.beh.is_ready():  # incorrect response
             return states['Punish']
         elif self.timer.elapsed_time() > self.stim.curr_cond['response_duration']:  # timed out
             return states['InterTrial']

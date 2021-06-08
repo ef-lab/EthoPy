@@ -100,7 +100,7 @@ class Trial(State):
         elif self.response and self.beh.is_correct():      # response to correct probe
             return states['Reward']
         elif self.timer.elapsed_time() > self.stim.curr_cond['trial_duration']:      # timed out
-            return states['InterTrial']
+            return states['Abort']
         elif self.logger.setup_status in ['stop', 'exit']:
             return states['Exit']
         else:
@@ -133,12 +133,15 @@ class Punish(State):
     def entry(self):
         self.beh.punish()
         super().entry()
+        self.punish_period = self.stim.curr_cond['punish_duration']
+        if self.params.get('incremental_punishment'):
+            self.punish_period *= self.beh.get_false_history()
 
     def run(self):
         self.stim.punish_stim()
 
     def next(self):
-        if self.timer.elapsed_time() >= self.stim.curr_cond['timeout_duration']:
+        if self.timer.elapsed_time() >= self.punish_period:
             return states['InterTrial']
         else:
             return states['Punish']

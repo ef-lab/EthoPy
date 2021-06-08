@@ -6,8 +6,10 @@ import numpy as np
 from datetime import datetime, timedelta
 import bisect
 import itertools
+import pandas as pd
 
 schema = dj.schema('lab_behavior')
+Mice = dj.create_virtual_module('mice.py', 'lab_mice')
 
 @schema
 class SetupControl(dj.Lookup):
@@ -43,11 +45,22 @@ class Task(dj.Lookup):
     timestamp            : timestamp    
     """
 
+@schema
+class ProbeTest(dj.Manual):
+    definition = """
+    # Lick timestamps
+    setup                 : varchar(256)                 # Setup name
+    probe                 : int               # probe number
+    timestamp             : timestamp  
+    ___
+    result=null           : enum('Passed','Failed')
+    pulses=null           : int
+    """
 
 @schema
 class Session(dj.Manual):
     definition = """
-    # Behavior session infod
+    # Behavior session info
     animal_id            : int                          # animal id
     session              : smallint                     # session number
     ---
@@ -60,6 +73,18 @@ class Session(dj.Manual):
     experiment_type=null : varchar(256)                 
     """
 
+@schema
+class Files(dj.Manual):
+    definition = """
+    # File session info
+    -> Session
+    program              : varchar(256)
+    ---
+    filename=null        : varchar(256)                # file
+    source_path=null     : varchar(512)                # local path
+    target_path=null     : varchar(512)                # remote drive path
+    timestamp            : timestamp                   # timestamp
+    """
 
 @schema
 class Condition(dj.Manual):
@@ -73,19 +98,24 @@ class Condition(dj.Manual):
     def getGroups(self):
         odor_flag = (len(Trial & OdorCond.Port() & self) > 0)  # filter trials by hash number of odor
         movie_flag = (len(Trial & MovieCond & self) > 0)  # filter trials by hash number of movies
+        obj_flag = (len(Trial & ObjectCond & self) > 0)  # filter trials by hash number of objects
         if movie_flag and odor_flag:
-            conditions = RewardCond() * MovieCond() * (OdorCond.Port() & 'delivery_port=1')\
-                         * OdorCond() & (Trial & self)
+            conditions = (RewardCond() * MovieCond() * (OdorCond.Port() & 'delivery_port=1')\
+                         * OdorCond() & (Trial & self)).proj(movie_duration='movie_duration', dutycycle='dutycycle',
+                                                             odor_duration='odor_duration', probe='probe', obj_duration='0')
         elif not movie_flag and odor_flag:
-            conditions = (RewardCond() *  (OdorCond.Port() & 'delivery_port=1') * OdorCond() & (Trial & self)).proj(
-                movie_duration='0', dutycycle='dutycycle', odor_duration='odor_duration', probe='probe')
+            conditions = (RewardCond() * (OdorCond.Port() & 'delivery_port=1') * OdorCond() & (Trial & self)).proj(
+                movie_duration='0', dutycycle='dutycycle', odor_duration='odor_duration', probe='probe', obj_duration='0')
         elif movie_flag and not odor_flag:
             conditions = (RewardCond() * MovieCond() & (Trial & self)).proj(
-                movie_duration='movie_duration',probe='probe', dutycycle='0', odor_duration='0')
+                movie_duration='movie_duration',probe='probe', dutycycle='0', odor_duration='0', obj_duration='0')
+        elif obj_flag:
+            conditions = (RewardCond() * ObjectCond() & (Trial & self)).proj(
+                movie_duration='0', probe='probe', dutycycle='0', odor_duration='0', obj_duration='obj_dur')
         else:
             return []
         uniq_groups, groups_idx = np.unique(
-            [cond.astype(int) for cond in conditions.fetch('movie_duration','dutycycle','odor_duration','probe')],
+            [cond.astype(int) for cond in conditions.fetch('movie_duration','dutycycle','odor_duration','obj_duration','probe')],
             axis=1, return_inverse=True)
         conditions = conditions.fetch()
         condition_groups = [conditions[groups_idx == group] for group in set(groups_idx)]
@@ -113,23 +143,31 @@ class Trial(dj.Manual):
         fig, axs = plt.subplots(round(len(conds)**.5), -(-len(conds)//round(len(conds)**.5)),
                                 sharex=True, figsize=params['figsize'])
         for idx, cond in enumerate(conds):                                                #  iterate through conditions
-            selected_trials = (Lick * self & (Condition & cond)).proj(                       # select trials with licks
-                selected='(time <= end_time) AND (time > start_time)') & 'selected > 0'
+            selected_trials = (Lick * (self - AbortedTrial) & (Condition & cond)).proj(                       # select trials with licks
+                selected='(time <= end_time) AND (time >= start_time)') & 'selected > 0'
             trials, probes, times = ((Lick * (self & selected_trials)).proj(                 # get licks for all trials
-                trial_time='time-start_time') & ('(trial_time>%d) AND (trial_time<%d)' %
-                (params['xlim'][0], params['xlim'][1]))).fetch('trial_idx', 'probe', 'trial_time')
+                trial_time='time-start_time') & ('(trial_time>{}) AND (trial_time<{})'.format(
+                params['xlim'][0], params['xlim'][1]))).fetch('trial_idx', 'probe', 'trial_time', order_by='time')
             un_trials, idx_trials = np.unique(trials, return_inverse=True)                          # get unique trials
+
             axs.item(idx).scatter(times, idx_trials, params['dotsize'],                              # plot all of them
                                   c=np.array(params['probe_colors'])[probes-1])
             axs.item(idx).axvline(x=0, color='green', linestyle='-')
+
             if np.unique(cond['movie_duration'])[0] and np.unique(cond['odor_duration'])[0]:
                 name = 'Mov:%s  Odor:%d' % (np.unique((MovieCond & cond).fetch('movie_name'))[0],
                                             np.unique(cond['dutycycle'])[0])
             elif np.unique(cond['movie_duration'])[0]:
-                name = 'Mov:%s' % np.unique((MovieCond & cond).fetch('movie_name'))[0]
+                name = 'Mov:{}'.format(np.unique((MovieCond & cond).fetch('movie_name'))[0])
             elif np.unique(cond['odor_duration'])[0]:
-                name = 'Odor:%d' % np.unique(cond['dutycycle'])[0]
-            name = '%s p:%.2f' % (name, np.nanmean(selected_trials.fetch('probe')==np.unique(cond['probe'])[0]))
+                name = 'Odor:{}'.format(np.unique(cond['dutycycle'])[0])
+            elif np.unique(cond['obj_duration'])[0]:
+                name = 'Obj:{}'.format(np.unique((ObjectCond & cond).fetch('obj_id')))
+
+            selected_pd = pd.DataFrame(selected_trials.fetch(order_by=('trial_idx', 'time')))
+            selected_pd.drop_duplicates(subset=["trial_idx"], keep='first', inplace=True)
+            name = '{} p:{:.2f}'.format(name, np.nanmean(selected_pd['probe']==np.unique(cond['probe'])[0]))
+
             axs.item(idx).set_title(name, color=np.array(params['probe_colors'])[np.unique(cond['probe'])[0] - 1],
                                     fontsize=9)
             axs.item(idx).invert_yaxis()
@@ -137,11 +175,16 @@ class Trial(dj.Manual):
         plt.show()
 
     def plotDifficulty(self, **kwargs):
+
+        # minimum difficulty
+        conds = (self * Condition()).fetch('cond_tuple')
+        min_difficulty = np.min([cond['difficulty'] for cond in conds])
+
         params = {'probe_colors': [[1, 0, 0], [0, .5, 1]],
                   'trial_bins': 10,
                   'range': 0.9,
                   'xlim': (-1,),
-                  'ylim': (0.4,), **kwargs}
+                  'ylim': (min_difficulty-0.6,), **kwargs}
 
         def plot_trials(trials, **kwargs):
             conds, trial_idxs = ((Trial & trials) * Condition()).fetch('cond_tuple', 'trial_idx')
@@ -151,17 +194,21 @@ class Trial(dj.Manual):
 
         # correct trials
         correct_trials = ((LiquidDelivery * self).proj(
-            selected='(time - end_time)<100 AND (time - end_time)>0') & 'selected > 0')
+            selected='ABS(time - end_time)<200 AND (time - start_time)>0') & 'selected > 0')
 
         # missed trials
-        incorrect_trials = ((Lick * self).proj(
-            selected='(time <= end_time) AND (time > start_time)') & 'selected > 0') - (self & correct_trials)
+        missed_trials = (self & AbortedTrial).proj()
 
         # incorrect trials
-        missed_trials = ((self - correct_trials) - incorrect_trials).proj()
+        incorrect_trials = ((self - correct_trials) - missed_trials).proj()
+
+        print('correct: {}, incorrect: {}, missed: {}'.format(len(correct_trials), len(incorrect_trials), len(missed_trials)))
+        print('correct: {}, incorrect: {}, missed: {}'.format(len(np.unique(correct_trials.fetch('trial_idx'))),
+                                                              len(np.unique(incorrect_trials.fetch('trial_idx'))),
+                                                              len(np.unique(missed_trials.fetch('trial_idx')))))
 
         # plot trials
-        fig = plt.figure(figsize=(10, 4), tight_layout=True)
+        fig = plt.figure(figsize=(10, 5), tight_layout=True)
         plot_trials(correct_trials, s=4, c=np.array(params['probe_colors'])[correct_trials.fetch('probe') - 1])
         plot_trials(incorrect_trials, s=4, marker='o', facecolors='none', edgecolors=[.3, .3, .3], linewidths=.5)
         plot_trials(missed_trials, s=.1, c=[[0, 0, 0]])
@@ -239,7 +286,7 @@ class LiquidDelivery(dj.Manual):
 
     def plot(self):
         
-        animals =  Mice.Mice() & self
+        animals = Mice.Mice() - Mice.Death() & 'animal_id != 0' & self
 
         for animal in animals:
 
@@ -248,12 +295,11 @@ class LiquidDelivery(dj.Manual):
 
             # convert timestamps to dates
             tstmps = liquids[0].tolist()
-            dates = [datetime.date(d) for d in tstmps] 
+            dates = [d.date() for d in tstmps]
             
             # find first index for plot, i.e. for last 15 days
-            last_tmst = liquids[0][-1]
-            last_date =  datetime.date(last_tmst)
-            starting_date = last_date - timedelta(days=15) # keep only last 15 days
+            last_date = dates[-1]
+            starting_date = last_date - datetime.timedelta(days=15) # keep only last 15 days
             starting_idx = bisect.bisect_right(dates, starting_date)
             
             # keep only 15 last days 
@@ -265,7 +311,7 @@ class LiquidDelivery(dj.Manual):
             # construct tuples (unique_date, total_reward_per_day)
             dates_liqs_unique = [(dt, sum(v for d,v in grp)) for dt, grp in itertools.groupby(tuples_list,
                                                             key=lambda x: x[0])]
-            print('last date: {}, amount: {}'.format(dates_liqs_unique[-1][0], dates_liqs_unique[-1][1]))
+            print('animal_id: {}, last date: {}, amount: {}'.format(animal['animal_id'], dates_liqs_unique[-1][0], dates_liqs_unique[-1][1]))
 
             dates_to_plot = [tpls[0] for tpls in dates_liqs_unique]
             liqs_to_plot = [tpls[1] for tpls in dates_liqs_unique]

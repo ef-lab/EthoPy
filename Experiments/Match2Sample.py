@@ -41,6 +41,7 @@ class Prepare(Experiment):
 class PreTrial(Experiment):
     def entry(self):
         self._get_new_cond()
+        self.resp_ready = False
         self.stim.prepare()
         self.beh.prepare(self.curr_cond)
         self.logger.init_trial(self.curr_cond['cond_hash'])
@@ -103,12 +104,14 @@ class Delay(Experiment):
             self.resp_ready = True
 
     def next(self):
-        if self.resp_ready:
+        if self.resp_ready and self.timer.elapsed_time() > self.stim.curr_cond['delay_duration']: # this specifies the minimum amount of time we want to spend in the delay period contrary to the cue_duration FIX IT
             return states['Response']
         elif self.response:
             return states['Abort']
         elif not self.resp_ready and self.state_timer.elapsed_time() > self.curr_cond['delay_duration']:
             return states['Abort']
+        elif self.logger.setup_status in ['stop', 'exit']:
+            return states['Exit']
         else:
             return states['Delay']
 
@@ -133,8 +136,8 @@ class Response(Experiment):
             return states['Abort']
         elif self.response and not self.beh.is_correct():  # incorrect response
             return states['Punish']
-        elif self.state_timer.elapsed_time() > self.curr_cond['response_duration']:      # timed out
-            return states['InterTrial']
+        elif self.timer.elapsed_time() > self.stim.curr_cond['response_duration']:      # timed out
+            return states['Abort']
         elif self.logger.setup_status in ['stop', 'exit']:
             return states['Exit']
         else:
@@ -146,12 +149,21 @@ class Response(Experiment):
 
 
 class Abort(Experiment):
-    def run(self):
+    def entry(self):
+        super().entry()
         self.beh.update_history()
         self.logger.log('AbortedTrial')
 
+    def run(self):
+        pass
+
     def next(self):
-        return states['InterTrial']
+        if self.timer.elapsed_time() >= self.stim.curr_cond['abort_duration']:
+            return states['InterTrial']
+        elif self.logger.setup_status in ['stop', 'exit']:
+            return states['Exit']
+        else:
+            return states['Abort']
 
 
 class Reward(Experiment):
@@ -165,6 +177,8 @@ class Reward(Experiment):
     def next(self):
         if self.rewarded or self.state_timer.elapsed_time() >= self.curr_cond['reward_duration']:
             return states['InterTrial']
+        elif self.logger.setup_status in ['stop', 'exit']:
+            return states['Exit']
         else:
             return states['Reward']
 
@@ -173,13 +187,18 @@ class Punish(Experiment):
     def entry(self):
         self.beh.punish()
         super().entry()
+        self.punish_period = self.stim.curr_cond['punish_duration']
+        if self.params.get('incremental_punishment'):
+            self.punish_period *= self.beh.get_false_history()
 
     def run(self):
         self.stim.punish_stim()
 
     def next(self):
-        if self.state_timer.elapsed_time() >= self.curr_cond['punish_duration']:
+        if self.timer.elapsed_time() >= self.punish_period:
             return states['InterTrial']
+        elif self.logger.setup_status in ['stop', 'exit']:
+            return states['Exit']
         else:
             return states['Punish']
 

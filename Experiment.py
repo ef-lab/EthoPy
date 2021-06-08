@@ -1,9 +1,24 @@
 import numpy as np
 from utils.Timer import *
 from utils.generator import make_hash
+import datajoint as dj
 
 
-class Session:
+class Session(dj.Manual):
+    definition = """
+    # Behavior session info
+    animal_id            : int                          # animal id
+    session              : smallint                     # session number
+    ---
+    setup=null           : varchar(256)                 # computer id
+    session_tmst         : timestamp                    # session timestamp
+    notes=null           : varchar(2048)                # session notes
+    session_params=null  : mediumblob                   
+    conditions=null      : mediumblob      
+    protocol=null        : varchar(256)                 # protocol file
+    experiment_type=null : varchar(256)                 
+    """
+
     curr_state, curr_trial, total_reward, cur_dif, flip_count = '', 0, 0, 1, 0
     rew_probe, un_choices, difficulties, iter, curr_cond, dif_h = [], [], [], [], dict(), list()
 

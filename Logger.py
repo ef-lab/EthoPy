@@ -16,7 +16,7 @@ class Logger:
     trial_key, schemata = dict(), dict()
     lock, queue, ping_timer = False, PriorityQueue(), Timer()
 
-    def __init__(self, protocol=False, ):
+    def __init__(self, protocol=False):
         self.setup_status = 'running' if protocol else 'ready'
         fileobject = open(os.path.dirname(os.path.abspath(__file__)) + '/dj_local_conf.json')
         con_info = json.loads(fileobject.read())
@@ -31,6 +31,7 @@ class Logger:
         self.inserter_thread.start()
         self.log_setup(protocol)
         self.getter_thread.start()
+        self.logger_timer.start()  # start session time
 
     def put(self, **kwargs):
         item = PrioritizedItem(**kwargs)
@@ -78,16 +79,17 @@ class Logger:
         self.put(table='Session', tuple={**self.trial_key, 'session_params': params, 'setup': self.setup,
                                          'protocol': self.get_protocol(), 'experiment_type': exp_type}, priority=1)
         key = {'session': self.trial_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1}
+
         if 'start_time' in params:
             tdelta = lambda t: datetime.strptime(t, "%H:%M:%S") - datetime.strptime("00:00:00", "%H:%M:%S")
             key = {**key, 'start_time': tdelta(params['start_time']), 'stop_time': tdelta(params['stop_time'])}
         self.update_setup_info(key)
-        self.session_timer.start()  # start session time
+        self.logger_timer.start()  # start session time
 
     def log_conditions(self, conditions):
         for cond in conditions:
             cond_hash = make_hash(cond)
-            self.put(table='Condition', tuple=dict(cond_hash=cond_hash, cond_tuple=cond.copy()))
+            self.put(table='Condition', tuple=dict(cond_hash=cond_hash, cond_tuple=cond.copy()), priority=5)
             cond.update({'cond_hash': cond_hash})
         return conditions
 
@@ -115,27 +117,31 @@ class Logger:
         key = dict(setup=self.setup, probe=probe, date=systime.strftime("%Y-%m-%d"))
         self.put(table='LiquidCalibration', tuple=key, priority=5)
         self.put(table='LiquidCalibration.PulseWeight',
-                 tuple=dict(key, pulse_dur=pulse_dur, pulse_num=pulse_num, weight=weight))
+                 tuple=dict(key, pulse_dur=pulse_dur, pulse_num=pulse_num, weight=weight), replace=True)
 
     def update_setup_info(self, info):
         self.setup_info = {**(SetupControl() & dict(setup=self.setup)).fetch1(), **info}
-        self.put(table='SetupControl', tuple=self.setup_info, replace=True, priority=5)
+        self.put(table='SetupControl', tuple=self.setup_info, replace=True, priority=1)
         self.setup_status = self.setup_info['status']
+        if 'status' in info:
+            while self.get_setup_info('status') != info['status']: time.sleep(.5)
 
-    def get_setup_info(self, field):
-        return (SetupControl() & dict(setup=self.setup)).fetch1(field)
+    def get_setup_info(self, field): return (SetupControl() & dict(setup=self.setup)).fetch1(field)
 
     def get_protocol(self, task_idx=None):
         if not task_idx: task_idx = self.get_setup_info('task_idx')
-        protocol = (Task() & dict(task_idx=task_idx)).fetch1('protocol')
-        path, filename = os.path.split(protocol)
-        if not path: protocol = str(pathlib.Path(__file__).parent.absolute()) + '/conf/' + filename
-        return protocol
+        if len(Task() & dict(task_idx=task_idx)) > 0:
+            protocol = (Task() & dict(task_idx=task_idx)).fetch1('protocol')
+            path, filename = os.path.split(protocol)
+            if not path: protocol = str(pathlib.Path(__file__).parent.absolute()) + '/conf/' + filename
+            return protocol
+        else:
+            return False
 
     def ping(self, period=5000):
         if self.ping_timer.elapsed_time() >= period:  # occasionally update control table
             self.ping_timer.start()
-            self.update_setup_info({'last_ping': str(datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]),
+            self.update_setup_info({'last_ping': str(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
                                     'queue_size': self.queue.qsize(), 'trials': self.trial_key['trial_idx'],
                                     'total_liquid': self.total_reward, 'state': self.curr_state})
 
