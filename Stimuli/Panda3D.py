@@ -7,9 +7,10 @@ import panda3d.core as core
 from panda3d.core import *
 import datajoint as dj
 
-lab_stim = dj.schema('lab_stimuli')
+stimuli = dj.create_virtual_module('stimuli.py', 'test_stimuli', create_tables=True)
+exp = dj.create_virtual_module('exp.py', 'test_behavior', create_tables=True)
 
-@lab_stim
+@stimuli
 class Objects(dj.Lookup):
     definition = """
     # object information
@@ -21,8 +22,50 @@ class Objects(dj.Lookup):
     """
 
 
-class Panda3D(Stimulus, ShowBase):
-    """ This class handles the presentation of Objects with Panda3D"""
+class Panda3D(Stimulus, ShowBase, dj.Manual):
+    definition = """
+    # This class handles the presentation of Objects with Panda3D
+    cond_hash            : char(24)                     # unique condition hash
+    """
+
+    class Object(dj.Part):
+        definition = """
+        # object conditions
+        -> Panda3D
+        -> stimuli.Objects
+        ---
+        obj_pos_x             : blob
+        obj_pos_y             : blob
+        obj_mag               : blob
+        obj_rot               : blob
+        obj_tilt              : blob
+        obj_yaw               : blob
+        obj_delay             : blob
+        obj_dur               : blob
+        """
+
+    class Lights(dj.Part):
+        definition = """
+        # object conditions
+        -> Panda3D
+        ---
+        background_color      : tinyblob
+        ambient_color         : tinyblob
+        direct1_color         : tinyblob
+        direct1_dir           : tinyblob
+        direct2_color         : tinyblob
+        direct2_dir           : tinyblob
+        """
+
+    class Trial(dj.Part):
+        definition = """
+        # Stimulus onset timestamps
+        -> exp.Trial
+        -> Panda3D
+        ---
+        start_time           : int                          # start time from session start (ms)
+        end_time             : int                          # end time from session start (ms)
+        """
 
     def get_cond_tables(self):
         return ['ObjectCond']
