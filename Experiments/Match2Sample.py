@@ -126,6 +126,8 @@ class Delay(State):
             return states['Abort']
         elif not self.resp_ready and self.timer.elapsed_time() > self.stim.curr_cond['delay_duration']:
             return states['Abort']
+        elif self.logger.setup_status in ['stop', 'exit']:
+            return states['Exit']
         else:
             return states['Delay']
 
@@ -163,13 +165,19 @@ class Response(State):
 
 
 class Abort(State):
-    def run(self):
+    def entry(self):
+        super().entry()
         self.beh.update_history()
         self.logger.log('AbortedTrial')
+
+    def run(self):
+        pass
 
     def next(self):
         if self.timer.elapsed_time() >= self.stim.curr_cond['abort_duration']:
             return states['InterTrial']
+        elif self.logger.setup_status in ['stop', 'exit']:
+            return states['Exit']
         else:
             return states['Abort']
 
@@ -185,6 +193,8 @@ class Reward(State):
     def next(self):
         if self.rewarded or self.timer.elapsed_time() >= self.stim.curr_cond['reward_duration']:
             return states['InterTrial']
+        elif self.logger.setup_status in ['stop', 'exit']:
+            return states['Exit']
         else:
             return states['Reward']
 
@@ -203,6 +213,8 @@ class Punish(State):
     def next(self):
         if self.timer.elapsed_time() >= self.punish_period:
             return states['InterTrial']
+        elif self.logger.setup_status in ['stop', 'exit']:
+            return states['Exit']
         else:
             return states['Punish']
 
