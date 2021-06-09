@@ -38,11 +38,11 @@ class Panda3D(Stimulus, ShowBase, dj.Manual):
         obj_rot               : blob
         obj_tilt              : blob
         obj_yaw               : blob
-        obj_delay             : blob
-        obj_dur               : blob
+        obj_delay             : int
+        obj_dur               : int
         """
 
-    class Lights(dj.Part):
+    class Environment(dj.Part):
         definition = """
         # object conditions
         -> Panda3D

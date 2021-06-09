@@ -40,8 +40,69 @@ class Touch(dj.Manual):
     loc_y               : int               # y touch location
     """
 
+@behavior.schema
+class LiquidDelivery(dj.Manual):
+    definition = """
+    # Liquid delivery timestamps
+    -> Session
+    time			    : int 	            # time from session start (ms)
+    probe               : int               # probe number
+    """
 
 
+@behavior.schema
+class Reward(dj.Manual):
+    definition = """
+    # reward probe conditions
+    cond_hash              : char(24)                     # unique reward hash
+    ---
+    port=0                 : smallint                     # delivery port
+    reward_amount=0        : float                        # reward amount
+    reward_type='water'    : enum('water','juice','food') # reward type
+    """
+
+    class Trial(dj.Part):
+        definition = """
+        # movie clip conditions
+        -> Trial
+        ---
+        -> Reward
+        time			      : int 	                # time from session start (ms)
+        """
+
+
+@behavior.schema
+class LiquidCalibration(dj.Manual):
+    definition = """
+    # Liquid delivery calibration sessions for each probe
+    setup                        : varchar(256)         # Setup name
+    probe                        : int                  # probe number
+    date                         : date                 # session date (only one per day is allowed)
+    """
+
+    class PulseWeight(dj.Part):
+        definition = """
+        # Data for volume per pulse duty cycle estimation
+        -> LiquidCalibration
+        pulse_dur                : int                  # duration of pulse in ms
+        ---
+        pulse_num                : int                  # number of pulses
+        weight                   : float                # weight of total liquid released in gr
+        timestamp                : timestamp            # timestamp
+        """
+
+
+@behavior.schema
+class ProbeTest(dj.Manual):
+    definition = """
+    # Lick timestamps
+    setup                 : varchar(256)                 # Setup name
+    probe                 : int               # probe number
+    timestamp             : timestamp  
+    ___
+    result=null           : enum('Passed','Failed')
+    pulses=null           : int
+    """
 
 
 class Behavior:

@@ -5,39 +5,47 @@ import datajoint as dj
 experiment = dj.create_virtual_module('exp', 'test_experiment', create_tables=True)
 
 
-@experiment.schema
-class SetupControl(dj.Lookup):
-    definition = """
-    # Control table 
-    setup                : varchar(256)                 # Setup name
-    ---
-    status="exit"        : enum('ready','running','stop','sleeping','exit','offtime','wakeup') 
-    animal_id=null       : int                          # animal id
-    task_idx=null        : int                          # task identification number
-    session=null         : int                          
-    trials=null          : int                          
-    total_liquid=null    : float                        
-    state=null           : varchar(255)                 
-    difficulty=null      : smallint                     
-    start_time=null      : time                         
-    stop_time=null       : time                         
-    last_ping="current_timestamp()" : timestamp                    
-    notes=null           : varchar(256)                 
-    queue_size=null      : int                          
-    ip                   : varchar(16)                  # setup IP address
-    """
+class StateClass:
+    state_timer = Timer()
+
+    def __init__(self, parent=None):
+        if parent: self.__dict__.update(parent.__dict__)
+
+    def entry(self):
+        """Entry transition method"""
+        pass
+
+    def run(self):
+        """Main run command"""
+        assert 0, "run not implemented"
+
+    def next(self):
+        """Exit transition method"""
+        assert 0, "next not implemented"
+
+    def exit(self):
+        """Exit transition method"""
+        pass
 
 
-@experiment.schema
-class Task(dj.Lookup):
-    definition = """
-    # Behavioral experiment parameters
-    task_idx             : int                          # task identification number
-    ---
-    protocol             : varchar(4095)                # stimuli to be presented (array of dictionaries)
-    description=""       : varchar(2048)                # task description
-    timestamp            : timestamp    
-    """
+# move from State to State using a template method.
+class StateMachine:
+    def __init__(self, initialState, exitState):
+        self.futureState = initialState
+        self.currentState = initialState
+        self.exitState = exitState
+
+    # # # # Main state loop # # # # #
+    def run(self):
+        while self.futureState != self.exitState:
+            if self.currentState != self.futureState:
+                self.currentState.exit()
+                self.currentState = self.futureState
+                self.currentState.entry()
+            self.currentState.run()
+            self.futureState = self.currentState.next()
+        self.currentState.exit()
+        self.exitState.run()
 
 
 @experiment.schema
@@ -181,44 +189,39 @@ class StateOnset(dj.Manual):
     state               : varchar(64)
     """
 
-class StateClass:
-    state_timer = Timer()
 
-    def __init__(self, parent=None):
-        if parent: self.__dict__.update(parent.__dict__)
+@experiment.schema
+class SetupControl(dj.Lookup):
+    definition = """
+    # Control table 
+    setup                : varchar(256)                 # Setup name
+    ---
+    status="exit"        : enum('ready','running','stop','sleeping','exit','offtime','wakeup') 
+    animal_id=null       : int                          # animal id
+    task_idx=null        : int                          # task identification number
+    session=null         : int                          
+    trials=null          : int                          
+    total_liquid=null    : float                        
+    state=null           : varchar(255)                 
+    difficulty=null      : smallint                     
+    start_time=null      : time                         
+    stop_time=null       : time                         
+    last_ping="current_timestamp()" : timestamp                    
+    notes=null           : varchar(256)                 
+    queue_size=null      : int                          
+    ip                   : varchar(16)                  # setup IP address
+    """
 
-    def entry(self):
-        """Entry transition method"""
-        pass
 
-    def run(self):
-        """Main run command"""
-        assert 0, "run not implemented"
-
-    def next(self):
-        """Exit transition method"""
-        assert 0, "next not implemented"
-
-    def exit(self):
-        """Exit transition method"""
-        pass
+@experiment.schema
+class Task(dj.Lookup):
+    definition = """
+    # Behavioral experiment parameters
+    task_idx             : int                          # task identification number
+    ---
+    protocol             : varchar(4095)                # stimuli to be presented (array of dictionaries)
+    description=""       : varchar(2048)                # task description
+    timestamp            : timestamp    
+    """
 
 
-# move from State to State using a template method.
-class StateMachine:
-    def __init__(self, initialState, exitState):
-        self.futureState = initialState
-        self.currentState = initialState
-        self.exitState = exitState
-
-    # # # # Main state loop # # # # #
-    def run(self):
-        while self.futureState != self.exitState:
-            if self.currentState != self.futureState:
-                self.currentState.exit()
-                self.currentState = self.futureState
-                self.currentState.entry()
-            self.currentState.run()
-            self.futureState = self.currentState.next()
-        self.currentState.exit()
-        self.exitState.run()
