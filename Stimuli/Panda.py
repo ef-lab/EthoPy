@@ -18,25 +18,25 @@ class Objects(dj.Lookup):
     file_name=null       : varchar(255)   
     """
 
-    
+
 @stimulus.schema
-class Panda3D(Stimulus, ShowBase, dj.Manual):
+class Panda(Stimulus, ShowBase, dj.Manual):
     definition = """
     # This class handles the presentation of Objects with Panda3D
-    cond_hash            : char(24)                     # unique condition hash
+    -> StimCondition
     """
 
     class Object(dj.Part):
         definition = """
         # object conditions
-        -> Panda3D
-        -> stimuli.Objects
+        -> Panda
+        -> Objects
         ---
         obj_pos_x             : blob
         obj_pos_y             : blob
         obj_mag               : blob
         obj_rot               : blob
-        obj_tilt              : blob
+        obj_tilt              : blob 
         obj_yaw               : blob
         obj_delay             : int
         obj_dur               : int
@@ -45,7 +45,7 @@ class Panda3D(Stimulus, ShowBase, dj.Manual):
     class Environment(dj.Part):
         definition = """
         # object conditions
-        -> Panda3D
+        -> Panda
         ---
         background_color      : tinyblob
         ambient_color         : tinyblob
@@ -53,16 +53,6 @@ class Panda3D(Stimulus, ShowBase, dj.Manual):
         direct1_dir           : tinyblob
         direct2_color         : tinyblob
         direct2_dir           : tinyblob
-        """
-
-    class Trial(dj.Part):
-        definition = """
-        # Stimulus onset timestamps
-        -> exp.Trial
-        -> Panda3D
-        ---
-        start_time           : int                          # start time from session start (ms)
-        end_time             : int                          # end time from session start (ms)
         """
 
     def get_cond_tables(self):
@@ -144,7 +134,7 @@ class Panda3D(Stimulus, ShowBase, dj.Manual):
         for idx, obj in enumerate(self.curr_cond['obj_id']):
             if not selected_obj[idx]:
                 continue
-            self.objects[idx] = Object(self, self.get_cond('obj_', idx))
+            self.objects[idx] = Agent(self, self.get_cond('obj_', idx))
         self.logger.log('StimOnset', dict(period=period))
         if not self.isrunning:
             self.timer.start()
@@ -189,7 +179,7 @@ class Panda3D(Stimulus, ShowBase, dj.Manual):
                 for k, v in self.curr_cond.items() if k.startswith(cond_name)}
 
 
-class Object(Panda3D):
+class Agent(Panda):
     def __init__(self, env, cond):
         self.env = env
         self.timer = Timer()
