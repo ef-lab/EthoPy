@@ -1,7 +1,7 @@
 from Experiment import *
 
 
-class Experiment(StateClass, Session):
+class Experiment(StateClass, ParentExperiment):
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
         self.curr_state = type(self).__name__
         self.start_time = self.logger.log('StateOnset', {'state': type(self).__name__})

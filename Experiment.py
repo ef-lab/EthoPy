@@ -2,7 +2,7 @@ import numpy as np
 from utils.Timer import *
 from utils.generator import make_hash
 import datajoint as dj
-experiment = dj.create_virtual_module('exp', 'test_experiment', create_tables=True)
+experiment = dj.create_virtual_module('exp', 'test_experiments', create_tables=True)
 
 
 class StateClass:
@@ -48,21 +48,8 @@ class StateMachine:
         self.exitState.run()
 
 
-@experiment.schema
-class Session(dj.Manual):
-    definition = """
-    # Behavior session info
-    animal_id            : int                          # animal id
-    session              : smallint                     # session number
-    ---
-    setup=null           : varchar(256)                 # computer id
-    session_tmst         : timestamp                    # session timestamp
-    notes=null           : varchar(2048)                # session notes
-    session_params=null  : mediumblob                   
-    conditions=null      : mediumblob      
-    protocol=null        : varchar(256)                 # protocol file
-    experiment_type=null : varchar(256)                 
-    """
+class ParentExperiment:
+    """  Parent Experiment"""
     curr_state, curr_trial, total_reward, cur_dif, flip_count = '', 0, 0, 1, 0
     rew_probe, un_choices, difficulties, iter, curr_cond, dif_h = [], [], [], [], dict(), list()
 
@@ -134,6 +121,56 @@ class Session(dj.Manual):
 
 
 @experiment.schema
+class Session(dj.Manual):
+    definition = """
+    # Behavior session info
+    animal_id            : int                          # animal id
+    session              : smallint                     # session number
+    ---
+    setup=null           : varchar(256)                 # computer id
+    session_tmst         : timestamp                    # session timestamp
+    notes=null           : varchar(2048)                # session notes
+    session_params=null  : mediumblob                   
+    conditions=null      : mediumblob      
+    protocol=null        : varchar(256)                 # protocol file
+    experiment_type=null : varchar(256)                 
+    """
+
+    class Files(dj.Part):
+        definition = """
+        # File session info
+        -> Session
+        program              : varchar(256)
+        ---
+        filename=null        : varchar(256)                # file
+        source_path=null     : varchar(512)                # local path
+        target_path=null     : varchar(512)                # remote drive path
+        timestamp            : timestamp                   # timestamp
+        """
+
+    class StateOnset(dj.Part):
+        definition = """
+        # Trial period timestamps
+        -> Session
+        time			    : int 	            # time from session start (ms)
+        ---
+        state               : varchar(64)
+        """
+
+
+@experiment.schema
+class Condition(dj.Manual):
+    definition = """
+    # unique stimulus conditions
+    cond_hash             : char(24)                 # unique condition hash
+    ---
+    stimulus_type         : varchar(128)
+    stimulus_hash         : char(24)
+    cond_tuple=null       : blob      
+    """
+
+
+@experiment.schema
 class Trial(dj.Manual):
     definition = """
     # Trial information
@@ -145,49 +182,12 @@ class Trial(dj.Manual):
     end_time             : int                          # end time from session start (ms)
     """
 
-
-@experiment.schema
-class AbortedTrial(dj.Manual):
-    definition = """
-    # Aborted Trials
-    -> Session
-    trial_idx            : smallint                     # unique condition index
-    """
-
-
-@experiment.schema
-class Files(dj.Manual):
-    definition = """
-    # File session info
-    -> Session
-    program              : varchar(256)
-    ---
-    filename=null        : varchar(256)                # file
-    source_path=null     : varchar(512)                # local path
-    target_path=null     : varchar(512)                # remote drive path
-    timestamp            : timestamp                   # timestamp
-    """
-
-
-@experiment.schema
-class Condition(dj.Manual):
-    definition = """
-    # unique stimulus conditions
-    cond_hash             : char(24)                 # unique condition hash
-    ---
-    cond_tuple=null        : blob      
-    """
-
-
-@experiment.schema
-class StateOnset(dj.Manual):
-    definition = """
-    # Trial period timestamps
-    -> Session
-    time			    : int 	            # time from session start (ms)
-    ---
-    state               : varchar(64)
-    """
+    class Aborted(dj.Part):
+        definition = """
+        # Aborted Trials
+        -> Session
+        trial_idx            : smallint                     # unique condition index
+        """
 
 
 @experiment.schema
@@ -206,7 +206,7 @@ class SetupControl(dj.Lookup):
     difficulty=null      : smallint                     
     start_time=null      : time                         
     stop_time=null       : time                         
-    last_ping="current_timestamp()" : timestamp                    
+    last_ping=CURRENT_TIMESTAMP : timestamp                    
     notes=null           : varchar(256)                 
     queue_size=null      : int                          
     ip                   : varchar(16)                  # setup IP address

@@ -64,7 +64,7 @@ class Reward(dj.Manual):
     class Trial(dj.Part):
         definition = """
         # movie clip conditions
-        -> Trial
+        -> exp.Trial
         ---
         -> Reward
         time			      : int 	                # time from session start (ms)

@@ -1,27 +1,30 @@
-import datajoint as dj
+from Experiment import *
 stimulus = dj.create_virtual_module('stimuli', 'test_stimuli', create_tables=True)
 
 
 @stimulus.schema
-class StimOnset(dj.Manual):
+class StimCondition(dj.Manual):
     definition = """
-    # Stimulus onset timestamps
-    -> Session
-    time			    : int 	            # time from session start (ms)
-    ---
-    period              : enum('Trial','Cue','Response')
+    # This class handles the stimulus presentation use function overrides for each stimulus class
+    stim_hash            : char(24)                     # unique stimulus condition hash  
     """
+
+    class Onset(dj.Part):
+        definition = """
+        # Stimulus onset timestamps
+        -> Trial
+        -> StimCondition
+        time                 : int                          # start time from session start (ms)
+        ---
+        period=NULL          : varchar(64)
+        end_time=NULL        : int                          # end time from session start (ms)
+        """
 
 
 class Stimulus:
-    """ This class handles the stimulus presentation
-    use function overrides for each stimulus class
-    """
-    def __init__(self, logger):
-        self.logger = logger
-        self.isrunning = False
+    """ This class handles the stimulus presentation use function overrides for each stimulus class """
 
-    def get_cond_tables(self):
+    def make_conditions(self, conditions):
         """return condition tables"""
         return []
 
@@ -56,4 +59,6 @@ class Stimulus:
     def stop(self):
         """stop trial"""
         pass
+
+
 

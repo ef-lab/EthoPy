@@ -170,7 +170,7 @@ class PrioritizedItem:
     tuple: Any = datafield(compare=False)
     field: str = datafield(compare=False, default='')
     value: Any = datafield(compare=False, default='')
-    schema: str = datafield(compare=False, default='lab')
+    schema: str = datafield(compare=False, default='exp')
     replace: bool = datafield(compare=False, default=False)
     block: bool = datafield(compare=False, default=False)
     priority: int = datafield(default=50)
