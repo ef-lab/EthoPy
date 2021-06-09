@@ -9,7 +9,7 @@ class StimCondition(dj.Manual):
     stim_hash            : char(24)                     # unique stimulus condition hash  
     """
 
-    class Onset(dj.Part):
+    class Trial(dj.Part):
         definition = """
         # Stimulus onset timestamps
         -> Trial
