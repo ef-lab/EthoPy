@@ -3,7 +3,7 @@ from utils.Timer import *
 import pygame
 import numpy as np
 from datetime import datetime, timedelta
-import datajoint as dj
+from Experiment import *
 behavior = dj.create_virtual_module('behavior', 'test_behavior', create_tables=True)
 
 
@@ -64,7 +64,7 @@ class Reward(dj.Manual):
     class Trial(dj.Part):
         definition = """
         # movie clip conditions
-        -> exp.Trial
+        -> Trial
         ---
         -> Reward
         time			      : int 	                # time from session start (ms)

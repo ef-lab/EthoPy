@@ -165,7 +165,6 @@ class Condition(dj.Manual):
     cond_hash             : char(24)                 # unique condition hash
     ---
     stimulus_type         : varchar(128)
-    stimulus_hash         : char(24)
     cond_tuple=null       : blob      
     """
 
