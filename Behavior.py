@@ -51,14 +51,14 @@ class Response(dj.Manual):
     definition = """
     # Mouse behavioral response
     -> Session  
-    time	     	  	    : int           	# time from session start (ms)
     """
 
     class Proximity(dj.Part):
         definition = """
         # Center port information
-        -> Port
         -> Response
+        port_id              : tinyint          # port id
+        time	     	  	 : int           	# time from session start (ms)
         ---
         in_position          : tinyint
         """
@@ -66,15 +66,18 @@ class Response(dj.Manual):
     class Lick(dj.Part):
         definition = """
         # Lick timestamps
-        -> Port
         -> Response
+        port_id              : tinyint          # port id
+        time	     	  	 : int           	# time from session start (ms)
         """
 
     class Touch(dj.Part):
         definition = """
         # Touch timestamps
+        -> Response
         loc_x               : int               # x touch location
         loc_y               : int               # y touch location
+        time	     	    : int           	# time from session start (ms)
         """
 
 

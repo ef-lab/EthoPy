@@ -1,4 +1,4 @@
-import numpy, socket, json, os, pathlib, threading, functools
+import numpy, socket, json, os, pathlib, threading, functools, subprocess
 from utils.Timer import *
 from utils.Generator import *
 from queue import PriorityQueue
@@ -77,8 +77,9 @@ class Logger:
         self.trial_key = dict(animal_id=self.get_setup_info('animal_id'), trial_idx=0)
         last_sessions = (Session() & self.trial_key).fetch('session')
         self.trial_key['session'] = 1 if numpy.size(last_sessions) == 0 else numpy.max(last_sessions) + 1
-        self.put(table='Session', tuple={**self.trial_key, 'session_params': params, 'setup': self.setup,
-                                         'protocol': self.get_protocol(), 'experiment_type': exp_type}, priority=1)
+        sha = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
+        self.put(table='Session', tuple={**self.trial_key, 'session_params': params, 'protocol': self.get_protocol(),
+                                         'setup': self.setup, 'git-sha1': sha, 'experiment_type': exp_type}, priority=1)
         key = {'session': self.trial_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1}
         if 'start_time' in params:
             tdelta = lambda t: datetime.strptime(t, "%H:%M:%S") - datetime.strptime("00:00:00", "%H:%M:%S")
@@ -86,7 +87,7 @@ class Logger:
         self.update_setup_info(key)
         self.logger_timer.start()  # start session time
 
-    def log_conditions(self, conditions, condition_tables=['Condition'], schema='experiments', hsh='cond_hash'):
+    def log_conditions(self, conditions, condition_tables=['Condition'], schema='experiment', hsh='cond_hash'):
         fields, hash_dict = list(), dict()
         for ctable in condition_tables:
             table = self.rgetattr(self.schemata[schema], ctable)

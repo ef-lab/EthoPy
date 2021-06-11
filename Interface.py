@@ -65,8 +65,7 @@ class Interface:
     def calc_pulse_dur(self, reward_amount):  # calculate pulse duration for the desired reward amount
         actual_rew = dict()
         for probe in list(set(self.probes)):
-            duration = np.interp(reward_amount/1000,
-                                                  self.weight_per_pulse[probe], self.pulse_dur[probe])
+            duration = np.interp(reward_amount/1000, self.weight_per_pulse[probe], self.pulse_dur[probe])
             self.create_pulse(probe, duration)
             actual_rew[probe] = np.max((np.min(self.weight_per_pulse[probe]), reward_amount/1000)) * 1000 # in uL
         return actual_rew

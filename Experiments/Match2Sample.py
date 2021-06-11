@@ -4,15 +4,21 @@ from Experiment import *
 @experiment.schema
 class Match2Sample(dj.Manual):
     definition = """
-    # Behavior session info
-    -> Session
+    # Match2Sample experiment conditions
+    -> Condition
     ---
-    setup=null           : varchar(256)                 # computer id
-    session_tmst         : timestamp                    # session timestamp
-    session_params=null  : mediumblob                   
-    conditions=null      : mediumblob      
-    protocol=null        : varchar(256)                 # protocol file
-    experiment_type=null : varchar(256)                 
+    difficulty            : smallint   
+    init_ready            : smallint
+    cue_ready             : smallint
+    delay_ready           : smallint
+    resp_ready            : smallint
+    intertrial_duration   : smallint
+    cue_duration          : smallint
+    delay_duration        : smallint
+    response_duration     : smallint
+    reward_duration       : smallint
+    punish_duration       : smallint
+    abort_duration        : smallint 
     """
 
 
@@ -29,7 +35,7 @@ class Experiment(StateClass, ParentExperiment):
                                 'stair_down'            : 0.55,
                                 'noresponse_intertrial' : True,
                                 'incremental_punishment': True}
-
+    exp_type = 'Match2Sample'
     required_fields = ['difficulty']
     default_key =  {'init_ready'            : 0,
                     'cue_ready'             : 0,
