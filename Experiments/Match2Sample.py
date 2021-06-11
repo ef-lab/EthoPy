@@ -1,7 +1,48 @@
 from Experiment import *
 
 
+@experiment.schema
+class Match2Sample(dj.Manual):
+    definition = """
+    # Behavior session info
+    -> Session
+    ---
+    setup=null           : varchar(256)                 # computer id
+    session_tmst         : timestamp                    # session timestamp
+    session_params=null  : mediumblob                   
+    conditions=null      : mediumblob      
+    protocol=null        : varchar(256)                 # protocol file
+    experiment_type=null : varchar(256)                 
+    """
+
+
 class Experiment(StateClass, ParentExperiment):
+    default_session_params =   {'trial_selection'       : 'staircase',
+                                'start_time'            : '10:00:00',
+                                'stop_time'             : '16:00:00',
+                                'intensity'             : 64,
+                                'max_reward'            : 3000,
+                                'min_reward'            : 500,
+                                'bias_window'           : 5,
+                                'staircase_window'      : 20,
+                                'stair_up'              : 0.7,
+                                'stair_down'            : 0.55,
+                                'noresponse_intertrial' : True,
+                                'incremental_punishment': True}
+
+    required_fields = ['difficulty']
+    default_key =  {'init_ready'            : 0,
+                    'cue_ready'             : 0,
+                    'delay_ready'           : 0,
+                    'resp_ready'            : 0,
+                    'intertrial_duration'   : 1000,
+                    'cue_duration'          : 1000,
+                    'delay_duration'        : 0,
+                    'response_duration'     : 5000,
+                    'reward_duration'       : 2000,
+                    'punish_duration'       : 1000,
+                    'abort_duration': 0}
+
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
         self.curr_state = type(self).__name__
         self.start_time = self.logger.log('StateOnset', {'state': type(self).__name__})
@@ -29,7 +70,7 @@ class Experiment(StateClass, ParentExperiment):
 
 class Prepare(Experiment):
     def run(self):
-        self.stim.setup()  # prepare stimulus
+        pass
 
     def next(self):
         if self.beh.is_sleep_time():
@@ -40,8 +81,9 @@ class Prepare(Experiment):
 
 class PreTrial(Experiment):
     def entry(self):
-        self._get_new_cond()
-        self.stim.prepare()
+        self.resp_ready = False
+        self.prepare()
+        self.stim.prepare(self.curr_cond)
         self.beh.prepare(self.curr_cond)
         self.logger.init_trial(self.curr_cond['cond_hash'])
         super().entry()
@@ -103,12 +145,14 @@ class Delay(Experiment):
             self.resp_ready = True
 
     def next(self):
-        if self.resp_ready:
+        if self.resp_ready and self.timer.elapsed_time() > self.stim.curr_cond['delay_duration']: # this specifies the minimum amount of time we want to spend in the delay period contrary to the cue_duration FIX IT
             return states['Response']
         elif self.response:
             return states['Abort']
         elif not self.resp_ready and self.state_timer.elapsed_time() > self.curr_cond['delay_duration']:
             return states['Abort']
+        elif self.logger.setup_status in ['stop', 'exit']:
+            return states['Exit']
         else:
             return states['Delay']
 
@@ -133,8 +177,8 @@ class Response(Experiment):
             return states['Abort']
         elif self.response and not self.beh.is_correct():  # incorrect response
             return states['Punish']
-        elif self.state_timer.elapsed_time() > self.curr_cond['response_duration']:      # timed out
-            return states['InterTrial']
+        elif self.timer.elapsed_time() > self.stim.curr_cond['response_duration']:      # timed out
+            return states['Abort']
         elif self.logger.setup_status in ['stop', 'exit']:
             return states['Exit']
         else:
@@ -146,12 +190,21 @@ class Response(Experiment):
 
 
 class Abort(Experiment):
-    def run(self):
+    def entry(self):
+        super().entry()
         self.beh.update_history()
         self.logger.log('AbortedTrial')
 
+    def run(self):
+        pass
+
     def next(self):
-        return states['InterTrial']
+        if self.timer.elapsed_time() >= self.stim.curr_cond['abort_duration']:
+            return states['InterTrial']
+        elif self.logger.setup_status in ['stop', 'exit']:
+            return states['Exit']
+        else:
+            return states['Abort']
 
 
 class Reward(Experiment):
@@ -165,6 +218,8 @@ class Reward(Experiment):
     def next(self):
         if self.rewarded or self.state_timer.elapsed_time() >= self.curr_cond['reward_duration']:
             return states['InterTrial']
+        elif self.logger.setup_status in ['stop', 'exit']:
+            return states['Exit']
         else:
             return states['Reward']
 
@@ -173,13 +228,18 @@ class Punish(Experiment):
     def entry(self):
         self.beh.punish()
         super().entry()
+        self.punish_period = self.stim.curr_cond['punish_duration']
+        if self.params.get('incremental_punishment'):
+            self.punish_period *= self.beh.get_false_history()
 
     def run(self):
         self.stim.punish_stim()
 
     def next(self):
-        if self.state_timer.elapsed_time() >= self.curr_cond['punish_duration']:
+        if self.timer.elapsed_time() >= self.punish_period:
             return states['InterTrial']
+        elif self.logger.setup_status in ['stop', 'exit']:
+            return states['Exit']
         else:
             return states['Punish']
 
