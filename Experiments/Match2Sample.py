@@ -1,7 +1,48 @@
 from Experiment import *
 
 
+@experiment.schema
+class Match2Sample(dj.Manual):
+    definition = """
+    # Behavior session info
+    -> Session
+    ---
+    setup=null           : varchar(256)                 # computer id
+    session_tmst         : timestamp                    # session timestamp
+    session_params=null  : mediumblob                   
+    conditions=null      : mediumblob      
+    protocol=null        : varchar(256)                 # protocol file
+    experiment_type=null : varchar(256)                 
+    """
+
+
 class Experiment(StateClass, ParentExperiment):
+    default_session_params =   {'trial_selection'       : 'staircase',
+                                'start_time'            : '10:00:00',
+                                'stop_time'             : '16:00:00',
+                                'intensity'             : 64,
+                                'max_reward'            : 3000,
+                                'min_reward'            : 500,
+                                'bias_window'           : 5,
+                                'staircase_window'      : 20,
+                                'stair_up'              : 0.7,
+                                'stair_down'            : 0.55,
+                                'noresponse_intertrial' : True,
+                                'incremental_punishment': True}
+
+    required_fields = ['difficulty']
+    default_key =  {'init_ready'            : 0,
+                    'cue_ready'             : 0,
+                    'delay_ready'           : 0,
+                    'resp_ready'            : 0,
+                    'intertrial_duration'   : 1000,
+                    'cue_duration'          : 1000,
+                    'delay_duration'        : 0,
+                    'response_duration'     : 5000,
+                    'reward_duration'       : 2000,
+                    'punish_duration'       : 1000,
+                    'abort_duration': 0}
+
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
         self.curr_state = type(self).__name__
         self.start_time = self.logger.log('StateOnset', {'state': type(self).__name__})
@@ -29,7 +70,7 @@ class Experiment(StateClass, ParentExperiment):
 
 class Prepare(Experiment):
     def run(self):
-        self.stim.setup()  # prepare stimulus
+        pass
 
     def next(self):
         if self.beh.is_sleep_time():
@@ -40,9 +81,9 @@ class Prepare(Experiment):
 
 class PreTrial(Experiment):
     def entry(self):
-        self._get_new_cond()
         self.resp_ready = False
-        self.stim.prepare()
+        self.prepare()
+        self.stim.prepare(self.curr_cond)
         self.beh.prepare(self.curr_cond)
         self.logger.init_trial(self.curr_cond['cond_hash'])
         super().entry()

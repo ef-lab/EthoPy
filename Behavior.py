@@ -4,86 +4,30 @@ import pygame
 import numpy as np
 from datetime import datetime, timedelta
 from Experiment import *
-behavior = dj.create_virtual_module('behavior', 'test_behavior', create_tables=True)
 
 
 @behavior.schema
-class CenterPort(dj.Manual):
+class Port(dj.Manual):
     definition = """
-    # Center port information
-    -> Session
-    time	     	   	: int           	# time from session start (ms)
+    # Probe identity
+    setup                    : varchar(256)                 # Setup name
+    port_id                  : tinyint                      # port id
+    conf_version             : tinyint                      # configuration version
     ---
-    in_position          : smallint
-    state=null           : varchar(256)  
-    timestamp            : timestamp    
+    discription              : varchar(256)
     """
 
-
-@behavior.schema
-class Lick(dj.Manual):
-    definition = """
-    # Lick timestamps
-    -> Session
-    time	     	  	: int           	# time from session start (ms)
-    probe               : int               # probe number
-    """
-
-
-@behavior.schema
-class Touch(dj.Manual):
-    definition = """
-    # Lick timestamps
-    -> Session
-    time	     	  	: int           	# time from session start (ms)
-    loc_x               : int               # x touch location
-    loc_y               : int               # y touch location
-    """
-
-@behavior.schema
-class LiquidDelivery(dj.Manual):
-    definition = """
-    # Liquid delivery timestamps
-    -> Session
-    time			    : int 	            # time from session start (ms)
-    probe               : int               # probe number
-    """
-
-
-@behavior.schema
-class Reward(dj.Manual):
-    definition = """
-    # reward probe conditions
-    cond_hash              : char(24)                     # unique reward hash
-    ---
-    port=0                 : smallint                     # delivery port
-    reward_amount=0        : float                        # reward amount
-    reward_type='water'    : enum('water','juice','food') # reward type
-    """
-
-    class Trial(dj.Part):
+    class Calibration(dj.Part):
         definition = """
-        # movie clip conditions
-        -> Trial
-        ---
-        -> Reward
-        time			      : int 	                # time from session start (ms)
+        # Liquid delivery calibration sessions for each port with water availability
+        -> Port
+        date                         : date                 # session date (only one per day is allowed)
         """
 
-
-@behavior.schema
-class LiquidCalibration(dj.Manual):
-    definition = """
-    # Liquid delivery calibration sessions for each probe
-    setup                        : varchar(256)         # Setup name
-    probe                        : int                  # probe number
-    date                         : date                 # session date (only one per day is allowed)
-    """
-
-    class PulseWeight(dj.Part):
+    class Liquid(dj.Part):
         definition = """
         # Data for volume per pulse duty cycle estimation
-        -> LiquidCalibration
+        -> Port.Calibration
         pulse_dur                : int                  # duration of pulse in ms
         ---
         pulse_num                : int                  # number of pulses
@@ -91,22 +35,86 @@ class LiquidCalibration(dj.Manual):
         timestamp                : timestamp            # timestamp
         """
 
+    class Test(dj.Part):
+        definition = """
+        # Lick timestamps
+        -> Port
+        timestamp             : timestamp  
+        ___
+        result=null           : enum('Passed','Failed')
+        pulses=null           : int
+        """
+
 
 @behavior.schema
-class ProbeTest(dj.Manual):
+class Response(dj.Manual):
     definition = """
-    # Lick timestamps
-    setup                 : varchar(256)                 # Setup name
-    probe                 : int               # probe number
-    timestamp             : timestamp  
-    ___
-    result=null           : enum('Passed','Failed')
-    pulses=null           : int
+    # Mouse behavioral response
+    -> Session  
+    time	     	  	    : int           	# time from session start (ms)
     """
+
+    class Proximity(dj.Part):
+        definition = """
+        # Center port information
+        -> Port
+        -> Response
+        ---
+        in_position          : tinyint
+        """
+
+    class Lick(dj.Part):
+        definition = """
+        # Lick timestamps
+        -> Port
+        -> Response
+        """
+
+    class Touch(dj.Part):
+        definition = """
+        # Touch timestamps
+        loc_x               : int               # x touch location
+        loc_y               : int               # y touch location
+        """
+
+
+@behavior.schema
+class Rewards(dj.Lookup):
+    definition = """
+    # reward types
+    reward_type             : varchar(16)
+    ---
+    description             : varchar(256)
+    """
+
+
+@behavior.schema
+class Reward(dj.Manual):
+    definition = """
+    # reward probe conditions
+    beh_hash               : char(24)                     # unique reward hash
+    ---
+    port_id                : tinyint                      # port id
+    reward_amount=0        : float                        # reward amount
+    -> Rewards
+    """
+
+    class Trial(dj.Part):
+        definition = """
+        # movie clip conditions
+        -> experiment.Trial
+        time			      : int 	                # time from session start (ms)
+        ---
+        -> Reward
+        """
 
 
 class Behavior:
     """ This class handles the behavior variables """
+    cond_tables = ['Reward']
+    required_fields = ['reward_amount', 'port_id']
+    default_key = {'reward_type': 'water', 'conf_version': 1}
+
     def __init__(self, logger, params):
         self.params = params
         self.resp_timer = Timer()
@@ -135,14 +143,18 @@ class Behavior:
     def punish(self):
         pass
 
-    def give_odor(self, delivery_idx, odor_idx, odor_dur, odor_dutycycle):
-        pass
-
     def cleanup(self):
         pass
 
-    def get_cond_tables(self):
-        return []
+    def make_conditions(self, conditions):
+        """generate and store stimulus condition hashes"""
+        for cond in conditions:
+            assert np.all([field in cond for field in self.required_fields])
+            cond.update({**self.default_key, **cond})
+        return self.logger.log_conditions(conditions=conditions,
+                                          condition_tables=self.cond_tables,
+                                          schema='behavior',
+                                          hsh='beh_hash')
 
     def prepare(self, condition):
         pass
@@ -178,11 +190,7 @@ class RPBehavior(Behavior):
     """ This class handles the behavior variables for RP """
     def __init__(self, logger, params):
         self.interface = RPProbe(logger)
-        self.cond_tables = ['RewardCond']
         super(RPBehavior, self).__init__(logger, params)
-
-    def get_cond_tables(self):
-        return ['RewardCond']
 
     def is_licking(self, since=0):
         licked_probe, tmst = self.interface.get_last_lick()
@@ -212,14 +220,10 @@ class RPBehavior(Behavior):
 
     def reward(self):
         self.interface.give_liquid(self.licked_probe)
-        self.logger.log('LiquidDelivery', dict(probe=self.licked_probe,
+        self.logger.log('Reward.Trial', dict(probe=self.licked_probe,
                                                reward_amount=self.reward_amount[self.licked_probe]))
         self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
         return True
-
-    def give_odor(self, delivery_port, odor_id, odor_dur, odor_dutycycle):
-        self.interface.give_odor(delivery_port, odor_id, odor_dur, odor_dutycycle)
-        self.logger.log('StimOnset')
 
     def inactivity_time(self):  # in minutes
         return np.minimum(self.interface.timer_probe1.elapsed_time(),
@@ -319,10 +323,6 @@ class TouchBehavior(Behavior):
         touched_loc = self.touch if self.has_touched else np.nan
         self.update_history(touched_loc)
 
-    def give_odor(self, delivery_port, odor_id, odor_dur, odor_dutycycle):
-        self.interface.give_odor(delivery_port, odor_id, odor_dur, odor_dutycycle)
-        self.logger.log('StimOnset')
-
     def cleanup(self):
         self.interface.cleanup()
         self.ts.stop()
@@ -402,13 +402,6 @@ class VRBehavior(Behavior):
         self.logger.log('LiquidDelivery', dict(probe=self.licked_probe,
                                                reward_amount=self.reward_amount[self.licked_probe]))
 
-    def present_odor(self, delivery_port, odor_id, dutycycle):
-        self.interface.present_odor(self, delivery_port, odor_id, dutycycle)
-        self.logger.log('StimOnset')
-
-    def update_odor(self, delivery_port, dutycycle):
-        self.interface.update_odor(delivery_port, dutycycle)
-
     def cleanup(self):
         self.mouse1.close()
         self.mouse2.close()
@@ -429,7 +422,7 @@ class DummyProbe(Behavior):
         super(DummyProbe, self).__init__(logger, params)
 
     def get_cond_tables(self):
-        return ['RewardCond']
+        return ['Reward']
 
     def is_ready(self, duration, since=0):
         if duration == 0: return True

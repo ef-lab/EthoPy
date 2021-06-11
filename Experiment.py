@@ -1,8 +1,10 @@
 import numpy as np
 from utils.Timer import *
-from utils.generator import make_hash
+from utils.Generator import make_hash
 import datajoint as dj
-experiment = dj.create_virtual_module('exp', 'test_experiments', create_tables=True)
+experiment = dj.create_virtual_module('experiment', 'test_experiments', create_tables=True)
+stimulus = dj.create_virtual_module('stimulus', 'test_stimuli', create_tables=True)
+behavior = dj.create_virtual_module('behavior', 'test_behavior', create_tables=True)
 
 
 class StateClass:
@@ -52,15 +54,26 @@ class ParentExperiment:
     """  Parent Experiment"""
     curr_state, curr_trial, total_reward, cur_dif, flip_count = '', 0, 0, 1, 0
     rew_probe, un_choices, difficulties, iter, curr_cond, dif_h = [], [], [], [], dict(), list()
+    required_fields, default_key, conditions, default_session_params = [], dict(), [], dict()
 
-    def setup(self, logger, BehaviorClass, session_params, conditions):
+    def setup(self, logger, BehaviorClass, session_params):
+        session_params.update({**self.default_session_params, **session_params})
         self.params = session_params
         self.logger = logger
-        self.conditions = conditions
         self.beh = BehaviorClass(logger, session_params)
+        self.interface = self.beh.interface
         self.session_timer = Timer()
 
-        resp_cond = session_params['resp_cond'] if 'resp_cond' in session_params else 'probe'
+    def make_conditions(self, stim_class, conditions):
+        conditions = stim_class().make_conditions(conditions, self.logger)
+        for cond in conditions:
+            assert np.all([field in cond for field in self.required_fields])
+            cond.update({**self.default_key, **cond})
+        return self.beh.make_conditions(conditions)
+
+    def push_conditions(self, conditions):
+        self.conditions += self.logger.log_conditions(conditions)
+        resp_cond = self.params['resp_cond'] if 'resp_cond' in self.params else 'probe'
         if np.all(['difficulty' in cond for cond in conditions]):
             self.difficulties = np.array([cond['difficulty'] for cond in self.conditions])
         if np.all([resp_cond in cond for cond in conditions]):
@@ -70,11 +83,14 @@ class ParentExperiment:
                 self.choices = np.array([make_hash(d[resp_cond]) for d in conditions])
             self.un_choices, un_idx = np.unique(self.choices, axis=0, return_index=True)
             if self.difficulties: self.un_difs = self.difficulties[un_idx]
-        self.logger.log_conditions(conditions)
 
-    def start_session(self, session_type):
-        self.total_reward = 0
-        self.session_timer.start()  # start session time
+    def prepare(self):
+        old_cond = self.curr_cond
+        self._get_new_cond()
+        if 'stimulus_class' not in self.curr_cond or old_cond['stimulus_class'] != self.curr_cond['stimulus_class']:
+            stim_class = eval(self.curr_cond['stimulus_class'])
+            self.stim = stim_class()
+            self.stim.setup()
 
     def _anti_bias(self, choice_h, un_choices):
         choice_h = np.array([make_hash(c) for c in choice_h[-self.params['bias_window']:]])
@@ -129,12 +145,20 @@ class Session(dj.Manual):
     ---
     setup=null           : varchar(256)                 # computer id
     session_tmst         : timestamp                    # session timestamp
-    notes=null           : varchar(2048)                # session notes
     session_params=null  : mediumblob                   
     conditions=null      : mediumblob      
     protocol=null        : varchar(256)                 # protocol file
     experiment_type=null : varchar(256)                 
     """
+
+    class Notes(dj.Part):
+        definition = """
+        # File session info
+        -> Session
+        timestamp            : timestamp                   # timestamp
+        ---
+        note=null            : varchar(2048)               # session notes
+        """
 
     class Files(dj.Part):
         definition = """
@@ -164,7 +188,7 @@ class Condition(dj.Manual):
     # unique stimulus conditions
     cond_hash             : char(24)                 # unique condition hash
     ---
-    stimulus_type         : varchar(128)
+    stimulus_class        : varchar(128)
     cond_tuple=null       : blob      
     """
 
@@ -179,6 +203,7 @@ class Trial(dj.Manual):
     -> Condition
     start_time           : int                          # start time from session start (ms)
     end_time             : int                          # end time from session start (ms)
+    difficulty=NULL      : smallint
     """
 
     class Aborted(dj.Part):

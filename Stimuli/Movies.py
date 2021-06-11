@@ -3,16 +3,13 @@ import io, os, imageio
 from time import sleep
 import pygame
 from pygame.locals import *
-import datajoint as dj
-stimuli = dj.create_virtual_module('stimuli.py', 'lab_stimuli', create_tables=True)
-exp = dj.create_virtual_module('exp.py', 'lab_behavior', create_tables=True)
 
 
-@stimuli.schema
+@stimulus.schema
 class Movies(Stimulus, dj.Manual):
     definition = """
     # movie clip conditions
-    cond_hash            : char(24)                     # unique condition hash
+    -> StimCondition
     ---
     movie_name           : char(8)                      # short movie title
     clip_number          : int                          # clip index
@@ -24,7 +21,7 @@ class Movies(Stimulus, dj.Manual):
     class Trial(dj.Part):
         definition = """
         # Stimulus onset timestamps
-        -> exp.Trial
+        -> experiment.Trial
         -> Movies
         ---
         start_time           : int                          # start time from session start (ms)

@@ -2,14 +2,11 @@
 from Experiments.Match2Sample import *
 from Behavior import*
 from Stimuli.Panda import *
-from utils.generator import *
+from utils.Generator import *
 from scipy import interpolate
 
 interp = lambda x: interpolate.splev(np.linspace(0, len(x), 100),
                                      interpolate.splrep(np.linspace(0, len(x), len(x)), x)) if len(x) > 3 else x
-conditions = []
-
-exp = Experiment()
 
 # define session parameters
 session_params = {
@@ -28,7 +25,12 @@ session_params = {
     'incremental_punishment': True,
 }
 
-# define environment conditions
+# setup experiment
+exp = Experiment()
+exp.setup(logger, DummyProbe, session_params)
+
+# define trial conditions
+conditions = []
 env_key = {
     'background_color'      : (0.1,0.1,0.1),
     'ambient_color'         : (0.1, 0.1, 0.1, 1),
@@ -157,9 +159,11 @@ for idx, obj_comb in enumerate(obj_combs):
                                 'direct1_dir'   : [dir1_f()],
                                 'direct2_dir'   : [dir2_f()]})
 
-# run experiments
+# push trials
+conds = exp.make_conditions(Panda, conditions)
+exp.push_conditions(conds)
 
-exp.setup(logger, DummyProbe, session_params, conditions)
+# run experiments
 exp.run()
 
 

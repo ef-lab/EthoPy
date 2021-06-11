@@ -20,7 +20,7 @@ class Objects(dj.Lookup):
 
 
 @stimulus.schema
-class Panda(Stimulus, ShowBase, dj.Manual):
+class Panda(Stimulus, dj.Manual):
     definition = """
     # This class handles the presentation of Objects with Panda3D
     -> StimCondition
@@ -31,6 +31,7 @@ class Panda(Stimulus, ShowBase, dj.Manual):
         # object conditions
         -> Panda
         -> Objects
+        obj_period=Trial      : varchar(16)
         ---
         obj_pos_x             : blob
         obj_pos_y             : blob
@@ -55,8 +56,22 @@ class Panda(Stimulus, ShowBase, dj.Manual):
         direct2_dir           : tinyblob
         """
 
-    def get_cond_tables(self):
-        return ['ObjectCond']
+    cond_tables = ['Panda', 'Panda.Object', 'Panda.Environment']
+    required_fields = ['obj_id', 'obj_dur']
+    default_key = {'background_color': (0.1, 0.1, 0.1),
+                   'ambient_color': (0.1, 0.1, 0.1, 1),
+                   'direct1_color': (0.7, 0.7, 0.7, 1),
+                   'direct1_dir': (0, -20, 0),
+                   'direct2_color': (0.2, 0.2, 0.2, 1),
+                   'direct2_dir': (180, -20, 0),
+                   'obj_pos_x': 0,
+                   'obj_pos_y': 0,
+                   'obj_mag': .5,
+                   'obj_rot': 0,
+                   'obj_tilt': 0,
+                   'obj_yaw': 0,
+                   'obj_delay': 0,
+                   'obj_period': 'Trial'}
 
     def setup(self):
         # setup parameters
@@ -76,50 +91,50 @@ class Panda(Stimulus, ShowBase, dj.Manual):
                     print('Saving %s ...' % filename)
                     object_info['object'].tofile(filename)
 
-        ShowBase.__init__(self, fStartDirect=True, windowType=None)
+        self.sb = ShowBase.__init__(self, fStartDirect=True, windowType=None)
         props = core.WindowProperties()
         props.setCursorHidden(True)
-        self.win.requestProperties(props)
-        self.set_background_color(0, 0, 0)
-        self.disableMouse()
+        self.sb.win.requestProperties(props)
+        self.sb.set_background_color(0, 0, 0)
+        self.sb.disableMouse()
 
         # Create Ambient Light
-        self.ambientLight = core.AmbientLight('ambientLight')
-        self.ambientLightNP = self.render.attachNewNode(self.ambientLight)
-        self.render.setLight(self.ambientLightNP)
+        self.sb.ambientLight = core.AmbientLight('ambientLight')
+        self.sb.ambientLightNP = self.sb.render.attachNewNode(self.sb.ambientLight)
+        self.sb.render.setLight(self.sb.ambientLightNP)
 
         # Directional light 01
-        self.directionalLight1 = core.DirectionalLight('directionalLight1')
-        self.directionalLight1NP = self.render.attachNewNode(self.directionalLight1)
-        self.render.setLight(self.directionalLight1NP)
+        self.sb.directionalLight1 = core.DirectionalLight('directionalLight1')
+        self.sb.directionalLight1NP = self.sb.render.attachNewNode(self.sb.directionalLight1)
+        self.sb.render.setLight(self.sb.directionalLight1NP)
 
         # Directional light 02
-        self.directionalLight2 = core.DirectionalLight('directionalLight2')
-        self.directionalLight2NP = self.render.attachNewNode(self.directionalLight2)
-        self.render.setLight(self.directionalLight2NP)
+        self.sb.directionalLight2 = core.DirectionalLight('directionalLight2')
+        self.sb.directionalLight2NP = self.sb.render.attachNewNode(self.sb.directionalLight2)
+        self.sb.render.setLight(self.sb.directionalLight2NP)
 
-    def prepare(self):
-        self._get_new_cond()
+    def prepare(self, curr_cond):
+        self.curr_cond = curr_cond
         if not self.curr_cond:
             self.isrunning = False
-        self.background_color = self.curr_cond['background_color']
+        self.sb.background_color = self.curr_cond['background_color']
 
         # set background color
-        self.set_background_color(self.curr_cond['background_color'][0],
+        self.sb.set_background_color(self.curr_cond['background_color'][0],
                                   self.curr_cond['background_color'][1],
                                   self.curr_cond['background_color'][2])
 
         # Set Ambient Light
-        self.ambientLight.setColor(self.curr_cond['ambient_color'])
+        self.sb.ambientLight.setColor(self.curr_cond['ambient_color'])
 
         # Directional light 01
-        self.directionalLight1.setColor(self.curr_cond['direct1_color'])
-        self.directionalLight1NP.setHpr(self.curr_cond['direct1_dir'][0],
+        self.sb.directionalLight1.setColor(self.curr_cond['direct1_color'])
+        self.sb.directionalLight1NP.setHpr(self.curr_cond['direct1_dir'][0],
                                         self.curr_cond['direct1_dir'][1],
                                         self.curr_cond['direct1_dir'][2])
         # Directional light 02
-        self.directionalLight2.setColor(self.curr_cond['direct2_color'])
-        self.directionalLight2NP.setHpr(self.curr_cond['direct2_dir'][0],
+        self.sb.directionalLight2.setColor(self.curr_cond['direct2_color'])
+        self.sb.directionalLight2NP.setHpr(self.curr_cond['direct2_dir'][0],
                                         self.curr_cond['direct2_dir'][1],
                                         self.curr_cond['direct2_dir'][2])
         self.flip(2)
@@ -134,7 +149,7 @@ class Panda(Stimulus, ShowBase, dj.Manual):
         for idx, obj in enumerate(self.curr_cond['obj_id']):
             if not selected_obj[idx]:
                 continue
-            self.objects[idx] = Agent(self, self.get_cond('obj_', idx))
+            self.objects[idx] = Agent(self.sb, self.get_cond('obj_', idx))
         self.logger.log('StimOnset', dict(period=period))
         if not self.isrunning:
             self.timer.start()
@@ -147,7 +162,7 @@ class Panda(Stimulus, ShowBase, dj.Manual):
 
     def flip(self, n=1):
         for i in range(0, n):
-            self.taskMgr.step()
+            self.sb.taskMgr.step()
 
     def stop(self):
         for idx, obj in self.objects.items():
@@ -163,7 +178,7 @@ class Panda(Stimulus, ShowBase, dj.Manual):
 
     def unshow(self, color=None):
         if not color: color = self.background_color
-        self.set_background_color(color[0], color[1], color[2])
+        self.sb.set_background_color(color[0], color[1], color[2])
         self.flip(2)
 
     def set_intensity(self, intensity=None):
@@ -172,7 +187,7 @@ class Panda(Stimulus, ShowBase, dj.Manual):
         os.system(cmd)
 
     def close(self):
-        self.destroy()
+        self.sb.destroy()
 
     def get_cond(self, cond_name, idx=0):
         return {k.split(cond_name, 1)[1]: v if type(v) is int or type(v) is float else v[idx]

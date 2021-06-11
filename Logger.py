@@ -1,6 +1,6 @@
 import numpy, socket, json, os, pathlib, threading, functools
 from utils.Timer import *
-from utils.generator import *
+from utils.Generator import *
 from queue import PriorityQueue
 import time as systime
 from datetime import datetime
@@ -14,7 +14,7 @@ dj.config["enable_python_native_blobs"] = True
 
 class Logger:
     setup, is_pi = socket.gethostname(), os.uname()[4][:3] == 'arm'
-    trial_key, schemata = dict(), dict()
+    trial_key, schemata, total_reward = dict(), dict(), 0
     lock, queue, ping_timer, logger_timer = False, PriorityQueue(), Timer(), Timer()
 
     def __init__(self, protocol=False):
@@ -22,10 +22,10 @@ class Logger:
         fileobject = open(os.path.dirname(os.path.abspath(__file__)) + '/dj_local_conf.json')
         con_info = json.loads(fileobject.read())
         conn = dj.Connection(con_info['database.host'], con_info['database.user'], con_info['database.password'])
-        self.schemata['exp'] = dj.create_virtual_module('exp', 'test_experiments', connection=conn)
+        self.schemata['experiment'] = dj.create_virtual_module('exp', 'test_experiments', connection=conn)
         self.schemata['mice'] = dj.create_virtual_module('mice', 'lab_mice', connection=conn)
-        self.schemata['stim'] = dj.create_virtual_module('stim', 'lab_stimuli', connection=conn)
-        self.schemata['beh'] = dj.create_virtual_module('beh', 'test_behavior', connection=conn)
+        self.schemata['stimulus'] = dj.create_virtual_module('stim', 'test_stimuli', connection=conn)
+        self.schemata['behavior'] = dj.create_virtual_module('beh', 'test_behavior', connection=conn)
         self.thread_end, self.thread_lock = threading.Event(),  threading.Lock()
         self.inserter_thread = threading.Thread(target=self.inserter)
         self.getter_thread = threading.Thread(target=self.getter)
@@ -80,39 +80,31 @@ class Logger:
         self.put(table='Session', tuple={**self.trial_key, 'session_params': params, 'setup': self.setup,
                                          'protocol': self.get_protocol(), 'experiment_type': exp_type}, priority=1)
         key = {'session': self.trial_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1}
-
         if 'start_time' in params:
             tdelta = lambda t: datetime.strptime(t, "%H:%M:%S") - datetime.strptime("00:00:00", "%H:%M:%S")
             key = {**key, 'start_time': tdelta(params['start_time']), 'stop_time': tdelta(params['stop_time'])}
         self.update_setup_info(key)
         self.logger_timer.start()  # start session time
 
-    def log_conditions(self, conditions):
-        for cond in conditions:
-            cond_hash = make_hash(cond)
-            self.put(table='Condition', tuple=dict(cond_hash=cond_hash, cond_tuple=cond.copy()), priority=5)
-            cond.update({'cond_hash': cond_hash})
-        return conditions
-
-    def log_conditions2(self, conditions, condition_tables, schema):
+    def log_conditions(self, conditions, condition_tables=['Condition'], schema='experiments', hsh='cond_hash'):
         fields, hash_dict = list(), dict()
         for ctable in condition_tables:
             table = self.rgetattr(self.schemata[schema], ctable)
             fields += list(table().heading.names)
         for condition in conditions:
-            key = {sel_key: condition[sel_key] for sel_key in fields if sel_key != 'cond_hash'}
-            condition.update({'cond_hash': make_hash(key)})
-            hash_dict[condition['cond_hash']] = condition['cond_hash']
-            self.put(table=condition_tables[0], tuple=condition.copy(), schema=schema)
-            for ctable in condition_tables[1:]:  # insert dependant condition tables
-                primary_field = [field for field in self.rgetattr(self.schemata[schema], ctable).primary_key
-                                 if field != 'cond_hash']
-                if primary_field:
-                    for idx, pcond in enumerate(condition[primary_field[0]]):
-                        key = {k: v if type(v) in [int, float, str] else v[idx] for k, v in condition.items()}
-                        self.put(table=ctable, tuple=key, schema=schema)
-                else: self.put(table=ctable, tuple=key, schema=schema)
-        return conditions, condition['cond_hash']
+            priority = 5
+            key = {sel_key: condition[sel_key] for sel_key in fields if sel_key != hsh}
+            condition.update({hsh: make_hash(key)})
+            hash_dict[condition[hsh]] = condition[hsh]
+            for ctable in condition_tables:  # insert dependant condition tables
+                priority += 1
+                core = [field for field in self.rgetattr(self.schemata[schema], ctable).primary_key if field != hsh]
+                if core:
+                    for idx, pcond in enumerate(condition[core[0]]):
+                        cond_key = {k: v if type(v) in [int, float, str] else v[idx] for k, v in condition.items()}
+                        self.put(table=ctable, tuple=cond_key, schema=schema, priority=priority)
+                else: self.put(table=ctable, tuple=condition.copy(), schema=schema, priority=priority)
+        return conditions
 
     def log_pulse_weight(self, pulse_dur, probe, pulse_num, weight=0):
         key = dict(setup=self.setup, probe=probe, date=systime.strftime("%Y-%m-%d"))
@@ -170,7 +162,7 @@ class PrioritizedItem:
     tuple: Any = datafield(compare=False)
     field: str = datafield(compare=False, default='')
     value: Any = datafield(compare=False, default='')
-    schema: str = datafield(compare=False, default='exp')
+    schema: str = datafield(compare=False, default='experiment')
     replace: bool = datafield(compare=False, default=False)
     block: bool = datafield(compare=False, default=False)
     priority: int = datafield(default=50)

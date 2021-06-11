@@ -1,5 +1,4 @@
 from Experiment import *
-stimulus = dj.create_virtual_module('stimuli', 'test_stimuli', create_tables=True)
 
 
 @stimulus.schema
@@ -12,10 +11,10 @@ class StimCondition(dj.Manual):
     class Trial(dj.Part):
         definition = """
         # Stimulus onset timestamps
-        -> Trial
-        -> StimCondition
+        -> experiment.Trial
         time                 : int                          # start time from session start (ms)
         ---
+        -> StimCondition
         period=NULL          : varchar(64)
         end_time=NULL        : int                          # end time from session start (ms)
         """
@@ -24,13 +23,24 @@ class StimCondition(dj.Manual):
 class Stimulus:
     """ This class handles the stimulus presentation use function overrides for each stimulus class """
 
-    def make_conditions(self, conditions):
-        """return condition tables"""
-        return []
+    cond_tables = []
+    required_fields = []
+    default_key = dict()
 
-    def setup(self):
+    def make_conditions(self, conditions, logger):
+        """generate and store stimulus condition hashes"""
+        for cond in conditions:
+            assert np.all([field in cond for field in self.required_fields])
+            cond.update({**self.default_key, **cond, 'stimulus_class': self.cond_tables[0]})
+        return logger.log_conditions(conditions=conditions,
+                                     condition_tables= ['StimCondition'] + self.cond_tables,
+                                     schema='stimulus',
+                                     hsh='stim_hash')
+
+    def setup(self, logger, interface):
         """setup stimulation for presentation before experiment starts"""
-        pass
+        self.logger = logger
+        self.interface = interface
 
     def prepare(self, conditions=False):
         """prepares stuff for presentation before trial starts"""
