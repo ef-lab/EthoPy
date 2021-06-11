@@ -60,6 +60,7 @@ class ParentExperiment:
         session_params.update({**self.default_session_params, **session_params})
         self.params = session_params
         self.logger = logger
+        #self.logger.log_session(session_params, self.exp_type)
         self.beh = BehaviorClass(logger, session_params)
         self.interface = self.beh.interface
         self.session_timer = Timer()
@@ -72,7 +73,7 @@ class ParentExperiment:
         return self.beh.make_conditions(conditions)
 
     def push_conditions(self, conditions):
-        self.conditions += self.logger.log_conditions(conditions)
+        self.conditions += self.logger.log_conditions(conditions, condition_tables=['Condition', self.exp_type])
         resp_cond = self.params['resp_cond'] if 'resp_cond' in self.params else 'probe'
         if np.all(['difficulty' in cond for cond in conditions]):
             self.difficulties = np.array([cond['difficulty'] for cond in self.conditions])
@@ -148,7 +149,6 @@ class Session(dj.Manual):
     session_params=null  : mediumblob                   
     conditions=null      : mediumblob      
     protocol=null        : varchar(256)                 # protocol file
-    experiment_type=null : varchar(256)                 
     """
 
     class Notes(dj.Part):
@@ -188,8 +188,7 @@ class Condition(dj.Manual):
     # unique stimulus conditions
     cond_hash             : char(24)                 # unique condition hash
     ---
-    stimulus_class        : varchar(128)
-    cond_tuple=null       : blob      
+    stimulus_class        : varchar(128) 
     """
 
 
@@ -203,7 +202,6 @@ class Trial(dj.Manual):
     -> Condition
     start_time           : int                          # start time from session start (ms)
     end_time             : int                          # end time from session start (ms)
-    difficulty=NULL      : smallint
     """
 
     class Aborted(dj.Part):
