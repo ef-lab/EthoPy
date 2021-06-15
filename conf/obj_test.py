@@ -1,9 +1,8 @@
 # Object experiment
 
-from Experiments.Passive import *
-from Behavior import *
+from Behaviors.MultiPort import *
 from Stimuli.Panda import *
-from utils.Generator import *
+from utils.helper_functions import *
 from scipy import interpolate
 
 # define session parameters
@@ -50,5 +49,5 @@ for rep in range(0, repeat_n):
 
 # run experiments
 exp = State()
-exp.setup(logger, Behavior, Panda3D, session_params, conditions)
+exp.setup(logger, MultiPort, Panda, session_params, conditions)
 exp.run()

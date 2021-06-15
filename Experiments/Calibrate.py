@@ -1,5 +1,5 @@
-import pygame, numpy
-from Interface import *
+import numpy
+from core.Interface import *
 from utils.TouchInterface import TouchInterface
 
 

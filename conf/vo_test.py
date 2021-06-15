@@ -1,8 +1,6 @@
 # visual-olfactory task with 2 objects (1 and 2) without background and 2 clips/object and 2 odors (odor_idx 1 and 2)
 # reward amount = 8 microL
 
-from Experiments.Center2AFC import *
-from Behavior import *
 from Stimuli.SmellyMovies import *
 from utils.Generator import *
 

@@ -1,4 +1,4 @@
-from Stimulus import *
+from core.Stimulus import *
 import io, os, imageio
 from time import sleep
 import pygame

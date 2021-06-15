@@ -1,14 +1,12 @@
-import numpy, socket, json, os, pathlib, threading, functools, subprocess
-from utils.Timer import *
-from utils.Generator import *
+import numpy, socket, json, os, pathlib, threading, subprocess
 from queue import PriorityQueue
 import time as systime
 from datetime import datetime
 from dataclasses import dataclass
 from dataclasses import field as datafield
 from typing import Any
-import datajoint as dj
-from Experiment import *
+from core.Experiment import *
+from utils.helper_functions import *
 dj.config["enable_python_native_blobs"] = True
 
 
@@ -46,7 +44,7 @@ class Logger:
             item = self.queue.get()
             print(item)
             ignore, skip = (False, False) if item.replace else (True, True)
-            table = self.rgetattr(self.schemata[item.schema], item.table)
+            table = rgetattr(self.schemata[item.schema], item.table)
             self.thread_lock.acquire()
             table.insert1(item.tuple, ignore_extra_fields=ignore, skip_duplicates=skip, replace=item.replace)
             self.thread_lock.release()
@@ -60,9 +58,9 @@ class Logger:
             self.setup_status = self.setup_info['status']
             time.sleep(1)  # update once a second
 
-    def log(self, table, data=dict()):
+    def log(self, table, data=dict(), **kwargs):
         tmst = self.session_timer.elapsed_time()
-        self.put(table=table, tuple={**self.trial_key, 'time': tmst, **data})
+        self.put(table=table, tuple={**self.trial_key, 'time': tmst, **data}, **kwargs)
         return tmst
 
     def log_setup(self, task_idx=False):
@@ -90,7 +88,7 @@ class Logger:
     def log_conditions(self, conditions, condition_tables=['Condition'], schema='experiment', hsh='cond_hash'):
         fields, hash_dict = list(), dict()
         for ctable in condition_tables:
-            table = self.rgetattr(self.schemata[schema], ctable)
+            table = rgetattr(self.schemata[schema], ctable)
             fields += list(table().heading.names)
         for condition in conditions:
             priority = 5
@@ -99,7 +97,7 @@ class Logger:
             hash_dict[condition[hsh]] = condition[hsh]
             for ctable in condition_tables:  # insert dependant condition tables
                 priority += 1
-                core = [field for field in self.rgetattr(self.schemata[schema], ctable).primary_key if field != hsh]
+                core = [field for field in rgetattr(self.schemata[schema], ctable).primary_key if field != hsh]
                 if core:
                     for idx, pcond in enumerate(condition[core[0]]):
                         cond_key = {k: v if type(v) in [int, float, str] else v[idx] for k, v in condition.items()}
@@ -121,6 +119,14 @@ class Logger:
             while self.get_setup_info('status') != info['status']: time.sleep(.5)
 
     def get_setup_info(self, field): return (SetupControl() & dict(setup=self.setup)).fetch1(field)
+
+    def get_setup_info(self, table='', key=[], *args):
+        if not key: key = dict(setup=self.setup)
+        return (SetupControl() & key).fetch1(*args)
+
+    self.pulse_dur[port], pulse_num, weight = \
+        (LiquidCalibration.PulseWeight() & key).fetch('pulse_dur', 'pulse_num', 'weight')
+
 
     def get_protocol(self, task_idx=None):
         if not task_idx: task_idx = self.get_setup_info('task_idx')
@@ -150,11 +156,6 @@ class Logger:
         except Exception: IP = '127.0.0.1'
         finally: s.close()
         return IP
-
-    @staticmethod
-    def rgetattr(obj, attr, *args):
-        def _getattr(obj, attr): return getattr(obj, attr, *args)
-        return functools.reduce(_getattr, [obj] + attr.split('.'))
 
 
 @dataclass(order=True)

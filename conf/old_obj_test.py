@@ -1,7 +1,5 @@
 # visual task with 2 objects (2 and 3) staircase
 
-from Experiments.Center2AFC import *
-from Behavior import *
 from Stimuli.Movies import *
 from utils.Generator import *
 

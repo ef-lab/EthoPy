@@ -1,7 +1,5 @@
 # Object experiment
 
-from Experiments.Match2Sample import *
-from Behavior import *
 from Stimuli.Panda import *
 from utils.Generator import *
 from scipy import interpolate

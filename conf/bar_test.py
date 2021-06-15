@@ -1,7 +1,6 @@
 # Retinotopic mapping experiment
 
-from Experiments.Passive import *
-from Behavior import *
+from core.Behavior import *
 from Stimuli.Bar import *
 from utils.Generator import *
 
