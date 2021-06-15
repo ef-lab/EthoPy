@@ -1,5 +1,5 @@
-#from time import time
 import time
+
 
 class Timer:
     """ This is a timer that is used for the state system

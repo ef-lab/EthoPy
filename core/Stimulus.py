@@ -1,4 +1,4 @@
-from Experiment import *
+from core.Experiment import *
 
 
 @stimulus.schema
@@ -26,16 +26,6 @@ class Stimulus:
     cond_tables = []
     required_fields = []
     default_key = dict()
-
-    def make_conditions(self, conditions, logger):
-        """generate and store stimulus condition hashes"""
-        for cond in conditions:
-            assert np.all([field in cond for field in self.required_fields])
-            cond.update({**self.default_key, **cond, 'stimulus_class': self.cond_tables[0]})
-        return logger.log_conditions(conditions=conditions,
-                                     condition_tables= ['StimCondition'] + self.cond_tables,
-                                     schema='stimulus',
-                                     hsh='stim_hash')
 
     def setup(self, logger, interface):
         """setup stimulation for presentation before experiment starts"""
@@ -69,6 +59,16 @@ class Stimulus:
     def stop(self):
         """stop trial"""
         pass
+
+    def make_conditions(self, conditions, logger):
+        """generate and store stimulus condition hashes"""
+        for cond in conditions:
+            assert np.all([field in cond for field in self.required_fields])
+            cond.update({**self.default_key, **cond, 'stimulus_class': self.cond_tables[0]})
+        return logger.log_conditions(conditions=conditions,
+                                     condition_tables= ['StimCondition'] + self.cond_tables,
+                                     schema='stimulus',
+                                     hsh='stim_hash')
 
 
 

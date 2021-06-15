@@ -1,7 +1,6 @@
 # Object experiment
 
-from Experiments.Passive import *
-from Behavior import *
+from core.Behavior import *
 from Stimuli.Panda import *
 from utils.Generator import *
 from scipy import interpolate

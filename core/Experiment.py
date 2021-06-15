@@ -1,13 +1,15 @@
-import numpy as np
-from utils.Timer import *
-from utils.Generator import make_hash
 import datajoint as dj
+import numpy as np
+
+from utils.helper_functions import make_hash
+from utils.Timer import *
+
 experiment = dj.create_virtual_module('experiment', 'test_experiments', create_tables=True)
 stimulus = dj.create_virtual_module('stimulus', 'test_stimuli', create_tables=True)
 behavior = dj.create_virtual_module('behavior', 'test_behavior', create_tables=True)
 
 
-class StateClass:
+class State:
     state_timer = Timer()
 
     def __init__(self, parent=None):
@@ -19,7 +21,7 @@ class StateClass:
 
     def run(self):
         """Main run command"""
-        assert 0, "run not implemented"
+        pass
 
     def next(self):
         """Exit transition method"""
@@ -50,9 +52,9 @@ class StateMachine:
         self.exitState.run()
 
 
-class ParentExperiment:
+class ExperimentClass:
     """  Parent Experiment"""
-    curr_state, curr_trial, total_reward, cur_dif, flip_count = '', 0, 0, 1, 0
+    curr_state, curr_trial, total_reward, cur_dif, flip_count, states = '', 0, 0, 1, 0, dict()
     rew_probe, un_choices, difficulties, iter, curr_cond, dif_h = [], [], [], [], dict(), list()
     required_fields, default_key, conditions, default_session_params = [], dict(), [], dict()
 
@@ -64,6 +66,15 @@ class ParentExperiment:
         self.beh = BehaviorClass(logger, session_params)
         self.interface = self.beh.interface
         self.session_timer = Timer()
+
+    def run(self):
+        # Initialize states
+        global states
+        states = dict()
+        for state in Experiment.__subclasses__():
+            states.update({state().__class__.__name__: state(self)})
+        state_control = StateMachine(states['Entry'], states['Exit'])
+        state_control.run()
 
     def make_conditions(self, stim_class, conditions):
         conditions = stim_class().make_conditions(conditions, self.logger)
@@ -92,6 +103,9 @@ class ParentExperiment:
             stim_class = eval(self.curr_cond['stimulus_class'])
             self.stim = stim_class()
             self.stim.setup()
+
+    def name(self):
+        return type(self).__name__
 
     def _anti_bias(self, choice_h, un_choices):
         choice_h = np.array([make_hash(c) for c in choice_h[-self.params['bias_window']:]])
@@ -138,12 +152,26 @@ class ParentExperiment:
 
 
 @experiment.schema
+class Software(dj.Lookup):
+    definition = """
+    # Acquisition program
+    software             : varchar(64)                  # program identification number
+    version              : varchar(10)                  # version of program
+    ---
+    description=""       : varchar(2048)                # description
+    """
+
+
+@experiment.schema
 class Session(dj.Manual):
     definition = """
-    # Behavior session info
+    # Session info
     animal_id            : int                          # animal id
     session              : smallint                     # session number
     ---
+    -> Software
+    user                 : varchar(32)
+    experiment_type=null : varchar(256)   
     setup=null           : varchar(256)                 # computer id
     session_tmst         : timestamp                    # session timestamp
     session_params=null  : mediumblob                   
@@ -164,7 +192,7 @@ class Session(dj.Manual):
         definition = """
         # File session info
         -> Session
-        program              : varchar(256)
+        -> Sofrware
         ---
         filename=null        : varchar(256)                # file
         source_path=null     : varchar(512)                # local path
@@ -172,13 +200,12 @@ class Session(dj.Manual):
         timestamp            : timestamp                   # timestamp
         """
 
-    class StateOnset(dj.Part):
+    class Excluded(dj.Part):
         definition = """
-        # Trial period timestamps
+        # Excluded sessions
         -> Session
-        time			    : int 	            # time from session start (ms)
         ---
-        state               : varchar(64)
+        reason=null            : varchar(2048)             # notes for exclusion
         """
 
 
@@ -207,8 +234,16 @@ class Trial(dj.Manual):
     class Aborted(dj.Part):
         definition = """
         # Aborted Trials
-        -> Session
-        trial_idx            : smallint                     # unique condition index
+        -> Trial
+        """
+
+    class StateOnset(dj.Part):
+        definition = """
+        # Trial period timestamps
+        -> Trial
+        time			    : int 	            # time from session start (ms)
+        ---
+        state               : varchar(64)
         """
 
 

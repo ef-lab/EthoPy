@@ -1,17 +1,7 @@
 import numpy as np
 from scipy import ndimage
-
-
-def cart2pol(x, y):
-    rho = np.sqrt(x ** 2 + y ** 2)
-    phi = np.arctan2(y, x)
-    return (phi, rho)
-
-
-def pol2cart(phi, rho):
-    x = rho * np.cos(phi)
-    y = rho * np.sin(phi)
-    return (x, y)
+from itertools import product
+import hashlib, base64, functools
 
 
 def sub2ind(array_shape, rows, cols):
@@ -19,6 +9,16 @@ def sub2ind(array_shape, rows, cols):
 
 
 def flat2curve(I, dist, mon_size, **kwargs):
+    def cart2pol(x, y):
+        rho = np.sqrt(x ** 2 + y ** 2)
+        phi = np.arctan2(y, x)
+        return (phi, rho)
+
+    def pol2cart(phi, rho):
+        x = rho * np.cos(phi)
+        y = rho * np.sin(phi)
+        return (x, y)
+
     params = dict({'center_x': 0, 'center_y': 0, 'method': 'index'},
                   **kwargs)  # center_x, center_y points in normalized x coordinates from center
 
@@ -53,3 +53,46 @@ def flat2curve(I, dist, mon_size, **kwargs):
                                                       mode='nearest').reshape(x.shape)
     return (transform(I), transform)
 
+
+def reverse_lookup(dictionary, target):
+    return next(key for key, value in dictionary.items() if value == target)
+
+
+def factorize(cond):
+    values = list(cond.values())
+    for i in range(0, len(values)):
+        if not isinstance(values[i], list):
+            values[i] = [values[i]]
+
+    conds = list(dict(zip(cond, x)) for x in product(*values))
+    for icond, cond in enumerate(conds):
+        values = list(cond.values())
+        names = list(cond.keys())
+        for ivalue, value in enumerate(values):
+            if type(value) is list:
+                value = tuple(value)
+            cond.update({names[ivalue]: value})
+        conds[icond] = cond
+
+    return conds
+
+
+def make_hash(cond):
+    def make_hashable(cond):
+        if isinstance(cond, (tuple, list)):
+            return tuple((make_hashable(e) for e in cond))
+        if isinstance(cond, dict):
+            return tuple(sorted((k, make_hashable(v)) for k, v in cond.items()))
+        if isinstance(cond, (set, frozenset)):
+            return tuple(sorted(make_hashable(e) for e in cond))
+        return cond
+
+    hasher = hashlib.md5()
+    hasher.update(repr(make_hashable(cond)).encode())
+
+    return base64.b64encode(hasher.digest()).decode()
+
+
+def rgetattr(obj, attr, *args):
+    def _getattr(obj, attr): return getattr(obj, attr, *args)
+    return functools.reduce(_getattr, [obj] + attr.split('.'))

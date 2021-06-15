@@ -1,83 +1,89 @@
-from Experiment import *
+from core.Experiment import *
+global states
 
 
 @experiment.schema
-class Match2Sample(dj.Manual):
+class Match2Sample(ExperimentClass, dj.Manual):
     definition = """
     # Match2Sample experiment conditions
     -> Condition
-    ---
-    difficulty            : smallint   
-    init_ready            : smallint
-    cue_ready             : smallint
-    delay_ready           : smallint
-    resp_ready            : smallint
-    intertrial_duration   : smallint
-    cue_duration          : smallint
-    delay_duration        : smallint
-    response_duration     : smallint
-    reward_duration       : smallint
-    punish_duration       : smallint
-    abort_duration        : smallint 
     """
 
+    class Session(dj.Part):
+        definition = """
+        # Match2Sample experiment conditions
+        -> Match2Sample
+        ---
+        trial_selection='staircase': enum
+        start_time='10:00:00'      : DATE
+        stop_time='16:00:00'       : DATE
+        intensity=64               : tinyint UNSIGNED
+        max_reward=3000            : smallint
+        min_reward=500             : smallint
+        bias_window=5              : smallint
+        staircase_window=20        : smallint
+        stair_up=0.7               : float
+        stair_down=0.55            : float
+        noresponse_intertrial=1    : tinyint(1)
+        incremental_punishment=1   : tinyint(1)
+        """
 
-class Experiment(StateClass, ParentExperiment):
-    default_session_params =   {'trial_selection'       : 'staircase',
-                                'start_time'            : '10:00:00',
-                                'stop_time'             : '16:00:00',
-                                'intensity'             : 64,
-                                'max_reward'            : 3000,
-                                'min_reward'            : 500,
-                                'bias_window'           : 5,
-                                'staircase_window'      : 20,
-                                'stair_up'              : 0.7,
-                                'stair_down'            : 0.55,
-                                'noresponse_intertrial' : True,
-                                'incremental_punishment': True}
+    class Trial(dj.Part):
+        definition = """
+        # Match2Sample experiment conditions
+        -> Match2Sample
+        ---
+        difficulty            : smallint   
+        init_ready            : smallint
+        cue_ready             : smallint
+        delay_ready           : smallint
+        resp_ready            : smallint
+        intertrial_duration   : smallint
+        cue_duration          : smallint
+        delay_duration        : smallint
+        response_duration     : smallint
+        reward_duration       : smallint
+        punish_duration       : smallint
+        abort_duration        : smallint 
+        """
+
     exp_type = 'Match2Sample'
     required_fields = ['difficulty']
-    default_key =  {'init_ready'            : 0,
-                    'cue_ready'             : 0,
-                    'delay_ready'           : 0,
-                    'resp_ready'            : 0,
-                    'intertrial_duration'   : 1000,
-                    'cue_duration'          : 1000,
-                    'delay_duration'        : 0,
-                    'response_duration'     : 5000,
-                    'reward_duration'       : 2000,
-                    'punish_duration'       : 1000,
-                    'abort_duration': 0}
+    default_key = {'init_ready': 0,
+                   'cue_ready': 0,
+                   'delay_ready': 0,
+                   'resp_ready': 0,
+                   'intertrial_duration': 1000,
+                   'cue_duration': 1000,
+                   'delay_duration': 0,
+                   'response_duration': 5000,
+                   'reward_duration': 2000,
+                   'punish_duration': 1000,
+                   'abort_duration': 0}
 
+    default_params = {'trial_selection'     : 'staircase',
+                      'start_time'            : '10:00:00',
+                      'stop_time'             : '16:00:00',
+                      'intensity'             : 64,
+                      'max_reward'            : 3000,
+                      'min_reward'            : 500,
+                      'bias_window'           : 5,
+                      'staircase_window'      : 20,
+                      'stair_up'              : 0.7,
+                      'stair_down'            : 0.55,
+                      'noresponse_intertrial' : True,
+                      'incremental_punishment': True}
+
+
+class Experiment(State, Match2Sample):
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
-        self.curr_state = type(self).__name__
-        self.start_time = self.logger.log('StateOnset', {'state': type(self).__name__})
+        self.logger.curr_state = self.name()
+        self.start_time = self.logger.log('StateOnset', {'state': self.name()})
+        self.resp_ready = False
         self.state_timer.start()
 
-    def run(self):
-        # Initialize states
-        exitState = Exit(self)
-        state_control = StateMachine(Prepare(self), exitState)
-        global states
-        states = {
-            'PreTrial'     : PreTrial(self),
-            'Cue'          : Cue(self),
-            'Delay'        : Delay(self),
-            'Response'     : Response(self),
-            'Abort'        : Abort(self),
-            'Reward'       : Reward(self),
-            'Punish'       : Punish(self),
-            'InterTrial'   : InterTrial(self),
-            'Hydrate'      : Hydrate(self),
-            'Offtime'      : Offtime(self),
-            'Exit'         : exitState}
-        state_control.run()
 
-
-class Prepare(Experiment):
-    def run(self):
-        pass
-
+class Entry(Experiment):
     def next(self):
         if self.beh.is_sleep_time():
             return states['Offtime']
@@ -87,7 +93,6 @@ class Prepare(Experiment):
 
 class PreTrial(Experiment):
     def entry(self):
-        self.resp_ready = False
         self.prepare()
         self.stim.prepare(self.curr_cond)
         self.beh.prepare(self.curr_cond)
@@ -113,9 +118,8 @@ class PreTrial(Experiment):
 
 class Cue(Experiment):
     def entry(self):
-        self.resp_ready = False
         super().entry()
-        self.stim.start(type(self).__name__)
+        self.stim.start(self.name())
 
     def run(self):
         self.stim.present()
@@ -141,10 +145,6 @@ class Cue(Experiment):
 
 
 class Delay(Experiment):
-    def entry(self):
-        self.resp_ready = False
-        super().entry()
-
     def run(self):
         self.response = self.beh.get_response(self.start_time)
         if self.beh.is_ready(self.curr_cond['delay_ready'], self.start_time):
@@ -165,9 +165,8 @@ class Delay(Experiment):
 
 class Response(Experiment):
     def entry(self):
-        self.resp_ready = False
         super().entry()
-        self.stim.start(type(self).__name__)
+        self.stim.start(self.name())
 
     def run(self):
         self.stim.present()  # Start Stimulus
@@ -199,10 +198,7 @@ class Abort(Experiment):
     def entry(self):
         super().entry()
         self.beh.update_history()
-        self.logger.log('AbortedTrial')
-
-    def run(self):
-        pass
+        self.logger.log('Trial.Aborted')
 
     def next(self):
         if self.timer.elapsed_time() >= self.stim.curr_cond['abort_duration']:

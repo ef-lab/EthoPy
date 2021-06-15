@@ -1,4 +1,4 @@
-from Stimulus import *
+from core.Stimulus import *
 import pygame
 
 

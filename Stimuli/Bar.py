@@ -1,5 +1,5 @@
-from Stimulus import *
-from utils.flat2curve import flat2curve
+from core.Stimulus import *
+from utils.helper_functions import flat2curve
 import pygame
 from pygame.locals import *
 

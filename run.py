@@ -1,4 +1,4 @@
-from Logger import *
+from core.Logger import *
 import sys
 from utils.Start import *
 

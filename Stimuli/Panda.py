@@ -1,4 +1,4 @@
-from Stimulus import *
+from core.Stimulus import *
 import os
 import numpy as np
 from direct.showbase.ShowBase import ShowBase

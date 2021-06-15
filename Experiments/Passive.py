@@ -1,5 +1,4 @@
-from utils.Timer import *
-from Experiment import *
+from core.Experiment import *
 
 
 class State(StateClass):
