@@ -68,6 +68,15 @@ class ExperimentClass:
         self.interface = self.beh.interface
         self.session_timer = Timer()
 
+    def start(self):
+        # Initialize states
+        global states
+        states = dict()
+        for state in self.__class__.__subclasses__():
+            states.update({state().__class__.__name__: state(self)})
+        state_control = StateMachine(states['Entry'], states['Exit'])
+        state_control.run()
+
     def make_conditions(self, stim_class, conditions):
         conditions = self.log_conditions(**stim_class().make_conditions(conditions))
         conditions = self.log_conditions(**self.beh.make_conditions(conditions))

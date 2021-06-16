@@ -63,4 +63,4 @@ for idx, obj_comb in enumerate(obj_combs):
 # run experiments
 conds = exp.make_conditions(Panda, conditions)
 exp.push_conditions(conds)
-exp.run()
+exp.start()
