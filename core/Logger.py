@@ -17,7 +17,7 @@ class Logger:
 
     def __init__(self, protocol=False):
         self.setup_status = 'running' if protocol else 'ready'
-        fileobject = open(os.path.dirname(os.path.abspath(__file__)) + '/dj_local_conf.json')
+        fileobject = open(os.path.dirname(os.path.abspath(__file__)) + '/../dj_local_conf.json')
         con_info = json.loads(fileobject.read())
         conn = dj.Connection(con_info['database.host'], con_info['database.user'], con_info['database.password'])
         self.schemata['experiment'] = dj.create_virtual_module('exp', 'test_experiments', connection=conn)
@@ -98,7 +98,7 @@ class Logger:
             for ctable in condition_tables:  # insert dependant condition tables
                 priority += 1
                 core = [field for field in rgetattr(self.schemata[schema], ctable).primary_key if field != hsh]
-                if core:
+                if core and hasattr(condition[core[0]], '__iter__'):
                     for idx, pcond in enumerate(condition[core[0]]):
                         cond_key = {k: v if type(v) in [int, float, str] else v[idx] for k, v in condition.items()}
                         self.put(table=ctable, tuple=cond_key, schema=schema, priority=priority)
@@ -120,13 +120,7 @@ class Logger:
 
     def get_setup_info(self, field): return (SetupControl() & dict(setup=self.setup)).fetch1(field)
 
-    def get_setup_info(self, table='', key=[], *args):
-        if not key: key = dict(setup=self.setup)
-        return (SetupControl() & key).fetch1(*args)
-
-    self.pulse_dur[port], pulse_num, weight = \
-        (LiquidCalibration.PulseWeight() & key).fetch('pulse_dur', 'pulse_num', 'weight')
-
+    def get(self, table='', *args): return (SetupControl() & dict(setup=self.setup)).fetch1(*args)
 
     def get_protocol(self, task_idx=None):
         if not task_idx: task_idx = self.get_setup_info('task_idx')

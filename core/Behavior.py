@@ -45,7 +45,7 @@ class Port(dj.Manual):
     definition = """
     # Probe identity
     setup                    : varchar(256)                 # Setup name
-    port_id                  : tinyint                      # port id
+    port                     : tinyint                      # port id
     conf_version             : tinyint                      # configuration version
     ---
     discription              : varchar(256)
@@ -86,7 +86,7 @@ class Behavior:
     required_fields = ['reward_amount', 'port_id']
     default_key = {'reward_type': 'water', 'conf_version': 1}
 
-    def __init__(self, logger, params):
+    def setup(self, logger, params):
         self.params = params
         self.resp_timer = Timer()
         self.resp_timer.start()
@@ -121,9 +121,10 @@ class Behavior:
         """generate and store stimulus condition hashes"""
         for cond in conditions:
             assert np.all([field in cond for field in self.required_fields])
-            cond.update({**self.default_key, **cond})
+            cond.update({**self.default_key, **cond, 'behavior_class': self.cond_tables[0]})
+            print(cond)
         return self.logger.log_conditions(conditions=conditions,
-                                          condition_tables=self.cond_tables,
+                                          condition_tables=['BehCondition'] + self.cond_tables,
                                           schema='behavior',
                                           hsh='beh_hash')
 
