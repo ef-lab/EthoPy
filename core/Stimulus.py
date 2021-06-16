@@ -60,15 +60,11 @@ class Stimulus:
         """stop trial"""
         pass
 
-    def make_conditions(self, conditions, logger):
+    def make_conditions(self, conditions):
         """generate and store stimulus condition hashes"""
         for cond in conditions:
             assert np.all([field in cond for field in self.required_fields])
             cond.update({**self.default_key, **cond, 'stimulus_class': self.cond_tables[0]})
-        return logger.log_conditions(conditions=conditions,
-                                     condition_tables= ['StimCondition'] + self.cond_tables,
-                                     schema='stimulus',
-                                     hsh='stim_hash')
-
-
+        return dict(conditions=conditions, condition_tables=['StimCondition'] + self.cond_tables,
+                    schema='stimulus', hsh='stim_hash')
 

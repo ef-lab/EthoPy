@@ -1,7 +1,6 @@
 import datajoint as dj
 import numpy as np
-
-from utils.helper_functions import make_hash
+from utils.helper_functions import *
 from utils.Timer import *
 
 experiment = dj.create_virtual_module('experiment', 'test_experiments', create_tables=True)
@@ -62,31 +61,43 @@ class ExperimentClass:
         session_params.update({**self.default_session_params, **session_params})
         self.params = session_params
         self.logger = logger
-        #self.logger.log_session(session_params, self.exp_type)
+        print(self.default_key)
+        self.logger.log_session({**self.default_key, **session_params}, self.__class__.__name__)
         self.beh = BehaviorClass()
         self.beh.setup(logger, session_params)
         self.interface = self.beh.interface
         self.session_timer = Timer()
 
-    def run(self):
-        # Initialize states
-        global states
-        states = dict()
-        for state in Experiment.__subclasses__():
-            states.update({state().__class__.__name__: state(self)})
-        state_control = StateMachine(states['Entry'], states['Exit'])
-        state_control.run()
-
     def make_conditions(self, stim_class, conditions):
-        conditions = stim_class().make_conditions(conditions, self.logger)
-        conditions = self.beh.make_conditions(conditions)
+        conditions = self.log_conditions(**stim_class().make_conditions(conditions))
+        conditions = self.log_conditions(**self.beh.make_conditions(conditions))
         for cond in conditions:
             assert np.all([field in cond for field in self.required_fields])
             cond.update({**self.default_key, **cond, 'experiment_class': self.cond_tables[0]})
         return conditions
 
+    def log_conditions(self, conditions, condition_tables=['Condition'], schema='experiment', hsh='cond_hash'):
+        fields, hash_dict = list(), dict()
+        for ctable in condition_tables:
+            table = rgetattr(eval(schema), ctable)
+            fields += list(table().heading.names)
+        for condition in conditions:
+            priority = 5
+            key = {sel_key: condition[sel_key] for sel_key in fields if sel_key != hsh}
+            condition.update({hsh: make_hash(key)})
+            hash_dict[condition[hsh]] = condition[hsh]
+            for ctable in condition_tables:  # insert dependant condition tables
+                priority += 1
+                core = [field for field in rgetattr(eval(schema), ctable).primary_key if field != hsh]
+                if core and hasattr(condition[core[0]], '__iter__'):
+                    for idx, pcond in enumerate(condition[core[0]]):
+                        cond_key = {k: v if type(v) in [int, float, str] else v[idx] for k, v in condition.items()}
+                        self.logger.put(table=ctable, tuple=cond_key, schema=schema, priority=priority)
+                else: self.logger.put(table=ctable, tuple=condition.copy(), schema=schema, priority=priority)
+        return conditions
+
     def push_conditions(self, conditions):
-        self.conditions += self.logger.log_conditions(conditions, condition_tables=['Condition'] + self.cond_tables)
+        self.conditions += self.log_conditions(conditions, condition_tables=['Condition'] + self.cond_tables)
         resp_cond = self.params['resp_cond'] if 'resp_cond' in self.params else 'probe'
         if np.all(['difficulty' in cond for cond in conditions]):
             self.difficulties = np.array([cond['difficulty'] for cond in self.conditions])
@@ -255,22 +266,22 @@ class Trial(dj.Manual):
 class SetupControl(dj.Lookup):
     definition = """
     # Control table 
-    setup                : varchar(256)                 # Setup name
+    setup                       : varchar(256)                 # Setup name
     ---
-    status="exit"        : enum('ready','running','stop','sleeping','exit','offtime','wakeup') 
-    animal_id=null       : int                          # animal id
-    task_idx=null        : int                          # task identification number
-    session=null         : int                          
-    trials=null          : int                          
-    total_liquid=null    : float                        
-    state=null           : varchar(255)                 
-    difficulty=null      : smallint                     
-    start_time=null      : time                         
-    stop_time=null       : time                         
+    status="exit"               : enum('ready','running','stop','sleeping','exit','offtime','wakeup') 
+    animal_id=0                 : int                          # animal id
+    task_idx=0                  : int                          # task identification number
+    session=0                   : int                          
+    trials=0                    : int                          
+    total_liquid=0              : float                        
+    state='none'                : varchar(255)                 
+    difficulty=0                : smallint                     
+    start_time='00:00:00'       : time                         
+    stop_time='23:59:00'        : time                         
     last_ping=CURRENT_TIMESTAMP : timestamp                    
-    notes=null           : varchar(256)                 
-    queue_size=null      : int                          
-    ip                   : varchar(16)                  # setup IP address
+    notes=''                    : varchar(256)                 
+    queue_size=0                : int                          
+    ip=null                     : varchar(16)                  # setup IP address
     """
 
 
