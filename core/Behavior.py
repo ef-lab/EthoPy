@@ -122,11 +122,8 @@ class Behavior:
         for cond in conditions:
             assert np.all([field in cond for field in self.required_fields])
             cond.update({**self.default_key, **cond, 'behavior_class': self.cond_tables[0]})
-            print(cond)
-        return self.logger.log_conditions(conditions=conditions,
-                                          condition_tables=['BehCondition'] + self.cond_tables,
-                                          schema='behavior',
-                                          hsh='beh_hash')
+        return dict(conditions=conditions, condition_tables=['BehCondition'] + self.cond_tables,
+                    schema='behavior', hsh='beh_hash')
 
     def prepare(self, condition):
         pass

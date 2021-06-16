@@ -11,8 +11,8 @@ dj.config["enable_python_native_blobs"] = True
 
 
 class Logger:
-    setup, is_pi = socket.gethostname(), os.uname()[4][:3] == 'arm'
-    trial_key, schemata, total_reward = dict(), dict(), 0
+    setup, is_pi, setup_info = socket.gethostname(), os.uname()[4][:3] == 'arm', dict()
+    trial_key, schemata, total_reward, curr_state = dict(animal_id=0, session=1, trial_idx=0), dict(), 0, 'None'
     lock, queue, ping_timer, logger_timer = False, PriorityQueue(), Timer(), Timer()
 
     def __init__(self, protocol=False):
@@ -21,7 +21,6 @@ class Logger:
         con_info = json.loads(fileobject.read())
         conn = dj.Connection(con_info['database.host'], con_info['database.user'], con_info['database.password'])
         self.schemata['experiment'] = dj.create_virtual_module('exp', 'test_experiments', connection=conn)
-        self.schemata['mice'] = dj.create_virtual_module('mice', 'lab_mice', connection=conn)
         self.schemata['stimulus'] = dj.create_virtual_module('stim', 'test_stimuli', connection=conn)
         self.schemata['behavior'] = dj.create_virtual_module('beh', 'test_behavior', connection=conn)
         self.thread_end, self.thread_lock = threading.Event(),  threading.Lock()
@@ -42,7 +41,6 @@ class Logger:
         while not self.thread_end.is_set():
             if self.queue.empty():  time.sleep(.5); continue
             item = self.queue.get()
-            print(item)
             ignore, skip = (False, False) if item.replace else (True, True)
             table = rgetattr(self.schemata[item.schema], item.table)
             self.thread_lock.acquire()
@@ -53,7 +51,7 @@ class Logger:
     def getter(self):
         while not self.thread_end.is_set():
             self.thread_lock.acquire()
-            self.setup_info = (SetupControl() & dict(setup=self.setup)).fetch1()
+            self.setup_info = (self.schemata['experiment'].SetupControl() & dict(setup=self.setup)).fetch1()
             self.thread_lock.release()
             self.setup_status = self.setup_info['status']
             time.sleep(1)  # update once a second
@@ -76,7 +74,8 @@ class Logger:
         last_sessions = (Session() & self.trial_key).fetch('session')
         self.trial_key['session'] = 1 if numpy.size(last_sessions) == 0 else numpy.max(last_sessions) + 1
         sha = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
-        self.put(table='Session', tuple={**self.trial_key, 'session_params': params, 'protocol': self.get_protocol(),
+        self.put(table='Session', tuple={**self.trial_key, 'session_params': params, 'version': params['version'],
+                                         'protocol': self.get_protocol(), 'software': params['software'],
                                          'setup': self.setup, 'git-sha1': sha, 'experiment_type': exp_type}, priority=1)
         key = {'session': self.trial_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1}
         if 'start_time' in params:
@@ -84,26 +83,6 @@ class Logger:
             key = {**key, 'start_time': tdelta(params['start_time']), 'stop_time': tdelta(params['stop_time'])}
         self.update_setup_info(key)
         self.logger_timer.start()  # start session time
-
-    def log_conditions(self, conditions, condition_tables=['Condition'], schema='experiment', hsh='cond_hash'):
-        fields, hash_dict = list(), dict()
-        for ctable in condition_tables:
-            table = rgetattr(self.schemata[schema], ctable)
-            fields += list(table().heading.names)
-        for condition in conditions:
-            priority = 5
-            key = {sel_key: condition[sel_key] for sel_key in fields if sel_key != hsh}
-            condition.update({hsh: make_hash(key)})
-            hash_dict[condition[hsh]] = condition[hsh]
-            for ctable in condition_tables:  # insert dependant condition tables
-                priority += 1
-                core = [field for field in rgetattr(self.schemata[schema], ctable).primary_key if field != hsh]
-                if core and hasattr(condition[core[0]], '__iter__'):
-                    for idx, pcond in enumerate(condition[core[0]]):
-                        cond_key = {k: v if type(v) in [int, float, str] else v[idx] for k, v in condition.items()}
-                        self.put(table=ctable, tuple=cond_key, schema=schema, priority=priority)
-                else: self.put(table=ctable, tuple=condition.copy(), schema=schema, priority=priority)
-        return conditions
 
     def log_pulse_weight(self, pulse_dur, probe, pulse_num, weight=0):
         key = dict(setup=self.setup, probe=probe, date=systime.strftime("%Y-%m-%d"))
@@ -118,7 +97,8 @@ class Logger:
         if 'status' in info:
             while self.get_setup_info('status') != info['status']: time.sleep(.5)
 
-    def get_setup_info(self, field): return (SetupControl() & dict(setup=self.setup)).fetch1(field)
+    def get_setup_info(self, field):
+        return (SetupControl() & dict(setup=self.setup)).fetch1(field)
 
     def get(self, table='', *args): return (SetupControl() & dict(setup=self.setup)).fetch1(*args)
 
@@ -127,7 +107,7 @@ class Logger:
         if len(Task() & dict(task_idx=task_idx)) > 0:
             protocol = (Task() & dict(task_idx=task_idx)).fetch1('protocol')
             path, filename = os.path.split(protocol)
-            if not path: protocol = str(pathlib.Path(__file__).parent.absolute()) + '/conf/' + filename
+            if not path: protocol = str(pathlib.Path(__file__).parent.absolute()) + '/../conf/' + filename
             return protocol
         else:
             return False

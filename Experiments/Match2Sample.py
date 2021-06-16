@@ -33,18 +33,18 @@ class Match2Sample(ExperimentClass, dj.Manual):
         # Match2Sample experiment conditions
         -> Match2Sample
         ---
-        difficulty            : smallint   
-        init_ready            : smallint
-        cue_ready             : smallint
-        delay_ready           : smallint
-        resp_ready            : smallint
-        intertrial_duration   : smallint
-        cue_duration          : smallint
-        delay_duration        : smallint
-        response_duration     : smallint
-        reward_duration       : smallint
-        punish_duration       : smallint
-        abort_duration        : smallint 
+        difficulty            : int   
+        init_ready            : int
+        cue_ready             : int
+        delay_ready           : int
+        resp_ready            : int
+        intertrial_duration   : int
+        cue_duration          : int
+        delay_duration        : int
+        response_duration     : int
+        reward_duration       : int
+        punish_duration       : int
+        abort_duration        : int 
         """
 
     cond_tables = ['Match2Sample', 'Match2Sample.SessionConds', 'Match2Sample.TrialConds']
@@ -61,6 +61,8 @@ class Match2Sample(ExperimentClass, dj.Manual):
                    'stair_down'            : 0.55,
                    'noresponse_intertrial' : True,
                    'incremental_punishment': True,
+                   'software'              : 'none',
+                   'version'               : '0.0',
 
                    'init_ready'             : 0,
                    'cue_ready'              : 0,
@@ -81,6 +83,15 @@ class Experiment(State, Match2Sample):
         self.start_time = self.logger.log('StateOnset', {'state': self.name()})
         self.resp_ready = False
         self.state_timer.start()
+
+    def run(self):
+        # Initialize states
+        global states
+        states = dict()
+        for state in Experiment.__subclasses__():
+            states.update({state().__class__.__name__: state(self)})
+        state_control = StateMachine(states['Entry'], states['Exit'])
+        state_control.run()
 
 
 class Entry(Experiment):
