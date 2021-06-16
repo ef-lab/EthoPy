@@ -47,6 +47,8 @@ class Match2Sample(ExperimentClass, dj.Manual):
         abort_duration        : int 
         """
 
+
+class Experiment(State):
     cond_tables = ['Match2Sample', 'Match2Sample.SessionConds', 'Match2Sample.TrialConds']
     required_fields = ['difficulty']
     default_key = {'trial_selection'     : 'staircase',
@@ -76,22 +78,11 @@ class Match2Sample(ExperimentClass, dj.Manual):
                    'punish_duration'        : 1000,
                    'abort_duration'         : 0}
 
-
-class Experiment(State, Match2Sample):
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
         self.logger.curr_state = self.name()
         self.start_time = self.logger.log('StateOnset', {'state': self.name()})
         self.resp_ready = False
         self.state_timer.start()
-
-    def run(self):
-        # Initialize states
-        global states
-        states = dict()
-        for state in Experiment.__subclasses__():
-            states.update({state().__class__.__name__: state(self)})
-        state_control = StateMachine(states['Entry'], states['Exit'])
-        state_control.run()
 
 
 class Entry(Experiment):
