@@ -3,7 +3,7 @@ global states
 
 
 @experiment.schema
-class Match2Sample(ExperimentClass, dj.Manual):
+class Match2Sample(dj.Manual):
     definition = """
     # Match2Sample experiment conditions
     -> Condition
@@ -48,7 +48,7 @@ class Match2Sample(ExperimentClass, dj.Manual):
         """
 
 
-class Experiment(State):
+class Experiment(State, ExperimentClass):
     cond_tables = ['Match2Sample', 'Match2Sample.SessionConds', 'Match2Sample.TrialConds']
     required_fields = ['difficulty']
     default_key = {'trial_selection'     : 'staircase',
