@@ -63,7 +63,8 @@ class ExperimentClass:
         self.params = session_params
         self.logger = logger
         #self.logger.log_session(session_params, self.exp_type)
-        self.beh = BehaviorClass(logger, session_params)
+        self.beh = BehaviorClass()
+        self.beh.setup(logger, session_params)
         self.interface = self.beh.interface
         self.session_timer = Timer()
 
@@ -78,13 +79,14 @@ class ExperimentClass:
 
     def make_conditions(self, stim_class, conditions):
         conditions = stim_class().make_conditions(conditions, self.logger)
+        conditions = self.beh.make_conditions(conditions)
         for cond in conditions:
             assert np.all([field in cond for field in self.required_fields])
-            cond.update({**self.default_key, **cond})
-        return self.beh.make_conditions(conditions)
+            cond.update({**self.default_key, **cond, 'experiment_class': self.cond_tables[0]})
+        return conditions
 
     def push_conditions(self, conditions):
-        self.conditions += self.logger.log_conditions(conditions, condition_tables=['Condition', self.exp_type])
+        self.conditions += self.logger.log_conditions(conditions, condition_tables=['Condition'] + self.cond_tables)
         resp_cond = self.params['resp_cond'] if 'resp_cond' in self.params else 'probe'
         if np.all(['difficulty' in cond for cond in conditions]):
             self.difficulties = np.array([cond['difficulty'] for cond in self.conditions])
@@ -192,7 +194,7 @@ class Session(dj.Manual):
         definition = """
         # File session info
         -> Session
-        -> Sofrware
+        -> Software
         ---
         filename=null        : varchar(256)                # file
         source_path=null     : varchar(512)                # local path
@@ -216,6 +218,8 @@ class Condition(dj.Manual):
     cond_hash             : char(24)                 # unique condition hash
     ---
     stimulus_class        : varchar(128) 
+    behavior_class        : varchar(128)
+    experiment_class      : varchar(128)
     """
 
 

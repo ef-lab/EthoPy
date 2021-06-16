@@ -9,14 +9,14 @@ class Match2Sample(ExperimentClass, dj.Manual):
     -> Condition
     """
 
-    class Session(dj.Part):
+    class SessionConds(dj.Part):
         definition = """
         # Match2Sample experiment conditions
         -> Match2Sample
         ---
-        trial_selection='staircase': enum
-        start_time='10:00:00'      : DATE
-        stop_time='16:00:00'       : DATE
+        trial_selection='staircase': enum('fixed','random','staircase','biased') 
+        start_time='10:00:00'      : TIME
+        stop_time='16:00:00'       : TIME
         intensity=64               : tinyint UNSIGNED
         max_reward=3000            : smallint
         min_reward=500             : smallint
@@ -28,7 +28,7 @@ class Match2Sample(ExperimentClass, dj.Manual):
         incremental_punishment=1   : tinyint(1)
         """
 
-    class Trial(dj.Part):
+    class TrialConds(dj.Part):
         definition = """
         # Match2Sample experiment conditions
         -> Match2Sample
@@ -47,32 +47,32 @@ class Match2Sample(ExperimentClass, dj.Manual):
         abort_duration        : smallint 
         """
 
-    exp_type = 'Match2Sample'
+    cond_tables = ['Match2Sample', 'Match2Sample.SessionConds', 'Match2Sample.TrialConds']
     required_fields = ['difficulty']
-    default_key = {'init_ready': 0,
-                   'cue_ready': 0,
-                   'delay_ready': 0,
-                   'resp_ready': 0,
-                   'intertrial_duration': 1000,
-                   'cue_duration': 1000,
-                   'delay_duration': 0,
-                   'response_duration': 5000,
-                   'reward_duration': 2000,
-                   'punish_duration': 1000,
-                   'abort_duration': 0}
+    default_key = {'trial_selection'     : 'staircase',
+                   'start_time'            : '10:00:00',
+                   'stop_time'             : '16:00:00',
+                   'intensity'             : 64,
+                   'max_reward'            : 3000,
+                   'min_reward'            : 500,
+                   'bias_window'           : 5,
+                   'staircase_window'      : 20,
+                   'stair_up'              : 0.7,
+                   'stair_down'            : 0.55,
+                   'noresponse_intertrial' : True,
+                   'incremental_punishment': True,
 
-    default_params = {'trial_selection'     : 'staircase',
-                      'start_time'            : '10:00:00',
-                      'stop_time'             : '16:00:00',
-                      'intensity'             : 64,
-                      'max_reward'            : 3000,
-                      'min_reward'            : 500,
-                      'bias_window'           : 5,
-                      'staircase_window'      : 20,
-                      'stair_up'              : 0.7,
-                      'stair_down'            : 0.55,
-                      'noresponse_intertrial' : True,
-                      'incremental_punishment': True}
+                   'init_ready'             : 0,
+                   'cue_ready'              : 0,
+                   'delay_ready'            : 0,
+                   'resp_ready'             : 0,
+                   'intertrial_duration'    : 1000,
+                   'cue_duration'           : 1000,
+                   'delay_duration'         : 0,
+                   'response_duration'      : 5000,
+                   'reward_duration'        : 2000,
+                   'punish_duration'        : 1000,
+                   'abort_duration'         : 0}
 
 
 class Experiment(State, Match2Sample):

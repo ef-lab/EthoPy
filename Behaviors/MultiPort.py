@@ -16,7 +16,7 @@ class Response(dj.Manual):
         definition = """
         # Center port information
         -> Response
-        port_id              : tinyint          # port id
+        port                 : tinyint          # port id
         time	     	  	 : int           	# time from session start (ms)
         ---
         in_position          : tinyint
@@ -26,7 +26,7 @@ class Response(dj.Manual):
         definition = """
         # Lick timestamps
         -> Response
-        port_id              : tinyint          # port id
+        port                 : tinyint          # port id
         time	     	  	 : int           	# time from session start (ms)
         """
 
@@ -42,26 +42,26 @@ class MultiPort(Behavior, dj.Manual):
         definition = """
         # Lick timestamps
         -> MultiPort
-        resp_port_id           : tinyint          # response port id
+        response_port              : tinyint          # response port id
         """
 
-    class Reward(dj.Manual):
+    class Reward(dj.Part):
         definition = """
         # reward probe conditions
         -> MultiPort
         ---
-        rew_port_id            : tinyint          # reward port id
+        reward_port               : tinyint          # reward port id
         reward_amount=0        : float            # reward amount
-        -> behavior.Rewards
+        -> Rewards
         """
 
     cond_tables = ['MultiPort', 'MultiPort.Lick', 'MultiPort.Reward']
-    required_fields = ['resp_port_id', 'rew_port_id', 'reward_amount']
+    required_fields = ['response_port', 'reward_port', 'reward_amount']
     default_key = {'reward_type': 'water'}
 
-    def __init__(self, logger, params):
+    def setup(self, logger, params):
         self.interface = RPProbe(logger)
-        super(MultiPort, self).__init__(logger, params)
+        super(MultiPort, self).setup(logger, params)
 
     def is_licking(self, since=0):
         licked_probe, tmst = self.interface.get_last_lick()
@@ -112,8 +112,8 @@ class MultiPort(Behavior, dj.Manual):
         self.update_history(probe)
 
 
-class DummyPorts(Behavior):
-    def __init__(self, logger, params):
+class DummyPorts(MultiPort):
+    def setup(self, logger, params):
         import pygame
         self.lick_timer = Timer()
         self.lick_timer.start()
@@ -123,10 +123,17 @@ class DummyPorts(Behavior):
         self.interface = 0
         pygame.init()
         self.screen = pygame.display.set_mode((800, 480))
-        super(DummyPorts, self).__init__(logger, params)
-
-    def get_cond_tables(self):
-        return ['Reward']
+        self.params = params
+        self.resp_timer = Timer()
+        self.resp_timer.start()
+        self.logger = logger
+        self.rew_probe = 0
+        self.choices = np.array(np.empty(0))
+        self.choice_history = list()  # History term for bias calculation
+        self.reward_history = list()  # History term for performance calculation
+        self.licked_probe = 0
+        self.reward_amount = dict()
+        self.curr_cond = []
 
     def is_ready(self, duration, since=0):
         if duration == 0: return True

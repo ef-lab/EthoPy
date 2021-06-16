@@ -109,7 +109,7 @@ class RPProbe(Interface):
 
     def port_licked(self, channel):
         self.port = reverse_lookup(self.channels['lick'], channel)
-        self.lick_tmst = self.logger.log('behavior.Response.Lick', dict(port=self.port)) \
+        self.lick_tmst = self.logger.log('Response.Lick', dict(port=self.port), schema='behavior') \
             if self.logging else self.logger.logger_timer.elapsed_time()
 
     def position_change(self, channel=0):
