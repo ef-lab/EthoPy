@@ -45,7 +45,7 @@ class Logger:
         while not self.thread_end.is_set():
             if self.queue.empty():  time.sleep(.5); continue
             item = self.queue.get()
-            print(item)
+            #print(item)
             ignore, skip = (False, False) if item.replace else (True, True)
             table = rgetattr(self._schemata[item.schema], item.table)
             self.thread_lock.acquire()
@@ -107,8 +107,6 @@ class Logger:
 
     def get(self, schema='experiment', table='SetupControl', fields='', key='', **kwargs):
         table = rgetattr(self.schemata[schema], table)
-        print(key)
-        print(table() & key)
         return (table() & key).fetch(*fields, **kwargs)
 
     def get_protocol(self, task_idx=None):
