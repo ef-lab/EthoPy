@@ -47,7 +47,7 @@ class MultiPort(Behavior, dj.Manual):
 
     class Reward(dj.Part):
         definition = """
-        # reward probe conditions
+        # reward port conditions
         -> MultiPort
         ---
         reward_port               : tinyint          # reward port id
@@ -64,13 +64,13 @@ class MultiPort(Behavior, dj.Manual):
         super(MultiPort, self).setup(logger, params)
 
     def is_licking(self, since=0):
-        licked_probe, tmst = self.interface.get_last_lick()
-        if tmst >= since and licked_probe:
-            self.licked_probe = licked_probe
+        licked_port, tmst = self.interface.get_last_lick()
+        if tmst >= since and licked_port:
+            self.licked_port = licked_port
             self.resp_timer.start()
         else:
-            self.licked_probe = 0
-        return self.licked_probe
+            self.licked_port = 0
+        return self.licked_port
 
     def get_response(self, since=0):
         return self.is_licking(since) > 0
@@ -87,18 +87,14 @@ class MultiPort(Behavior, dj.Manual):
             return (ready_time + tmst - since) > duration  # has been in position for specified duration since timepoint
 
     def is_correct(self):
-        return np.any(np.equal(self.licked_probe, self.curr_cond['probe']))
+        return np.any(np.equal(self.licked_port, self.curr_cond['response_port']))
 
     def reward(self):
-        self.interface.give_liquid(self.licked_probe)
-        self.logger.log('Reward.Trial', dict(probe=self.licked_probe,
-                                               reward_amount=self.reward_amount[self.licked_probe]))
-        self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
+        self.interface.give_liquid(self.licked_port)
+        self.logger.log('Reward.Trial', dict(port=self.licked_port,
+                                               reward_amount=self.reward_amount[self.licked_port]))
+        self.update_history(self.licked_port, self.reward_amount[self.licked_port])
         return True
-
-    def inactivity_time(self):  # in minutes
-        return np.minimum(self.interface.timer_probe1.elapsed_time(),
-                          self.interface.timer_probe2.elapsed_time()) / 1000 / 60
 
     def cleanup(self):
         self.interface.cleanup()
@@ -108,8 +104,8 @@ class MultiPort(Behavior, dj.Manual):
         self.reward_amount = self.interface.calc_pulse_dur(condition['reward_amount'])
 
     def punish(self):
-        probe = self.licked_probe if self.licked_probe > 0 else np.nan
-        self.update_history(probe)
+        port = self.licked_port if self.licked_port > 0 else np.nan
+        self.update_history(port)
 
 
 class DummyPorts(MultiPort):
@@ -127,11 +123,11 @@ class DummyPorts(MultiPort):
         self.resp_timer = Timer()
         self.resp_timer.start()
         self.logger = logger
-        self.rew_probe = 0
+        self.rew_port = 0
         self.choices = np.array(np.empty(0))
         self.choice_history = list()  # History term for bias calculation
         self.reward_history = list()  # History term for performance calculation
-        self.licked_probe = 0
+        self.licked_port = 0
         self.reward_amount = dict()
         self.curr_cond = []
 
@@ -142,48 +138,47 @@ class DummyPorts(MultiPort):
         return self.ready and elapsed_time >= duration
 
     def is_licking(self,since=0):
-        probe = self.__get_events()
-        if probe > 0: self.resp_timer.start()
-        self.licked_probe = probe
-        return probe
+        port = self.__get_events()
+        if port > 0: self.resp_timer.start()
+        self.licked_port = port
+        return port
 
     def get_response(self, since=0):
-        probe = self.is_licking(since)
-        return probe > 0
+        port = self.is_licking(since)
+        return port > 0
 
     def is_correct(self):
-        return np.any(np.equal(self.licked_probe, self.curr_cond['probe']))
+        return np.any(np.equal(self.licked_port, self.curr_cond['response_port']))
 
     def prepare(self, condition):
         self.curr_cond = condition
         self.reward_amount = condition['reward_amount']
 
     def reward(self):
-        self.update_history(self.licked_probe, self.reward_amount)
-        self.logger.log('LiquidDelivery', dict(probe=self.licked_probe,
-                                               reward_amount=self.reward_amount))
-        print('Giving Water at probe:%1d' % self.licked_probe)
+        self.update_history(self.licked_port, self.reward_amount)
+        self.logger.log('Reward.Trial', dict(port=self.licked_port, reward_amount=self.reward_amount[self.licked_port]))
+        print('Giving Water at port:%1d' % self.licked_port)
         return True
 
     def punish(self):
         print('punishing')
-        probe = self.licked_probe if self.licked_probe > 0 else np.nan
-        self.update_history(probe)
+        port = self.licked_port if self.licked_port > 0 else np.nan
+        self.update_history(port)
 
     def __get_events(self):
-        probe = 0
+        port = 0
         events = pygame.event.get()
         for event in events:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
-                    self.logger.log('Lick', dict(probe=1))
+                    self.logger.log('Response.Lick', dict(port=1), schema='behavior')
                     print('Probe 1 activated!')
-                    probe = 1
+                    port = 1
                     self.lick_timer.start()
                 elif event.key == pygame.K_RIGHT:
-                    self.logger.log('Lick', dict(probe=2))
+                    self.logger.log('Response.Lick', dict(port=2), schema='behavior')
                     print('Probe 2 activated!')
-                    probe = 2
+                    port = 2
                 elif event.key == pygame.K_SPACE and not self.ready:
                     self.lick_timer.start()
                     self.ready = True
@@ -195,4 +190,4 @@ class DummyPorts(MultiPort):
                     print(pygame.mouse.get_pos())
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 print(pygame.mouse.get_pos())
-        return probe
+        return port

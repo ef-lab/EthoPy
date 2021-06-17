@@ -41,6 +41,7 @@ class Logger:
         while not self.thread_end.is_set():
             if self.queue.empty():  time.sleep(.5); continue
             item = self.queue.get()
+            print(item)
             ignore, skip = (False, False) if item.replace else (True, True)
             table = rgetattr(self.schemata[item.schema], item.table)
             self.thread_lock.acquire()
@@ -57,7 +58,7 @@ class Logger:
             time.sleep(1)  # update once a second
 
     def log(self, table, data=dict(), **kwargs):
-        tmst = self.session_timer.elapsed_time()
+        tmst = self.logger_timer.elapsed_time()
         self.put(table=table, tuple={**self.trial_key, 'time': tmst, **data}, **kwargs)
         return tmst
 
@@ -111,6 +112,8 @@ class Logger:
             return protocol
         else:
             return False
+
+    def update_trial_idx(self, trial_idx): self.trial_key['trial_idx'] = trial_idx
 
     def ping(self, period=5000):
         if self.ping_timer.elapsed_time() >= period:  # occasionally update control table

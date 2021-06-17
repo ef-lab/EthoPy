@@ -2,6 +2,7 @@ import datajoint as dj
 import numpy as np
 from utils.helper_functions import *
 from utils.Timer import *
+import importlib
 
 experiment = dj.create_virtual_module('experiment', 'test_experiments', create_tables=True)
 stimulus = dj.create_virtual_module('stimulus', 'test_stimuli', create_tables=True)
@@ -10,8 +11,10 @@ behavior = dj.create_virtual_module('behavior', 'test_behavior', create_tables=T
 
 class State:
     state_timer = Timer()
+    __shared_state = {}
 
     def __init__(self, parent=None):
+        self.__dict__ = self.__shared_state
         if parent: self.__dict__.update(parent.__dict__)
 
     def entry(self):
@@ -53,29 +56,19 @@ class StateMachine:
 
 class ExperimentClass:
     """  Parent Experiment"""
-    curr_state, curr_trial, total_reward, cur_dif, flip_count, states = '', 0, 0, 1, 0, dict()
+    curr_state, curr_trial, total_reward, cur_dif, flip_count, states, stim = '', 0, 0, 0, 0, dict(), []
     rew_probe, un_choices, difficulties, iter, curr_cond, dif_h = [], [], [], [], dict(), list()
-    required_fields, default_key, conditions, default_session_params = [], dict(), [], dict()
+    required_fields, default_key, conditions, cond_tables = [], dict(), [], []
 
     def setup(self, logger, BehaviorClass, session_params):
         session_params.update({**self.default_session_params, **session_params})
-        self.params = session_params
+        self.params = {**self.default_key, **session_params}
         self.logger = logger
-        print(self.default_key)
         self.logger.log_session({**self.default_key, **session_params}, self.__class__.__name__)
         self.beh = BehaviorClass()
         self.beh.setup(logger, session_params)
         self.interface = self.beh.interface
         self.session_timer = Timer()
-
-    def start(self):
-        # Initialize states
-        global states
-        states = dict()
-        for state in self.__class__.__subclasses__():
-            states.update({state().__class__.__name__: state(self)})
-        state_control = StateMachine(states['Entry'], states['Exit'])
-        state_control.run()
 
     def make_conditions(self, stim_class, conditions):
         conditions = self.log_conditions(**stim_class().make_conditions(conditions))
@@ -107,24 +100,35 @@ class ExperimentClass:
 
     def push_conditions(self, conditions):
         self.conditions += self.log_conditions(conditions, condition_tables=['Condition'] + self.cond_tables)
-        resp_cond = self.params['resp_cond'] if 'resp_cond' in self.params else 'probe'
-        if np.all(['difficulty' in cond for cond in conditions]):
-            self.difficulties = np.array([cond['difficulty'] for cond in self.conditions])
+        resp_cond = self.params['resp_cond'] if 'resp_cond' in self.params else 'response_port'
+        for stim_class in np.unique([cond['stimulus_class'] for cond in self.conditions]):
+            importlib.import_module('Stimuli.' + stim_class)
+        diff_flag = np.all(['difficulty' in cond for cond in conditions])
+        if diff_flag: self.difficulties = np.array([cond['difficulty'] for cond in self.conditions])
         if np.all([resp_cond in cond for cond in conditions]):
-            if self.difficulties:
+            if diff_flag:
                 self.choices = np.array([make_hash([d[resp_cond], d['difficulty']]) for d in conditions])
             else:
                 self.choices = np.array([make_hash(d[resp_cond]) for d in conditions])
             self.un_choices, un_idx = np.unique(self.choices, axis=0, return_index=True)
-            if self.difficulties: self.un_difs = self.difficulties[un_idx]
+            if diff_flag: self.un_difs = self.difficulties[un_idx]
 
-    def prepare(self):
+    def init_trial(self):
         old_cond = self.curr_cond
         self._get_new_cond()
-        if 'stimulus_class' not in self.curr_cond or old_cond['stimulus_class'] != self.curr_cond['stimulus_class']:
+        global stim
+        if 'stimulus_class' not in old_cond or old_cond['stimulus_class'] != self.curr_cond['stimulus_class']:
+            stim_class = importlib.import_module('Stimuli.' + self.curr_cond['stimulus_class'])
+            print(stim_class)
+            globals().update(stim_class.__dict__)
             stim_class = eval(self.curr_cond['stimulus_class'])
+            #stim_class = eval(self.curr_cond['stimulus_class'])
             self.stim = stim_class()
-            self.stim.setup()
+            self.stim.setup(self.logger, self.conditions)
+        self.curr_trial += 1
+        self.logger.update_trial_idx(self.curr_trial)
+        self.trial_start = self.logger.logger_timer.elapsed_time()
+        self.logger.log('Trial', dict(cond_hash=self.curr_cond['cond_hash'], time=self.trial_start), priority=2)
 
     def name(self):
         return type(self).__name__
@@ -251,8 +255,7 @@ class Trial(dj.Manual):
     trial_idx            : smallint                     # unique condition index
     ---
     -> Condition
-    start_time           : int                          # start time from session start (ms)
-    end_time             : int                          # end time from session start (ms)
+    time                 : int                          # start time from session start (ms)
     """
 
     class Aborted(dj.Part):

@@ -12,8 +12,8 @@ interp = lambda x: interpolate.splev(np.linspace(0, len(x), 100),
 
 # define session parameters
 session_params = {
-    'start_time'            : '09:00:00',
-    'stop_time'             : '19:00:00',
+    'start_time'            : '00:00:00',
+    'stop_time'             : '23:45:00',
 }
 
 exp = Experiment()
