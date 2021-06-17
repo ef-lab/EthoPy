@@ -1,5 +1,4 @@
 from core.Experiment import *
-global states
 
 
 @experiment.schema
@@ -20,7 +19,7 @@ class Match2Sample(dj.Manual):
         intensity=64               : tinyint UNSIGNED
         max_reward=3000            : smallint
         min_reward=500             : smallint
-        bias_window=5              : smallint
+        bias_window=5       f       : smallint
         staircase_window=20        : smallint
         stair_up=0.7               : float
         stair_down=0.55            : float
@@ -79,10 +78,20 @@ class Experiment(State, ExperimentClass):
                    'abort_duration'         : 0}
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
+        print(self.name())
         self.logger.curr_state = self.name()
-        self.start_time = self.logger.log('StateOnset', {'state': self.name()})
+        self.start_time = self.logger.log('Trial.StateOnset', {'state': self.name()})
         self.resp_ready = False
         self.state_timer.start()
+
+    def start(self):
+        # Initialize states
+        global states
+        states = dict()
+        for state in self.__class__.__subclasses__():
+            states.update({state().__class__.__name__: state(self)})
+        state_control = StateMachine(states['Entry'], states['Exit'])
+        state_control.run()
 
 
 class Entry(Experiment):
@@ -95,10 +104,10 @@ class Entry(Experiment):
 
 class PreTrial(Experiment):
     def entry(self):
-        self.prepare()
+        self.init_trial()
         self.stim.prepare(self.curr_cond)
         self.beh.prepare(self.curr_cond)
-        self.logger.init_trial(self.curr_cond['cond_hash'])
+
         super().entry()
         if not self.curr_cond: self.logger.update_setup_info({'status': 'stop'})
 
@@ -153,7 +162,7 @@ class Delay(Experiment):
             self.resp_ready = True
 
     def next(self):
-        if self.resp_ready and self.timer.elapsed_time() > self.stim.curr_cond['delay_duration']: # this specifies the minimum amount of time we want to spend in the delay period contrary to the cue_duration FIX IT
+        if self.resp_ready and self.state_timer.elapsed_time() > self.curr_cond['delay_duration']: # this specifies the minimum amount of time we want to spend in the delay period contrary to the cue_duration FIX IT
             return states['Response']
         elif self.response:
             return states['Abort']
@@ -184,7 +193,7 @@ class Response(Experiment):
             return states['Abort']
         elif self.response and not self.beh.is_correct():  # incorrect response
             return states['Punish']
-        elif self.timer.elapsed_time() > self.stim.curr_cond['response_duration']:      # timed out
+        elif self.state_timer.elapsed_time() > self.curr_cond['response_duration']:      # timed out
             return states['Abort']
         elif self.logger.setup_status in ['stop', 'exit']:
             return states['Exit']
@@ -203,7 +212,7 @@ class Abort(Experiment):
         self.logger.log('Trial.Aborted')
 
     def next(self):
-        if self.timer.elapsed_time() >= self.stim.curr_cond['abort_duration']:
+        if self.state_timer.elapsed_time() >= self.curr_cond['abort_duration']:
             return states['InterTrial']
         elif self.logger.setup_status in ['stop', 'exit']:
             return states['Exit']
@@ -232,7 +241,7 @@ class Punish(Experiment):
     def entry(self):
         self.beh.punish()
         super().entry()
-        self.punish_period = self.stim.curr_cond['punish_duration']
+        self.punish_period = self.curr_cond['punish_duration']
         if self.params.get('incremental_punishment'):
             self.punish_period *= self.beh.get_false_history()
 
@@ -240,7 +249,7 @@ class Punish(Experiment):
         self.stim.punish_stim()
 
     def next(self):
-        if self.timer.elapsed_time() >= self.punish_period:
+        if self.state_timer.elapsed_time() >= self.punish_period:
             return states['InterTrial']
         elif self.logger.setup_status in ['stop', 'exit']:
             return states['Exit']
@@ -253,7 +262,6 @@ class Punish(Experiment):
 
 class InterTrial(Experiment):
     def entry(self):
-        self.logger.log_trial()
         super().entry()
 
     def run(self):

@@ -41,7 +41,7 @@ class BehCondition(dj.Manual):
 
 
 @behavior.schema
-class Port(dj.Manual):
+class Ports(dj.Lookup):
     definition = """
     # Probe identity
     setup                    : varchar(256)                 # Setup name
@@ -51,17 +51,18 @@ class Port(dj.Manual):
     discription              : varchar(256)
     """
 
-    class Calibration(dj.Part):
-        definition = """
-        # Liquid delivery calibration sessions for each port with water availability
-        -> Port
-        date                         : date                 # session date (only one per day is allowed)
-        """
+
+class PortCalibration(dj.Manual):
+    definition = """
+    # Liquid deliver y calibration sessions for each port with water availability
+    -> Ports
+    date                         : date                 # session date (only one per day is allowed)
+    """
 
     class Liquid(dj.Part):
         definition = """
         # Data for volume per pulse duty cycle estimation
-        -> Port.Calibration
+        -> PortCalibration
         pulse_dur                : int                  # duration of pulse in ms
         ---
         pulse_num                : int                  # number of pulses
@@ -69,15 +70,16 @@ class Port(dj.Manual):
         timestamp                : timestamp            # timestamp
         """
 
-    class Test(dj.Part):
-        definition = """
-        # Lick timestamps
-        -> Port
-        timestamp             : timestamp  
-        ___
-        result=null           : enum('Passed','Failed')
-        pulses=null           : int
-        """
+
+class PortTest(dj.Part):
+    definition = """
+    # Lick timestamps
+    -> Ports
+    timestamp             : timestamp  
+    ___
+    result=null           : enum('Passed','Failed')
+    pulses=null           : int
+    """
 
 
 class Behavior:
@@ -143,6 +145,7 @@ class Behavior:
         stop = now.replace(hour=0, minute=0, second=0) + self.logger.setup_info['stop_time']
         if stop < start:
             stop = stop + timedelta(days=1)
+        print(now, stop)
         time_restriction = now < start or now > stop
         return time_restriction
 

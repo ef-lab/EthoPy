@@ -66,7 +66,7 @@ class RPProbe(Interface):
         self.channels = {'air': {1: 24, 2: 25},
                          'liquid': {1: 22, 2: 23},
                          'lick': {1: 17, 2: 27},
-                         'start': {1: 9},
+                         'proximity': {1: 9},
                          'sound': {1: 18}}
         self.thread = ThreadPoolExecutor(max_workers=2)
         self.ports = self.channels['liquid'].items()
@@ -81,7 +81,7 @@ class RPProbe(Interface):
         self.callbacks = callbacks
         self.frequency = 20
         self.pulses = dict()
-        self.GPIO.setup(list(self.channels['lick'].values()) + [self.channels['start'][1]],
+        self.GPIO.setup(list(self.channels['lick'].values()) + [self.channels['proximity'][1]],
                         self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         self.GPIO.setup(list(self.channels['air'].values()), self.GPIO.OUT, initial=self.GPIO.LOW)
         self.Pulser = pigpio.pi()
@@ -94,7 +94,7 @@ class RPProbe(Interface):
                                        callback=self.port_licked, bouncetime=100)
             self.GPIO.add_event_detect(self.channels['lick'][1], self.GPIO.RISING,
                                        callback=self.port_licked, bouncetime=100)
-            self.GPIO.add_event_detect(self.channels['start'][1], self.GPIO.BOTH,
+            self.GPIO.add_event_detect(self.channels['proximity'][1], self.GPIO.BOTH,
                                        callback=self.position_change, bouncetime=50)
 
     def give_liquid(self, port):
@@ -113,16 +113,19 @@ class RPProbe(Interface):
             if self.logging else self.logger.logger_timer.elapsed_time()
 
     def position_change(self, channel=0):
+        port = reverse_lookup(self.channels['proximity'], channel)
         if self.getStart():
             self.timer_ready.start()
             if not self.ready:
                 self.ready = True
-                self.ready_tmst = self.logger.log('CenterPort', dict(in_position=self.ready))
+                self.ready_tmst = self.logger.log('Response.Proximity', dict(port=self.port, in_position=self.ready),
+                                                  schema='behavior')
                 print('in position')
         else:
             if self.ready:
                 self.ready = False
-                tmst = self.logger.log('CenterPort', dict(in_position=self.ready))
+                tmst = self.logger.log('Response.Proximity', dict(port=self.port, in_position=self.ready),
+                                                  schema='behavior')
                 self.ready_dur = tmst - self.ready_tmst
                 print('off position')
 
@@ -162,14 +165,14 @@ class RPProbe(Interface):
         self.Pulser.wave_send_once(self.pulses[port])
 
     def getStart(self):
-        return not self.GPIO.input(self.channels['start'][1])
+        return not self.GPIO.input(self.channels['proximity'][1])
 
     def cleanup(self):
         self.Pulser.wave_clear()
         if self.callbacks:
             self.GPIO.remove_event_detect(self.channels['lick'][1])
             self.GPIO.remove_event_detect(self.channels['lick'][2])
-            self.GPIO.remove_event_detect(self.channels['start'][1])
+            self.GPIO.remove_event_detect(self.channels['proximity'][1])
         self.GPIO.cleanup()
 
 
@@ -186,7 +189,7 @@ class VRProbe(Interface):
                          'lick': {1: 17}}
         self.thread = ThreadPoolExecutor(max_workers=2)
         self.frequency = 10
-        self.GPIO.setup(list(self.channels['lick'].values()) + [self.channels['start'][1]],
+        self.GPIO.setup(list(self.channels['lick'].values()) + [self.channels['proximity'][1]],
                         self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         self.GPIO.setup(list(self.channels['odor'].values()), self.GPIO.OUT, initial=self.GPIO.LOW)
         self.GPIO.add_event_detect(self.channels['lick'][1], self.GPIO.RISING, callback=self.port1_licked, bouncetime=100)
@@ -221,7 +224,7 @@ class VRProbe(Interface):
     def cleanup(self):
         self.pwm[self.channels['air']].stop()
         self.GPIO.remove_event_detect(self.channels['lick'][1])
-        self.GPIO.remove_event_detect(self.channels['start'][1])
+        self.GPIO.remove_event_detect(self.channels['proximity'][1])
         self.GPIO.cleanup()
         self.Pulser.wave_clear()
 

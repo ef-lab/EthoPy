@@ -1,10 +1,11 @@
 import numpy
 from core.Interface import *
 from utils.TouchInterface import TouchInterface
+from Behaviors import MultiPort
 
 
 class Calibrate:
-    def __init__(self, logger, params):
+    def setup(self, logger, params):
         self.params = params
         self.logger = logger
         self.size = (800, 480)     # window size
@@ -51,8 +52,9 @@ class Calibrate:
                             time.sleep(0.2)
                             if exit_button.is_pressed(): exit_flag = True; break
                         if self.screen.numpad and not exit_flag:
-                            self.logger.log_pulse_weight(self.params['duration'][cal_idx], probe,
+                            self.log_pulse_weight(self.params['duration'][cal_idx], probe,
                                                          self.params['pulsenum'][cal_idx], float(self.screen.numpad))  # insert
+
             self.screen.cleanup()
             self.screen.draw('Done calibrating')
         except:
@@ -64,3 +66,8 @@ class Calibrate:
         time.sleep(2)
         self.screen.exit()
 
+    def log_pulse_weight(self, pulse_dur, probe, pulse_num, weight=0):
+        key = dict(setup=self.setup, probe=probe, date=systime.strftime("%Y-%m-%d"))
+        self.logger.log('PortCalibration', key, schema='behavior', priority=5)
+        self.logger.log('PortCalibration.Liquid', dict(key, pulse_dur=pulse_dur, pulse_num=pulse_num, weight=weight),
+                        schema='behavior', replace=True)
