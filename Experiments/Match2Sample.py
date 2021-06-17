@@ -19,7 +19,7 @@ class Match2Sample(dj.Manual):
         intensity=64               : tinyint UNSIGNED
         max_reward=3000            : smallint
         min_reward=500             : smallint
-        bias_window=5       f       : smallint
+        bias_window=5              : smallint
         staircase_window=20        : smallint
         stair_up=0.7               : float
         stair_down=0.55            : float
