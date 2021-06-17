@@ -69,7 +69,7 @@ class RPProbe(Interface):
                          'proximity': {1: 9},
                          'sound': {1: 18}}
         self.thread = ThreadPoolExecutor(max_workers=2)
-        self.ports, _ = self.channels['liquid'].items()
+        self.ports = self.channels['liquid'].keys()
         for port in list(set(self.ports)):
             key = dict(setup=self.logger.setup, port=port)
             dates = logger.get(schema='behavior', table='PortCalibration', key=key, fields=['date'], order_by='date')
@@ -114,19 +114,18 @@ class RPProbe(Interface):
             if self.logging else self.logger.logger_timer.elapsed_time()
 
     def position_change(self, channel=0):
-        port = reverse_lookup(self.channels['proximity'], channel)
+        port = 3
         if self.getStart():
             self.timer_ready.start()
             if not self.ready:
                 self.ready = True
-                self.ready_tmst = self.logger.log('Response.Proximity', dict(port=self.port, in_position=self.ready),
+                self.ready_tmst = self.logger.log('Response.Proximity', dict(port=port, in_position=self.ready),
                                                   schema='behavior')
                 print('in position')
         else:
             if self.ready:
                 self.ready = False
-                tmst = self.logger.log('Response.Proximity', dict(port=self.port, in_position=self.ready),
-                                                  schema='behavior')
+                tmst = self.logger.log('Response.Proximity', dict(port=port, in_position=self.ready), schema='behavior')
                 self.ready_dur = tmst - self.ready_tmst
                 print('off position')
 
