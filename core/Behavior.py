@@ -41,21 +41,30 @@ class BehCondition(dj.Manual):
 
 
 @behavior.schema
-class Ports(dj.Lookup):
+class SetupConfiguration(dj.Lookup):
     definition = """
-    # Probe identity
-    setup                    : varchar(256)                 # Setup name
-    port                     : tinyint                      # port id
-    conf_version             : tinyint                      # configuration version
+    # Setup configuration
+    conf_idx                 : tinyint                      # configuration version
     ---
     discription              : varchar(256)
     """
 
+    class Port(dj.Lookup):
+        definition = """
+        # Probe identity
+        port                     : tinyint                      # port id
+        -> SetupConfiguration
+        ---
+        discription              : varchar(256)
+        """
 
+
+@behavior.schema
 class PortCalibration(dj.Manual):
     definition = """
     # Liquid deliver y calibration sessions for each port with water availability
-    -> Ports
+    setup                        : varchar(256)                 # Setup name
+    port                         : tinyint                      # port id
     date                         : date                 # session date (only one per day is allowed)
     """
 
@@ -74,7 +83,8 @@ class PortCalibration(dj.Manual):
 class PortTest(dj.Part):
     definition = """
     # Lick timestamps
-    -> Ports
+    setup                 : varchar(256)                 # Setup name
+    port                  : tinyint                      # port id
     timestamp             : timestamp  
     ___
     result=null           : enum('Passed','Failed')

@@ -11,18 +11,22 @@ dj.config["enable_python_native_blobs"] = True
 
 
 class Logger:
-    setup, is_pi, setup_info = socket.gethostname(), os.uname()[4][:3] == 'arm', dict()
+    setup, is_pi, setup_info, _schemata = socket.gethostname(), os.uname()[4][:3] == 'arm', dict(), dict()
     trial_key, schemata, total_reward, curr_state = dict(animal_id=0, session=1, trial_idx=0), dict(), 0, 'None'
     lock, queue, ping_timer, logger_timer = False, PriorityQueue(), Timer(), Timer()
+
+    schemata = {'experiment': 'test_experiments',
+                'stimulus'  : 'test_stimuli',
+                'behavior'  : 'test_behavior'}
 
     def __init__(self, protocol=False):
         self.setup_status = 'running' if protocol else 'ready'
         fileobject = open(os.path.dirname(os.path.abspath(__file__)) + '/../dj_local_conf.json')
         con_info = json.loads(fileobject.read())
         conn = dj.Connection(con_info['database.host'], con_info['database.user'], con_info['database.password'])
-        self.schemata['experiment'] = dj.create_virtual_module('exp', 'test_experiments', connection=conn)
-        self.schemata['stimulus'] = dj.create_virtual_module('stim', 'test_stimuli', connection=conn)
-        self.schemata['behavior'] = dj.create_virtual_module('beh', 'test_behavior', connection=conn)
+        for schema, value in self.schemata.items():
+            self.schemata.update({schema: dj.create_virtual_module(schema, value, create_tables=True)})
+            self._schemata.update({schema: dj.create_virtual_module(schema, value, connection=conn)})
         self.thread_end, self.thread_lock = threading.Event(),  threading.Lock()
         self.inserter_thread = threading.Thread(target=self.inserter)
         self.getter_thread = threading.Thread(target=self.getter)
@@ -43,7 +47,7 @@ class Logger:
             item = self.queue.get()
             print(item)
             ignore, skip = (False, False) if item.replace else (True, True)
-            table = rgetattr(self.schemata[item.schema], item.table)
+            table = rgetattr(self._schemata[item.schema], item.table)
             self.thread_lock.acquire()
             table.insert1(item.tuple, ignore_extra_fields=ignore, skip_duplicates=skip, replace=item.replace)
             self.thread_lock.release()
@@ -52,7 +56,7 @@ class Logger:
     def getter(self):
         while not self.thread_end.is_set():
             self.thread_lock.acquire()
-            self.setup_info = (self.schemata['experiment'].SetupControl() & dict(setup=self.setup)).fetch1()
+            self.setup_info = (self._schemata['experiment'].SetupControl() & dict(setup=self.setup)).fetch1()
             self.thread_lock.release()
             self.setup_status = self.setup_info['status']
             time.sleep(1)  # update once a second
@@ -101,7 +105,11 @@ class Logger:
     def get_setup_info(self, field):
         return (SetupControl() & dict(setup=self.setup)).fetch1(field)
 
-    def get(self, table='', *args): return (SetupControl() & dict(setup=self.setup)).fetch1(*args)
+    def get(self, schema='experiment', table='SetupControl', fields='', key='', **kwargs):
+        table = rgetattr(self.schemata[schema], table)
+        print(key)
+        print(table() & key)
+        return (table() & key).fetch(*fields, **kwargs)
 
     def get_protocol(self, task_idx=None):
         if not task_idx: task_idx = self.get_setup_info('task_idx')
