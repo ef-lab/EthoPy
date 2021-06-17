@@ -61,7 +61,6 @@ class ExperimentClass:
     required_fields, default_key, conditions, cond_tables = [], dict(), [], []
 
     def setup(self, logger, BehaviorClass, session_params):
-        session_params.update({**self.default_session_params, **session_params})
         self.params = {**self.default_key, **session_params}
         self.logger = logger
         self.logger.log_session({**self.default_key, **session_params}, self.__class__.__name__)

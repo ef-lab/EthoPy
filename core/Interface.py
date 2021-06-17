@@ -69,13 +69,14 @@ class RPProbe(Interface):
                          'proximity': {1: 9},
                          'sound': {1: 18}}
         self.thread = ThreadPoolExecutor(max_workers=2)
-        self.ports = self.channels['liquid'].items()
+        self.ports, _ = self.channels['liquid'].items()
         for port in list(set(self.ports)):
             key = dict(setup=self.logger.setup, port=port)
-            dates = (LiquidCalibration() & key).fetch('date', order_by='date')
+            dates = logger.get(schema='behavior', table='PortCalibration', key=key, fields=['date'], order_by='date')
+            if not dates: break
             key['date'] = dates[-1]  # use the most recent calibration
             self.pulse_dur[port], pulse_num, weight = \
-                (LiquidCalibration.PulseWeight() & key).fetch('pulse_dur', 'pulse_num', 'weight')
+                logger.get(schema='behavior', table='PortCalibration.Liquid', key=key, fields=['pulse_dur', 'pulse_num', 'weight'])
             self.weight_per_pulse[port] = np.divide(weight, pulse_num)
 
         self.callbacks = callbacks

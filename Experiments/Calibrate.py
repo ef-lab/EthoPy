@@ -1,10 +1,10 @@
 import numpy
+import time as systime
 from core.Interface import *
 from utils.TouchInterface import TouchInterface
-from Behaviors import MultiPort
 
 
-class Calibrate:
+class Experiment:
     def setup(self, logger, params):
         self.params = params
         self.logger = logger
@@ -19,7 +19,7 @@ class Calibrate:
             for cal_idx in range(0, numpy.size(self.params['pulsenum'])):
                 self.screen.cleanup()
                 if self.params['save']:
-                    self.screen.draw('Place zero-weighted pad under the probe', 0, 0, 800, 280)
+                    self.screen.draw('Place zero-weighted pad under the port', 0, 0, 800, 280)
                     button = self.screen.add_button(name='OK', x=300, y=300, w=200, h=100, color=(0, 128, 0))
                     while not button.is_pressed():
                         time.sleep(0.2)
@@ -27,23 +27,23 @@ class Calibrate:
                             valve.cleanup()
                             self.screen.exit()
                             return
-                for probe in self.params['probes']:
-                    valve.create_pulse(probe, self.params['duration'][cal_idx])
+                for port in self.params['ports']:
+                    valve.create_pulse(port, self.params['duration'][cal_idx])
                 pulse = 0
                 while pulse < self.params['pulsenum'][cal_idx]:
                     self.screen.cleanup()
                     msg = 'Pulse %d/%d' % (pulse + 1, self.params['pulsenum'][cal_idx])
                     self.screen.draw(msg)
                     print(msg)
-                    for probe in self.params['probes']:
-                        valve.create_pulse(probe, self.params['duration'][cal_idx])
-                        valve.pulse_out(probe)  # release liquid
+                    for port in self.params['ports']:
+                        valve.create_pulse(port, self.params['duration'][cal_idx])
+                        valve.pulse_out(port)  # release liquid
                         time.sleep(self.params['duration'][cal_idx] / 1000 + self.params['pulse_interval'][cal_idx] / 1000)
                     pulse += 1  # update trial
                 if self.params['save']:
-                    for probe in self.params['probes']:
+                    for port in self.params['ports']:
                         self.screen.cleanup()
-                        self.screen.draw('Enter weight for probe %d' % probe, 0, 0, 400, 300)
+                        self.screen.draw('Enter weight for port %d' % port, 0, 0, 400, 300)
                         self.screen.add_numpad()
                         button = self.screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))
                         exit_button = self.screen.add_button(name='X', x=750, y=0, w=50, h=50, color=(25, 25, 25));
@@ -52,7 +52,7 @@ class Calibrate:
                             time.sleep(0.2)
                             if exit_button.is_pressed(): exit_flag = True; break
                         if self.screen.numpad and not exit_flag:
-                            self.log_pulse_weight(self.params['duration'][cal_idx], probe,
+                            self.log_pulse_weight(self.params['duration'][cal_idx], port,
                                                          self.params['pulsenum'][cal_idx], float(self.screen.numpad))  # insert
 
             self.screen.cleanup()
@@ -66,8 +66,9 @@ class Calibrate:
         time.sleep(2)
         self.screen.exit()
 
-    def log_pulse_weight(self, pulse_dur, probe, pulse_num, weight=0):
-        key = dict(setup=self.setup, probe=probe, date=systime.strftime("%Y-%m-%d"))
-        self.logger.log('PortCalibration', key, schema='behavior', priority=5)
-        self.logger.log('PortCalibration.Liquid', dict(key, pulse_dur=pulse_dur, pulse_num=pulse_num, weight=weight),
-                        schema='behavior', replace=True)
+    def log_pulse_weight(self, pulse_dur, port, pulse_num, weight=0):
+        key = dict(setup=self.logger.setup, port=port, date=systime.strftime("%Y-%m-%d"))
+        print(key)
+        self.logger.put(table='PortCalibration', tuple=key, schema='behavior', priority=5)
+        self.logger.put(table='PortCalibration.Liquid',  schema='behavior', replace=True,
+                        tuple=dict(key, pulse_dur=pulse_dur, pulse_num=pulse_num, weight=weight))
