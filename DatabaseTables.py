@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import datajoint as dj
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -99,7 +98,11 @@ class Condition(dj.Manual):
         odor_flag = (len(Trial & OdorCond.Port() & self) > 0)  # filter trials by hash number of odor
         movie_flag = (len(Trial & MovieCond & self) > 0)  # filter trials by hash number of movies
         obj_flag = (len(Trial & ObjectCond & self) > 0)  # filter trials by hash number of objects
-        if movie_flag and odor_flag:
+        
+        if obj_flag:
+            conditions = (RewardCond() * ObjectCond() & (Trial & self)).proj(
+                movie_duration='0', probe='probe', dutycycle='0', odor_duration='0', obj_duration='obj_dur')
+        elif movie_flag and odor_flag:
             conditions = (RewardCond() * MovieCond() * (OdorCond.Port() & 'delivery_port=1')\
                          * OdorCond() & (Trial & self)).proj(movie_duration='movie_duration', dutycycle='dutycycle',
                                                              odor_duration='odor_duration', probe='probe', obj_duration='0')
@@ -109,11 +112,9 @@ class Condition(dj.Manual):
         elif movie_flag and not odor_flag:
             conditions = (RewardCond() * MovieCond() & (Trial & self)).proj(
                 movie_duration='movie_duration',probe='probe', dutycycle='0', odor_duration='0', obj_duration='0')
-        elif obj_flag:
-            conditions = (RewardCond() * ObjectCond() & (Trial & self)).proj(
-                movie_duration='0', probe='probe', dutycycle='0', odor_duration='0', obj_duration='obj_dur')
         else:
             return []
+        
         uniq_groups, groups_idx = np.unique(
             [cond.astype(int) for cond in conditions.fetch('movie_duration','dutycycle','odor_duration','obj_duration','probe')],
             axis=1, return_inverse=True)
@@ -142,6 +143,7 @@ class Trial(dj.Manual):
         conds = (Condition() & self).getGroups()                          # conditions in trials for animal
         fig, axs = plt.subplots(round(len(conds)**.5), -(-len(conds)//round(len(conds)**.5)),
                                 sharex=True, figsize=params['figsize'])
+        
         for idx, cond in enumerate(conds):                                                #  iterate through conditions
             selected_trials = (Lick * (self - AbortedTrial) & (Condition & cond)).proj(                       # select trials with licks
                 selected='(time <= end_time) AND (time >= start_time)') & 'selected > 0'
@@ -154,15 +156,16 @@ class Trial(dj.Manual):
                                   c=np.array(params['probe_colors'])[probes-1])
             axs.item(idx).axvline(x=0, color='green', linestyle='-')
 
-            if np.unique(cond['movie_duration'])[0] and np.unique(cond['odor_duration'])[0]:
+            if np.unique(cond['obj_duration'])[0]:
+                name = 'Obj:{}'.format(np.unique((ObjectCond & cond).fetch('obj_id')))
+            elif np.unique(cond['movie_duration'])[0] and np.unique(cond['odor_duration'])[0]:
                 name = 'Mov:%s  Odor:%d' % (np.unique((MovieCond & cond).fetch('movie_name'))[0],
                                             np.unique(cond['dutycycle'])[0])
             elif np.unique(cond['movie_duration'])[0]:
                 name = 'Mov:{}'.format(np.unique((MovieCond & cond).fetch('movie_name'))[0])
             elif np.unique(cond['odor_duration'])[0]:
                 name = 'Odor:{}'.format(np.unique(cond['dutycycle'])[0])
-            elif np.unique(cond['obj_duration'])[0]:
-                name = 'Obj:{}'.format(np.unique((ObjectCond & cond).fetch('obj_id')))
+            
 
             selected_pd = pd.DataFrame(selected_trials.fetch(order_by=('trial_idx', 'time')))
             selected_pd.drop_duplicates(subset=["trial_idx"], keep='first', inplace=True)
@@ -299,7 +302,7 @@ class LiquidDelivery(dj.Manual):
             
             # find first index for plot, i.e. for last 15 days
             last_date = dates[-1]
-            starting_date = last_date - datetime.timedelta(days=15) # keep only last 15 days
+            starting_date = last_date - timedelta(days=15) # keep only last 15 days
             starting_idx = bisect.bisect_right(dates, starting_date)
             
             # keep only 15 last days 
