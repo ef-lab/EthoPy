@@ -54,5 +54,8 @@ class ProbeTest:
     def log_test(self, probe=0, pulses=0, result='Passed'):
         self.screen.cleanup()
         self.screen.draw('Probe %d %s!' % (probe, result))
-        self.logger.log('ProbeTest', dict(setup=self.logger.setup, probe=probe, result=result, pulses=pulses))
+        key = dict(setup=self.logger.setup, probe=probe, result=result, pulses=pulses)
+        self.logger.put(table='PortCalibration', tuple=key, schema='behavior', priority=5)
+        self.logger.put(table='PortCalibration.Test',  schema='behavior', replace=True, tuple=key)
+
         time.sleep(1)

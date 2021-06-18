@@ -83,22 +83,13 @@ class Experiment(State, ExperimentClass):
         self.resp_ready = False
         self.state_timer.start()
 
-    def start(self):
-        # Initialize states
-        global states
-        states = dict()
-        for state in self.__class__.__subclasses__():
-            states.update({state().__class__.__name__: state(self)})
-        state_control = StateMachine(states['Entry'], states['Exit'])
-        state_control.run()
-
 
 class Entry(Experiment):
     def next(self):
         if self.beh.is_sleep_time():
-            return states['Offtime']
+            return 'Offtime'
         else:
-            return states['PreTrial']
+            return 'PreTrial'
 
 
 class PreTrial(Experiment):
@@ -117,13 +108,13 @@ class PreTrial(Experiment):
 
     def next(self):
         if not self.curr_cond:  # if run out of conditions exit
-            return states['Exit']
+            return 'Exit'
         elif self.logger.setup_status in ['stop', 'exit']:
-            return states['Exit']
+            return 'Exit'
         elif self.resp_ready:
-            return states['Cue']
+            return 'Cue'
         else:
-            return states['PreTrial']
+            return 'PreTrial'
 
 
 class Cue(Experiment):
@@ -140,15 +131,15 @@ class Cue(Experiment):
 
     def next(self):
         if self.resp_ready:
-            return states['Delay']
+            return 'Delay'
         elif self.response:
-            return states['Abort']
+            return 'Abort'
         elif self.state_timer.elapsed_time() > self.curr_cond['cue_duration']:
-            return states['Abort']
+            return 'Abort'
         elif self.logger.setup_status in ['stop', 'exit']:  # if wake up then update session
-            return states['Exit']
+            return 'Exit'
         else:
-            return states['Cue']
+            return 'Cue'
 
     def exit(self):
         self.stim.stop()
@@ -162,15 +153,13 @@ class Delay(Experiment):
 
     def next(self):
         if self.resp_ready and self.state_timer.elapsed_time() > self.curr_cond['delay_duration']: # this specifies the minimum amount of time we want to spend in the delay period contrary to the cue_duration FIX IT
-            return states['Response']
+            return 'Response'
         elif self.response:
-            return states['Abort']
-        elif not self.resp_ready and self.state_timer.elapsed_time() > self.curr_cond['delay_duration']:
-            return states['Abort']
+            return 'Abort'
         elif self.logger.setup_status in ['stop', 'exit']:
-            return states['Exit']
+            return 'Exit'
         else:
-            return states['Delay']
+            return 'Delay'
 
 
 class Response(Experiment):
@@ -187,17 +176,17 @@ class Response(Experiment):
 
     def next(self):
         if self.response and self.beh.is_correct() and self.resp_ready:  # correct response
-            return states['Reward']
+            return 'Reward'
         elif not self.resp_ready and self.response:
-            return states['Abort']
+            return 'Abort'
         elif self.response and not self.beh.is_correct():  # incorrect response
-            return states['Punish']
+            return 'Punish'
         elif self.state_timer.elapsed_time() > self.curr_cond['response_duration']:      # timed out
-            return states['Abort']
+            return 'Abort'
         elif self.logger.setup_status in ['stop', 'exit']:
-            return states['Exit']
+            return 'Exit'
         else:
-            return states['Response']
+            return 'Response'
 
     def exit(self):
         self.stim.stop()
@@ -212,11 +201,11 @@ class Abort(Experiment):
 
     def next(self):
         if self.state_timer.elapsed_time() >= self.curr_cond['abort_duration']:
-            return states['InterTrial']
+            return 'InterTrial'
         elif self.logger.setup_status in ['stop', 'exit']:
-            return states['Exit']
+            return 'Exit'
         else:
-            return states['Abort']
+            return 'Abort'
 
 
 class Reward(Experiment):
@@ -229,11 +218,11 @@ class Reward(Experiment):
 
     def next(self):
         if self.rewarded or self.state_timer.elapsed_time() >= self.curr_cond['reward_duration']:
-            return states['InterTrial']
+            return 'InterTrial'
         elif self.logger.setup_status in ['stop', 'exit']:
-            return states['Exit']
+            return 'Exit'
         else:
-            return states['Reward']
+            return 'Reward'
 
 
 class Punish(Experiment):
@@ -249,11 +238,11 @@ class Punish(Experiment):
 
     def next(self):
         if self.state_timer.elapsed_time() >= self.punish_period:
-            return states['InterTrial']
+            return 'InterTrial'
         elif self.logger.setup_status in ['stop', 'exit']:
-            return states['Exit']
+            return 'Exit'
         else:
-            return states['Punish']
+            return 'Punish'
 
     def exit(self):
         self.stim.unshow()
@@ -269,15 +258,15 @@ class InterTrial(Experiment):
 
     def next(self):
         if self.logger.setup_status in ['stop', 'exit']:
-            return states['Exit']
+            return 'Exit'
         elif self.beh.is_sleep_time() and not self.beh.is_hydrated(self.params['min_reward']):
-            return states['Hydrate']
+            return 'Hydrate'
         elif self.beh.is_sleep_time() or self.beh.is_hydrated():
-            return states['Offtime']
+            return 'Offtime'
         elif self.state_timer.elapsed_time() >= self.curr_cond['intertrial_duration']:
-            return states['PreTrial']
+            return 'PreTrial'
         else:
-            return states['InterTrial']
+            return 'InterTrial'
 
 
 class Hydrate(Experiment):
@@ -289,11 +278,11 @@ class Hydrate(Experiment):
 
     def next(self):
         if self.logger.setup_status in ['stop', 'exit']:  # if wake up then update session
-            return states['Exit']
+            return 'Exit'
         elif self.beh.is_hydrated(self.params['min_reward']) or not self.beh.is_sleep_time():
-            return states['Offtime']
+            return 'Offtime'
         else:
-            return states['Hydrate']
+            return 'Hydrate'
 
 
 class Offtime(Experiment):
@@ -309,15 +298,15 @@ class Offtime(Experiment):
 
     def next(self):
         if self.logger.setup_status in ['stop', 'exit']:  # if wake up then update session
-            return states['Exit']
+            return 'Exit'
         elif self.logger.setup_status == 'wakeup' and not self.beh.is_sleep_time():
-            return states['PreTrial']
+            return 'PreTrial'
         elif self.logger.setup_status == 'sleeping' and not self.beh.is_sleep_time():  # if wake up then update session
-            return states['Exit']
+            return 'Exit'
         elif not self.beh.is_hydrated() and not self.beh.is_sleep_time():
-            return states['Exit']
+            return 'Exit'
         else:
-            return states['Offtime']
+            return 'Offtime'
 
     def exit(self):
         if self.logger.setup_status in ['wakeup', 'sleeping']:

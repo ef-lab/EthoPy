@@ -179,7 +179,7 @@ class Behavior:
 
     def log_response(self, table, key):
         key.update({'time': self.logger.logger_timer.elapsed_time(), **self.logger.trial_key})
-        self.logger.log('Response', key, schema='behavior', priority=2)
+        self.logger.log('Response', key, schema='behavior', priority=5)
         self.logger.log('Response.' + table, key, schema='behavior')
 
     def make_conditions(self, conditions):
