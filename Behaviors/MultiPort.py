@@ -6,32 +6,6 @@ import numpy as np
 
 
 @behavior.schema
-class Response(dj.Manual):
-    definition = """
-    # Mouse behavioral response
-    -> Session  
-    """
-
-    class Proximity(dj.Part):
-        definition = """
-        # Center port information
-        -> Response
-        port                 : tinyint          # port id
-        time	     	  	 : int           	# time from session start (ms)
-        ---
-        in_position          : tinyint
-        """
-
-    class Lick(dj.Part):
-        definition = """
-        # Lick timestamps
-        -> Response
-        port                 : tinyint          # port id
-        time	     	  	 : int           	# time from session start (ms)
-        """
-
-
-@behavior.schema
 class MultiPort(Behavior, dj.Manual):
     definition = """
     # This class handles the behavior variables for RP
@@ -51,13 +25,13 @@ class MultiPort(Behavior, dj.Manual):
         -> MultiPort
         ---
         reward_port               : tinyint          # reward port id
-        reward_amount=0        : float            # reward amount
-        -> Rewards
+        reward_amount=0           : float            # reward amount
+        -> behavior.Rewards
         """
 
     cond_tables = ['MultiPort', 'MultiPort.Lick', 'MultiPort.Reward']
     required_fields = ['response_port', 'reward_port', 'reward_amount']
-    default_key = {'reward_type': 'water'}
+    default_key = {'reward_type': 'water', 'punishment_type': 'delay'}
 
     def setup(self, logger, params):
         self.interface = RPProbe(logger)
@@ -91,8 +65,7 @@ class MultiPort(Behavior, dj.Manual):
 
     def reward(self):
         self.interface.give_liquid(self.licked_port)
-        self.logger.log('Reward.Trial', dict(port=self.licked_port,
-                                               reward_amount=self.reward_amount[self.licked_port]))
+        self.log_response('Reward', dict(reward_type=self.curr_cond['reward_type']))
         self.update_history(self.licked_port, self.reward_amount[self.licked_port])
         return True
 
@@ -105,6 +78,7 @@ class MultiPort(Behavior, dj.Manual):
 
     def punish(self):
         port = self.licked_port if self.licked_port > 0 else np.nan
+        self.log_response('Punishment', dict(punishment_type=self.curr_cond['punishment_type']))
         self.update_history(port)
 
 
@@ -156,13 +130,14 @@ class DummyPorts(MultiPort):
 
     def reward(self):
         self.update_history(self.licked_port, self.reward_amount)
-        self.logger.log('Reward.Trial', dict(port=self.licked_port, reward_amount=self.reward_amount[self.licked_port]))
+        self.log_response('Reward', dict(reward_type=self.curr_cond['reward_type']))
         print('Giving Water at port:%1d' % self.licked_port)
         return True
 
     def punish(self):
         print('punishing')
         port = self.licked_port if self.licked_port > 0 else np.nan
+        self.log_response('Punishment', dict(punishment_type=self.curr_cond['punishment_type']))
         self.update_history(port)
 
     def __get_events(self):
@@ -182,10 +157,12 @@ class DummyPorts(MultiPort):
                 elif event.key == pygame.K_SPACE and not self.ready:
                     self.lick_timer.start()
                     self.ready = True
+                    self.log_response('Proximity', dict(port=3, in_position=self.ready))
                     print('in position')
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_SPACE and self.ready:
                     self.ready = False
+                    self.log_response('Proximity', dict(port=3, in_position=self.ready))
                     print('off position')
                     print(pygame.mouse.get_pos())
             elif event.type == pygame.MOUSEBUTTONDOWN:

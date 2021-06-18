@@ -1,31 +1,6 @@
 from core.Behavior import *
 
 
-@behavior.schema
-class Response(dj.Manual):
-    definition = """
-    # Mouse behavioral response
-    -> Session  
-    """
-
-    class Lick(dj.Part):
-        definition = """
-        # Lick timestamps
-        -> Response
-        port_id              : tinyint          # port id
-        time	     	  	 : int           	# time from session start (ms)
-        """
-
-    class Touch(dj.Part):
-        definition = """
-        # Touch timestamps
-        -> Response
-        loc_x               : int               # x touch location
-        loc_y               : int               # y touch location
-        time	     	    : int           	# time from session start (ms)
-        """
-
-
 class TouchBehavior(Behavior):
     def __init__(self, logger, params):
         import ft5406 as TS
