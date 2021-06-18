@@ -8,7 +8,9 @@ from typing import Any
 from core.Experiment import *
 from utils.helper_functions import *
 dj.config["enable_python_native_blobs"] = True
-
+from core.Stimulus import *
+from core.Behavior import *
+from core.Experiment import *
 
 class Logger:
     setup, is_pi, setup_info, _schemata = socket.gethostname(), os.uname()[4][:3] == 'arm', dict(), dict()
@@ -45,7 +47,6 @@ class Logger:
         while not self.thread_end.is_set():
             if self.queue.empty():  time.sleep(.5); continue
             item = self.queue.get()
-            #print(item)
             ignore, skip = (False, False) if item.replace else (True, True)
             table = rgetattr(self._schemata[item.schema], item.table)
             self.thread_lock.acquire()

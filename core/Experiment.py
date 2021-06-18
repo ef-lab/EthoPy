@@ -65,7 +65,7 @@ class ExperimentClass:
         self.logger = logger
         self.logger.log_session({**self.default_key, **session_params}, self.__class__.__name__)
         self.beh = BehaviorClass()
-        self.beh.setup(logger, session_params)
+        self.beh.setup(logger, self.params)
         self.interface = self.beh.interface
         self.session_timer = Timer()
 
@@ -118,16 +118,14 @@ class ExperimentClass:
         global stim
         if 'stimulus_class' not in old_cond or old_cond['stimulus_class'] != self.curr_cond['stimulus_class']:
             stim_class = importlib.import_module('Stimuli.' + self.curr_cond['stimulus_class'])
-            print(stim_class)
             globals().update(stim_class.__dict__)
             stim_class = eval(self.curr_cond['stimulus_class'])
-            #stim_class = eval(self.curr_cond['stimulus_class'])
             self.stim = stim_class()
             self.stim.setup(self.logger, self.conditions)
         self.curr_trial += 1
         self.logger.update_trial_idx(self.curr_trial)
         self.trial_start = self.logger.logger_timer.elapsed_time()
-        self.logger.log('Trial', dict(cond_hash=self.curr_cond['cond_hash'], time=self.trial_start), priority=2)
+        self.logger.log('Trial', dict(cond_hash=self.curr_cond['cond_hash'], time=self.trial_start), priority=1)
 
     def name(self):
         return type(self).__name__

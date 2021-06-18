@@ -78,7 +78,6 @@ class Experiment(State, ExperimentClass):
                    'abort_duration'         : 0}
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
-        print(self.name())
         self.logger.curr_state = self.name()
         self.start_time = self.logger.log('Trial.StateOnset', {'state': self.name()})
         self.resp_ready = False

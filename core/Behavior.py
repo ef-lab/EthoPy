@@ -25,6 +25,55 @@ class Punishments(dj.Lookup):
 
 
 @behavior.schema
+class Response(dj.Manual):
+    definition = """
+    # Mouse behavioral response
+    -> experiment.Trial  
+    """
+
+    class Reward(dj.Part):
+        definition = """
+        -> Rewards
+        -> Response
+        time			      : int 	                # time from session start (ms)
+        """
+
+    class Punishment(dj.Part):
+        definition = """
+        -> Punishments
+        -> Response
+        time			      : int 	                # time from session start (ms)
+        """
+
+    class Proximity(dj.Part):
+        definition = """
+        # Center port information
+        -> Response
+        port                 : tinyint          # port id
+        time	     	  	 : int           	# time from session start (ms)
+        ---
+        in_position          : tinyint
+        """
+
+    class Lick(dj.Part):
+        definition = """
+        # Lick timestamps
+        -> Response
+        port                 : tinyint          # port id
+        time	     	  	 : int           	# time from session start (ms)
+        """
+
+    class Touch(dj.Part):
+        definition = """
+        # Touch timestamps
+        -> Response
+        loc_x               : int               # x touch location
+        loc_y               : int               # y touch location
+        time	     	    : int           	# time from session start (ms)
+        """
+
+
+@behavior.schema
 class BehCondition(dj.Manual):
     definition = """
     # reward probe conditions
@@ -79,17 +128,16 @@ class PortCalibration(dj.Manual):
         timestamp                : timestamp            # timestamp
         """
 
-
-class PortTest(dj.Part):
-    definition = """
-    # Lick timestamps
-    setup                 : varchar(256)                 # Setup name
-    port                  : tinyint                      # port id
-    timestamp             : timestamp  
-    ___
-    result=null           : enum('Passed','Failed')
-    pulses=null           : int
-    """
+    class Test(dj.Part):
+        definition = """
+        # Lick timestamps
+        setup                 : varchar(256)                 # Setup name
+        port                  : tinyint                      # port id
+        timestamp             : timestamp  
+        ___
+        result=null           : enum('Passed','Failed')
+        pulses=null           : int
+        """
 
 
 class Behavior:
@@ -129,6 +177,11 @@ class Behavior:
     def cleanup(self):
         pass
 
+    def log_response(self, table, key):
+        key.update({'time': self.logger.logger_timer.elapsed_time(), **self.logger.trial_key})
+        self.logger.log('Response', key, schema='behavior', priority=2)
+        self.logger.log('Response.' + table, key, schema='behavior')
+
     def make_conditions(self, conditions):
         """generate and store stimulus condition hashes"""
         for cond in conditions:
@@ -155,7 +208,6 @@ class Behavior:
         stop = now.replace(hour=0, minute=0, second=0) + self.logger.setup_info['stop_time']
         if stop < start:
             stop = stop + timedelta(days=1)
-        print(now, stop)
         time_restriction = now < start or now > stop
         return time_restriction
 

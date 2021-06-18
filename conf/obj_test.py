@@ -17,7 +17,7 @@ session_params = {
 }
 
 exp = Experiment()
-exp.setup(logger, MultiPort, session_params)
+exp.setup(logger, DummyPorts, session_params)
 
 # define environment conditions
 env_key = {
@@ -40,7 +40,7 @@ rew_prob = [2, 1, 1, 2]
 reps = 2
 for idx, obj_comb in enumerate(obj_combs):
     for irep in range(0,reps):
-        rot_f = lambda: interp((np.random.rand(3)-.5) *150)
+        rot_f = lambda: interp((np.random.rand(30)-.5) *150)
         tilt_f = lambda: interp(np.random.rand(3)*30)
         yaw_f = lambda: interp(np.random.rand(2)*10)
         dir1_f = lambda: np.array([0, -20, 0]) + np.random.randn(3)*30
@@ -53,7 +53,7 @@ for idx, obj_comb in enumerate(obj_combs):
                             'obj_pos_x' : [[0, -.25, .25]],
                             'obj_pos_y' : 0,
                             'obj_mag'   : .5,
-                            'obj_rot'   : [[rot_f(), rot_f(), rot_f()],0],
+                            'obj_rot'   : [[rot_f(), rot_f(), rot_f()]],
                             'obj_tilt'  : 0,
                             'obj_yaw'   : 0,
                             'obj_period': [['Cue', 'Response', 'Response']],
