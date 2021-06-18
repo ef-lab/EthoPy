@@ -36,10 +36,11 @@ class State:
 
 # move from State to State using a template method.
 class StateMachine:
-    def __init__(self, initialState, exitState):
-        self.futureState = initialState
-        self.currentState = initialState
-        self.exitState = exitState
+    def __init__(self, states):
+        self.states = states
+        self.futureState = states['Entry']
+        self.currentState = states['Entry']
+        self.exitState = states['Exit']
 
     # # # # Main state loop # # # # #
     def run(self):
@@ -49,7 +50,7 @@ class StateMachine:
                 self.currentState = self.futureState
                 self.currentState.entry()
             self.currentState.run()
-            self.futureState = self.currentState.next()
+            self.futureState = self.states[self.currentState.next()]
         self.currentState.exit()
         self.exitState.run()
 
@@ -69,7 +70,16 @@ class ExperimentClass:
         self.interface = self.beh.interface
         self.session_timer = Timer()
 
+    def start(self):
+        # Initialize states
+        states = dict()
+        for state in self.__class__.__subclasses__():
+            states.update({state().__class__.__name__: state(self)})
+        state_control = StateMachine(states)
+        state_control.run()
+
     def make_conditions(self, stim_class, conditions):
+        conditions = factorize(conditions)
         conditions = self.log_conditions(**stim_class().make_conditions(conditions))
         conditions = self.log_conditions(**self.beh.make_conditions(conditions))
         for cond in conditions:
