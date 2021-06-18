@@ -124,8 +124,8 @@ class Delay(State):
             return states['Response']
         elif self.response:
             return states['Abort']
-        elif not self.resp_ready and self.timer.elapsed_time() > self.stim.curr_cond['delay_duration']:
-            return states['Abort']
+        #elif not self.resp_ready and self.timer.elapsed_time() > self.stim.curr_cond['delay_duration']:
+        #     return states['Abort']
         elif self.logger.setup_status in ['stop', 'exit']:
             return states['Exit']
         else:
