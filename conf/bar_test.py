@@ -1,23 +1,29 @@
 # Retinotopic mapping experiment
 
-from core.Behavior import *
+from Experiments.Passive import *
 from Stimuli.Bar import *
-from utils.Generator import *
+from core.Behavior import *
+
 
 # define session parameters
 session_params = {
-    'trial_selection'    : 'fixed',
-    'intensity'          : 255,
-    'monitor_distance'   : 10,
-    'monitor_aspect'     : 1.77,
-    'monitor_size'       : 22,
-    'max_res'            : 1000,
-    'center_x'           : 0,
-    'center_y'           : -0.17,
+    'setup_conf_idx'        : 1,
+}
+
+exp = Experiment()
+exp.setup(logger, Behavior, session_params)
+
+# define session parameters
+session_params = {
+    'trial_selection'       : 'fixed',
+    'setup_conf_idx'        : 1,
 }
 
 # define stimulus conditions
 key = {
+    'center_x'              : 0,
+    'center_y'              : -0.17,
+    'max_res'               : 1000,
     'bar_width'             : 4,  # degrees
     'bar_speed'             : 2,  # degrees/sec
     'flash_speed'           : 2,
@@ -30,14 +36,15 @@ key = {
     'flatness_correction'   : 1,
     'intertrial_duration'   : 0,
 }
+
 repeat_n = 20
 
 conditions = []
 for axis in ['horizontal', 'vertical']:
     for rep in range(0, repeat_n):
-        conditions += factorize({**key, 'axis'  : axis})
+        conditions += exp.make_conditions(Bar, {**key, 'axis'  : axis})
 
-# run experiment
-exp = State()
-exp.setup(logger, Behavior, FancyBar, session_params, conditions)
-exp.run()
+
+# run experiments
+exp.push_conditions(conditions)
+exp.start()

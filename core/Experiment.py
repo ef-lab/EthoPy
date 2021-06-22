@@ -83,6 +83,7 @@ class ExperimentClass:
         for cond in conditions:
             assert np.all([field in cond for field in self.required_fields])
             cond.update({**self.default_key, **cond, 'experiment_class': self.cond_tables[0]})
+        print(conditions)
         return conditions
 
     def push_conditions(self, conditions):
@@ -105,6 +106,7 @@ class ExperimentClass:
         self._get_new_cond()
         global stim
         if 'stimulus_class' not in old_cond or old_cond['stimulus_class'] != self.curr_cond['stimulus_class']:
+            print(self.curr_cond)
             stim_class = importlib.import_module('Stimuli.' + self.curr_cond['stimulus_class'])
             globals().update(stim_class.__dict__)
             stim_class = eval(self.curr_cond['stimulus_class'])
@@ -184,7 +186,7 @@ class ExperimentClass:
 class SetupConfiguration(dj.Lookup):
     definition = """
     # Setup configuration
-    conf_idx                 : tinyint                      # configuration version
+    setup_conf_idx           : tinyint                      # configuration version
     ---
     discription              : varchar(256)
     """

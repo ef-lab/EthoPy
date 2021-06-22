@@ -5,7 +5,7 @@ from pygame.locals import *
 
 
 @stimulus.schema
-class FancyBar(Stimulus, dj.Manual):
+class Bar(Stimulus, dj.Manual):
     definition = """
     # This class handles the presentation of area mapping Bar stimulus
     -> StimCondition
@@ -22,36 +22,43 @@ class FancyBar(Stimulus, dj.Manual):
     direction             : float             # 1 for UD LR, -1 for DU RL
     flatness_correction   : tinyint(1)        # 1 correct for flatness of monitor, 0 do not
     intertrial_duration   : int
+    center_x              : float
+    center_y              : float
+    max_res               : smallint
     """
 
-    cond_tables = ['FancyBar']
-    default_key = {'background_color': (0.1, 0.1, 0.1),
-                   'ambient_color': (0.1, 0.1, 0.1, 1),
-                   'direct1_color': (0.7, 0.7, 0.7, 1),
-                   'direct1_dir': (0, -20, 0),
-                   'direct2_color': (0.2, 0.2, 0.2, 1),
-                   'direct2_dir': (180, -20, 0),
-                   'obj_pos_x': 0,
-                   'obj_pos_y': 0,
-                   'obj_mag': .5,
-                   'obj_rot': 0,
-                   'obj_tilt': 0,
-                   'obj_yaw': 0,
-                   'obj_delay': 0,
-                   'obj_period': 'Trial'}
+    cond_tables = ['Bar']
+    default_key =  {'center_x'              : 0,
+                    'center_y'              : -0.17,
+                    'max_res'               : 1000,
+                    'bar_width'             : 4,  # degrees
+                    'bar_speed'             : 2,  # degrees/sec
+                    'flash_speed'           : 2,
+                    'grat_width'            : 10,  # degrees
+                    'grat_freq'             : 1,
+                    'grid_width'            : 10,
+                    'grit_freq'             : .1,
+                    'style'                 : 'checkerboard', # checkerboard, grating
+                    'direction'             : 1,             # 1 for UD LR, -1 for DU RL
+                    'flatness_correction'   : 1,
+                    'intertrial_duration'   : 0}
 
-    def __init__(self, logger, params, conditions, beh=False):
-        super().__init__(logger, params, conditions, beh)
-        self.cycles = None
+    def setup(self, logger, conditions):
+        self.conditions = conditions
+        self.logger = logger
 
-    def setup(self):
         # setup parameters
-        ymonsize = self.params['monitor_size'] * 2.54 / np.sqrt(1 + self.params['monitor_aspect'] ** 2)  # cm Y monitor size
-        monSize = [ymonsize * self.params['monitor_aspect'], ymonsize ]
-        y_res = int(self.params['max_res'] / self.params['monitor_aspect'])
-        self.monRes = [self.params['max_res'],int(y_res + np.ceil(y_res % 2))]
-        self.FoV = np.arctan(np.array(monSize) / 2 / self.params['monitor_distance']) * 2 * 180 / np.pi  # in degrees
-        self.FoV[1] = self.FoV[0]/ self.params['monitor_aspect']
+        self.monitor_size, self.monitor_aspect, self.monitor_distance = self.logger.get(table='SetupConfiguration.Screen',
+                                                                         key=self.conditions[0],
+                                                                         fields=('monitor_size', 'monitor_aspect',
+                                                                                 'monitor_distance'))
+        self.monitor_distance = self.monitor_distance;
+        ymonsize = self.monitor_size * 2.54 / np.sqrt(1 + self.monitor_aspect ** 2)  # cm Y monitor size
+        monSize = [ymonsize * self.monitor_aspect, ymonsize]
+        y_res = int(self.conditions[0]['max_res'] / self.monitor_aspect)
+        self.monRes = [self.conditions[0]['max_res'], int(y_res + np.ceil(y_res % 2))]
+        self.FoV = np.arctan(np.array(monSize) / 2 / self.monitor_distance) * 2 * 180 / np.pi  # in degrees
+        self.FoV[1] = self.FoV[0] / self.monitor_aspect
         self.color = [0, 0, 0]
         self.fps = 30              # default presentation framerate
 
@@ -62,13 +69,13 @@ class FancyBar(Stimulus, dj.Manual):
         self.unshow()
         pygame.mouse.set_visible(0)
 
-    def prepare(self):
-        self._get_new_cond()
+    def prepare(self, curr_cond):
+        self.curr_cond = curr_cond
         if not self.curr_cond:
             self.isrunning = False
             return
         self.isrunning = True
-        self.timer.start()
+        #self.timer.start()
         self.curr_frame = 1
 
         # initialize hor/ver gradients
@@ -79,9 +86,9 @@ class FancyBar(Stimulus, dj.Manual):
         [self.cycles[abs(caxis - 1)], self.cycles[caxis]] = np.meshgrid(-Yspace/2/self.curr_cond['bar_width'],
                                                                         -Xspace/2/self.curr_cond['bar_width'])
         if self.curr_cond['flatness_correction']:
-            I_c, self.transform = flat2curve(self.cycles[0], self.params['monitor_distance'],
-                                             self.params['monitor_size'], method='index',
-                                             center_x=self.params['center_x'], center_y=self.params['center_y'])
+            I_c, self.transform = flat2curve(self.cycles[0], self.monitor_distance,
+                                             self.monitor_size, method='index',
+                                             center_x=self.curr_cond['center_x'], center_y=self.curr_cond['center_y'])
             self.BarOffset = -np.max(I_c) - 0.5
             deg_range = (np.ptp(I_c)+1)*self.curr_cond['bar_width']
         else:
@@ -141,7 +148,7 @@ class FancyBar(Stimulus, dj.Manual):
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
-        self.flip_count += 1
+        #self.flip_count += 1
 
     def close(self):
         pygame.mouse.set_visible(1)

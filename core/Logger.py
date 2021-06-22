@@ -85,7 +85,7 @@ class Logger:
                       {'version': '', 'software': ''}
         session_key = {**self.trial_key, **program_key, 'session_params': params, 'protocol': self.get_protocol(),
                        'setup': self.setup, 'git_hash': sha, 'experiment_type': exp_type,
-                       'conf_idx': params['conf_idx'], 'user': params['user'] if 'user' in params else 'PyMouse'}
+                       'setup_conf_idx': params['setup_conf_idx'], 'user': params['user'] if 'user' in params else 'PyMouse'}
         self.put(table='Session', tuple=session_key, priority=1)
         key = {'session': self.trial_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1}
         if 'start_time' in params:
