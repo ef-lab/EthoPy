@@ -27,7 +27,6 @@ class Passive(dj.Manual):
 
 class Experiment(State, ExperimentClass):
     cond_tables = ['Passive', 'Passive.SessionParams', 'Passive.TrialParams']
-    required_fields = ['difficulty']
     default_key = {'trial_selection'       : 'fixed',
 
                    'intertrial_duration'    : 1000}
@@ -38,18 +37,18 @@ class Experiment(State, ExperimentClass):
         self.state_timer.start()
 
 
-class Prepare(State):
-    def run(self):
+class Entry(Experiment):
+    def entry(self):
         self.stim.setup() # prepare stimulus
 
     def next(self):
         return 'PreTrial'
 
 
-class PreTrial(State):
+class PreTrial(Experiment):
     def entry(self):
         self.prepare_trial()
-        self.stim.prepare()
+        self.stim.prepare(self.curr_cond)
         if not self.stim.curr_cond: self.logger.update_setup_info({'status': 'stop'})
         super().entry()
 
@@ -62,11 +61,10 @@ class PreTrial(State):
             return 'Trial'
 
 
-class Trial(State):
+class Trial(Experiment):
     def entry(self):
         self.stim.start()
         super().entry()
-        self.logger.init_trial(self.stim.curr_cond['cond_hash'])
 
     def run(self):
         self.stim.present()  # Start Stimulus
@@ -83,7 +81,7 @@ class Trial(State):
         self.logger.ping()
 
 
-class InterTrial(State):
+class InterTrial(Experiment):
     def entry(self):
         super().entry()
 
@@ -102,7 +100,7 @@ class InterTrial(State):
         self.updateStatus()
 
 
-class Exit(State):
+class Exit(Experiment):
     def run(self):
         self.logger.update_setup_info({'status': 'stop'})
         self.beh.exit()

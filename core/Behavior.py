@@ -8,7 +8,7 @@ class Rewards(dj.Manual):
     # reward trials
     -> experiment.Trial   
     time			        : int 	           # time from session start (ms)
-    ___
+    ---
     reward_type             : varchar(16)
     reward_amount           : float            # reward amount
     """
@@ -71,7 +71,9 @@ class PortCalibration(dj.Manual):
     # Liquid deliver y calibration sessions for each port with water availability
     setup                        : varchar(256)                 # Setup name
     port                         : tinyint                      # port id
-    date                         : date                 # session date (only one per day is allowed)
+    date                         : date                         # session date (only one per day is allowed)
+    ---
+    pressure                     : float 
     """
 
     class Liquid(dj.Part):
@@ -99,9 +101,9 @@ class PortCalibration(dj.Manual):
 
 class Behavior:
     """ This class handles the behavior variables """
-    cond_tables = ['Reward']
-    required_fields = ['reward_amount', 'port_id']
-    default_key = {'reward_type': 'water', 'conf_version': 1}
+    cond_tables = []
+    required_fields = []
+    default_key = dict()
 
     def setup(self, logger, params):
         self.params = params
@@ -115,6 +117,7 @@ class Behavior:
         self.licked_probe = 0
         self.reward_amount = dict()
         self.curr_cond = []
+        self.interface = []
 
     def is_ready(self, init_duration, since=0):
         return True, 0
@@ -144,11 +147,16 @@ class Behavior:
 
     def make_conditions(self, conditions):
         """generate and store stimulus condition hashes"""
-        for cond in conditions:
-            assert np.all([field in cond for field in self.required_fields])
-            cond.update({**self.default_key, **cond, 'behavior_class': self.cond_tables[0]})
-        return dict(conditions=conditions, condition_tables=['BehCondition'] + self.cond_tables,
-                    schema='behavior', hsh='beh_hash')
+        if self.cond_tables:
+            for cond in conditions:
+                assert np.all([field in cond for field in self.required_fields])
+                cond.update({**self.default_key, **cond, 'behavior_class': self.cond_tables[0]})
+            return dict(conditions=conditions, condition_tables=['BehCondition'] + self.cond_tables,
+                        schema='behavior', hsh='beh_hash')
+        else:
+            for cond in conditions:
+                cond.update({**self.default_key, **cond, 'behavior_class': 'None'})
+            return dict(conditions=conditions, condition_tables=[], schema='behavior')
 
     def prepare(self, condition):
         pass

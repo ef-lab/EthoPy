@@ -36,7 +36,7 @@ class Stimulus:
         """prepares stuff for presentation before trial starts"""
         pass
 
-    def init(self, cond=False):
+    def start(self, cond=False):
         """initialize stuff for each trial"""
         pass
 
