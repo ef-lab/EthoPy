@@ -8,9 +8,10 @@ from typing import Any
 from core.Experiment import *
 from utils.helper_functions import *
 dj.config["enable_python_native_blobs"] = True
+from core.Experiment import *
 from core.Stimulus import *
 from core.Behavior import *
-from core.Experiment import *
+
 
 class Logger:
     setup, is_pi, setup_info, _schemata = socket.gethostname(), os.uname()[4][:3] == 'arm', dict(), dict()
@@ -80,21 +81,18 @@ class Logger:
         last_sessions = (Session() & self.trial_key).fetch('session')
         self.trial_key['session'] = 1 if numpy.size(last_sessions) == 0 else numpy.max(last_sessions) + 1
         sha = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
-        self.put(table='Session', tuple={**self.trial_key, 'session_params': params, 'version': params['version'],
-                                         'protocol': self.get_protocol(), 'software': params['software'],
-                                         'setup': self.setup, 'git-sha1': sha, 'experiment_type': exp_type}, priority=1)
+        program_key = {'version': params['version'], 'software': params['software']} if 'software' in params else \
+                      {'version': '', 'software': ''}
+        session_key = {**self.trial_key, **program_key, 'session_params': params, 'protocol': self.get_protocol(),
+                       'setup': self.setup, 'git_hash': sha, 'experiment_type': exp_type,
+                       'conf_idx': params['conf_idx'], 'user': params['user'] if 'user' in params else 'PyMouse'}
+        self.put(table='Session', tuple=session_key, priority=1)
         key = {'session': self.trial_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1}
         if 'start_time' in params:
             tdelta = lambda t: datetime.strptime(t, "%H:%M:%S") - datetime.strptime("00:00:00", "%H:%M:%S")
             key = {**key, 'start_time': tdelta(params['start_time']), 'stop_time': tdelta(params['stop_time'])}
         self.update_setup_info(key)
-        self.logger_timer.start()  # start session time
-
-    def log_pulse_weight(self, pulse_dur, probe, pulse_num, weight=0):
-        key = dict(setup=self.setup, probe=probe, date=systime.strftime("%Y-%m-%d"))
-        self.put(table='LiquidCalibration', tuple=key, priority=5)
-        self.put(table='LiquidCalibration.PulseWeight',
-                 tuple=dict(key, pulse_dur=pulse_dur, pulse_num=pulse_num, weight=weight), replace=True)
+        self.logger_timer.start()  # start sessio n time
 
     def update_setup_info(self, info):
         self.setup_info = {**(SetupControl() & dict(setup=self.setup)).fetch1(), **info}

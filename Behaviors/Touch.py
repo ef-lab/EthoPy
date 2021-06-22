@@ -83,7 +83,7 @@ class TouchBehavior(Behavior):
         touched_loc = self.touch if self.has_touched else np.nan
         self.update_history(touched_loc)
 
-    def cleanup(self):
+    def exit(self):
         self.interface.cleanup()
         self.ts.stop()
 

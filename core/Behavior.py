@@ -3,52 +3,28 @@ from core.Experiment import *
 
 
 @behavior.schema
-class Rewards(dj.Lookup):
+class Rewards(dj.Manual):
     definition = """
-    # reward types
+    # reward trials
+    -> experiment.Trial   
+    time			        : int 	           # time from session start (ms)
+    ___
     reward_type             : varchar(16)
-    ---
-    measurement_unit        : varchar(16) # unit of measurement for reward
-    description             : varchar(256)
+    reward_amount           : float            # reward amount
     """
 
 
 @behavior.schema
-class Punishments(dj.Lookup):
-    definition = """
-    # punishment types
-    punishment_type         : varchar(16)
-    ---
-    measurement_unit        : varchar(16) # unit of measurement for reward
-    description             : varchar(256)
-    """
-
-
-@behavior.schema
-class Response(dj.Manual):
+class Activity(dj.Manual):
     definition = """
     # Mouse behavioral response
     -> experiment.Trial  
     """
 
-    class Reward(dj.Part):
-        definition = """
-        -> Rewards
-        -> Response
-        time			      : int 	                # time from session start (ms)
-        """
-
-    class Punishment(dj.Part):
-        definition = """
-        -> Punishments
-        -> Response
-        time			      : int 	                # time from session start (ms)
-        """
-
     class Proximity(dj.Part):
         definition = """
         # Center port information
-        -> Response
+        -> Activity
         port                 : tinyint          # port id
         time	     	  	 : int           	# time from session start (ms)
         ---
@@ -58,7 +34,7 @@ class Response(dj.Manual):
     class Lick(dj.Part):
         definition = """
         # Lick timestamps
-        -> Response
+        -> Activity
         port                 : tinyint          # port id
         time	     	  	 : int           	# time from session start (ms)
         """
@@ -66,7 +42,7 @@ class Response(dj.Manual):
     class Touch(dj.Part):
         definition = """
         # Touch timestamps
-        -> Response
+        -> Activity
         loc_x               : int               # x touch location
         loc_y               : int               # y touch location
         time	     	    : int           	# time from session start (ms)
@@ -86,25 +62,6 @@ class BehCondition(dj.Manual):
         -> experiment.Trial
         -> BehCondition
         time			      : int 	                # time from session start (ms)
-        """
-
-
-@behavior.schema
-class SetupConfiguration(dj.Lookup):
-    definition = """
-    # Setup configuration
-    conf_idx                 : tinyint                      # configuration version
-    ---
-    discription              : varchar(256)
-    """
-
-    class Port(dj.Lookup):
-        definition = """
-        # Probe identity
-        port                     : tinyint                      # port id
-        -> SetupConfiguration
-        ---
-        discription              : varchar(256)
         """
 
 
@@ -174,13 +131,16 @@ class Behavior:
     def punish(self):
         pass
 
-    def cleanup(self):
+    def exit(self):
         pass
 
-    def log_response(self, table, key):
+    def log_activity(self, table, key):
         key.update({'time': self.logger.logger_timer.elapsed_time(), **self.logger.trial_key})
-        self.logger.log('Response', key, schema='behavior', priority=5)
-        self.logger.log('Response.' + table, key, schema='behavior')
+        self.logger.log('Activity', key, schema='behavior', priority=5)
+        self.logger.log('Activity.' + table, key, schema='behavior')
+
+    def log_reward(self, reward_amount):
+        self.logger.log('Rewards', {**self.curr_cond, 'reward_amount': reward_amount}, schema='behavior')
 
     def make_conditions(self, conditions):
         """generate and store stimulus condition hashes"""

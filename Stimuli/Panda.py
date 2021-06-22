@@ -74,7 +74,6 @@ class Panda(Stimulus, dj.Manual):
                    'obj_period': 'Trial'}
 
     def setup(self, logger, conditions):
-
         cls = self.__class__
         self.__class__ = cls.__class__(cls.__name__ + "ShowBase", (cls, ShowBase), {})
 
@@ -195,7 +194,7 @@ class Panda(Stimulus, dj.Manual):
         cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % intensity
         os.system(cmd)
 
-    def close(self):
+    def exit(self):
         self.destroy()
 
     def get_cond(self, cond_name, idx=0):

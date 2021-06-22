@@ -8,15 +8,12 @@ class Match2Sample(dj.Manual):
     -> Condition
     """
 
-    class SessionConds(dj.Part):
+    class SessionParams(dj.Part):
         definition = """
         # Match2Sample experiment conditions
         -> Match2Sample
         ---
         trial_selection='staircase': enum('fixed','random','staircase','biased') 
-        start_time='10:00:00'      : TIME
-        stop_time='16:00:00'       : TIME
-        intensity=64               : tinyint UNSIGNED
         max_reward=3000            : smallint
         min_reward=500             : smallint
         bias_window=5              : smallint
@@ -27,7 +24,7 @@ class Match2Sample(dj.Manual):
         incremental_punishment=1   : tinyint(1)
         """
 
-    class TrialConds(dj.Part):
+    class TrialParams(dj.Part):
         definition = """
         # Match2Sample experiment conditions
         -> Match2Sample
@@ -48,12 +45,9 @@ class Match2Sample(dj.Manual):
 
 
 class Experiment(State, ExperimentClass):
-    cond_tables = ['Match2Sample', 'Match2Sample.SessionConds', 'Match2Sample.TrialConds']
+    cond_tables = ['Match2Sample', 'Match2Sample.SessionParams', 'Match2Sample.TrialParams']
     required_fields = ['difficulty']
     default_key = {'trial_selection'     : 'staircase',
-                   'start_time'            : '10:00:00',
-                   'stop_time'             : '16:00:00',
-                   'intensity'             : 64,
                    'max_reward'            : 3000,
                    'min_reward'            : 500,
                    'bias_window'           : 5,
@@ -62,8 +56,6 @@ class Experiment(State, ExperimentClass):
                    'stair_down'            : 0.55,
                    'noresponse_intertrial' : True,
                    'incremental_punishment': True,
-                   'software'              : 'none',
-                   'version'               : '0.0',
 
                    'init_ready'             : 0,
                    'cue_ready'              : 0,
@@ -94,7 +86,7 @@ class Entry(Experiment):
 
 class PreTrial(Experiment):
     def entry(self):
-        self.init_trial()
+        self.prepare_trial()
         self.stim.prepare(self.curr_cond)
         self.beh.prepare(self.curr_cond)
 
@@ -315,6 +307,6 @@ class Offtime(Experiment):
 
 class Exit(Experiment):
     def run(self):
-        self.beh.cleanup()
-        self.stim.close()
+        self.beh.exit()
+        self.stim.exit()
         self.logger.ping(0)

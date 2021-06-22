@@ -60,6 +60,10 @@ class Stimulus:
         """stop trial"""
         pass
 
+    def exit(self):
+        """exit stimulus stuff"""
+        pass
+
     def make_conditions(self, conditions):
         """generate and store stimulus condition hashes"""
         for cond in conditions:

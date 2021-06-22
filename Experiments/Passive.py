@@ -1,36 +1,41 @@
 from core.Experiment import *
 
 
-class State(StateClass):
-    def __init__(self, parent=None):
-        self.timer = Timer()
-        if parent:
-            self.__dict__.update(parent.__dict__)
+@experiment.schema
+class Passive(dj.Manual):
+    definition = """
+    # Passive experiment conditions
+    -> Condition
+    """
 
-    def setup(self, logger, BehaviorClass, StimulusClass, session_params, conditions):
-        self.logger = logger
-        self.logger.log_session(session_params, 'Passive')
-        # Initialize params & Behavior/Stimulus objects
-        self.beh = BehaviorClass(self.logger, session_params)
-        self.stim = StimulusClass(self.logger, session_params, conditions, self.beh)
-        self.params = session_params
-        self.logger.log_conditions(conditions, self.stim.get_cond_tables())
-        exitState = Exit(self)
-        self.StateMachine = StateMachine(Prepare(self), exitState)
+    class SessionParams(dj.Part):
+        definition = """
+        # Passive experiment conditions
+        -> Passive
+        ---
+        trial_selection='fixed'    : enum('fixed','random') 
+        """
 
-        # Initialize states
-        global states
-        states = {
-            'PreTrial'     : PreTrial(self),
-            'Trial'        : Trial(self),
-            'InterTrial'   : InterTrial(self),
-            'Exit'         : exitState}
+    class TrialParams(dj.Part):
+        definition = """
+        # Match2Sample experiment conditions
+        -> Passive
+        ---
+        intertrial_duration   : int
+        """
 
-    def run(self):
-        self.StateMachine.run()
 
-    def updateStatus(self): # updates stateMachine from Database entry - override for timing critical transitions
-        self.logger.update_setup_info({'state': self.__class__.__name__})
+class Experiment(State, ExperimentClass):
+    cond_tables = ['Passive', 'Passive.SessionParams', 'Passive.TrialParams']
+    required_fields = ['difficulty']
+    default_key = {'trial_selection'       : 'fixed',
+
+                   'intertrial_duration'    : 1000}
+
+    def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
+        self.logger.curr_state = self.name()
+        self.start_time = self.logger.log('Trial.StateOnset', {'state': self.name()})
+        self.state_timer.start()
 
 
 class Prepare(State):
@@ -38,11 +43,12 @@ class Prepare(State):
         self.stim.setup() # prepare stimulus
 
     def next(self):
-        return states['PreTrial']
+        return 'PreTrial'
 
 
 class PreTrial(State):
     def entry(self):
+        self.prepare_trial()
         self.stim.prepare()
         if not self.stim.curr_cond: self.logger.update_setup_info({'status': 'stop'})
         super().entry()
@@ -51,9 +57,9 @@ class PreTrial(State):
 
     def next(self):
         if not self.stim.curr_cond:  # if run out of conditions exit
-            return states['Exit']
+            return 'Exit'
         else:
-            return states['Trial']
+            return 'Trial'
 
 
 class Trial(State):
@@ -67,9 +73,9 @@ class Trial(State):
 
     def next(self):
         if not self.stim.isrunning:     # timed out
-            return states['InterTrial']
+            return 'InterTrial'
         else:
-            return states['Trial']
+            return 'Trial'
 
     def exit(self):
         self.stim.stop()
@@ -86,11 +92,11 @@ class InterTrial(State):
 
     def next(self):
         if self.logger.setup_status in ['stop', 'exit']:
-            return states['Exit']
-        elif self.timer.elapsed_time() >= self.stim.curr_cond['intertrial_duration']:
-            return states['PreTrial']
+            return 'Exit'
+        elif self.state_timer.elapsed_time() >= self.stim.curr_cond['intertrial_duration']:
+            return 'PreTrial'
         else:
-            return states['InterTrial']
+            return 'InterTrial'
 
     def exit(self):
         self.updateStatus()
@@ -99,6 +105,6 @@ class InterTrial(State):
 class Exit(State):
     def run(self):
         self.logger.update_setup_info({'status': 'stop'})
-        self.beh.cleanup()
-        self.stim.close()
+        self.beh.exit()
+        self.stim.exit()
         self.logger.ping(0)
