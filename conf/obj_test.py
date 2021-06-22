@@ -14,6 +14,7 @@ interp = lambda x: interpolate.splev(np.linspace(0, len(x), 100),
 session_params = {
     'start_time'            : '00:00:00',
     'stop_time'             : '23:45:00',
+    'conf_idx'              : 1,
 }
 
 exp = Experiment()
@@ -39,9 +40,9 @@ rew_prob = [2, 1, 1, 2]
 reps = 2
 for idx, obj_comb in enumerate(obj_combs):
     for irep in range(0, reps):
-        rot_f = lambda: interp((np.random.rand(30)-.5) * 150)
-        tilt_f = lambda: interp(np.random.rand(3)*30)
-        yaw_f = lambda: interp(np.random.rand(2)*10)
+        rot_f = lambda: interp((np.random.rand(30)-.5) * 250)
+        tilt_f = lambda: interp(np.random.rand(30)*30)
+        yaw_f = lambda: interp(np.random.rand(20)*10)
         dir1_f = lambda: np.array([0, -20, 0]) + np.random.randn(3)*30
         dir2_f = lambda: np.array([180, -20, 0]) + np.random.randn(3)*30
         key =  {**base_key,

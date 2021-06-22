@@ -4,15 +4,45 @@ import pygame
 from pygame.locals import *
 
 
-class FancyBar(Stimulus):
-    """ This class handles the presentation of Movies"""
+@stimulus.schema
+class FancyBar(Stimulus, dj.Manual):
+    definition = """
+    # This class handles the presentation of area mapping Bar stimulus
+    -> StimCondition
+    ---
+    axis                  : enum('vertical','horizontal')
+    bar_width             : float  # degrees
+    bar_speed             : float  # degrees/sec
+    flash_speed           : float  # cycles/sec
+    grat_width            : float  # degrees
+    grat_freq             : float
+    grid_width            : float
+    grit_freq             : float
+    style                 : enum('checkerboard', 'grating','none')
+    direction             : float             # 1 for UD LR, -1 for DU RL
+    flatness_correction   : tinyint(1)        # 1 correct for flatness of monitor, 0 do not
+    intertrial_duration   : int
+    """
+
+    cond_tables = ['FancyBar']
+    default_key = {'background_color': (0.1, 0.1, 0.1),
+                   'ambient_color': (0.1, 0.1, 0.1, 1),
+                   'direct1_color': (0.7, 0.7, 0.7, 1),
+                   'direct1_dir': (0, -20, 0),
+                   'direct2_color': (0.2, 0.2, 0.2, 1),
+                   'direct2_dir': (180, -20, 0),
+                   'obj_pos_x': 0,
+                   'obj_pos_y': 0,
+                   'obj_mag': .5,
+                   'obj_rot': 0,
+                   'obj_tilt': 0,
+                   'obj_yaw': 0,
+                   'obj_delay': 0,
+                   'obj_period': 'Trial'}
 
     def __init__(self, logger, params, conditions, beh=False):
         super().__init__(logger, params, conditions, beh)
         self.cycles = None
-
-    def get_cond_tables(self):
-        return ['BarCond']
 
     def setup(self):
         # setup parameters

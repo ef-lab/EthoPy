@@ -10,8 +10,7 @@ behavior = dj.create_virtual_module('behavior', 'test_behavior', create_tables=T
 
 
 class State:
-    state_timer = Timer()
-    __shared_state = {}
+    state_timer, __shared_state = Timer(), {}
 
     def __init__(self, parent=None):
         self.__dict__ = self.__shared_state
@@ -34,32 +33,31 @@ class State:
         pass
 
 
-# move from State to State using a template method.
-class StateMachine:
-    def __init__(self, states):
-        self.states = states
-        self.futureState = states['Entry']
-        self.currentState = states['Entry']
-        self.exitState = states['Exit']
-
-    # # # # Main state loop # # # # #
-    def run(self):
-        while self.futureState != self.exitState:
-            if self.currentState != self.futureState:
-                self.currentState.exit()
-                self.currentState = self.futureState
-                self.currentState.entry()
-            self.currentState.run()
-            self.futureState = self.states[self.currentState.next()]
-        self.currentState.exit()
-        self.exitState.run()
-
-
 class ExperimentClass:
     """  Parent Experiment"""
     curr_state, curr_trial, total_reward, cur_dif, flip_count, states, stim = '', 0, 0, 0, 0, dict(), []
     rew_probe, un_choices, difficulties, iter, curr_cond, dif_h = [], [], [], [], dict(), list()
     required_fields, default_key, conditions, cond_tables = [], dict(), [], []
+
+    # move from State to State using a template method.
+    class StateMachine:
+        def __init__(self, states):
+            self.states = states
+            self.futureState = states['Entry']
+            self.currentState = states['Entry']
+            self.exitState = states['Exit']
+
+        # # # # Main state loop # # # # #
+        def run(self):
+            while self.futureState != self.exitState:
+                if self.currentState != self.futureState:
+                    self.currentState.exit()
+                    self.currentState = self.futureState
+                    self.currentState.entry()
+                self.currentState.run()
+                self.futureState = self.states[self.currentState.next()]
+            self.currentState.exit()
+            self.exitState.run()
 
     def setup(self, logger, BehaviorClass, session_params):
         self.params = {**self.default_key, **session_params}
@@ -75,40 +73,20 @@ class ExperimentClass:
         states = dict()
         for state in self.__class__.__subclasses__():
             states.update({state().__class__.__name__: state(self)})
-        state_control = StateMachine(states)
+        state_control = self.StateMachine(states)
         state_control.run()
 
     def make_conditions(self, stim_class, conditions):
         conditions = factorize(conditions)
-        conditions = self.log_conditions(**stim_class().make_conditions(conditions))
-        conditions = self.log_conditions(**self.beh.make_conditions(conditions))
+        conditions = self._log_conditions(**stim_class().make_conditions(conditions))
+        conditions = self._log_conditions(**self.beh.make_conditions(conditions))
         for cond in conditions:
             assert np.all([field in cond for field in self.required_fields])
             cond.update({**self.default_key, **cond, 'experiment_class': self.cond_tables[0]})
         return conditions
 
-    def log_conditions(self, conditions, condition_tables=['Condition'], schema='experiment', hsh='cond_hash'):
-        fields, hash_dict = list(), dict()
-        for ctable in condition_tables:
-            table = rgetattr(eval(schema), ctable)
-            fields += list(table().heading.names)
-        for condition in conditions:
-            priority = 5
-            key = {sel_key: condition[sel_key] for sel_key in fields if sel_key != hsh}
-            condition.update({hsh: make_hash(key)})
-            hash_dict[condition[hsh]] = condition[hsh]
-            for ctable in condition_tables:  # insert dependant condition tables
-                priority += 1
-                core = [field for field in rgetattr(eval(schema), ctable).primary_key if field != hsh]
-                if core and hasattr(condition[core[0]], '__iter__'):
-                    for idx, pcond in enumerate(condition[core[0]]):
-                        cond_key = {k: v if type(v) in [int, float, str] else v[idx] for k, v in condition.items()}
-                        self.logger.put(table=ctable, tuple=cond_key, schema=schema, priority=priority)
-                else: self.logger.put(table=ctable, tuple=condition.copy(), schema=schema, priority=priority)
-        return conditions
-
     def push_conditions(self, conditions):
-        self.conditions += self.log_conditions(conditions, condition_tables=['Condition'] + self.cond_tables)
+        self.conditions += self._log_conditions(conditions, condition_tables=['Condition'] + self.cond_tables, priority=2)
         resp_cond = self.params['resp_cond'] if 'resp_cond' in self.params else 'response_port'
         for stim_class in np.unique([cond['stimulus_class'] for cond in self.conditions]):
             importlib.import_module('Stimuli.' + stim_class)
@@ -122,7 +100,7 @@ class ExperimentClass:
             self.un_choices, un_idx = np.unique(self.choices, axis=0, return_index=True)
             if diff_flag: self.un_difs = self.difficulties[un_idx]
 
-    def init_trial(self):
+    def prepare_trial(self):
         old_cond = self.curr_cond
         self._get_new_cond()
         global stim
@@ -135,10 +113,28 @@ class ExperimentClass:
         self.curr_trial += 1
         self.logger.update_trial_idx(self.curr_trial)
         self.trial_start = self.logger.logger_timer.elapsed_time()
-        self.logger.log('Trial', dict(cond_hash=self.curr_cond['cond_hash'], time=self.trial_start), priority=1)
+        self.logger.log('Trial', dict(cond_hash=self.curr_cond['cond_hash'], time=self.trial_start), priority=3)
 
-    def name(self):
-        return type(self).__name__
+    def name(self): return type(self).__name__
+
+    def _log_conditions(self, conditions, condition_tables=['Condition'], schema='experiment', hsh='cond_hash', priority=5):
+        fields, hash_dict = list(), dict()
+        for ctable in condition_tables:
+            table = rgetattr(eval(schema), ctable)
+            fields += list(table().heading.names)
+        for condition in conditions:
+            key = {sel_key: condition[sel_key] for sel_key in fields if sel_key != hsh}
+            condition.update({hsh: make_hash(key)})
+            hash_dict[condition[hsh]] = condition[hsh]
+            for ctable in condition_tables:  # insert dependant condition tables
+                priority += 1
+                core = [field for field in rgetattr(eval(schema), ctable).primary_key if field != hsh]
+                if core and hasattr(condition[core[0]], '__iter__'):
+                    for idx, pcond in enumerate(condition[core[0]]):
+                        cond_key = {k: v if type(v) in [int, float, str] else v[idx] for k, v in condition.items()}
+                        self.logger.put(table=ctable, tuple=cond_key, schema=schema, priority=priority)
+                else: self.logger.put(table=ctable, tuple=condition.copy(), schema=schema, priority=priority)
+        return conditions
 
     def _anti_bias(self, choice_h, un_choices):
         choice_h = np.array([make_hash(c) for c in choice_h[-self.params['bias_window']:]])
@@ -185,6 +181,76 @@ class ExperimentClass:
 
 
 @experiment.schema
+class SetupConfiguration(dj.Lookup):
+    definition = """
+    # Setup configuration
+    conf_idx                 : tinyint                      # configuration version
+    ---
+    discription              : varchar(256)
+    """
+
+    class Port(dj.Part):
+        definition = """
+        # Probe identity
+        port                     : tinyint                      # port id
+        -> SetupConfiguration
+        ---
+        discription              : varchar(256)
+        """
+
+    class Screen(dj.Part):
+        definition = """
+        # Screen information
+        screen_id                : tinyint
+        -> SetupConfiguration
+        ---
+        intensity                : tinyint UNSIGNED 
+        monitor_distance         : float
+        monitor_aspect           : float
+        monitor_size             : float
+        fps                      : tinyint UNSIGNED
+        resolution_x             : smallint
+        resolution_y             : smallint
+        discription              : varchar(256)
+        """
+
+
+@experiment.schema
+class Session(dj.Manual):
+    definition = """
+    # Session info
+    animal_id            : smallint UNSIGNED            # animal id
+    session              : smallint UNSIGNED            # session number
+    ---
+    -> SetupConfiguration
+    user                 : varchar(32)
+    experiment_type=null : varchar(256)   
+    setup=null           : varchar(256)                 # computer id
+    session_tmst         : timestamp                    # session timestamp
+    protocol=null        : varchar(256)                 # protocol file
+    git_hash             : varchar(12)                  # short github hash
+    """
+
+    class Notes(dj.Part):
+        definition = """
+        # File session info
+        -> Session
+        timestamp=CURRENT_TIMESTAMP : timestamp         # timestamp
+        ---
+        note=null                   : varchar(2048)     # session notes
+        """
+
+    class Excluded(dj.Part):
+        definition = """
+        # Excluded sessions
+        -> Session
+        ---
+        reason=null                 : varchar(2048)      # notes for exclusion
+        timestamp=CURRENT_TIMESTAMP : timestamp  
+        """
+
+
+@experiment.schema
 class Software(dj.Lookup):
     definition = """
     # Acquisition program
@@ -196,49 +262,33 @@ class Software(dj.Lookup):
 
 
 @experiment.schema
-class Session(dj.Manual):
+class Recording(dj.Manual):
     definition = """
-    # Session info
-    animal_id            : int                          # animal id
-    session              : smallint                     # session number
+    # Recording info
+    -> Session
     ---
-    -> Software
-    user                 : varchar(32)
-    experiment_type=null : varchar(256)   
-    setup=null           : varchar(256)                 # computer id
-    session_tmst         : timestamp                    # session timestamp
-    session_params=null  : mediumblob                   
-    conditions=null      : mediumblob      
-    protocol=null        : varchar(256)                 # protocol file
+    aim                      : varchar(16)               # aim of recording 
     """
 
     class Notes(dj.Part):
         definition = """
         # File session info
-        -> Session
-        timestamp            : timestamp                   # timestamp
+        -> Recording
+        timestamp            : timestamp                 # timestamp
         ---
-        note=null            : varchar(2048)               # session notes
+        note=null            : varchar(2048)             # session notes
         """
 
     class Files(dj.Part):
         definition = """
         # File session info
-        -> Session
+        -> Recording
         -> Software
         ---
-        filename=null        : varchar(256)                # file
-        source_path=null     : varchar(512)                # local path
-        target_path=null     : varchar(512)                # remote drive path
-        timestamp            : timestamp                   # timestamp
-        """
-
-    class Excluded(dj.Part):
-        definition = """
-        # Excluded sessions
-        -> Session
-        ---
-        reason=null            : varchar(2048)             # notes for exclusion
+        filename=null        : varchar(256)              # file
+        source_path=null     : varchar(512)              # local path
+        target_path=null     : varchar(512)              # remote drive path
+        timestamp            : timestamp                 # timestamp
         """
 
 
@@ -259,7 +309,7 @@ class Trial(dj.Manual):
     definition = """
     # Trial information
     -> Session
-    trial_idx            : smallint                     # unique condition index
+    trial_idx            : smallint UNSIGNED            # unique condition index
     ---
     -> Condition
     time                 : int                          # start time from session start (ms)

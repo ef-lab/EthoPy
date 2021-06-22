@@ -12,9 +12,9 @@ class MultiPort(Behavior, dj.Manual):
     ->BehCondition
     """
 
-    class Lick(dj.Part):
+    class Response(dj.Part):
         definition = """
-        # Lick timestamps
+        # Lick response condition
         -> MultiPort
         response_port              : tinyint          # response port id
         """
@@ -26,12 +26,12 @@ class MultiPort(Behavior, dj.Manual):
         ---
         reward_port               : tinyint          # reward port id
         reward_amount=0           : float            # reward amount
-        -> behavior.Rewards
+        reward_type               : varchar(16)      # reward type
         """
 
-    cond_tables = ['MultiPort', 'MultiPort.Lick', 'MultiPort.Reward']
+    cond_tables = ['MultiPort', 'MultiPort.Response', 'MultiPort.Reward']
     required_fields = ['response_port', 'reward_port', 'reward_amount']
-    default_key = {'reward_type': 'water', 'punishment_type': 'delay'}
+    default_key = {'reward_type': 'water'}
 
     def setup(self, logger, params):
         self.interface = RPProbe(logger)
@@ -65,11 +65,11 @@ class MultiPort(Behavior, dj.Manual):
 
     def reward(self):
         self.interface.give_liquid(self.licked_port)
-        self.log_response('Reward', dict(reward_type=self.curr_cond['reward_type']))
+        self.log_reward(self.reward_amount[self.licked_probe])
         self.update_history(self.licked_port, self.reward_amount[self.licked_port])
         return True
 
-    def cleanup(self):
+    def exit(self):
         self.interface.cleanup()
 
     def prepare(self, condition):
@@ -78,7 +78,6 @@ class MultiPort(Behavior, dj.Manual):
 
     def punish(self):
         port = self.licked_port if self.licked_port > 0 else np.nan
-        self.log_response('Punishment', dict(punishment_type=self.curr_cond['punishment_type']))
         self.update_history(port)
 
 
@@ -130,14 +129,14 @@ class DummyPorts(MultiPort):
 
     def reward(self):
         self.update_history(self.licked_port, self.reward_amount)
-        self.log_response('Reward', dict(reward_type=self.curr_cond['reward_type']))
+        self.log_reward(self.reward_amount)
         print('Giving Water at port:%1d' % self.licked_port)
         return True
 
     def punish(self):
         print('punishing')
         port = self.licked_port if self.licked_port > 0 else np.nan
-        self.log_response('Punishment', dict(punishment_type=self.curr_cond['punishment_type']))
+        #self.log_activity('Punishment', dict(punishment_type=self.curr_cond['punishment_type']))
         self.update_history(port)
 
     def __get_events(self):
@@ -146,23 +145,23 @@ class DummyPorts(MultiPort):
         for event in events:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
-                    self.logger.log('Response.Lick', dict(port=1), schema='behavior')
+                    self.logger.log('Activity.Lick', dict(port=1), schema='behavior')
                     print('Probe 1 activated!')
                     port = 1
                     self.lick_timer.start()
                 elif event.key == pygame.K_RIGHT:
-                    self.logger.log('Response.Lick', dict(port=2), schema='behavior')
+                    self.logger.log('Activity.Lick', dict(port=2), schema='behavior')
                     print('Probe 2 activated!')
                     port = 2
                 elif event.key == pygame.K_SPACE and not self.ready:
                     self.lick_timer.start()
                     self.ready = True
-                    self.log_response('Proximity', dict(port=3, in_position=self.ready))
+                    self.log_activity('Proximity', dict(port=3, in_position=self.ready))
                     print('in position')
             elif event.type == pygame.KEYUP:
                 if event.key == pygame.K_SPACE and self.ready:
                     self.ready = False
-                    self.log_response('Proximity', dict(port=3, in_position=self.ready))
+                    self.log_activity('Proximity', dict(port=3, in_position=self.ready))
                     print('off position')
                     print(pygame.mouse.get_pos())
             elif event.type == pygame.MOUSEBUTTONDOWN:

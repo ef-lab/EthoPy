@@ -1,11 +1,10 @@
-from Stimuli.Movies import *
+from Stimuli.Panda import *
 
 
-class SmellyMovies(RPMovies):
-    """ This class handles the presentation of Visual (movies) and Olfactory (odors) stimuli"""
+class SmellyObjects(Panda):
+    """ This class handles the presentation of Objects (Panda) and Olfactory stimuli"""
 
-    def get_cond_tables(self):
-        return super().get_cond_tables()+['Olfactory', 'Olfactory.Channel']
+    cond_tables = ['Olfactory', 'Olfactory.Channel', 'Panda', 'Panda.Object', 'Panda.Environment']
 
     def start(self):
         delivery_port = self.curr_cond['delivery_port']
