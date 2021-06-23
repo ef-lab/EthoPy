@@ -27,8 +27,6 @@ class Experiment:
                             valve.cleanup()
                             self.screen.exit()
                             return
-                for port in self.params['ports']:
-                    valve.create_pulse(port, self.params['duration'][cal_idx])
                 pulse = 0
                 while pulse < self.params['pulsenum'][cal_idx]:
                     self.screen.cleanup()
@@ -36,8 +34,7 @@ class Experiment:
                     self.screen.draw(msg)
                     print(msg)
                     for port in self.params['ports']:
-                        valve.create_pulse(port, self.params['duration'][cal_idx])
-                        valve.pulse_out(port)  # release liquid
+                        valve.give_liquid(port, self.params['duration'][cal_idx])
                         time.sleep(self.params['duration'][cal_idx] / 1000 + self.params['pulse_interval'][cal_idx] / 1000)
                     pulse += 1  # update trial
                 if self.params['save']:

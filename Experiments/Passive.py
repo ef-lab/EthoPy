@@ -39,7 +39,7 @@ class Experiment(State, ExperimentClass):
 
 class Entry(Experiment):
     def entry(self):
-        self.stim.setup() # prepare stimulus
+        self.stim.setup()  # prepare stimulus
 
     def next(self):
         return 'PreTrial'
@@ -51,8 +51,6 @@ class PreTrial(Experiment):
         self.stim.prepare(self.curr_cond)
         if not self.stim.curr_cond: self.logger.update_setup_info({'status': 'stop'})
         super().entry()
-
-    def run(self): pass
 
     def next(self):
         if not self.stim.curr_cond:  # if run out of conditions exit
@@ -82,12 +80,6 @@ class Trial(Experiment):
 
 
 class InterTrial(Experiment):
-    def entry(self):
-        super().entry()
-
-    def run(self):
-        pass
-
     def next(self):
         if self.logger.setup_status in ['stop', 'exit']:
             return 'Exit'

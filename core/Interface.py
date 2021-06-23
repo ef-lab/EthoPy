@@ -7,17 +7,22 @@ import threading, multiprocessing, struct, time, socket
 
 
 class Interface:
-    def __init__(self, logger):
+    port, lick_tmst, ready_dur, activity_tmst, ready_tmst = 0, 0, 0, 0, 0
+    ready, logging, timer_ready, weight_per_pulse, pulse_dur, channels = False, False, Timer(), dict(), dict(), dict()
+
+    def __init__(self, logger=[], callbacks=True, logging=True):
+        self.callbacks = callbacks
+        self.logging = logging
         self.logger = logger
-        self.port = 0
-        self.lick_tmst = 0
-        self.ready_tmst = 0
-        self.ready_dur = 0
-        self.ready = False
-        self.logging = False
-        self.timer_ready = Timer()
-        self.weight_per_pulse = dict()
-        self.pulse_dur = dict()
+        self.ports = self.channels['liquid'].keys()
+        for port in list(set(self.ports)):
+            key = dict(setup=self.logger.setup, port=port)
+            dates = logger.get(schema='behavior', table='PortCalibration', key=key, fields=['date'], order_by='date')
+            if not dates: break
+            key['date'] = dates[-1]  # use the most recent calibration
+            self.pulse_dur[port], pulse_num, weight = logger.get(schema='behavior', table='PortCalibration.Liquid',
+                                                                 key=key, fields=['pulse_dur', 'pulse_num', 'weight'])
+            self.weight_per_pulse[port] = np.divide(weight, pulse_num)
 
     def give_air(self, port, duration, log=True):
         pass
@@ -42,6 +47,14 @@ class Interface:
     def create_pulse(self, port, duration):
         pass
 
+    def log_activity(self, table, key):
+        self.activity_tmst = self.logger.logger_timer.elapsed_time()
+        key.update({'time': self.activity_tmst, **self.logger.trial_key})
+        if self.logging:
+            self.logger.log('Activity', key, schema='behavior', priority=5)
+            self.logger.log('Activity.' + table, key, schema='behavior')
+        return self.activity_tmst
+
     def calc_pulse_dur(self, reward_amount):  # calculate pulse duration for the desired reward amount
         actual_rew = dict()
         for port in list(set(self.ports)):
@@ -55,31 +68,19 @@ class Interface:
 
 
 class RPProbe(Interface):
-    def __init__(self, logger, callbacks=True, logging=True):
-        super(RPProbe, self).__init__(logger)
+    channels = {'air': {1: 24, 2: 25},
+                'liquid': {1: 22, 2: 23},
+                'lick': {1: 17, 2: 27},
+                'proximity': {1: 9},
+                'sound': {1: 18}}
+
+    def __init__(self, **kwargs):
+        super(RPProbe, self).__init__(**kwargs)
         from RPi import GPIO
         import pigpio
-        self.setup_name = int(''.join(list(filter(str.isdigit, socket.gethostname()))))
         self.GPIO = GPIO
-        self.logging = logging
         self.GPIO.setmode(self.GPIO.BCM)
-        self.channels = {'air': {1: 24, 2: 25},
-                         'liquid': {1: 22, 2: 23},
-                         'lick': {1: 17, 2: 27},
-                         'proximity': {1: 9},
-                         'sound': {1: 18}}
         self.thread = ThreadPoolExecutor(max_workers=2)
-        self.ports = self.channels['liquid'].keys()
-        for port in list(set(self.ports)):
-            key = dict(setup=self.logger.setup, port=port)
-            dates = logger.get(schema='behavior', table='PortCalibration', key=key, fields=['date'], order_by='date')
-            if not dates: break
-            key['date'] = dates[-1]  # use the most recent calibration
-            self.pulse_dur[port], pulse_num, weight = \
-                logger.get(schema='behavior', table='PortCalibration.Liquid', key=key, fields=['pulse_dur', 'pulse_num', 'weight'])
-            self.weight_per_pulse[port] = np.divide(weight, pulse_num)
-
-        self.callbacks = callbacks
         self.frequency = 20
         self.pulses = dict()
         self.GPIO.setup(list(self.channels['lick'].values()) + [self.channels['proximity'][1]],
@@ -90,16 +91,17 @@ class RPProbe(Interface):
         self.Pulser.set_mode(self.channels['liquid'][1], pigpio.OUTPUT)
         self.Pulser.set_mode(self.channels['liquid'][2], pigpio.OUTPUT)
         self.Pulser.set_mode(self.channels['sound'][1], pigpio.OUTPUT)
-        if callbacks:
+        if self.callbacks:
             self.GPIO.add_event_detect(self.channels['lick'][2], self.GPIO.RISING,
-                                       callback=self.port_licked, bouncetime=100)
+                                       callback=self._port_licked, bouncetime=100)
             self.GPIO.add_event_detect(self.channels['lick'][1], self.GPIO.RISING,
-                                       callback=self.port_licked, bouncetime=100)
+                                       callback=self._port_licked, bouncetime=100)
             self.GPIO.add_event_detect(self.channels['proximity'][1], self.GPIO.BOTH,
-                                       callback=self.position_change, bouncetime=50)
+                                       callback=self._position_change, bouncetime=50)
 
-    def give_liquid(self, port):
-        self.thread.submit(self.pulse_out, port)
+    def give_liquid(self, port, duration=False):
+        if duration: self._create_pulse(port, duration)
+        self.thread.submit(self._give_pulse, port)
 
     def give_odor(self, delivery_port, odor_id, odor_duration, dutycycle):
         for i, idx in enumerate(odor_id):
@@ -108,37 +110,50 @@ class RPProbe(Interface):
     def give_sound(self, sound_freq=40000, duration=500, dutycycle=50):
         self.thread.submit(self.__pwd_out, self.channels['air'][1], sound_freq, duration, dutycycle)
 
-    def port_licked(self, channel):
-        self.port = reverse_lookup(self.channels['lick'], channel)
-        self.lick_tmst = self.logger.log('Activity.Lick', dict(port=self.port), schema='behavior') \
-            if self.logging else self.logger.logger_timer.elapsed_time()
-
-    def position_change(self, channel=0):
-        port = 3
-        if self.getStart():
-            self.timer_ready.start()
-            if not self.ready:
-                self.ready = True
-                self.ready_tmst = self.logger.log('Activity.Proximity', dict(port=port, in_position=self.ready),
-                                                  schema='behavior')
-                print('in position')
-        else:
-            if self.ready:
-                self.ready = False
-                tmst = self.logger.log('Activity.Proximity', dict(port=port, in_position=self.ready), schema='behavior')
-                self.ready_dur = tmst - self.ready_tmst
-                print('off position')
-
     def in_position(self):
-        # handle missed events
-        ready = self.getStart()
-        if self.ready != ready:
-            self.position_change()
-        if not self.ready:
-            ready_dur = self.ready_dur
-        else:
-            ready_dur = self.timer_ready.elapsed_time()
+        ready = self._get_position() # handle missed events
+        if self.ready != ready: self._position_change()
+        ready_dur = self.timer_ready.elapsed_time() if self.ready else self.ready_dur
         return self.ready, ready_dur, self.ready_tmst
+
+    def cleanup(self):
+        self.Pulser.wave_clear()
+        if self.callbacks:
+            self.GPIO.remove_event_detect(self.channels['lick'][1])
+            self.GPIO.remove_event_detect(self.channels['lick'][2])
+            self.GPIO.remove_event_detect(self.channels['proximity'][1])
+        self.GPIO.cleanup()
+
+    def _create_pulse(self, port, duration):
+        if port in self.pulses:
+            self.Pulser.wave_delete(self.pulses[port])
+        pulse = []
+        pulse.append(self.PulseGen(1 << self.channels['liquid'][port], 0, int(duration*1000)))
+        pulse.append(self.PulseGen(0, 1 << self.channels['liquid'][port], int(duration)))
+        self.Pulser.wave_add_generic(pulse)  # 500 ms flashes
+        self.pulses[port] = self.Pulser.wave_create()
+
+    def _give_pulse(self, port):
+        self.Pulser.wave_send_once(self.pulses[port])
+
+    def _port_licked(self, channel):
+        self.port = reverse_lookup(self.channels['lick'], channel)
+        self.lick_tmst = self.log_activity('Lick', dict(port=self.port))
+
+    def _position_change(self, channel=0):
+        port = 3
+        print('channel:',channel)
+        position = self._get_position()
+        if position: self.timer_ready.start()
+        if position and not self.ready:
+            self.ready = True
+            self.ready_tmst = self.log_activity('Proximity', dict(port=port, in_position=self.ready))
+            print('in position')
+        elif position and self.ready:
+            self.ready = False
+            tmst = self.log_activity('Proximity', dict(port=port, in_position=self.ready))
+            self.ready_dur = tmst - self.ready_tmst
+            print('off position')
 
     def __pwd_out(self, channel, duration, dutycycle):
         pwm = self.GPIO.PWM(channel, self.frequency)
@@ -152,54 +167,19 @@ class RPProbe(Interface):
         sleep(duration/1000)    # to add a  delay in seconds
         self.Pulser.hardware_PWM(channel, 0, 0)
 
-    def create_pulse(self, port, duration):
-        if port in self.pulses:
-            self.Pulser.wave_delete(self.pulses[port])
-        pulse = []
-        pulse.append(self.PulseGen(1 << self.channels['liquid'][port], 0, int(duration*1000)))
-        pulse.append(self.PulseGen(0, 1 << self.channels['liquid'][port], int(duration)))
-        self.Pulser.wave_add_generic(pulse)  # 500 ms flashes
-        self.pulses[port] = self.Pulser.wave_create()
-
-    def pulse_out(self, port):
-        self.Pulser.wave_send_once(self.pulses[port])
-
-    def getStart(self):
+    def _get_position(self):
         return not self.GPIO.input(self.channels['proximity'][1])
 
-    def cleanup(self):
-        self.Pulser.wave_clear()
-        if self.callbacks:
-            self.GPIO.remove_event_detect(self.channels['lick'][1])
-            self.GPIO.remove_event_detect(self.channels['lick'][2])
-            self.GPIO.remove_event_detect(self.channels['proximity'][1])
-        self.GPIO.cleanup()
 
+class VRProbe(RPProbe):
+    channels = {'odor': {1: 6, 2: 13, 3: 19, 4: 26},
+                'liquid': {1: 22},
+                'lick': {1: 17}}
 
-class VRProbe(Interface):
-    def __init__(self, logger):
-        super(VRProbe, self).__init__(logger)
-        from RPi import GPIO
-        import pigpio
-        self.setup = int(''.join(list(filter(str.isdigit, socket.gethostname()))))
-        self.GPIO = GPIO
-        self.GPIO.setmode(self.GPIO.BCM)
-        self.channels = {'odor': {1: 6, 2: 13, 3: 19, 4: 26},
-                         'liquid': {1: 22},
-                         'lick': {1: 17}}
+    def __init__(self, **kwargs):
+        super(VRProbe, self).__init__(**kwargs)
         self.thread = ThreadPoolExecutor(max_workers=2)
         self.frequency = 10
-        self.GPIO.setup(list(self.channels['lick'].values()) + [self.channels['proximity'][1]],
-                        self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-        self.GPIO.setup(list(self.channels['odor'].values()), self.GPIO.OUT, initial=self.GPIO.LOW)
-        self.GPIO.add_event_detect(self.channels['lick'][1], self.GPIO.RISING, callback=self.port1_licked, bouncetime=100)
-        self.Pulser = pigpio.pi()
-        self.PulseGen = pigpio.pulse
-        self.Pulser.set_mode(self.channels['liquid'][1], pigpio.OUTPUT)
-        self.pulses = dict()
-
-    def give_liquid(self, port):
-        self.thread.submit(self.pulse_out, port)
 
     def start_odor(self, dutycycle=50):
         for idx, channel in enumerate(self.channels['odor']):
@@ -210,16 +190,6 @@ class VRProbe(Interface):
     def update_odor(self, dutycycles):  # for 2D olfactory setup
         for idx, dutycycle in enumerate(dutycycles):
             self.pwm[idx].ChangeDutyCycle(dutycycle)
-
-    def create_pulse(self, port, duration):
-        if port in self.pulses:  self.Pulser.wave_delete(self.pulses[port])
-        pulse = [self.PulseGen(1 << self.channels['liquid'][port], 0, int(duration*1000)),
-                 self.PulseGen(0, 1 << self.channels['liquid'][port], int(duration))]
-        self.Pulser.wave_add_generic(pulse)  # 500 ms flashes
-        self.pulses[port] = self.Pulser.wave_create()
-
-    def pulse_out(self, port):
-        self.Pulser.wave_send_once(self.pulses[port])
 
     def cleanup(self):
         self.pwm[self.channels['air']].stop()

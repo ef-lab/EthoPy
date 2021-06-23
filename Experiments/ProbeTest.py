@@ -22,15 +22,13 @@ class ProbeTest:
             tmst = self.logger.logger_timer.elapsed_time()
             for cal_idx in range(0, numpy.size(self.params['pulsenum'])):
                 self.screen.cleanup()
-                self.valve.create_pulse(probe, self.params['duration'][cal_idx])
                 pulse = 0
                 while pulse < self.params['pulsenum'][cal_idx] and not self.result[probe]:
                     self.screen.cleanup()
                     msg = 'Pulse %d/%d' % (pulse + 1, self.params['pulsenum'][cal_idx])
                     self.screen.draw(msg)
                     print(msg)
-                    self.valve.create_pulse(probe, self.params['duration'][cal_idx])
-                    self.valve.pulse_out(probe)  # release liquid
+                    self.valve.give_liquid(probe, self.params['duration'][cal_idx])
                     time.sleep(self.params['duration'][cal_idx] / 1000 + self.params['pulse_interval'][cal_idx] / 1000)
                     pulse += 1  # update trial
                     self.total_pulses += 1
