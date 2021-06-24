@@ -14,7 +14,7 @@ class ProbeTest:
 
     def run(self):
         """ Lickspout liquid delivery test """
-        self.valve = RPProbe(self.logger, callbacks=True, logging=False)
+        self.valve = RPProbe(exp=self, callbacks=True, logging=False)
         print('Running probe test')
         for probe in self.params['probes']:
             self.total_pulses = 0

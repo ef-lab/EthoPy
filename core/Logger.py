@@ -14,15 +14,16 @@ from core.Behavior import *
 
 
 class Logger:
-    setup, is_pi, setup_info, _schemata = socket.gethostname(), os.uname()[4][:3] == 'arm', dict(), dict()
-    trial_key, schemata, total_reward, curr_state = dict(animal_id=0, session=1, trial_idx=0), dict(), 0, 'None'
-    lock, queue, ping_timer, logger_timer = False, PriorityQueue(), Timer(), Timer()
+    trial_key, schemata, setup_info, _schemata = dict(animal_id=0, session=1, trial_idx=0), dict(),dict(), dict()
+    lock, queue, ping_timer, logger_timer, total_reward, curr_state = False, PriorityQueue(), Timer(), Timer(), 0, ''
 
     schemata = {'experiment': 'test_experiments',
                 'stimulus'  : 'test_stimuli',
                 'behavior'  : 'test_behavior'}
 
     def __init__(self, protocol=False):
+        self.setup = socket.gethostname()
+        self.is_pi = os.uname()[4][:3] == 'arm' if os.name == 'posix' else False
         self.setup_status = 'running' if protocol else 'ready'
         fileobject = open(os.path.dirname(os.path.abspath(__file__)) + '/../dj_local_conf.json')
         con_info = json.loads(fileobject.read())
@@ -75,18 +76,18 @@ class Logger:
         key = {**key, 'ip': self.get_ip(), 'status': self.setup_status}
         self.put(table='SetupControl', tuple=key, replace=True, priority=1, block=True)
 
-    def log_session(self, params, exp_type=''):
+    def log_session(self, params, aim=''):
         self.total_reward = 0
         self.trial_key = dict(animal_id=self.get_setup_info('animal_id'), trial_idx=0)
         last_sessions = (Session() & self.trial_key).fetch('session')
         self.trial_key['session'] = 1 if numpy.size(last_sessions) == 0 else numpy.max(last_sessions) + 1
-        sha = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
-        program_key = {'version': params['version'], 'software': params['software']} if 'software' in params else \
-                      {'version': '', 'software': ''}
-        session_key = {**self.trial_key, **program_key, 'session_params': params, 'protocol': self.get_protocol(),
-                       'setup': self.setup, 'git_hash': sha, 'experiment_type': exp_type,
-                       'setup_conf_idx': params['setup_conf_idx'], 'user': params['user'] if 'user' in params else 'PyMouse'}
+        session_key = {**self.trial_key, 'setup_conf_idx': params['setup_conf_idx'], 'setup': self.setup,
+                       'aim': aim, 'user': params['user'] if 'user' in params else 'RP'}
         self.put(table='Session', tuple=session_key, priority=1)
+        pr_name, pr_file = self.get_protocol(raw_file=True)
+        git_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
+        self.put(table='Session.Protocol', tuple={**self.trial_key, 'protocol_name': pr_name,
+                                                  'protocol_file': pr_file, 'git_hash': git_hash})
         key = {'session': self.trial_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1}
         if 'start_time' in params:
             tdelta = lambda t: datetime.strptime(t, "%H:%M:%S") - datetime.strptime("00:00:00", "%H:%M:%S")
@@ -108,13 +109,17 @@ class Logger:
         table = rgetattr(self.schemata[schema], table)
         return (table() & key).fetch(*fields, **kwargs)
 
-    def get_protocol(self, task_idx=None):
+    def get_protocol(self, task_idx=None, raw_file=False):
         if not task_idx: task_idx = self.get_setup_info('task_idx')
         if len(Task() & dict(task_idx=task_idx)) > 0:
             protocol = (Task() & dict(task_idx=task_idx)).fetch1('protocol')
             path, filename = os.path.split(protocol)
             if not path: protocol = str(pathlib.Path(__file__).parent.absolute()) + '/../conf/' + filename
-            return protocol
+            if raw_file:
+                file = np.fromfile(protocol, dtype=np.int8)
+                return protocol, file
+            else:
+                return protocol
         else:
             return False
 

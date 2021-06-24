@@ -10,17 +10,23 @@ class Interface:
     port, lick_tmst, ready_dur, activity_tmst, ready_tmst = 0, 0, 0, 0, 0
     ready, logging, timer_ready, weight_per_pulse, pulse_dur, channels = False, False, Timer(), dict(), dict(), dict()
 
-    def __init__(self, logger=[], callbacks=True, logging=True):
+    def __init__(self, exp=[], callbacks=True, logging=True):
         self.callbacks = callbacks
         self.logging = logging
-        self.logger = logger
+        self.exp = exp
+        self.logger = exp.logger
         self.ports = self.channels['liquid'].keys()
+
+    def load_calibration(self):
         for port in list(set(self.ports)):
             key = dict(setup=self.logger.setup, port=port)
-            dates = logger.get(schema='behavior', table='PortCalibration', key=key, fields=['date'], order_by='date')
-            if not dates: break
+            dates = self.logger.get(schema='behavior', table='PortCalibration', key=key, fields=['date'], order_by='date')
+            if not dates:
+                print('No PortCalibration found!')
+                self.exp.stop()
+                break
             key['date'] = dates[-1]  # use the most recent calibration
-            self.pulse_dur[port], pulse_num, weight = logger.get(schema='behavior', table='PortCalibration.Liquid',
+            self.pulse_dur[port], pulse_num, weight = self.logger.get(schema='behavior', table='PortCalibration.Liquid',
                                                                  key=key, fields=['pulse_dur', 'pulse_num', 'weight'])
             self.weight_per_pulse[port] = np.divide(weight, pulse_num)
 
@@ -99,6 +105,21 @@ class RPProbe(Interface):
             self.GPIO.add_event_detect(self.channels['proximity'][1], self.GPIO.BOTH,
                                        callback=self._position_change, bouncetime=50)
 
+    def setup_touch_exit(self):
+        import ft5406 as TS
+        self.ts = TS.Touchscreen()
+        self.ts_press_event = TS.TS_PRESS
+        for touch in self.ts.touches:
+            touch.on_press = self._touch_handler
+            touch.on_release = self._touch_handler
+        self.ts.run()
+
+    def _touch_handler(self, event, touch):
+        if event == self.ts_press_event:
+            if touch.x > 700 and touch.y < 50:
+                print('Exiting')
+                self.logger.update_setup_info({'status': 'stop'})
+
     def give_liquid(self, port, duration=False):
         if duration: self._create_pulse(port, duration)
         self.thread.submit(self._give_pulse, port)
@@ -141,8 +162,7 @@ class RPProbe(Interface):
         self.lick_tmst = self.log_activity('Lick', dict(port=self.port))
 
     def _position_change(self, channel=0):
-        port = 3
-        print('channel:',channel)
+        port = reverse_lookup(self.channels['proximity'], channel) if channel else 0
         position = self._get_position()
         if position: self.timer_ready.start()
         if position and not self.ready:

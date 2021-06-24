@@ -1,4 +1,5 @@
 from core.Experiment import *
+import os
 
 
 @stimulus.schema
@@ -23,9 +24,7 @@ class StimCondition(dj.Manual):
 class Stimulus:
     """ This class handles the stimulus presentation use function overrides for each stimulus class """
 
-    cond_tables = []
-    required_fields = []
-    default_key = dict()
+    cond_tables, required_fields, default_key = [], [], dict()
 
     def setup(self, logger, interface):
         """setup stimulation for presentation before experiment starts"""
@@ -63,6 +62,12 @@ class Stimulus:
     def exit(self):
         """exit stimulus stuff"""
         pass
+
+    def set_intensity(self):
+        intensity = self.logger.get(schema='experiment', table='SetupConfiguration.Screen')
+        if self.logger.is_pi:
+            cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % intensity
+            os.system(cmd)
 
     def make_conditions(self, conditions):
         """generate and store stimulus condition hashes"""

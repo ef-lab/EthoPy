@@ -20,7 +20,7 @@ class Objects(dj.Lookup):
 
 
 @stimulus.schema
-class Panda(Stimulus, dj.Manual):
+class Panda(Stimulus, ShowBase, dj.Manual):
     definition = """
     # This class handles the presentation of Objects with Panda3D
     -> StimCondition
@@ -74,8 +74,8 @@ class Panda(Stimulus, dj.Manual):
                    'obj_period': 'Trial'}
 
     def setup(self, logger, conditions):
-        cls = self.__class__
-        self.__class__ = cls.__class__(cls.__name__ + "ShowBase", (cls, ShowBase), {})
+        #cls = self.__class__
+        #self.__class__ = cls.__class__(cls.__name__ + "ShowBase", (cls, ShowBase), {})
 
         self.logger = logger
         self.isrunning = False
@@ -195,6 +195,7 @@ class Panda(Stimulus, dj.Manual):
         os.system(cmd)
 
     def exit(self):
+        self.shutdown()
         self.destroy()
 
     def get_cond(self, cond_name, idx=0):

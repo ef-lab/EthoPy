@@ -33,9 +33,10 @@ class MultiPort(Behavior, dj.Manual):
     required_fields = ['response_port', 'reward_port', 'reward_amount']
     default_key = {'reward_type': 'water'}
 
-    def setup(self, logger, params):
-        self.interface = RPProbe(logger)
-        super(MultiPort, self).setup(logger, params)
+    def setup(self, exp):
+        self.interface = RPProbe(exp=exp)
+        super(MultiPort, self).setup(exp)
+        #self.interface.setup_touch_exit()
 
     def is_licking(self, since=0):
         licked_port, tmst = self.interface.get_last_lick()
@@ -65,12 +66,13 @@ class MultiPort(Behavior, dj.Manual):
 
     def reward(self):
         self.interface.give_liquid(self.licked_port)
-        self.log_reward(self.reward_amount[self.licked_probe])
+        self.log_reward(self.reward_amount[self.licked_port])
         self.update_history(self.licked_port, self.reward_amount[self.licked_port])
         return True
 
     def exit(self):
         self.interface.cleanup()
+        #self.interface.ts.stop()
 
     def prepare(self, condition):
         self.curr_cond = condition
@@ -138,6 +140,9 @@ class DummyPorts(MultiPort):
         port = self.licked_port if self.licked_port > 0 else np.nan
         #self.log_activity('Punishment', dict(punishment_type=self.curr_cond['punishment_type']))
         self.update_history(port)
+
+    def exit(self):
+        pass
 
     def __get_events(self):
         port = 0

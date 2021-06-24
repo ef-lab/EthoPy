@@ -101,23 +101,22 @@ class PortCalibration(dj.Manual):
 
 class Behavior:
     """ This class handles the behavior variables """
-    cond_tables = []
-    required_fields = []
+    cond_tables, interface, required_fields, curr_cond = [], [], [], []
     default_key = dict()
 
-    def setup(self, logger, params):
-        self.params = params
+    def setup(self, exp):
+        self.params = exp.params
         self.resp_timer = Timer()
         self.resp_timer.start()
-        self.logger = logger
+        self.exp = exp
+        self.logger = exp.logger
         self.rew_probe = 0
         self.choices = np.array(np.empty(0))
         self.choice_history = list()  # History term for bias calculation
         self.reward_history = list()  # History term for performance calculation
         self.licked_probe = 0
         self.reward_amount = dict()
-        self.curr_cond = []
-        self.interface = []
+        self.interface.load_calibration()
 
     def is_ready(self, init_duration, since=0):
         return True, 0
