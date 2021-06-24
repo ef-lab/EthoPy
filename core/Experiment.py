@@ -34,13 +34,14 @@ class State:
 
 
 class ExperimentClass:
-    """  Parent Experiment"""
+    """  Parent Experiment """
     curr_state, curr_trial, total_reward, cur_dif, flip_count, states, stim = '', 0, 0, 0, 0, dict(), []
     rew_probe, un_choices, difs, iter, curr_cond, dif_h = [], [], [], [], dict(), list()
-    required_fields, default_key, conditions, cond_tables = [], dict(), [], []
+    required_fields, default_key, conditions, cond_tables, quit = [], dict(), [], [], False
 
     # move from State to State using a template method.
     class StateMachine:
+        """  STATE MACHINE """
         def __init__(self, states):
             self.states = states
             self.futureState = states['Entry']
@@ -60,21 +61,27 @@ class ExperimentClass:
             self.exitState.run()
 
     def setup(self, logger, BehaviorClass, session_params):
+        self.conditions = []
         self.params = {**self.default_key, **session_params}
         self.logger = logger
         self.logger.log_session({**self.default_key, **session_params}, self.__class__.__name__)
         self.beh = BehaviorClass()
-        self.beh.setup(logger, self.params)
+        self.beh.setup(self)
         self.interface = self.beh.interface
         self.session_timer = Timer()
 
     def start(self):
-        # Initialize states
         states = dict()
-        for state in self.__class__.__subclasses__():
+        for state in self.__class__.__subclasses__():  # Initialize states
             states.update({state().__class__.__name__: state(self)})
         state_control = self.StateMachine(states)
         state_control.run()
+
+    def is_stopped(self):
+        self.quit = self.quit or self.logger.setup_status in ['stop', 'exit']
+        if self.quit and self.logger.setup_status not in ['stop', 'exit']:
+            self.logger.update_setup_info({'status': 'stop'})
+        return self.quit
 
     def make_conditions(self, stim_class, conditions):
         conditions = factorize(conditions)
@@ -83,7 +90,6 @@ class ExperimentClass:
         for cond in conditions:
             assert np.all([field in cond for field in self.required_fields])
             cond.update({**self.default_key, **cond, 'experiment_class': self.cond_tables[0]})
-        print(conditions)
         return conditions
 
     def push_conditions(self, conditions):
@@ -108,9 +114,11 @@ class ExperimentClass:
     def prepare_trial(self):
         old_cond = self.curr_cond
         self._get_new_cond()
+        if not self.curr_cond:
+            self.stop()
+            return
         global stim
         if 'stimulus_class' not in old_cond or old_cond['stimulus_class'] != self.curr_cond['stimulus_class']:
-            print(self.curr_cond)
             stim_class = importlib.import_module('Stimuli.' + self.curr_cond['stimulus_class'])
             globals().update(stim_class.__dict__)
             stim_class = eval(self.curr_cond['stimulus_class'])
@@ -150,9 +158,7 @@ class ExperimentClass:
         return np.random.choice(un_choices, 1, p=fixed_p/sum(fixed_p))
 
     def _get_new_cond(self):
-        """Get curr condition & create random block of all conditions
-        Should be called within init_trial
-        """
+        """ Get curr condition & create random block of all conditions """
         if self.params['trial_selection'] == 'fixed':
             self.curr_cond = [] if len(self.conditions) == 0 else self.conditions.pop()
         elif self.params['trial_selection'] == 'block':
@@ -181,6 +187,8 @@ class ExperimentClass:
                 self.logger.update_setup_info({'difficulty': self.cur_dif})
             elif np.size(self.beh.choice_history) and self.beh.choice_history[-1:][0] > 0: self.iter -= 1
             anti_bias = self._anti_bias(choice_h, self.un_choices[self.un_difs == self.cur_dif])
+            print(self.difs)
+            print(self.cur_dif)
             sel_conds = [i for (i, v) in zip(self.conditions, np.logical_and(self.choices == anti_bias,
                                                        self.difs == self.cur_dif)) if v]
             self.curr_cond = np.random.choice(sel_conds)
@@ -223,6 +231,65 @@ class SetupConfiguration(dj.Lookup):
 
 
 @experiment.schema
+class Aims(dj.Lookup):
+    definition = """
+    # Experimental aim
+    aim                  : varchar(16)                  # aim
+    ---
+    description=""       : varchar(2048)                # description
+    """
+
+    contents = [
+        ['2pScan'   , 'Classic 2p scan'],
+        ['intrinsic', 'intrinsic imaging'],
+        ['patching' , 'patching'],
+        ['stack'    , '2p stack'],
+        ['vessels'  , 'map of vessels'],
+        ['widefield', 'wide field imaging']
+    ]
+
+
+@experiment.schema
+class Software(dj.Lookup):
+    definition = """
+    # Acquisition program
+    software             : varchar(64)                  # program identification number
+    version              : varchar(10)                  # version of program
+    ---
+    description=""       : varchar(2048)                # description
+    """
+
+
+@experiment.schema
+class SurgeryTypes(dj.Lookup):
+    definition = """
+    # Surgery types
+    type                 : varchar(16)                  # aim
+    ---
+    description=""       : varchar(2048)                # description
+    """
+    contents = [
+        ['implant'  , 'Head implant'],
+        ['thinning' , 'Scull thinning for imaging'],
+        ['window'   , 'Scull window creation'],
+        ['injection', 'Viral injection'],
+        ['burrhole' , 'Burr hole creation'],
+    ]
+
+
+@experiment.schema
+class Surgery(dj.Manual):
+    definition = """
+    # Surgery information
+    animal_id            : smallint UNSIGNED            # animal id
+    timestamp            : timestamp                    # timestamp
+    ---
+    ->SurgeryTypes      
+    note=null            : varchar(2048)                # session notes
+    """
+
+
+@experiment.schema
 class Session(dj.Manual):
     definition = """
     # Session info
@@ -231,12 +298,19 @@ class Session(dj.Manual):
     ---
     -> SetupConfiguration
     user                 : varchar(32)
-    experiment_type=null : varchar(256)   
     setup=null           : varchar(256)                 # computer id
     session_tmst         : timestamp                    # session timestamp
-    protocol=null        : varchar(256)                 # protocol file
-    git_hash             : varchar(12)                  # short github hash
     """
+
+    class Protocol(dj.Part):
+        definition = """
+        # Protocol info
+        -> Session
+        ---
+        protocol_name        : varchar(256)                 # protocol filename
+        protocol_file        : blob                         # protocol text file
+        git_hash             : varchar(32)                  # github hash
+        """
 
     class Notes(dj.Part):
         definition = """
@@ -256,42 +330,13 @@ class Session(dj.Manual):
         timestamp=CURRENT_TIMESTAMP : timestamp  
         """
 
-
-@experiment.schema
-class Software(dj.Lookup):
-    definition = """
-    # Acquisition program
-    software             : varchar(64)                  # program identification number
-    version              : varchar(10)                  # version of program
-    ---
-    description=""       : varchar(2048)                # description
-    """
-
-
-@experiment.schema
-class Recording(dj.Manual):
-    definition = """
-    # Recording info
-    -> Session
-    ---
-    aim                      : varchar(16)               # aim of recording 
-    """
-
-    class Notes(dj.Part):
+    class Recording(dj.Part):
         definition = """
         # File session info
-        -> Recording
-        timestamp            : timestamp                 # timestamp
+        -> Session
+        -> Aims
         ---
-        note=null            : varchar(2048)             # session notes
-        """
-
-    class Files(dj.Part):
-        definition = """
-        # File session info
-        -> Recording
         -> Software
-        ---
         filename=null        : varchar(256)              # file
         source_path=null     : varchar(512)              # local path
         target_path=null     : varchar(512)              # remote drive path

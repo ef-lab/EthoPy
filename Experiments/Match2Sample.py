@@ -89,19 +89,15 @@ class PreTrial(Experiment):
         self.prepare_trial()
         self.stim.prepare(self.curr_cond)
         self.beh.prepare(self.curr_cond)
-
         super().entry()
-        if not self.curr_cond: self.logger.update_setup_info({'status': 'stop'})
 
     def run(self):
-        if self.beh.is_ready(self.curr_cond['init_ready'], self.start_time):
+        if not self.is_stopped() and self.beh.is_ready(self.curr_cond['init_ready'], self.start_time):
             self.resp_ready = True
         self.logger.ping()
 
     def next(self):
-        if not self.curr_cond:  # if run out of conditions exit
-            return 'Exit'
-        elif self.logger.setup_status in ['stop', 'exit']:
+        if self.is_stopped():
             return 'Exit'
         elif self.resp_ready:
             return 'Cue'
@@ -128,7 +124,7 @@ class Cue(Experiment):
             return 'Abort'
         elif self.state_timer.elapsed_time() > self.curr_cond['cue_duration']:
             return 'Abort'
-        elif self.logger.setup_status in ['stop', 'exit']:  # if wake up then update session
+        elif self.is_stopped():  # if wake up then update session
             return 'Exit'
         else:
             return 'Cue'
@@ -148,7 +144,7 @@ class Delay(Experiment):
             return 'Response'
         elif self.response:
             return 'Abort'
-        elif self.logger.setup_status in ['stop', 'exit']:
+        elif self.is_stopped():
             return 'Exit'
         else:
             return 'Delay'
@@ -175,7 +171,7 @@ class Response(Experiment):
             return 'Punish'
         elif self.state_timer.elapsed_time() > self.curr_cond['response_duration']:      # timed out
             return 'Abort'
-        elif self.logger.setup_status in ['stop', 'exit']:
+        elif self.is_stopped():
             return 'Exit'
         else:
             return 'Response'
@@ -211,7 +207,7 @@ class Reward(Experiment):
     def next(self):
         if self.rewarded or self.state_timer.elapsed_time() >= self.curr_cond['reward_duration']:
             return 'InterTrial'
-        elif self.logger.setup_status in ['stop', 'exit']:
+        elif self.is_stopped():
             return 'Exit'
         else:
             return 'Reward'
@@ -231,7 +227,7 @@ class Punish(Experiment):
     def next(self):
         if self.state_timer.elapsed_time() >= self.punish_period:
             return 'InterTrial'
-        elif self.logger.setup_status in ['stop', 'exit']:
+        elif self.is_stopped():
             return 'Exit'
         else:
             return 'Punish'
@@ -249,7 +245,7 @@ class InterTrial(Experiment):
             self.state_timer.start()
 
     def next(self):
-        if self.logger.setup_status in ['stop', 'exit']:
+        if self.is_stopped():
             return 'Exit'
         elif self.beh.is_sleep_time() and not self.beh.is_hydrated(self.params['min_reward']):
             return 'Hydrate'
@@ -269,7 +265,7 @@ class Hydrate(Experiment):
         self.logger.ping()
 
     def next(self):
-        if self.logger.setup_status in ['stop', 'exit']:  # if wake up then update session
+        if self.is_stopped():  # if wake up then update session
             return 'Exit'
         elif self.beh.is_hydrated(self.params['min_reward']) or not self.beh.is_sleep_time():
             return 'Offtime'
@@ -289,7 +285,7 @@ class Offtime(Experiment):
         time.sleep(1)
 
     def next(self):
-        if self.logger.setup_status in ['stop', 'exit']:  # if wake up then update session
+        if self.is_stopped():  # if wake up then update session
             return 'Exit'
         elif self.logger.setup_status == 'wakeup' and not self.beh.is_sleep_time():
             return 'PreTrial'
