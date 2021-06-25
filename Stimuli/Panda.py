@@ -5,7 +5,17 @@ from direct.showbase.ShowBase import ShowBase
 from direct.task import Task
 import panda3d.core as core
 from utils.Timer import *
+#from pandac.PandaModules import *
+#ConfigVariableBool('fullscreen').setValue(1)
+from panda3d.core import ConfigVariableManager
 
+
+from pandac.PandaModules import loadPrcFileData
+loadPrcFileData('', 'fullscreen 0')
+loadPrcFileData('', 'undecorated 1')
+loadPrcFileData('', 'win-origin 1860 -1')
+loadPrcFileData('', 'win-size 1000 1000')
+loadPrcFileData('', 'win-unexposed-draw 1')
 
 @stimulus.schema
 class Objects(dj.Lookup):
@@ -18,9 +28,14 @@ class Objects(dj.Lookup):
     file_name=null       : varchar(255)   
     """
 
+    def store(self, obj_id, file_name, description=''):
+        tuple = dict(obj_id=obj_id, description=description,
+                     object=np.fromfile(file_name, dtype=np.int8), file_name=file_name)
+        self.insert1(tuple, replace=True)
+
 
 @stimulus.schema
-class Panda(Stimulus, ShowBase, dj.Manual):
+class Panda(Stimulus, dj.Manual):
     definition = """
     # This class handles the presentation of Objects with Panda3D
     -> StimCondition
@@ -74,8 +89,8 @@ class Panda(Stimulus, ShowBase, dj.Manual):
                    'obj_period': 'Trial'}
 
     def setup(self, logger, conditions):
-        #cls = self.__class__
-        #self.__class__ = cls.__class__(cls.__name__ + "ShowBase", (cls, ShowBase), {})
+        cls = self.__class__
+        self.__class__ = cls.__class__(cls.__name__ + "ShowBase", (cls, ShowBase), {})
 
         self.logger = logger
         self.isrunning = False
@@ -83,7 +98,6 @@ class Panda(Stimulus, ShowBase, dj.Manual):
 
         # setup parameters
         self.path = os.path.dirname(os.path.abspath(__file__)) + '/objects/'     # default path to copy local stimuli
-        #self.set_intensity(self.params['intensity'])
 
         # store local copy of files
         if not os.path.isdir(self.path):  # create path if necessary
@@ -99,10 +113,26 @@ class Panda(Stimulus, ShowBase, dj.Manual):
                     print('Saving %s ...' % filename)
                     object_info['object'].tofile(filename)
 
-        ShowBase.__init__(self, fStartDirect=True, windowType=None)
-        props = core.WindowProperties()
-        props.setCursorHidden(True)
-        self.win.requestProperties(props)
+        print('Starting Showbase')
+        time.sleep(2)
+        ShowBase.__init__(self, fStartDirect=True, windowType=False)
+        print('Done!')
+        time.sleep(2)
+        #props = core.WindowProperties()
+        #props.setFullscreen(True)
+        #props.setSize(2560, 1840)
+        #props.setUndecorated(True)
+        #props.setCursorHidden(True)
+        #props.set_origin(1680,0)
+        #self.win.requestProperties(props)
+
+        self.openMainWindow()
+        wp = core.WindowProperties()
+        wp.setFullscreen(1)
+        self.win.requestProperties(wp)
+        self.graphicsEngine.openWindows()
+
+        #self.graphicsEngine.openWindows()
         self.set_background_color(0, 0, 0)
         self.disableMouse()
 
@@ -165,7 +195,7 @@ class Panda(Stimulus, ShowBase, dj.Manual):
 
     def present(self):
         self.flip()
-        if 'stim_duration' in self.curr_cond and self.curr_cond['stim_duration'] < self.timer.elapsed_time():
+        if 'obj_dur' in self.curr_cond and self.curr_cond['obj_dur'] < self.timer.elapsed_time():
             self.isrunning = False
 
     def flip(self, n=1):
@@ -196,6 +226,7 @@ class Panda(Stimulus, ShowBase, dj.Manual):
 
     def exit(self):
         self.shutdown()
+        self.graphicsEngine.removeAllWindows()
         self.destroy()
 
     def get_cond(self, cond_name, idx=0):

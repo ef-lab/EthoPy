@@ -48,12 +48,14 @@ class Entry(Experiment):
 class PreTrial(Experiment):
     def entry(self):
         self.prepare_trial()
-        self.stim.prepare(self.curr_cond)
-        if not self.stim.curr_cond: self.logger.update_setup_info({'status': 'stop'})
+        if not self.is_stopped():
+            self.stim.prepare(self.curr_cond)
+        else:
+            self.logger.update_setup_info({'status': 'stop'})
         super().entry()
 
     def next(self):
-        if not self.stim.curr_cond:  # if run out of conditions exit
+        if self.is_stopped():  # if run out of conditions exit
             return 'Exit'
         else:
             return 'Trial'
@@ -75,21 +77,17 @@ class Trial(Experiment):
 
     def exit(self):
         self.stim.stop()
-        self.logger.log_trial()
         self.logger.ping()
 
 
 class InterTrial(Experiment):
     def next(self):
-        if self.logger.setup_status in ['stop', 'exit']:
+        if self.is_stopped():
             return 'Exit'
         elif self.state_timer.elapsed_time() >= self.stim.curr_cond['intertrial_duration']:
             return 'PreTrial'
         else:
             return 'InterTrial'
-
-    def exit(self):
-        self.updateStatus()
 
 
 class Exit(Experiment):

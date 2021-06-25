@@ -36,7 +36,7 @@ class State:
 class ExperimentClass:
     """  Parent Experiment """
     curr_state, curr_trial, total_reward, cur_dif, flip_count, states, stim = '', 0, 0, 0, 0, dict(), []
-    rew_probe, un_choices, difs, iter, curr_cond, dif_h = [], [], [], [], dict(), list()
+    rew_probe, un_choices, difs, iter, curr_cond, dif_h, stims = [], [], [], [], dict(), [], dict()
     required_fields, default_key, conditions, cond_tables, quit = [], dict(), [], [], False
 
     # move from State to State using a template method.
@@ -61,7 +61,7 @@ class ExperimentClass:
             self.exitState.run()
 
     def setup(self, logger, BehaviorClass, session_params):
-        self.conditions = []
+        self.conditions, self.quit, self.curr_cond, self.dif_h, self.stims = [], False, dict(), [], dict()
         self.params = {**self.default_key, **session_params}
         self.logger = logger
         self.logger.log_session({**self.default_key, **session_params}, self.__class__.__name__)
@@ -95,8 +95,10 @@ class ExperimentClass:
     def push_conditions(self, conditions):
         self.conditions += self._log_conditions(conditions, condition_tables=['Condition'] + self.cond_tables, priority=2)
         resp_cond = self.params['resp_cond'] if 'resp_cond' in self.params else 'response_port'
-        for stim_class in np.unique([cond['stimulus_class'] for cond in self.conditions]):
-            importlib.import_module('Stimuli.' + stim_class)
+        for stim_class_name in np.unique([cond['stimulus_class'] for cond in self.conditions]):
+            stim = importlib.import_module('Stimuli.' + stim_class_name)
+            globals().update(stim.__dict__)
+            self.stims[stim_class_name] = eval(stim_class_name)()
         if np.all(['difficulty' in cond for cond in conditions]):
             self.difs = np.array([cond['difficulty'] for cond in self.conditions])
             diff_flag = True
@@ -117,12 +119,9 @@ class ExperimentClass:
         if not self.curr_cond:
             self.stop()
             return
-        global stim
         if 'stimulus_class' not in old_cond or old_cond['stimulus_class'] != self.curr_cond['stimulus_class']:
-            stim_class = importlib.import_module('Stimuli.' + self.curr_cond['stimulus_class'])
-            globals().update(stim_class.__dict__)
-            stim_class = eval(self.curr_cond['stimulus_class'])
-            self.stim = stim_class()
+            if 'stimulus_class' in old_cond: self.stim.exit()
+            self.stim = self.stims[self.curr_cond['stimulus_class']]
             self.stim.setup(self.logger, self.conditions)
         self.curr_trial += 1
         self.logger.update_trial_idx(self.curr_trial)
@@ -187,8 +186,6 @@ class ExperimentClass:
                 self.logger.update_setup_info({'difficulty': self.cur_dif})
             elif np.size(self.beh.choice_history) and self.beh.choice_history[-1:][0] > 0: self.iter -= 1
             anti_bias = self._anti_bias(choice_h, self.un_choices[self.un_difs == self.cur_dif])
-            print(self.difs)
-            print(self.cur_dif)
             sel_conds = [i for (i, v) in zip(self.conditions, np.logical_and(self.choices == anti_bias,
                                                        self.difs == self.cur_dif)) if v]
             self.curr_cond = np.random.choice(sel_conds)
