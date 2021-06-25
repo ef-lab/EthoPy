@@ -116,7 +116,7 @@ class Behavior:
         self.reward_history = list()  # History term for performance calculation
         self.licked_probe = 0
         self.reward_amount = dict()
-        self.interface.load_calibration()
+        if self.interface: self.interface.load_calibration()
 
     def is_ready(self, init_duration, since=0):
         return True, 0

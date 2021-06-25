@@ -52,7 +52,14 @@ class Logger:
             ignore, skip = (False, False) if item.replace else (True, True)
             table = rgetattr(self._schemata[item.schema], item.table)
             self.thread_lock.acquire()
-            table.insert1(item.tuple, ignore_extra_fields=ignore, skip_duplicates=skip, replace=item.replace)
+            try:
+                table.insert1(item.tuple, ignore_extra_fields=ignore, skip_duplicates=skip, replace=item.replace)
+            except Exception as e:
+                print('Failed to insert:')
+                print(item.tuple)
+                print('With error:')
+                print(e)
+
             self.thread_lock.release()
             if item.block: self.queue.task_done()
 

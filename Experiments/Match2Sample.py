@@ -77,6 +77,9 @@ class Experiment(State, ExperimentClass):
 
 
 class Entry(Experiment):
+    def entry(self):
+        pass
+
     def next(self):
         if self.beh.is_sleep_time():
             return 'Offtime'

@@ -13,12 +13,12 @@ interp = lambda x: interpolate.splev(np.linspace(0, len(x), 100),
 # define session parameters
 session_params = {
     'start_time'            : '00:00:00',
-    'stop_time'             : '23:45:00',
+    'stop_time'             : '23:59:00',
     'setup_conf_idx'        : 1,
 }
 
 exp = Experiment()
-exp.setup(logger, MultiPort, session_params)
+exp.setup(logger, DummyPorts, session_params)
 
 # define environment conditions
 base_key = {'cue_ready'             : 100,

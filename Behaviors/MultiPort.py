@@ -36,7 +36,7 @@ class MultiPort(Behavior, dj.Manual):
     def setup(self, exp):
         self.interface = RPProbe(exp=exp)
         super(MultiPort, self).setup(exp)
-        #self.interface.setup_touch_exit()
+        self.interface.setup_touch_exit()
 
     def is_licking(self, since=0):
         licked_port, tmst = self.interface.get_last_lick()
@@ -72,7 +72,7 @@ class MultiPort(Behavior, dj.Manual):
 
     def exit(self):
         self.interface.cleanup()
-        #self.interface.ts.stop()
+        self.interface.ts.stop()
 
     def prepare(self, condition):
         self.curr_cond = condition
@@ -84,7 +84,7 @@ class MultiPort(Behavior, dj.Manual):
 
 
 class DummyPorts(MultiPort):
-    def setup(self, logger, params):
+    def setup(self, exp):
         import pygame
         self.lick_timer = Timer()
         self.lick_timer.start()
@@ -94,10 +94,11 @@ class DummyPorts(MultiPort):
         self.interface = 0
         pygame.init()
         #self.screen = pygame.display.set_mode((800, 480))
-        self.params = params
+        self.params = exp.params
         self.resp_timer = Timer()
         self.resp_timer.start()
-        self.logger = logger
+        self.logger = exp.logger
+        self.exp = exp
         self.rew_port = 0
         self.choices = np.array(np.empty(0))
         self.choice_history = list()  # History term for bias calculation
