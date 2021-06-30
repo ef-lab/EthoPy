@@ -92,7 +92,6 @@ class InterTrial(Experiment):
 
 class Exit(Experiment):
     def run(self):
-        self.logger.update_setup_info({'status': 'stop'})
         self.beh.exit()
         self.stim.exit()
         self.logger.ping(0)

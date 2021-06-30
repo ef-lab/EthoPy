@@ -43,20 +43,21 @@ class Bar(Stimulus, dj.Manual):
                     'flatness_correction'   : 1,
                     'intertrial_duration'   : 0}
 
-    def setup(self, logger, conditions):
-        self.conditions = conditions
-        self.logger = logger
+    def setup(self, exp):
+        self.conditions = exp.conditions
+        self.logger = exp.logger
+        self.exp = exp
 
         # setup parameters
         self.monitor_size, self.monitor_aspect, self.monitor_distance = self.logger.get(table='SetupConfiguration.Screen',
-                                                                         key=self.conditions[0],
+                                                                         key=self.exp.params,
                                                                          fields=('monitor_size', 'monitor_aspect',
                                                                                  'monitor_distance'))
-        self.monitor_distance = self.monitor_distance;
+        self.monitor_distance = self.monitor_distance
         ymonsize = self.monitor_size * 2.54 / np.sqrt(1 + self.monitor_aspect ** 2)  # cm Y monitor size
         monSize = [ymonsize * self.monitor_aspect, ymonsize]
-        y_res = int(self.conditions[0]['max_res'] / self.monitor_aspect)
-        self.monRes = [self.conditions[0]['max_res'], int(y_res + np.ceil(y_res % 2))]
+        y_res = int(self.exp.params['max_res'] / self.monitor_aspect)
+        self.monRes = [self.exp.params['max_res'], int(y_res + np.ceil(y_res % 2))]
         self.FoV = np.arctan(np.array(monSize) / 2 / self.monitor_distance) * 2 * 180 / np.pi  # in degrees
         self.FoV[1] = self.FoV[0] / self.monitor_aspect
         self.color = [0, 0, 0]
@@ -75,7 +76,6 @@ class Bar(Stimulus, dj.Manual):
             self.isrunning = False
             return
         self.isrunning = True
-        #self.timer.start()
         self.curr_frame = 1
 
         # initialize hor/ver gradients

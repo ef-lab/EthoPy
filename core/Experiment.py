@@ -2,7 +2,7 @@ import datajoint as dj
 import numpy as np
 from utils.helper_functions import *
 from utils.Timer import *
-import importlib
+import importlib, itertools
 
 experiment = dj.create_virtual_module('experiment', 'test_experiments', create_tables=True)
 stimulus = dj.create_virtual_module('stimulus', 'test_stimuli', create_tables=True)
@@ -83,22 +83,33 @@ class ExperimentClass:
             self.logger.update_setup_info({'status': 'stop'})
         return self.quit
 
-    def make_conditions(self, stim_class, conditions):
+    def make_conditions(self, conditions):
+        if 'stimulus' in conditions:
+            stim_conditions = conditions['stimulus']
+            periods = np.array([key['trial_period'] for key in stim_conditions])
+            idx = np.array(list(range(len(periods))))
+            res = ([idx[periods == un] for un in np.unique(periods)])
+            conditions['stimulus'] = []
+            for idx in list(itertools.product(res[0], res[1])):
+                conditions['stimulus'].append({periods[idx[0]]: stim_conditions[idx[0]],
+                                               periods[idx[1]]: stim_conditions[idx[1]]})
+                conditions['stimulus_class'] = ''.join(np.unique([stim_conditions[idx[0]]['stimulus_class'],
+                                                                  stim_conditions[idx[1]]['stimulus_class']]))
         conditions = factorize(conditions)
-        conditions = self._log_conditions(**stim_class().make_conditions(conditions))
-        conditions = self._log_conditions(**self.beh.make_conditions(conditions))
+        conditions = self.log_conditions(**self.beh.make_conditions(conditions))
         for cond in conditions:
             assert np.all([field in cond for field in self.required_fields])
             cond.update({**self.default_key, **cond, 'experiment_class': self.cond_tables[0]})
         return conditions
 
     def push_conditions(self, conditions):
-        self.conditions += self._log_conditions(conditions, condition_tables=['Condition'] + self.cond_tables, priority=2)
+        self.conditions += self.log_conditions(conditions, condition_tables=['Condition'] + self.cond_tables, priority=2)
         resp_cond = self.params['resp_cond'] if 'resp_cond' in self.params else 'response_port'
-        for stim_class_name in np.unique([cond['stimulus_class'] for cond in self.conditions]):
-            stim = importlib.import_module('Stimuli.' + stim_class_name)
-            globals().update(stim.__dict__)
-            self.stims[stim_class_name] = eval(stim_class_name)()
+        #for stim_class_name in np.unique([cond['stimulus_class'] for cond in self.conditions]):
+            #stim = importlib.import_module('Stimuli.' + stim_class_name)
+            #globals().update(stim.__dict__)
+            #self.stims[stim_class_name] = eval(stim_class_name)()
+            #self.stims[stim_class_name].setup(self)
         if np.all(['difficulty' in cond for cond in conditions]):
             self.difs = np.array([cond['difficulty'] for cond in self.conditions])
             diff_flag = True
@@ -117,12 +128,12 @@ class ExperimentClass:
         old_cond = self.curr_cond
         self._get_new_cond()
         if not self.curr_cond:
-            self.stop()
+            self.quit=True
             return
         if 'stimulus_class' not in old_cond or old_cond['stimulus_class'] != self.curr_cond['stimulus_class']:
-            if 'stimulus_class' in old_cond: self.stim.exit()
+            #if 'stimulus_class' in old_cond: self.stim.exit()
             self.stim = self.stims[self.curr_cond['stimulus_class']]
-            self.stim.setup(self.logger, self.conditions)
+
         self.curr_trial += 1
         self.logger.update_trial_idx(self.curr_trial)
         self.trial_start = self.logger.logger_timer.elapsed_time()
@@ -130,23 +141,24 @@ class ExperimentClass:
 
     def name(self): return type(self).__name__
 
-    def _log_conditions(self, conditions, condition_tables=['Condition'], schema='experiment', hsh='cond_hash', priority=5):
+    def log_conditions(self, conditions, condition_tables=['Condition'], schema='experiment', hsh='cond_hash', priority=5):
         fields, hash_dict = list(), dict()
         for ctable in condition_tables:
             table = rgetattr(eval(schema), ctable)
             fields += list(table().heading.names)
-        for condition in conditions:
-            key = {sel_key: condition[sel_key] for sel_key in fields if sel_key != hsh}
-            condition.update({hsh: make_hash(key)})
-            hash_dict[condition[hsh]] = condition[hsh]
+        for cond in conditions:
+            key = {sel_key: cond[sel_key] for sel_key in fields if sel_key != hsh}
+            cond.update({hsh: make_hash(key)})
+            hash_dict[cond[hsh]] = cond[hsh]
             for ctable in condition_tables:  # insert dependant condition tables
                 priority += 1
                 core = [field for field in rgetattr(eval(schema), ctable).primary_key if field != hsh]
-                if core and hasattr(condition[core[0]], '__iter__'):
-                    for idx, pcond in enumerate(condition[core[0]]):
-                        cond_key = {k: v if type(v) in [int, float, str] else v[idx] for k, v in condition.items()}
+                fields = [field for field in rgetattr(eval(schema), ctable).heading.names]
+                if core and hasattr(cond[core[0]], '__iter__'):
+                    for idx, pcond in enumerate(cond[core[0]]):
+                        cond_key = {k: cond[k] if type(cond[k]) in [int, float, str] else cond[k][idx] for k in fields}
                         self.logger.put(table=ctable, tuple=cond_key, schema=schema, priority=priority)
-                else: self.logger.put(table=ctable, tuple=condition.copy(), schema=schema, priority=priority)
+                else: self.logger.put(table=ctable, tuple=cond.copy(), schema=schema, priority=priority)
         return conditions
 
     def _anti_bias(self, choice_h, un_choices):

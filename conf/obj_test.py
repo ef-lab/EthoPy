@@ -21,45 +21,64 @@ exp = Experiment()
 exp.setup(logger, DummyPorts, session_params)
 
 # define environment conditions
-base_key = {'cue_ready'             : 100,
+beh_key = {'cue_ready'              : 100,
             'cue_duration'          : 240000,
             'delay_duration'        : 300,
             'response_duration'     : 5000,
             'reward_duration'       : 2000,
             'punish_duration'       : 5000,
-            'obj_dur'               : 240000,
-            'obj_delay'             : 0,
             'reward_amount'         : 6}
 
 np.random.seed(0)
 conditions = []
 
 # two static objects (1 target + 1 distractor) multiple delays & rotation
-obj_combs = [[2, 3, 2], [2, 2, 3], [3, 3, 2], [3, 2, 3]]
+cue_obj = [2, 2, 3, 3]
+resp_obj = [[3, 2], [2, 3], [3, 2], [2, 3]]
 rew_prob = [2, 1, 1, 2]
 reps = 2
-for idx, obj_comb in enumerate(obj_combs):
-    for irep in range(0, reps):
+
+for irep in range(0, reps):
+    for idx, obj_comb in enumerate(resp_obj):
+
+        # environement & light
+        dir1_f = lambda: np.array([0, -20, 0]) + np.random.randn(3) * 30
+        dir2_f = lambda: np.array([180, -20, 0]) + np.random.randn(3) * 30
+
+        # object parameters
         rot_f = lambda: interp((np.random.rand(30)-.5) * 250)
         tilt_f = lambda: interp(np.random.rand(30)*30)
         yaw_f = lambda: interp(np.random.rand(20)*10)
-        dir1_f = lambda: np.array([0, -20, 0]) + np.random.randn(3)*30
-        dir2_f = lambda: np.array([180, -20, 0]) + np.random.randn(3)*30
-        key =  {**base_key,
-                'difficulty'    : 0,
-                'obj_id'        : [obj_comb],
-                'reward_port'   : rew_prob[idx],
-                'response_port' : rew_prob[idx],
-                'obj_pos_x'     : [[0, -.25, .25]],
-                'obj_pos_y'     : 0,
-                'obj_mag'       : .5,
-                'obj_rot'       : [[rot_f(), rot_f(), rot_f()]],
-                'obj_tilt'      : 0,
-                'obj_yaw'       : 0,
-                'obj_period'    : [['Cue', 'Response', 'Response']],
-                'direct1_dir'   : [dir1_f()],
-                'direct2_dir'   : [dir2_f()]}
-        conditions += exp.make_conditions(Panda, key)
+
+        stim_conds = Panda().make_conditions(exp,
+           {'trial_period'  : 'Cue',
+            'obj_id'        : cue_obj[idx],
+            'obj_dur'       : 240000,
+            'obj_pos_x'     : 0,
+            'obj_mag'       : .5,
+            'obj_rot'       : [[rot_f()]],
+            'obj_tilt'      : 0,
+            'obj_yaw'       : 0,
+            'light_idx'     : [[1, 2]],
+            'light_dir'     : [[dir1_f(), dir2_f()]]})
+
+        stim_conds += Panda().make_conditions(exp,
+           {'trial_period'  : 'Response',
+            'obj_id'        : [obj_comb],
+            'obj_dur'       : 5000,
+            'obj_pos_x'     : [[-.25, .25]],
+            'obj_mag'       : .5,
+            'obj_rot'       : [[rot_f(), rot_f()]],
+            'obj_tilt'      : 0,
+            'obj_yaw'       : 0,
+            'light_idx'     : [[1, 2]],
+            'light_dir'     : [[dir1_f(), dir2_f()]]})
+
+        conditions += exp.make_conditions({**beh_key,
+                                           'stimulus'     : stim_conds,
+                                           'difficulty'   : 0,
+                                           'reward_port'  : rew_prob[idx],
+                                           'response_port': rew_prob[idx]})
 
 # run experiments
 exp.push_conditions(conditions)

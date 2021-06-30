@@ -96,3 +96,7 @@ def make_hash(cond):
 def rgetattr(obj, attr, *args):
     def _getattr(obj, attr): return getattr(obj, attr, *args)
     return functools.reduce(_getattr, [obj] + attr.split('.'))
+
+
+def iterable(v):
+    return np.array([v]) if type(v) not in [np.array, np.ndarray, list, tuple] else v

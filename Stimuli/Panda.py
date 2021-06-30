@@ -5,17 +5,7 @@ from direct.showbase.ShowBase import ShowBase
 from direct.task import Task
 import panda3d.core as core
 from utils.Timer import *
-#from pandac.PandaModules import *
-#ConfigVariableBool('fullscreen').setValue(1)
-from panda3d.core import ConfigVariableManager
 
-
-from pandac.PandaModules import loadPrcFileData
-loadPrcFileData('', 'fullscreen 0')
-loadPrcFileData('', 'undecorated 1')
-loadPrcFileData('', 'win-origin 1860 -1')
-loadPrcFileData('', 'win-size 1000 1000')
-loadPrcFileData('', 'win-unexposed-draw 1')
 
 @stimulus.schema
 class Objects(dj.Lookup):
@@ -46,7 +36,6 @@ class Panda(Stimulus, dj.Manual):
         # object conditions
         -> Panda
         -> Objects
-        obj_period=Trial      : varchar(16)
         ---
         obj_pos_x             : blob
         obj_pos_y             : blob
@@ -65,74 +54,59 @@ class Panda(Stimulus, dj.Manual):
         ---
         background_color      : tinyblob
         ambient_color         : tinyblob
-        direct1_color         : tinyblob
-        direct1_dir           : tinyblob
-        direct2_color         : tinyblob
-        direct2_dir           : tinyblob
         """
 
-    cond_tables = ['Panda', 'Panda.Object', 'Panda.Environment']
+    class Light(dj.Part):
+        definition = """
+        # object conditions
+        -> Panda
+        light_idx             : tinyint
+        ---
+        light_color           : tinyblob
+        light_dir             : tinyblob
+        """
+
+    cond_tables = ['Panda', 'Panda.Object', 'Panda.Environment', 'Panda.Light']
     required_fields = ['obj_id', 'obj_dur']
-    default_key = {'background_color': (0.1, 0.1, 0.1),
+    default_key = {'background_color': (0, 0, 0),
                    'ambient_color': (0.1, 0.1, 0.1, 1),
-                   'direct1_color': (0.7, 0.7, 0.7, 1),
-                   'direct1_dir': (0, -20, 0),
-                   'direct2_color': (0.2, 0.2, 0.2, 1),
-                   'direct2_dir': (180, -20, 0),
+                   'light_idx': [[1, 2]],
+                   'light_color': (np.array([0.7, 0.7, 0.7, 1]), np.array([0.2, 0.2, 0.2, 1])),
+                   'light_dir': (np.array([0, -20, 0]), np.array([180, -20, 0])),
                    'obj_pos_x': 0,
                    'obj_pos_y': 0,
                    'obj_mag': .5,
                    'obj_rot': 0,
                    'obj_tilt': 0,
                    'obj_yaw': 0,
-                   'obj_delay': 0,
-                   'obj_period': 'Trial'}
+                   'obj_delay': 0}
 
-    def setup(self, logger, conditions):
+    object_files = dict()
+
+    def setup(self, exp):
+        self.logger = exp.logger
+        self.exp = exp
+
         cls = self.__class__
         self.__class__ = cls.__class__(cls.__name__ + "ShowBase", (cls, ShowBase), {})
 
-        self.logger = logger
         self.isrunning = False
         self.timer = Timer()
 
-        # setup parameters
-        self.path = os.path.dirname(os.path.abspath(__file__)) + '/objects/'     # default path to copy local stimuli
-
-        # store local copy of files
-        if not os.path.isdir(self.path):  # create path if necessary
-            os.makedirs(self.path)
-        self.object_files = dict()
-        for cond in conditions:
-            if not 'obj_id' in cond: continue
-            for obj_id in cond['obj_id']:
-                object_info = (Objects() & ('obj_id=%d' % obj_id)).fetch1()
-                filename = self.path + object_info['file_name']
-                self.object_files[obj_id] = filename
-                if not os.path.isfile(filename):
-                    print('Saving %s ...' % filename)
-                    object_info['object'].tofile(filename)
-
-        print('Starting Showbase')
-        time.sleep(2)
         ShowBase.__init__(self, fStartDirect=True, windowType=False)
-        print('Done!')
-        time.sleep(2)
-        #props = core.WindowProperties()
-        #props.setFullscreen(True)
-        #props.setSize(2560, 1840)
-        #props.setUndecorated(True)
-        #props.setCursorHidden(True)
-        #props.set_origin(1680,0)
-        #self.win.requestProperties(props)
+        self.props = core.WindowProperties()
 
-        self.openMainWindow()
-        wp = core.WindowProperties()
-        wp.setFullscreen(1)
-        self.win.requestProperties(wp)
+        self.props.setSize(self.pipe.getDisplayWidth(), self.pipe.getDisplayHeight())
+        #self.props.setFullscreen(True)
+        self.props.setCursorHidden(True)
+        self.win.requestProperties(self.props)
+
+        info = self.pipe.getDisplayInformation()
+        #print(info.getTotalDisplayModes())
+        #print(info.getDisplayModeWidth(0), info.getDisplayModeHeight(0))
+        #print(self.pipe.getDisplayWidth(), self.pipe.getDisplayHeight())
+
         self.graphicsEngine.openWindows()
-
-        #self.graphicsEngine.openWindows()
         self.set_background_color(0, 0, 0)
         self.disableMouse()
 
@@ -141,54 +115,35 @@ class Panda(Stimulus, dj.Manual):
         self.ambientLightNP = self.render.attachNewNode(self.ambientLight)
         self.render.setLight(self.ambientLightNP)
 
-        # Directional light 01
-        self.directionalLight1 = core.DirectionalLight('directionalLight1')
-        self.directionalLight1NP = self.render.attachNewNode(self.directionalLight1)
-        self.render.setLight(self.directionalLight1NP)
-
-        # Directional light 02
-        self.directionalLight2 = core.DirectionalLight('directionalLight2')
-        self.directionalLight2NP = self.render.attachNewNode(self.directionalLight2)
-        self.render.setLight(self.directionalLight2NP)
-
-    def prepare(self, curr_cond):
-        self.curr_cond = curr_cond
+    def prepare(self, curr_cond, period='Trial'):
+        self.curr_cond = curr_cond['stimulus'][period]
         if not self.curr_cond:
             self.isrunning = False
         self.background_color = self.curr_cond['background_color']
 
         # set background color
-        self.set_background_color(self.curr_cond['background_color'][0],
-                                  self.curr_cond['background_color'][1],
-                                  self.curr_cond['background_color'][2])
+        self.set_background_color(*self.curr_cond['background_color'])
 
         # Set Ambient Light
         self.ambientLight.setColor(self.curr_cond['ambient_color'])
 
-        # Directional light 01
-        self.directionalLight1.setColor(self.curr_cond['direct1_color'])
-        self.directionalLight1NP.setHpr(self.curr_cond['direct1_dir'][0],
-                                        self.curr_cond['direct1_dir'][1],
-                                        self.curr_cond['direct1_dir'][2])
-        # Directional light 02
-        self.directionalLight2.setColor(self.curr_cond['direct2_color'])
-        self.directionalLight2NP.setHpr(self.curr_cond['direct2_dir'][0],
-                                        self.curr_cond['direct2_dir'][1],
-                                        self.curr_cond['direct2_dir'][2])
-        self.flip(2)
+        # Set Directional Light
+        self.lights = dict();  self.lightsNP = dict()
+        for idx, light_idx in enumerate(iterable(self.curr_cond['light_idx'])):
+            self.lights[idx] = core.DirectionalLight('directionalLight_%d' % idx)
+            self.lightsNP[idx] = self.render.attachNewNode(self.lights[idx])
+            self.render.setLight(self.lightsNP[idx])
+            self.lights[idx].setColor(tuple(self.curr_cond['light_color'][idx]))
+            self.lightsNP[idx].setHpr(*self.curr_cond['light_dir'][idx])
 
-    def start(self, period=None):
+        # Set Object tasks
         self.objects = dict()
-        if period:
-            selected_obj = [p == period for p in self.curr_cond['obj_period']]
-        else:
-            period = 'Trial'
-            selected_obj = [True for p in self.curr_cond['obj_id']]
-        for idx, obj in enumerate(self.curr_cond['obj_id']):
-            if not selected_obj[idx]:
-                continue
+        for idx, obj in enumerate(iterable(self.curr_cond['obj_id'])):
             self.objects[idx] = Agent(self, self.get_cond('obj_', idx))
-        self.logger.log('StimCondition.Trial', dict(period=period,stim_hash=self.curr_cond['stim_hash']), schema='stimulus')
+
+        self.flip(2)
+        self.logger.log('StimCondition.Trial', dict(period=period, stim_hash=self.curr_cond['stim_hash']),
+                        schema='stimulus')
         if not self.isrunning:
             self.timer.start()
             self.isrunning = True
@@ -205,7 +160,10 @@ class Panda(Stimulus, dj.Manual):
     def stop(self):
         for idx, obj in self.objects.items():
             obj.remove(obj.task)
-            self.flip(2) # clear double buffer
+        for idx, light in self.lights.items():
+            self.render.clearLight(self.lightsNP[idx])
+
+        self.flip(2) # clear double buffer
         self.isrunning = False
 
     def punish_stim(self):
@@ -216,7 +174,7 @@ class Panda(Stimulus, dj.Manual):
 
     def unshow(self, color=None):
         if not color: color = self.background_color
-        self.set_background_color(color[0], color[1], color[2])
+        self.set_background_color(*color)
         self.flip(2)
 
     def set_intensity(self, intensity=None):
@@ -225,13 +183,31 @@ class Panda(Stimulus, dj.Manual):
         os.system(cmd)
 
     def exit(self):
-        self.shutdown()
-        self.graphicsEngine.removeAllWindows()
         self.destroy()
 
     def get_cond(self, cond_name, idx=0):
         return {k.split(cond_name, 1)[1]: v if type(v) is int or type(v) is float else v[idx]
                 for k, v in self.curr_cond.items() if k.startswith(cond_name)}
+
+    def make_conditions(self, exp, conditions):
+        conditions = super().make_conditions(exp, conditions)
+
+        # setup parameters
+        self.path = os.path.dirname(os.path.abspath(__file__)) + '/objects/'     # default path to copy local stimuli
+
+        # store local copy of files
+        if not os.path.isdir(self.path):  # create path if necessary
+            os.makedirs(self.path)
+        for cond in conditions:
+            if not 'obj_id' in cond: continue
+            for obj_id in iterable(cond['obj_id']):
+                object_info = (Objects() & ('obj_id=%d' % obj_id)).fetch1()
+                filename = self.path + object_info['file_name']
+                self.object_files[obj_id] = filename
+                if not os.path.isfile(filename):
+                    print('Saving %s ...' % filename)
+                    object_info['object'].tofile(filename)
+        return conditions
 
 
 class Agent(Panda):
@@ -269,6 +245,7 @@ class Agent(Panda):
         self.model.removeNode()
 
     def time_fun(self, param, fun=lambda x, t: x):
-        param = np.array([param]) if type(param) != np.ndarray else param
+        param = (iterable(param))
         idx = np.linspace(0, self.duration/1000, param.size)
         return lambda t: np.interp(t, idx, fun(param, t))
+
