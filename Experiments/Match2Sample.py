@@ -90,7 +90,6 @@ class Entry(Experiment):
 class PreTrial(Experiment):
     def entry(self):
         self.prepare_trial()
-        self.stim.prepare(self.curr_cond)
         self.beh.prepare(self.curr_cond)
         super().entry()
 
@@ -110,8 +109,8 @@ class PreTrial(Experiment):
 
 class Cue(Experiment):
     def entry(self):
+        self.stim.prepare(self.curr_cond, 'Cue')
         super().entry()
-        self.stim.start(self.name())
 
     def run(self):
         self.stim.present()
@@ -155,8 +154,8 @@ class Delay(Experiment):
 
 class Response(Experiment):
     def entry(self):
+        self.stim.prepare(self.curr_cond, 'Response')
         super().entry()
-        self.stim.start(self.name())
 
     def run(self):
         self.stim.present()  # Start Stimulus

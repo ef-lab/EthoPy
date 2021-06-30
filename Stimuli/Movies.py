@@ -32,11 +32,10 @@ class Movies(Stimulus, dj.Manual):
     required_fields = ['movie_name', 'clip_number', 'movie_duration', 'skip_time', 'static_frame']
     cond_tables = ['Movies']
 
-    def get_cond_tables(self):
-        return ['MovieCond']
-
-    def setup(self, logger, params, conditions, beh=False):
-        super().setup(logger, params, conditions, beh)
+    def setup(self, exp):
+        self.conditions = exp.conditions
+        self.logger = exp.logger
+        self.exp = exp
 
         # setup parameters
         self.path = 'stimuli/'     # default path to copy local  stimuli
@@ -53,7 +52,7 @@ class Movies(Stimulus, dj.Manual):
         pygame.mouse.set_visible(0)
 
         self.hash_dict = dict()
-        for condition in conditions:
+        for condition in self.conditions:
             cond = {**self.default_key, **condition}
             key = {sel_key: cond[sel_key] for sel_key in self.required_fields}
             self.hash_dict[condition['cond_hash']] = self.logger.log_condition(key, 'Movies', 'stim')
@@ -62,9 +61,9 @@ class Movies(Stimulus, dj.Manual):
         self._get_new_cond()
         self.curr_frame = 1
         self.clock = pygame.time.Clock()
-        clip_info = self.get_clip_info(self.curr_cond)
-        self.vid = imageio.get_reader(io.BytesIO(clip_info['clip'].tobytes()), 'ffmpeg')
-        self.vsize = (clip_info['frame_width'], clip_info['frame_height'])
+        clip, frame_height, frame_width = self.get_clip_info(self.curr_cond, ('clip', 'frame_height', 'frame_width'))
+        self.vid = imageio.get_reader(io.BytesIO(clip.tobytes()), 'ffmpeg')
+        self.vsize = (frame_height, frame_height)
         self.pos = np.divide(self.size, 2) - np.divide(self.vsize, 2)
 
     def start(self):
@@ -111,9 +110,8 @@ class Movies(Stimulus, dj.Manual):
         pygame.display.quit()
         pygame.quit()
 
-    @staticmethod
-    def get_clip_info(key):
-        return (stimuli.Movie() * stimuli.Movie.Clip() & key).fetch1()
+    def get_clip_info(self, key, *fields):
+        return self.logger.get(schema='stimulus', table='Movie.Clip', key=key, fields=fields)
 
     def encode_photodiode(self):
         """Encodes the flip number n in the flip amplitude.
@@ -159,11 +157,11 @@ class RPMovies(Movies):
         if not os.path.isdir(self.path):  # create path if necessary
             os.makedirs(self.path)
         for cond in self.conditions:
-            clip_info = self.get_clip_info(cond)
-            filename = self.path + clip_info['file_name']
+            file, clip = self.get_clip_info(cond,('file_name','clip'))
+            filename = self.path + file
             if not os.path.isfile(filename):
                 print('Saving %s ...' % filename)
-                clip_info['clip'].tofile(filename)
+                clip.tofile(filename)
         # initialize player
         self.vid = self.player(filename, args=['--aspect-mode', 'stretch', '--no-osd'],
                     dbus_name='org.mpris.MediaPlayer2.omxplayer1')
@@ -207,8 +205,7 @@ class RPMovies(Movies):
         os.system(cmd)
 
     def _init_player(self):
-        clip_info = self.get_clip_info(self.curr_cond)
-        self.filename = self.path + clip_info['file_name']
+        self.filename = self.path + self.get_clip_info(self.curr_cond, 'file_name')
         try:
             self.vid.load(self.filename)
         except:
