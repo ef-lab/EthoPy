@@ -39,7 +39,7 @@ class Experiment(State, ExperimentClass):
 
 class Entry(Experiment):
     def entry(self):
-        self.stim.setup()  # prepare stimulus
+        pass
 
     def next(self):
         return 'PreTrial'
@@ -48,9 +48,7 @@ class Entry(Experiment):
 class PreTrial(Experiment):
     def entry(self):
         self.prepare_trial()
-        if not self.is_stopped():
-            self.stim.prepare(self.curr_cond)
-        else:
+        if self.is_stopped():
             self.logger.update_setup_info({'status': 'stop'})
         super().entry()
 
@@ -63,7 +61,7 @@ class PreTrial(Experiment):
 
 class Trial(Experiment):
     def entry(self):
-        self.stim.start()
+        self.stim.prepare(self.curr_cond)
         super().entry()
 
     def run(self):

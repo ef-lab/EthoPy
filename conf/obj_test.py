@@ -33,7 +33,7 @@ np.random.seed(0)
 conditions = []
 
 # two static objects (1 target + 1 distractor) multiple delays & rotation
-cue_obj = [2, 2, 3, 3]
+cue_obj = [4, 5, 6, 7]
 resp_obj = [[3, 2], [2, 3], [3, 2], [2, 3]]
 rew_prob = [2, 1, 1, 2]
 reps = 2
@@ -60,12 +60,14 @@ for irep in range(0, reps):
             'obj_tilt'      : 0,
             'obj_yaw'       : 0,
             'light_idx'     : [[1, 2]],
-            'light_dir'     : [[dir1_f(), dir2_f()]]})
+            'light_dir'     : [[dir1_f(), dir2_f()]],
+            'movie_name'    : 'MadMax',
+            'clip_number'   : 10})
 
         stim_conds += Panda().make_conditions(exp,
            {'trial_period'  : 'Response',
             'obj_id'        : [obj_comb],
-            'obj_dur'       : 5000,
+            'obj_dur'       : 240000,
             'obj_pos_x'     : [[-.25, .25]],
             'obj_mag'       : .5,
             'obj_rot'       : [[rot_f(), rot_f()]],

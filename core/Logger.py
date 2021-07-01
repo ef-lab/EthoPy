@@ -19,7 +19,8 @@ class Logger:
 
     schemata = {'experiment': 'test_experiments',
                 'stimulus'  : 'test_stimuli',
-                'behavior'  : 'test_behavior'}
+                'behavior'  : 'test_behavior',
+                'stimulus2' : 'lab_stimuli'}
 
     def __init__(self, protocol=False):
         self.setup = socket.gethostname()
@@ -55,10 +56,7 @@ class Logger:
             try:
                 table.insert1(item.tuple, ignore_extra_fields=ignore, skip_duplicates=skip, replace=item.replace)
             except Exception as e:
-                print('Failed to insert:')
-                print(item.tuple)
-                print('With error:')
-                print(e)
+                print('Failed to insert:\n', item.tuple, '\n With error:\n', e)
 
             self.thread_lock.release()
             if item.block: self.queue.task_done()

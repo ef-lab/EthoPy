@@ -157,7 +157,7 @@ class RPMovies(Movies):
         if not os.path.isdir(self.path):  # create path if necessary
             os.makedirs(self.path)
         for cond in self.conditions:
-            file, clip = self.get_clip_info(cond,('file_name','clip'))
+            file, clip = self.get_clip_info(cond, ('file_name', 'clip'))
             filename = self.path + file
             if not os.path.isfile(filename):
                 print('Saving %s ...' % filename)
