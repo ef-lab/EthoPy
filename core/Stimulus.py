@@ -31,12 +31,8 @@ class Stimulus:
         self.logger = exp.logger
         self.exp = exp
 
-    def prepare(self, conditions=False):
+    def prepare(self, condition=False):
         """prepares stuff for presentation before trial starts"""
-        pass
-
-    def start(self, cond=False):
-        """initialize stuff for each trial"""
         pass
 
     def ready_stim(self):
@@ -74,9 +70,9 @@ class Stimulus:
         conditions = factorize(conditions)
         for cond in conditions:
             assert np.all([field in cond for field in self.required_fields])
+            if 'trial_period' not in cond: cond['trial_period'] = 'Trial'
             cond.update({**self.default_key, **cond, 'stimulus_class': self.cond_tables[0]})
         if self.__class__.__name__ not in exp.stims:
-            print(self.__class__.__name__)
             exp.stims[self.__class__.__name__] = self
             exp.stims[self.__class__.__name__].setup(exp)
         return exp.log_conditions(conditions, schema='stimulus', hsh='stim_hash',

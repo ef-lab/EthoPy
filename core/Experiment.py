@@ -105,11 +105,6 @@ class ExperimentClass:
     def push_conditions(self, conditions):
         self.conditions += self.log_conditions(conditions, condition_tables=['Condition'] + self.cond_tables, priority=2)
         resp_cond = self.params['resp_cond'] if 'resp_cond' in self.params else 'response_port'
-        #for stim_class_name in np.unique([cond['stimulus_class'] for cond in self.conditions]):
-            #stim = importlib.import_module('Stimuli.' + stim_class_name)
-            #globals().update(stim.__dict__)
-            #self.stims[stim_class_name] = eval(stim_class_name)()
-            #self.stims[stim_class_name].setup(self)
         if np.all(['difficulty' in cond for cond in conditions]):
             self.difs = np.array([cond['difficulty'] for cond in self.conditions])
             diff_flag = True
@@ -147,13 +142,14 @@ class ExperimentClass:
             table = rgetattr(eval(schema), ctable)
             fields += list(table().heading.names)
         for cond in conditions:
-            key = {sel_key: cond[sel_key] for sel_key in fields if sel_key != hsh}
+            key = {sel_key: cond[sel_key] for sel_key in fields if sel_key != hsh and sel_key in cond}  # find all dependant fields and generate hash
             cond.update({hsh: make_hash(key)})
             hash_dict[cond[hsh]] = cond[hsh]
             for ctable in condition_tables:  # insert dependant condition tables
                 priority += 1
                 core = [field for field in rgetattr(eval(schema), ctable).primary_key if field != hsh]
                 fields = [field for field in rgetattr(eval(schema), ctable).heading.names]
+                if not np.all([np.any(np.array(k) == list(cond.keys())) for k in fields]): continue # only insert complete tuples
                 if core and hasattr(cond[core[0]], '__iter__'):
                     for idx, pcond in enumerate(cond[core[0]]):
                         cond_key = {k: cond[k] if type(cond[k]) in [int, float, str] else cond[k][idx] for k in fields}

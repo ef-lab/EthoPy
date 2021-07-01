@@ -2,9 +2,11 @@ from core.Stimulus import *
 import os
 import numpy as np
 from direct.showbase.ShowBase import ShowBase
+from direct.showbase.Loader import Loader
 from direct.task import Task
 import panda3d.core as core
 from utils.Timer import *
+from pandac.PandaModules import NodePath, CardMaker, TextureStage
 
 
 @stimulus.schema
@@ -56,6 +58,15 @@ class Panda(Stimulus, dj.Manual):
         ambient_color         : tinyblob
         """
 
+    class Movie(dj.Part):
+        definition = """
+        # object conditions
+        -> Panda
+        ---
+        movie_name            : char(8)                      # short movie title
+        clip_number           : int                          # clip index
+        """
+
     class Light(dj.Part):
         definition = """
         # object conditions
@@ -66,7 +77,7 @@ class Panda(Stimulus, dj.Manual):
         light_dir             : tinyblob
         """
 
-    cond_tables = ['Panda', 'Panda.Object', 'Panda.Environment', 'Panda.Light']
+    cond_tables = ['Panda', 'Panda.Object', 'Panda.Environment', 'Panda.Light', 'Panda.Movie']
     required_fields = ['obj_id', 'obj_dur']
     default_key = {'background_color': (0, 0, 0),
                    'ambient_color': (0.1, 0.1, 0.1, 1),
@@ -91,6 +102,7 @@ class Panda(Stimulus, dj.Manual):
         self.__class__ = cls.__class__(cls.__name__ + "ShowBase", (cls, ShowBase), {})
 
         self.isrunning = False
+        self.movie = False
         self.timer = Timer()
 
         ShowBase.__init__(self, fStartDirect=True, windowType=False)
@@ -117,6 +129,7 @@ class Panda(Stimulus, dj.Manual):
 
     def prepare(self, curr_cond, period='Trial'):
         self.curr_cond = curr_cond['stimulus'][period]
+
         if not self.curr_cond:
             self.isrunning = False
         self.background_color = self.curr_cond['background_color']
@@ -144,6 +157,23 @@ class Panda(Stimulus, dj.Manual):
         self.flip(2)
         self.logger.log('StimCondition.Trial', dict(period=period, stim_hash=self.curr_cond['stim_hash']),
                         schema='stimulus')
+
+        if 'movie_name' in self.curr_cond:
+            self.movie = True
+            loader = Loader(self)
+            file_name = self.get_clip_info(self.curr_cond, 'file_name')
+            self.mov_texture = loader.loadTexture(self.path + file_name[0])
+            cm = CardMaker("card")
+            tx_scale = self.mov_texture.getTexScale()
+            cm.setFrame(-1, 1, -tx_scale[1]/tx_scale[0], tx_scale[1]/tx_scale[0])
+            self.movie_node = NodePath(cm.generate())
+            self.movie_node.setTexture(self.mov_texture, 1)
+            self.movie_node.setPos(0, 100, 0)
+            self.movie_node.setTexScale(TextureStage.getDefault(), self.mov_texture.getTexScale())
+            self.movie_node.setScale(48)
+            self.movie_node.reparentTo(self.render)
+            self.mov_texture.play()
+
         if not self.isrunning:
             self.timer.start()
             self.isrunning = True
@@ -162,6 +192,10 @@ class Panda(Stimulus, dj.Manual):
             obj.remove(obj.task)
         for idx, light in self.lights.items():
             self.render.clearLight(self.lightsNP[idx])
+        if self.movie:
+            self.mov_texture.stop()
+            self.movie_node.removeNode()
+            self.movie = False
 
         self.flip(2) # clear double buffer
         self.isrunning = False
@@ -199,15 +233,20 @@ class Panda(Stimulus, dj.Manual):
         if not os.path.isdir(self.path):  # create path if necessary
             os.makedirs(self.path)
         for cond in conditions:
+            if 'movie_name' in cond:
+                file, clip = exp.logger.get(schema='stimulus2', table='Movie.Clip', key=cond, fields=('file_name', 'clip'))
+                filename = self.path + file[0]
+                if not os.path.isfile(filename): print('Saving %s' % filename); clip[0].tofile(filename)
             if not 'obj_id' in cond: continue
             for obj_id in iterable(cond['obj_id']):
                 object_info = (Objects() & ('obj_id=%d' % obj_id)).fetch1()
                 filename = self.path + object_info['file_name']
                 self.object_files[obj_id] = filename
-                if not os.path.isfile(filename):
-                    print('Saving %s ...' % filename)
-                    object_info['object'].tofile(filename)
+                if not os.path.isfile(filename): print('Saving %s' % filename); object_info['object'].tofile(filename)
         return conditions
+
+    def get_clip_info(self, key, *fields):
+        return self.logger.get(schema='stimulus2', table='Movie.Clip', key=key, fields=fields)
 
 
 class Agent(Panda):
@@ -223,10 +262,10 @@ class Agent(Panda):
         self.rot_fun = self.time_fun(cond['rot'])
         self.tilt_fun = self.time_fun(cond['tilt'])
         self.yaw_fun = self.time_fun(cond['yaw'])
-        self.z_fun = self.time_fun(cond['mag'], lambda x, t: 20/x)
-        self.x_fun = self.time_fun(cond['pos_x'], lambda x, t: np.arctan(x * hfov[0]) * self.z_fun(t))
-        self.y_fun = self.time_fun(cond['pos_y'], lambda x, t: np.arctan(x * hfov[0]) * self.z_fun(t))
-
+        z_loc = 2
+        self.x_fun = self.time_fun(cond['pos_x'], lambda x, t: np.arctan(x * hfov[0]) * z_loc)
+        self.y_fun = self.time_fun(cond['pos_y'], lambda x, t: np.arctan(x * hfov[0]) * z_loc)
+        self.scale_fun = self.time_fun(cond['mag'], lambda x, t: 5*x)
         # add task object
         self.name = "Obj%s-Task" % cond['id']
         self.task = self.env.taskMgr.doMethodLater(cond['delay']/1000, self.objTask, self.name)
@@ -237,7 +276,9 @@ class Agent(Panda):
             self.remove(task)
             return
         self.model.setHpr(self.rot_fun(t), self.tilt_fun(t), self.yaw_fun(t))
-        self.model.setPos(self.x_fun(t), self.z_fun(t), self.y_fun(t))
+        self.model.setPos(self.x_fun(t), 2, self.y_fun(t))
+        self.model.setScale(self.scale_fun(t)*.03)
+
         return Task.cont
 
     def remove(self, task):
