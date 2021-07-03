@@ -20,15 +20,6 @@ session_params = {
 exp = Experiment()
 exp.setup(logger, DummyPorts, session_params)
 
-# define environment conditions
-beh_key = {'cue_ready'              : 100,
-            'cue_duration'          : 240000,
-            'delay_duration'        : 300,
-            'response_duration'     : 5000,
-            'reward_duration'       : 2000,
-            'punish_duration'       : 5000,
-            'reward_amount'         : 6}
-
 np.random.seed(0)
 conditions = []
 
@@ -50,37 +41,37 @@ for irep in range(0, reps):
         tilt_f = lambda: interp(np.random.rand(30)*30)
         yaw_f = lambda: interp(np.random.rand(20)*10)
 
-        stim_conds = Panda().make_conditions(exp,
-           {'trial_period'  : 'Cue',
-            'obj_id'        : cue_obj[idx],
-            'obj_dur'       : 240000,
-            'obj_pos_x'     : 0,
-            'obj_mag'       : .5,
-            'obj_rot'       : [[rot_f()]],
-            'obj_tilt'      : 0,
-            'obj_yaw'       : 0,
-            'light_idx'     : [[1, 2]],
-            'light_dir'     : [[dir1_f(), dir2_f()]],
-            'movie_name'    : 'MadMax',
-            'clip_number'   : 10})
-
-        stim_conds += Panda().make_conditions(exp,
-           {'trial_period'  : 'Response',
-            'obj_id'        : [obj_comb],
-            'obj_dur'       : 240000,
-            'obj_pos_x'     : [[-.25, .25]],
-            'obj_mag'       : .5,
-            'obj_rot'       : [[rot_f(), rot_f()]],
-            'obj_tilt'      : 0,
-            'obj_yaw'       : 0,
-            'light_idx'     : [[1, 2]],
-            'light_dir'     : [[dir1_f(), dir2_f()]]})
-
-        conditions += exp.make_conditions({**beh_key,
-                                           'stimulus'     : stim_conds,
-                                           'difficulty'   : 0,
-                                           'reward_port'  : rew_prob[idx],
-                                           'response_port': rew_prob[idx]})
+        conditions = exp.make_conditions(stimulus=Panda(), stim_periods=['Cue', 'Response'], conditions={
+            'Cue': {
+                'obj_id'        : cue_obj[idx],
+                'obj_dur'       : 240000,
+                'obj_pos_x'     : 0,
+                'obj_mag'       : .5,
+                'obj_rot'       : [[rot_f()]],
+                'obj_tilt'      : 0,
+                'obj_yaw'       : 0,
+                'light_idx'     : [[1, 2]],
+                'light_dir'     : [[dir1_f(), dir2_f()]]},
+            'Response': {
+                'obj_id'        : [obj_comb],
+                'obj_dur'       : 240000,
+                'obj_pos_x'     : [[-.25, .25]],
+                'obj_mag'       : .5,
+                'obj_rot'       : [[rot_f(), rot_f()]],
+                'obj_tilt'      : 0,
+                'obj_yaw'       : 0,
+                'light_idx'     : [[1, 2]],
+                'light_dir'     : [[dir1_f(), dir2_f()]]},
+            'difficulty'        : 0,
+            'reward_port'       : rew_prob[idx],
+            'response_port'     : rew_prob[idx],
+            'cue_ready'         : 100,
+            'cue_duration'      : 240000,
+            'delay_duration'    : 300,
+            'response_duration' : 5000,
+            'reward_duration'   : 2000,
+            'punish_duration'   : 5000,
+            'reward_amount'     : 6})
 
 # run experiments
 exp.push_conditions(conditions)

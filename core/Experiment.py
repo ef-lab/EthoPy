@@ -83,27 +83,30 @@ class ExperimentClass:
             self.logger.update_setup_info({'status': 'stop'})
         return self.quit
 
-    def make_conditions(self, conditions):
-        if 'stimulus' in conditions:
-            stim_conditions = conditions['stimulus']
-            periods = np.array([key['trial_period'] for key in stim_conditions])
-            idx = np.array(list(range(len(periods))))
-            res = ([idx[periods == un] for un in np.unique(periods)])
-            conditions['stimulus'] = []
-            for idx in list(itertools.product(res[0], res[1])):
-                conditions['stimulus'].append({periods[idx[0]]: stim_conditions[idx[0]],
-                                               periods[idx[1]]: stim_conditions[idx[1]]})
-                conditions['stimulus_class'] = ''.join(np.unique([stim_conditions[idx[0]]['stimulus_class'],
-                                                                  stim_conditions[idx[1]]['stimulus_class']]))
-        conditions = factorize(conditions)
+    def make_conditions(self, stimulus=[], conditions=[], stim_periods=[]):
+        stimulus.init(self)
+        self.stims[stimulus.__class__.__name__] = stimulus
+        conditions.update({'stimulus_class': stimulus.__class__.__name__})
+        if not stim_periods:
+            conditions = stimulus.make_conditions(factorize(conditions))
+        else:
+            cond = {stim_periods[0]: stimulus.make_conditions(conditions=factorize(conditions[stim_periods[0]])),
+                    stim_periods[1]: stimulus.make_conditions(conditions=factorize(conditions[stim_periods[1]]))}
+            conditions[stim_periods[0]], conditions[stim_periods[1]] = [], []
+            for comb in list(itertools.product(cond[stim_periods[0]], cond[stim_periods[1]])):
+                conditions[stim_periods[0]].append(comb[0])
+                conditions[stim_periods[1]].append(comb[1])
+            conditions = factorize(conditions)
+
         conditions = self.log_conditions(**self.beh.make_conditions(conditions))
         for cond in conditions:
             assert np.all([field in cond for field in self.required_fields])
             cond.update({**self.default_key, **cond, 'experiment_class': self.cond_tables[0]})
+        conditions = self.log_conditions(conditions, condition_tables=['Condition'] + self.cond_tables, priority=2)
         return conditions
 
     def push_conditions(self, conditions):
-        self.conditions += self.log_conditions(conditions, condition_tables=['Condition'] + self.cond_tables, priority=2)
+        self.conditions = conditions
         resp_cond = self.params['resp_cond'] if 'resp_cond' in self.params else 'response_port'
         if np.all(['difficulty' in cond for cond in conditions]):
             self.difs = np.array([cond['difficulty'] for cond in self.conditions])
@@ -126,8 +129,9 @@ class ExperimentClass:
             self.quit=True
             return
         if 'stimulus_class' not in old_cond or old_cond['stimulus_class'] != self.curr_cond['stimulus_class']:
-            #if 'stimulus_class' in old_cond: self.stim.exit()
+            if 'stimulus_class' in old_cond: self.stim.exit()
             self.stim = self.stims[self.curr_cond['stimulus_class']]
+            self.stim.setup(self)
 
         self.curr_trial += 1
         self.logger.update_trial_idx(self.curr_trial)

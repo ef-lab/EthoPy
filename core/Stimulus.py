@@ -26,12 +26,16 @@ class Stimulus:
 
     cond_tables, required_fields, default_key = [], [], dict()
 
-    def setup(self, exp):
-        """setup stimulation for presentation before experiment starts"""
+    def init(self, exp):
+        """store parent objects """
         self.logger = exp.logger
         self.exp = exp
 
-    def prepare(self, condition=False):
+    def setup(self):
+        """setup stimulation for presentation before experiment starts"""
+        pass
+
+    def prepare(self, condition=False, stim_periods=''):
         """prepares stuff for presentation before trial starts"""
         pass
 
@@ -65,16 +69,11 @@ class Stimulus:
             cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % intensity
             os.system(cmd)
 
-    def make_conditions(self, exp, conditions):
+    def make_conditions(self, conditions=[]):
         """generate and store stimulus condition hashes"""
-        conditions = factorize(conditions)
         for cond in conditions:
             assert np.all([field in cond for field in self.required_fields])
-            if 'trial_period' not in cond: cond['trial_period'] = 'Trial'
-            cond.update({**self.default_key, **cond, 'stimulus_class': self.cond_tables[0]})
-        if self.__class__.__name__ not in exp.stims:
-            exp.stims[self.__class__.__name__] = self
-            exp.stims[self.__class__.__name__].setup(exp)
-        return exp.log_conditions(conditions, schema='stimulus', hsh='stim_hash',
-                                    condition_tables=['StimCondition'] + self.cond_tables)
+            cond.update({**self.default_key, **cond})
+        return self.exp.log_conditions(conditions, schema='stimulus', hsh='stim_hash',
+                                       condition_tables=['StimCondition'] + self.cond_tables)
 
