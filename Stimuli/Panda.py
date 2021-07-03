@@ -111,6 +111,7 @@ class Panda(Stimulus, dj.Manual):
         self.props.setSize(self.pipe.getDisplayWidth(), self.pipe.getDisplayHeight())
         #self.props.setFullscreen(True)
         self.props.setCursorHidden(True)
+        self.props.setUndecorated(True)
         self.win.requestProperties(self.props)
 
         info = self.pipe.getDisplayInformation()
@@ -127,8 +128,8 @@ class Panda(Stimulus, dj.Manual):
         self.ambientLightNP = self.render.attachNewNode(self.ambientLight)
         self.render.setLight(self.ambientLightNP)
 
-    def prepare(self, curr_cond, period='Trial'):
-        self.curr_cond = curr_cond['stimulus'][period]
+    def prepare(self, curr_cond, stim_period=''):
+        self.curr_cond = curr_cond if stim_period == '' else curr_cond[stim_period]
 
         if not self.curr_cond:
             self.isrunning = False
@@ -155,7 +156,7 @@ class Panda(Stimulus, dj.Manual):
             self.objects[idx] = Agent(self, self.get_cond('obj_', idx))
 
         self.flip(2)
-        self.logger.log('StimCondition.Trial', dict(period=period, stim_hash=self.curr_cond['stim_hash']),
+        self.logger.log('StimCondition.Trial', dict(period=stim_period, stim_hash=self.curr_cond['stim_hash']),
                         schema='stimulus')
 
         if 'movie_name' in self.curr_cond:
@@ -223,8 +224,11 @@ class Panda(Stimulus, dj.Manual):
         return {k.split(cond_name, 1)[1]: v if type(v) is int or type(v) is float else v[idx]
                 for k, v in self.curr_cond.items() if k.startswith(cond_name)}
 
-    def make_conditions(self, exp, conditions):
-        conditions = super().make_conditions(exp, conditions)
+    def make_conditions(self, conditions):
+        # for cond in conditions:
+        #     if 'light_idx' not in cond:
+        #         cond.update({'light_idx':})
+        conditions = super().make_conditions(conditions)
 
         # setup parameters
         self.path = os.path.dirname(os.path.abspath(__file__)) + '/objects/'     # default path to copy local stimuli
@@ -234,9 +238,12 @@ class Panda(Stimulus, dj.Manual):
             os.makedirs(self.path)
         for cond in conditions:
             if 'movie_name' in cond:
-                file, clip = exp.logger.get(schema='stimulus2', table='Movie.Clip', key=cond, fields=('file_name', 'clip'))
+                file = self.exp.logger.get(schema='stimulus2', table='Movie.Clip', key=cond, fields=('file_name',))
                 filename = self.path + file[0]
-                if not os.path.isfile(filename): print('Saving %s' % filename); clip[0].tofile(filename)
+                if not os.path.isfile(filename):
+                    print('Saving %s' % filename)
+                    clip = self.exp.logger.get(schema='stimulus2', table='Movie.Clip', key=cond, fields=('clip',))
+                    clip[0].tofile(filename)
             if not 'obj_id' in cond: continue
             for obj_id in iterable(cond['obj_id']):
                 object_info = (Objects() & ('obj_id=%d' % obj_id)).fetch1()
@@ -265,7 +272,7 @@ class Agent(Panda):
         z_loc = 2
         self.x_fun = self.time_fun(cond['pos_x'], lambda x, t: np.arctan(x * hfov[0]) * z_loc)
         self.y_fun = self.time_fun(cond['pos_y'], lambda x, t: np.arctan(x * hfov[0]) * z_loc)
-        self.scale_fun = self.time_fun(cond['mag'], lambda x, t: 5*x)
+        self.scale_fun = self.time_fun(cond['mag'], lambda x, t: .15*x)
         # add task object
         self.name = "Obj%s-Task" % cond['id']
         self.task = self.env.taskMgr.doMethodLater(cond['delay']/1000, self.objTask, self.name)
@@ -277,7 +284,7 @@ class Agent(Panda):
             return
         self.model.setHpr(self.rot_fun(t), self.tilt_fun(t), self.yaw_fun(t))
         self.model.setPos(self.x_fun(t), 2, self.y_fun(t))
-        self.model.setScale(self.scale_fun(t)*.03)
+        self.model.setScale(self.scale_fun(t))
 
         return Task.cont
 
