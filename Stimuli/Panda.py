@@ -99,11 +99,11 @@ class Panda(Stimulus, dj.Manual):
         self.exp = exp
         cls = self.__class__
         self.__class__ = cls.__class__(cls.__name__ + "ShowBase", (cls, ShowBase), {})
+        ShowBase.__init__(self, fStartDirect=True, windowType=None)
 
     def setup(self):
-        ShowBase.__init__(self, fStartDirect=False, windowType=None)
-        self.props = core.WindowProperties()
 
+        self.props = core.WindowProperties()
         self.props.setSize(self.pipe.getDisplayWidth(), self.pipe.getDisplayHeight())
         #self.props.setFullscreen(True)
         self.props.setCursorHidden(True)
@@ -112,8 +112,6 @@ class Panda(Stimulus, dj.Manual):
         self.graphicsEngine.openWindows()
         self.set_background_color(0, 0, 0)
         self.disableMouse()
-
-        print('setting up')
         self.isrunning = False
         self.movie = False
         self.timer = Timer()

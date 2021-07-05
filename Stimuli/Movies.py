@@ -126,7 +126,9 @@ class RPMovies(Movies):
         self.loc = (0, 0)          # default starting location of stimulus surface
         self.fps = 30              # default presentation framerate
         self.phd_size = (50, 50)    # default photodiode signal size in pixels
-        self.set_intensity(self.params['intensity'])
+        self.flip_count = 0
+        self.timer = Timer()
+        #self.set_intensity(self.params['intensity'])
 
         # setup pygame
         if not pygame.get_init():
@@ -143,11 +145,12 @@ class RPMovies(Movies):
         if not os.path.isdir(self.path):  # create path if necessary
             os.makedirs(self.path)
         for cond in self.conditions:
-            file, clip = self.get_clip_info(cond, ('file_name', 'clip'))
-            filename = self.path + file
+            file = self.get_clip_info(cond, 'Movie.Clip', 'file_name')
+            filename = self.path + file[0]
             if not os.path.isfile(filename):
                 print('Saving %s ...' % filename)
-                clip.tofile(filename)
+                clip = self.get_clip_info(cond, 'Movie.Clip', 'clip')
+                clip[0].tofile(filename)
         # initialize player
         self.vid = self.player(filename, args=['--aspect-mode', 'stretch', '--no-osd'],
                     dbus_name='org.mpris.MediaPlayer2.omxplayer1')
@@ -190,11 +193,11 @@ class RPMovies(Movies):
         os.system(cmd)
 
     def _init_player(self):
-        self.filename = self.path + self.get_clip_info(self.curr_cond, 'file_name')
+        self.filename = self.path + self.get_clip_info(self.curr_cond, 'Movie.Clip', 'file_name')
         try:
-            self.vid.load(self.filename)
+            self.vid.load(self.filename[0])
         except:
-            self.vid = self.player(self.filename, args=['--aspect-mode', 'stretch', '--no-osd'],
+            self.vid = self.player(self.filename[0], args=['--aspect-mode', 'stretch', '--no-osd'],
                         dbus_name='org.mpris.MediaPlayer2.omxplayer1')
         self.vid.pause()
         self.vid.set_position(self.curr_cond['skip_time'])

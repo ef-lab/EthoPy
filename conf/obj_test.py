@@ -18,7 +18,7 @@ session_params = {
 }
 
 exp = Experiment()
-exp.setup(logger, DummyPorts, session_params)
+exp.setup(logger, MultiPort, session_params)
 
 np.random.seed(0)
 conditions = []
