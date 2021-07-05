@@ -26,9 +26,9 @@ class RPScreen(Stimulus):
         pygame.display.toggle_fullscreen()
         #self.thread_runner = threading.Thread(target=self.give_sound)
 
-    def prepare(self):
-        self.unshow()
-        self._get_new_cond()
+    def prepare(self, condition=False, stim_periods=''):
+        """prepares stuff for presentation before trial starts"""
+        pass
 
     def start(self):
         self.isrunning = True
@@ -70,7 +70,7 @@ class RPScreen(Stimulus):
         cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % intensity
         os.system(cmd)
 
-    def close(self):
+    def exit(self):
         """Close stuff"""
         pygame.mouse.set_visible(1)
         pygame.display.quit()

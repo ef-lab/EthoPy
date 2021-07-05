@@ -43,7 +43,7 @@ class Bar(Stimulus, dj.Manual):
                     'flatness_correction'   : 1,
                     'intertrial_duration'   : 0}
 
-    def setup(self, exp):
+    def init(self, exp):
         self.conditions = exp.conditions
         self.logger = exp.logger
         self.exp = exp
@@ -66,15 +66,12 @@ class Bar(Stimulus, dj.Manual):
         # setup pygame
         pygame.init()
         self.clock = pygame.time.Clock()
-        self.screen = pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF | NOFRAME) #---> this works but minimizes when clicking (Emina)
+        self.screen = pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF | NOFRAME, display=1) #---> this works but minimizes when clicking (Emina)
         self.unshow()
         pygame.mouse.set_visible(0)
 
     def prepare(self, curr_cond):
         self.curr_cond = curr_cond
-        if not self.curr_cond:
-            self.isrunning = False
-            return
         self.isrunning = True
         self.curr_frame = 1
 
@@ -150,7 +147,7 @@ class Bar(Stimulus, dj.Manual):
                 pygame.quit()
         #self.flip_count += 1
 
-    def close(self):
+    def exit(self):
         pygame.mouse.set_visible(1)
         pygame.display.quit()
         pygame.quit()

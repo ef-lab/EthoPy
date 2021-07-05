@@ -1,8 +1,12 @@
 from core.Stimulus import *
-import io, os, imageio
 from time import sleep
 import pygame
 from pygame.locals import *
+import io, os, imageio
+stimuli2 = dj.create_virtual_module('stim2', 'lab_stimuli')
+
+
+@stimuli2.schema
 
 
 @stimulus.schema
@@ -11,32 +15,18 @@ class Movies(Stimulus, dj.Manual):
     # movie clip conditions
     -> StimCondition
     ---
-    movie_name           : char(8)                      # short movie title
-    clip_number          : int                          # clip index
+    movie_name            : char(8)                      # short movie title
+    clip_number           : int                          # clip index
     movie_duration       : smallint                     # movie duration
     skip_time            : smallint                     # start time in clip
     static_frame         : smallint                     # static frame presentation
     """
 
-    class Trial(dj.Part):
-        definition = """
-        # Stimulus onset timestamps
-        -> experiment.Trial
-        -> Movies
-        ---
-        start_time           : int                          # start time from session start (ms)
-        end_time             : int                          # end time from session start (ms)
-        """
-
     default_key = dict(movie_duration=10, skip_time=0, static_frame=False)
     required_fields = ['movie_name', 'clip_number', 'movie_duration', 'skip_time', 'static_frame']
     cond_tables = ['Movies']
 
-    def setup(self, exp):
-        self.conditions = exp.conditions
-        self.logger = exp.logger
-        self.exp = exp
-
+    def setup(self):
         # setup parameters
         self.path = 'stimuli/'     # default path to copy local  stimuli
         self.size = (400, 240)     # window size
@@ -44,32 +34,28 @@ class Movies(Stimulus, dj.Manual):
         self.loc = (0, 0)          # default starting location of stimulus surface
         self.fps = 30              # default presentation framerate
         self.phd_size = (50, 50)    # default photodiode signal size in pixels
+        self.flip_count = 0
 
         # setup pygame
         pygame.init()
         self.screen = pygame.display.set_mode(self.size)
         self.unshow()
+        self.timer = Timer()
         pygame.mouse.set_visible(0)
 
-        self.hash_dict = dict()
-        for condition in self.conditions:
-            cond = {**self.default_key, **condition}
-            key = {sel_key: cond[sel_key] for sel_key in self.required_fields}
-            self.hash_dict[condition['cond_hash']] = self.logger.log_condition(key, 'Movies', 'stim')
-
-    def prepare(self):
-        self._get_new_cond()
+    def prepare(self, curr_cond, stim_period=''):
+        self.curr_cond = curr_cond
         self.curr_frame = 1
         self.clock = pygame.time.Clock()
-        clip, frame_height, frame_width = self.get_clip_info(self.curr_cond, ('clip', 'frame_height', 'frame_width'))
-        self.vid = imageio.get_reader(io.BytesIO(clip.tobytes()), 'ffmpeg')
-        self.vsize = (frame_height, frame_height)
+        clip = self.get_clip_info(self.curr_cond, 'Movie.Clip', 'clip')
+        frame_height, frame_width = self.get_clip_info(self.curr_cond, 'Movie', 'frame_height', 'frame_width')
+        self.vid = imageio.get_reader( io.BytesIO(clip[0].tobytes()), 'mov')
+        self.vsize = (frame_width[0], frame_height[0])
         self.pos = np.divide(self.size, 2) - np.divide(self.vsize, 2)
-
-    def start(self):
         self.isrunning = True
         self.timer.start()
-        self.stim_start = self.logger.session_timer.elapsed_time()
+        self.logger.log('StimCondition.Trial', dict(period=stim_period, stim_hash=self.curr_cond['stim_hash']),
+                        schema='stimulus')
 
     def present(self):
         if self.timer.elapsed_time() < self.curr_cond['movie_duration']:
@@ -86,7 +72,6 @@ class Movies(Stimulus, dj.Manual):
     def stop(self):
         self.vid.close()
         self.unshow()
-        self.log_stimulus('Movies.Trial')
         self.isrunning = False
 
     def punish_stim(self):
@@ -105,13 +90,14 @@ class Movies(Stimulus, dj.Manual):
         self.flip_count += 1
 
     @staticmethod
-    def close():
+    def exit():
         pygame.mouse.set_visible(1)
         pygame.display.quit()
         pygame.quit()
 
-    def get_clip_info(self, key, *fields):
-        return self.logger.get(schema='stimulus', table='Movie.Clip', key=key, fields=fields)
+    def get_clip_info(self, key, table, *fields):
+        return self.exp.logger.get(schema='stimulus2', table=table, key=key, fields=fields)
+
 
     def encode_photodiode(self):
         """Encodes the flip number n in the flip amplitude.
@@ -167,11 +153,11 @@ class RPMovies(Movies):
                     dbus_name='org.mpris.MediaPlayer2.omxplayer1')
         self.vid.stop()
 
-    def prepare(self):
-        self._get_new_cond()
+    def prepare(self, curr_cond, stim_period=''):
+        self.curr_cond = curr_cond
+        self.logger.log('StimCondition.Trial', dict(period=stim_period, stim_hash=self.curr_cond['stim_hash']),
+                        schema='stimulus')
         self._init_player()
-
-    def start(self):
         self.isrunning = True
         try:
             self.vid.play()
@@ -182,7 +168,6 @@ class RPMovies(Movies):
             sleep(0.2)
             self.vid.pause()
         self.timer.start()
-        self.logger.log('StimOnset')
 
     def present(self):
         if self.timer.elapsed_time() > self.curr_cond['movie_duration']:

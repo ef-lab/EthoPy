@@ -24,7 +24,7 @@ class StimCondition(dj.Manual):
 class Stimulus:
     """ This class handles the stimulus presentation use function overrides for each stimulus class """
 
-    cond_tables, required_fields, default_key = [], [], dict()
+    cond_tables, required_fields, default_key, curr_cond, conditions = [], [], dict(), dict(), []
 
     def init(self, exp):
         """store parent objects """
@@ -35,9 +35,9 @@ class Stimulus:
         """setup stimulation for presentation before experiment starts"""
         pass
 
-    def prepare(self, condition=False, stim_periods=''):
+    def prepare(self, curr_cond=False, stim_periods=''):
         """prepares stuff for presentation before trial starts"""
-        pass
+        self.curr_cond = curr_cond
 
     def ready_stim(self):
         """Stim Cue for ready"""
@@ -74,6 +74,8 @@ class Stimulus:
         for cond in conditions:
             assert np.all([field in cond for field in self.required_fields])
             cond.update({**self.default_key, **cond})
-        return self.exp.log_conditions(conditions, schema='stimulus', hsh='stim_hash',
+        conditions = self.exp.log_conditions(conditions, schema='stimulus', hsh='stim_hash',
                                        condition_tables=['StimCondition'] + self.cond_tables)
+        self.conditions += conditions
+        return conditions
 

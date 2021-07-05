@@ -34,8 +34,9 @@ class Olfactory(Stimulus, dj.Manual):
         dutycycle            : int                      # odor dutycycle
         """
 
-    def get_condition_tables(self):
-        return ['Olfactory', 'Olfactory.Channel']
+    cond_tables = ['Olfactory', 'Olfactory.Channel']
+    required_fields = ['odor_duration', 'odorant_id', 'channel_idx']
+    default_key = {'dutycycle': 50}
 
     def setup(self):
         # setup parameters
@@ -58,9 +59,6 @@ class Olfactory(Stimulus, dj.Manual):
         self.isrunning = True
         self.timer.start()
 
-    def prepare(self):
-        self._get_new_cond()
-
     def unshow(self, color=False):
         """update background color"""
         if not color:
@@ -70,7 +68,7 @@ class Olfactory(Stimulus, dj.Manual):
     def stop(self):
         self.isrunning = False
 
-    def close(self):
+    def exit(self):
         """Close stuff"""
         pygame.mouse.set_visible(1)
         pygame.display.quit()
