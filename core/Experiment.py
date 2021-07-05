@@ -87,7 +87,6 @@ class ExperimentClass:
         stim_name = stim_class.__class__.__name__
         if stim_name not in self.stims:
             stim_class.init(self)
-            stim_class.setup()
             self.stims[stim_name] = stim_class
         conditions.update({'stimulus_class': stim_name})
         if not stim_periods:

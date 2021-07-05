@@ -26,7 +26,7 @@ key = {
 }
 
 for object in objects:
-    conditions += exp.make_conditions(stim_class=Movies(), conditions={**key, 'movie_name': object})
+    conditions += exp.make_conditions(stim_class=RPMovies(), conditions={**key, 'movie_name': object})
 
 # run experiment
 exp.push_conditions(conditions)
