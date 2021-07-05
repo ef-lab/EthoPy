@@ -6,7 +6,7 @@ from direct.showbase.Loader import Loader
 from direct.task import Task
 import panda3d.core as core
 from utils.Timer import *
-from pandac.PandaModules import NodePath, CardMaker, TextureStage
+from panda3d.core import NodePath, CardMaker, TextureStage
 
 
 @stimulus.schema
@@ -94,18 +94,14 @@ class Panda(Stimulus, dj.Manual):
 
     object_files = dict()
 
-    def setup(self, exp):
+    def init(self, exp):
         self.logger = exp.logger
         self.exp = exp
-
         cls = self.__class__
         self.__class__ = cls.__class__(cls.__name__ + "ShowBase", (cls, ShowBase), {})
 
-        self.isrunning = False
-        self.movie = False
-        self.timer = Timer()
-
-        ShowBase.__init__(self, fStartDirect=True, windowType=False)
+    def setup(self):
+        ShowBase.__init__(self, fStartDirect=False, windowType=None)
         self.props = core.WindowProperties()
 
         self.props.setSize(self.pipe.getDisplayWidth(), self.pipe.getDisplayHeight())
@@ -113,15 +109,19 @@ class Panda(Stimulus, dj.Manual):
         self.props.setCursorHidden(True)
         self.props.setUndecorated(True)
         self.win.requestProperties(self.props)
-
-        info = self.pipe.getDisplayInformation()
-        #print(info.getTotalDisplayModes())
-        #print(info.getDisplayModeWidth(0), info.getDisplayModeHeight(0))
-        #print(self.pipe.getDisplayWidth(), self.pipe.getDisplayHeight())
-
         self.graphicsEngine.openWindows()
         self.set_background_color(0, 0, 0)
         self.disableMouse()
+
+        print('setting up')
+        self.isrunning = False
+        self.movie = False
+        self.timer = Timer()
+
+        #info = self.pipe.getDisplayInformation()
+        #print(info.getTotalDisplayModes())
+        #print(info.getDisplayModeWidth(0), info.getDisplayModeHeight(0))
+        #print(self.pipe.getDisplayWidth(), self.pipe.getDisplayHeight())
 
         # Create Ambient Light
         self.ambientLight = core.AmbientLight('ambientLight')
@@ -216,6 +216,9 @@ class Panda(Stimulus, dj.Manual):
         if not intensity: intensity = self.params['intensity']
         cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % intensity
         os.system(cmd)
+
+    def close(self):
+        pass
 
     def exit(self):
         self.destroy()

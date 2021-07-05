@@ -2,7 +2,7 @@ import datajoint as dj
 import numpy as np
 from utils.helper_functions import *
 from utils.Timer import *
-import importlib, itertools
+import itertools
 
 experiment = dj.create_virtual_module('experiment', 'test_experiments', create_tables=True)
 stimulus = dj.create_virtual_module('stimulus', 'test_stimuli', create_tables=True)
@@ -83,15 +83,18 @@ class ExperimentClass:
             self.logger.update_setup_info({'status': 'stop'})
         return self.quit
 
-    def make_conditions(self, stimulus=[], conditions=[], stim_periods=[]):
-        stimulus.init(self)
-        self.stims[stimulus.__class__.__name__] = stimulus
-        conditions.update({'stimulus_class': stimulus.__class__.__name__})
+    def make_conditions(self, stim_class, conditions, stim_periods=None):
+        stim_name = stim_class.__class__.__name__
+        if stim_name not in self.stims:
+            stim_class.init(self)
+            stim_class.setup()
+            self.stims[stim_name] = stim_class
+        conditions.update({'stimulus_class': stim_name})
         if not stim_periods:
-            conditions = stimulus.make_conditions(factorize(conditions))
+            conditions = self.stims[stim_name].make_conditions(factorize(conditions))
         else:
-            cond = {stim_periods[0]: stimulus.make_conditions(conditions=factorize(conditions[stim_periods[0]])),
-                    stim_periods[1]: stimulus.make_conditions(conditions=factorize(conditions[stim_periods[1]]))}
+            cond = {stim_periods[0]: self.stims[stim_name].make_conditions(conditions=factorize(conditions[stim_periods[0]])),
+                    stim_periods[1]: self.stims[stim_name].make_conditions(conditions=factorize(conditions[stim_periods[1]]))}
             conditions[stim_periods[0]], conditions[stim_periods[1]] = [], []
             for comb in list(itertools.product(cond[stim_periods[0]], cond[stim_periods[1]])):
                 conditions[stim_periods[0]].append(comb[0])
@@ -126,12 +129,12 @@ class ExperimentClass:
         old_cond = self.curr_cond
         self._get_new_cond()
         if not self.curr_cond:
-            self.quit=True
+            self.quit = True
             return
         if 'stimulus_class' not in old_cond or old_cond['stimulus_class'] != self.curr_cond['stimulus_class']:
             if 'stimulus_class' in old_cond: self.stim.exit()
             self.stim = self.stims[self.curr_cond['stimulus_class']]
-            self.stim.setup(self)
+            self.stim.setup()
 
         self.curr_trial += 1
         self.logger.update_trial_idx(self.curr_trial)
