@@ -81,7 +81,7 @@ class Panda(Stimulus, dj.Manual):
     required_fields = ['obj_id', 'obj_dur']
     default_key = {'background_color': (0, 0, 0),
                    'ambient_color': (0.1, 0.1, 0.1, 1),
-                   'light_idx': [[1, 2]],
+                   'light_idx': (1, 2),
                    'light_color': (np.array([0.7, 0.7, 0.7, 1]), np.array([0.2, 0.2, 0.2, 1])),
                    'light_dir': (np.array([0, -20, 0]), np.array([180, -20, 0])),
                    'obj_pos_x': 0,
@@ -102,7 +102,7 @@ class Panda(Stimulus, dj.Manual):
         ShowBase.__init__(self, fStartDirect=True, windowType=None)
 
     def setup(self):
-
+        print('setting up panda')
         self.props = core.WindowProperties()
         self.props.setSize(self.pipe.getDisplayWidth(), self.pipe.getDisplayHeight())
         #self.props.setFullscreen(True)
@@ -128,6 +128,7 @@ class Panda(Stimulus, dj.Manual):
 
     def prepare(self, curr_cond, stim_period=''):
         self.curr_cond = curr_cond if stim_period == '' else curr_cond[stim_period]
+        self.period = stim_period
 
         if not self.curr_cond:
             self.isrunning = False
@@ -153,10 +154,6 @@ class Panda(Stimulus, dj.Manual):
         for idx, obj in enumerate(iterable(self.curr_cond['obj_id'])):
             self.objects[idx] = Agent(self, self.get_cond('obj_', idx))
 
-        self.flip(2)
-        self.logger.log('StimCondition.Trial', dict(period=stim_period, stim_hash=self.curr_cond['stim_hash']),
-                        schema='stimulus')
-
         if 'movie_name' in self.curr_cond:
             self.movie = True
             loader = Loader(self)
@@ -171,11 +168,18 @@ class Panda(Stimulus, dj.Manual):
             self.movie_node.setTexScale(TextureStage.getDefault(), self.mov_texture.getTexScale())
             self.movie_node.setScale(48)
             self.movie_node.reparentTo(self.render)
-            self.mov_texture.play()
 
         if not self.isrunning:
             self.timer.start()
             self.isrunning = True
+
+    def start(self):
+        if self.movie: self.mov_texture.play()
+        for idx, obj in enumerate(iterable(self.curr_cond['obj_id'])):
+            self.objects[idx].run()
+        self.flip(2)
+        self.logger.log('StimCondition.Trial', dict(period=self.period, stim_hash=self.curr_cond['stim_hash']),
+                        schema='stimulus')
 
     def present(self):
         self.flip()
@@ -195,6 +199,7 @@ class Panda(Stimulus, dj.Manual):
             self.mov_texture.stop()
             self.movie_node.removeNode()
             self.movie = False
+        self.render.clearLight
 
         self.flip(2) # clear double buffer
         self.isrunning = False
@@ -259,13 +264,11 @@ class Panda(Stimulus, dj.Manual):
 
 class Agent(Panda):
     def __init__(self, env, cond):
+        self.cond = cond
         self.env = env
         self.timer = Timer()
         self.duration = cond['dur']
-        self.model = env.loader.loadModel(env.object_files[cond['id']])
-        self.model.reparentTo(env.render)
         hfov = self.env.camLens.get_fov() * np.pi / 180 # half field of view in radians
-
         # define object time parameters
         self.rot_fun = self.time_fun(cond['rot'])
         self.tilt_fun = self.time_fun(cond['tilt'])
@@ -276,7 +279,11 @@ class Agent(Panda):
         self.scale_fun = self.time_fun(cond['mag'], lambda x, t: .15*x)
         # add task object
         self.name = "Obj%s-Task" % cond['id']
-        self.task = self.env.taskMgr.doMethodLater(cond['delay']/1000, self.objTask, self.name)
+
+    def run(self):
+        self.model = self.env.loader.loadModel(self.env.object_files[self.cond['id']])
+        self.model.reparentTo(self.env.render)
+        self.task = self.env.taskMgr.doMethodLater(self.cond['delay']/1000, self.objTask, self.name)
 
     def objTask(self, task):
         t = self.timer.elapsed_time()/1000

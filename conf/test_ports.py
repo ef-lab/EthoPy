@@ -1,4 +1,4 @@
-from Experiments.ProbeTest import *
+from Experiments.PortTest import *
 
 # define calibration parameters
 session_params = {
@@ -9,6 +9,6 @@ session_params = {
 }
 
 # run experiment
-exp = ProbeTest(logger, session_params)
+exp = PortTest(logger, session_params)
 exp.run()
 

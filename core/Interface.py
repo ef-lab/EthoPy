@@ -89,21 +89,22 @@ class RPProbe(Interface):
         self.thread = ThreadPoolExecutor(max_workers=2)
         self.frequency = 20
         self.pulses = dict()
-        self.GPIO.setup(list(self.channels['lick'].values()) + [self.channels['proximity'][1]],
+        self.GPIO.setup(list(self.channels['lick'].values()) + list(self.channels['proximity'].values()),
                         self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         self.GPIO.setup(list(self.channels['air'].values()), self.GPIO.OUT, initial=self.GPIO.LOW)
         self.Pulser = pigpio.pi()
         self.PulseGen = pigpio.pulse
-        self.Pulser.set_mode(self.channels['liquid'][1], pigpio.OUTPUT)
-        self.Pulser.set_mode(self.channels['liquid'][2], pigpio.OUTPUT)
-        self.Pulser.set_mode(self.channels['sound'][1], pigpio.OUTPUT)
+        for channel in self.channels['liquid']:
+            self.Pulser.set_mode(self.channels['liquid'][channel], pigpio.OUTPUT)
+        for channel in self.channels['sound']:
+            self.Pulser.set_mode(self.channels['sound'][channel], pigpio.OUTPUT)
         if self.callbacks:
-            self.GPIO.add_event_detect(self.channels['lick'][2], self.GPIO.RISING,
-                                       callback=self._port_licked, bouncetime=100)
-            self.GPIO.add_event_detect(self.channels['lick'][1], self.GPIO.RISING,
-                                       callback=self._port_licked, bouncetime=100)
-            self.GPIO.add_event_detect(self.channels['proximity'][1], self.GPIO.BOTH,
-                                       callback=self._position_change, bouncetime=50)
+            for channel in self.channels['lick']:
+                self.GPIO.add_event_detect(self.channels['lick'][channel], self.GPIO.RISING,
+                                           callback=self._port_licked, bouncetime=100)
+            for channel in self.channels['proximity']:
+                self.GPIO.add_event_detect(self.channels['proximity'][channel], self.GPIO.BOTH,
+                                           callback=self._position_change, bouncetime=50)
 
     def setup_touch_exit(self):
         import ft5406 as TS
@@ -140,9 +141,10 @@ class RPProbe(Interface):
     def cleanup(self):
         self.Pulser.wave_clear()
         if self.callbacks:
-            self.GPIO.remove_event_detect(self.channels['lick'][1])
-            self.GPIO.remove_event_detect(self.channels['lick'][2])
-            self.GPIO.remove_event_detect(self.channels['proximity'][1])
+            for channel in self.channels['lick']:
+                self.GPIO.remove_event_detect(self.channels['lick'][channel])
+            for channel in self.channels['proximity']:
+                self.GPIO.remove_event_detect(self.channels['proximity'][channel])
         self.GPIO.cleanup()
 
     def _create_pulse(self, port, duration):
@@ -192,17 +194,12 @@ class RPProbe(Interface):
 
 
 class VRProbe(RPProbe):
-    channels = {'odor': {1: 6, 2: 13, 3: 19, 4: 26},
+    channels = {'odor': {1: 19, 2: 16, 3: 26, 4: 20},
                 'liquid': {1: 22},
                 'lick': {1: 17}}
 
-    def __init__(self, **kwargs):
-        super(VRProbe, self).__init__(**kwargs)
-        self.thread = ThreadPoolExecutor(max_workers=2)
-        self.frequency = 10
-
     def start_odor(self, dutycycle=50):
-        for idx, channel in enumerate(self.channels['odor']):
+        for idx, channel in enumerate(list(self.channels['odor'].values())):
             self.pwm[idx] = self.GPIO.PWM(channel, self.frequency)
             self.pwm[idx].ChangeFrequency(self.frequency)
             self.pwm[idx].start(dutycycle)
@@ -211,32 +208,37 @@ class VRProbe(RPProbe):
         for idx, dutycycle in enumerate(dutycycles):
             self.pwm[idx].ChangeDutyCycle(dutycycle)
 
+    def stop_odor(self):
+        for idx, channel in enumerate(list(self.channels['odor'].values())):
+            self.pwm[idx].stop()
+
     def cleanup(self):
-        self.pwm[self.channels['air']].stop()
-        self.GPIO.remove_event_detect(self.channels['lick'][1])
-        self.GPIO.remove_event_detect(self.channels['proximity'][1])
-        self.GPIO.cleanup()
-        self.Pulser.wave_clear()
+        for idx, channel in enumerate(list(self.channels['odor'].values())):
+            self.pwm[idx].stop()
+        super().cleanup()
 
 
 class Ball(Interface):
-    def __init__(self, xmx=1, ymx=1, x0=0, y0=0, theta0=0, ball_radius=0.125):
-        self.mouse1 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.3:1.0-mouse")
-        self.mouse2 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0-mouse")
-        self.loc_x = x0
-        self.loc_y = y0
-        self.theta = theta0
-        self.xmx = xmx
-        self.ymx = ymx
+    def __init__(self, logger, ball_radius=0.125, path="", target_path=False):
+        from utils.Writer import Writer
+        self.quit()
+        self.logger = logger
+        self.mouse1 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.1:1.0-mouse", logger)
+        self.mouse2 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.2:1.0-mouse", logger)
+        self.Writer = Writer
+        self.speed = 0
         self.timestamp = 0
+        self.setPosition()
         self.phi_z1 = 1  # angle of z axis (rotation)
         self.phi_z2 = self.phi_z1
         self.phi_y1 = np.pi - 0.13  # angle of y1 axis (mouse1) .6
         self.phi_y2 = self.phi_y1 + np.pi/2  # angle of y2 axis (mouse2)
         self.ball_radius = ball_radius
+        self.createDataset(path, target_path)
         self.thread_end = threading.Event()
         self.thread_runner = threading.Thread(target=self.readMouse)
         self.thread_runner.start()
+
 
     def readMouse(self):
         while not self.thread_end.is_set():
@@ -264,22 +266,62 @@ class Ball(Interface):
             x = -xm*np.sin(self.theta) - ym*np.cos(self.theta)
             y = -xm*np.cos(self.theta) + ym*np.sin(self.theta)
 
-            self.loc_x = min(self.loc_x + np.double(x), self.xmx)
-            self.loc_y = min(self.loc_y + np.double(y), self.ymx)
-            self.timestamp = max(tmst1, tmst2)
+            loc_x = min(self.loc_x + np.double(x), self.xmx)
+            loc_y = min(self.loc_y + np.double(y), self.ymx)
+            timestamp = max(tmst1, tmst2)
+            self.speed = np.sqrt((loc_x - self.loc_x)**2 + (loc_y - self.loc_y)**2)/(timestamp - self.timestamp)
+            self.loc_x = loc_x
+            self.loc_y = loc_y
+            self.timestamp = timestamp
+            print(self.loc_x, self.loc_y, self.theta/np.pi*180)
+            self.append2Dataset()
             time.sleep(.1)
+
+    def setPosition(self, xmx=1, ymx=1, x0=0, y0=0, theta0=0):
+        self.loc_x = x0
+        self.loc_y = y0
+        self.theta = theta0
+        self.xmx = xmx
+        self.ymx = ymx
 
     def getPosition(self):
         return self.loc_x, self.loc_y, self.theta,  self.timestamp
 
+    def getSpeed(self):
+        return self.speed
+
+    def createDataset(self, path='', target_path=False):
+        datapath = path + datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".h5"
+        TIME_SERIES_DOUBLE = np.dtype([("loc_x", np.double),
+                                       ("loc_y", np.double),
+                                       ("theta", np.double),
+                                       ("tmst", np.double)])
+
+        self.dataset = self.Writer(datapath, target_path)
+        self.dataset.createDataset('tracking_data', shape=(4,), dtype=TIME_SERIES_DOUBLE)
+
+    def append2Dataset(self):
+        self.dataset.append('tracking_data', [self.loc_x, self.loc_y, self.theta, self.timestamp])
+
+    def closeDatasets(self):
+        print('GIATI')
+        self.dataset.exit()
+
     def quit(self):
-        self.thread_end.set()
-        self.mouse1.close()
-        self.mouse2.close()
+        print('I m quitting')
+        try:
+            self.thread_end.set()
+            self.closeDatasets()
+            self.mouse1.close()
+            self.mouse2.close()
+        except:
+            print('ball not running')
 
 
 class MouseReader:
-    def __init__(self, path, dpm=31200):
+    def __init__(self, path, logger, dpm=31200):
+        print('setting up mouse')
+        self.logger = logger
         self.dpm = dpm
         self.queue = multiprocessing.Queue()
         self.file = open(path, "rb")
@@ -289,9 +331,10 @@ class MouseReader:
 
     def reader(self, queue, dpm):
         while not self.thread_end.is_set():
+            # print('Reading file')
             data = self.file.read(3)  # Reads the 3 bytes
             x, y = struct.unpack("2b", data[1:])
-            queue.put({'x': x/dpm, 'y': y/dpm, 'timestamp': time.time()})
+            queue.put({'x': x/dpm, 'y': y/dpm, 'timestamp': self.logger.session_timer.elapsed_time()})
 
     def close(self):
         self.thread_end.set()

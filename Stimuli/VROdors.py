@@ -1,32 +1,50 @@
 from core.Stimulus import *
 
 
-class VROdors(Stimulus):
-    def get_cond_tables(self):
-        return ['VRCond']
+@experiment.schema
+class VROdors(Stimulus, dj.Manual):
+    definition = """
+    # vr conditions
+    -> StimCondition
+    """
 
-    def prepare(self):
-        self._get_new_cond()
+    class Source(dj.Part):
+        definition = """
+        # odor conditions
+        -> VROdors
+        -> Odorants
+        ---
+        extiction_factor     : float    
+        delivery_port        : int                      # delivery idx for channel mapping
+        odor_x               : tinyint
+        odor_y               : tinyint
+        """
+
+    cond_tables = ['VROdors', 'Source']
+    required_fields = ['odorant_id', 'delivery_port', 'odor_x', 'odor_y']
+    default_key = {'extiction_factor': 1}
 
     def start(self):
-        odor_id = self.params['odor_id']
-        self.delivery_port = [1, 2, 3, 4]
-        self.beh.start_odor()
+        self.interface.start_odor(0)
+        self.logger.log('StimCondition.Trial', dict(period=self.period, stim_hash=self.curr_cond['stim_hash']),
+                        schema='stimulus')
         self.isrunning = True
         self.timer.start()
 
     def loc2odor(self, x, y):
-        xmx = self.curr_cond['x_max']
-        ymx = self.curr_cond['y_max']
-        fun = self.curr_cond['fun']
-        a = (np.abs(np.array([0, 0, xmx, xmx]) - x) / xmx) ** 2
-        b = (np.abs(np.array([0, ymx, ymx, 0]) - y) / ymx) ** 2
-        return (1 - ((a + b) / 2) ** .5) ** fun * 100
+        odors_x = np.array(self.curr_cond['odor_x'])
+        odors_y = np.array(self.curr_cond['odor_y'])
+        mx = max(self.curr_cond['x_max'], self.curr_cond['y_max'])
+        extiction_factors = np.array(self.curr_cond['extiction_factor'])
+        x_dist = (np.abs(odors_x - x) / mx)
+        y_dist = (np.abs(odors_y - y) / mx)
+        return (1 - ((x_dist ** 2 + y_dist ** 2) / 2) ** .5) ** extiction_factors * 100
 
     def present(self):
-        x, y = self.beh.get_position()
-        odor_dutycycle = self.loc2odor(x, y)
-        self.interface.update_odor(self.delivery_port, odor_dutycycle)
+        x, y, theta, tmst = self.beh.get_position()
+        odor_dutycycles = self.loc2odor(x, y)
+        self.interface.update_odor(odor_dutycycles[np.array(self.curr_cond['delivery_port']) - 1])
 
     def stop(self):
+        self.interface.stop_odor()
         self.isrunning = False

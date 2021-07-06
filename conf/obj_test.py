@@ -18,13 +18,13 @@ session_params = {
 }
 
 exp = Experiment()
-exp.setup(logger, MultiPort, session_params)
+exp.setup(logger, DummyPorts, session_params)
 
 np.random.seed(0)
 conditions = []
 
 # two static objects (1 target + 1 distractor) multiple delays & rotation
-cue_obj = [4, 5, 6, 7]
+cue_obj = [1, 1, 1, 1]
 resp_obj = [[3, 2], [2, 3], [3, 2], [2, 3]]
 rew_prob = [2, 1, 1, 2]
 reps = 2
@@ -47,21 +47,17 @@ for irep in range(0, reps):
                 'obj_dur'       : 240000,
                 'obj_pos_x'     : 0,
                 'obj_mag'       : .5,
-                'obj_rot'       : [[rot_f()]],
+                'obj_rot'       : (rot_f()),
                 'obj_tilt'      : 0,
-                'obj_yaw'       : 0,
-                'light_idx'     : [[1, 2]],
-                'light_dir'     : [[dir1_f(), dir2_f()]]},
+                'obj_yaw'       : 0},
             'Response': {
-                'obj_id'        : [obj_comb],
+                'obj_id'        : (obj_comb),
                 'obj_dur'       : 240000,
-                'obj_pos_x'     : [[-.25, .25]],
+                'obj_pos_x'     : (-.25, .25),
                 'obj_mag'       : .5,
-                'obj_rot'       : [[rot_f(), rot_f()]],
+                'obj_rot'       : (rot_f(), rot_f()),
                 'obj_tilt'      : 0,
-                'obj_yaw'       : 0,
-                'light_idx'     : [[1, 2]],
-                'light_dir'     : [[dir1_f(), dir2_f()]]},
+                'obj_yaw'       : 0},
             'difficulty'        : 0,
             'reward_port'       : rew_prob[idx],
             'response_port'     : rew_prob[idx],

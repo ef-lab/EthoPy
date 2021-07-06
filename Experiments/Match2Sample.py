@@ -91,6 +91,7 @@ class PreTrial(Experiment):
     def entry(self):
         self.prepare_trial()
         self.beh.prepare(self.curr_cond)
+        self.stim.prepare(self.curr_cond, 'Cue')
         super().entry()
 
     def run(self):
@@ -109,7 +110,7 @@ class PreTrial(Experiment):
 
 class Cue(Experiment):
     def entry(self):
-        self.stim.prepare(self.curr_cond, 'Cue')
+        self.stim.start()
         super().entry()
 
     def run(self):
@@ -136,6 +137,10 @@ class Cue(Experiment):
 
 
 class Delay(Experiment):
+    def entry(self):
+        self.stim.prepare(self.curr_cond, 'Response')
+        super().entry()
+
     def run(self):
         self.response = self.beh.get_response(self.start_time)
         if self.beh.is_ready(self.curr_cond['delay_ready'], self.start_time):
@@ -154,7 +159,7 @@ class Delay(Experiment):
 
 class Response(Experiment):
     def entry(self):
-        self.stim.prepare(self.curr_cond, 'Response')
+        self.stim.start()
         super().entry()
 
     def run(self):
@@ -192,7 +197,7 @@ class Abort(Experiment):
     def next(self):
         if self.state_timer.elapsed_time() >= self.curr_cond['abort_duration']:
             return 'InterTrial'
-        elif self.logger.setup_status in ['stop', 'exit']:
+        elif self.is_stopped():
             return 'Exit'
         else:
             return 'Abort'

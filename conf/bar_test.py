@@ -42,7 +42,7 @@ repeat_n = 20
 conditions = []
 for axis in ['horizontal', 'vertical']:
     for rep in range(0, repeat_n):
-        conditions += exp.make_conditions(Bar, {**key, 'axis'  : axis})
+        conditions += exp.make_conditions(stim_class=Bar(), conditions={**key, 'axis': axis})
 
 
 # run experiments

@@ -28,9 +28,9 @@ class Olfactory(Stimulus, dj.Manual):
         definition = """
         # odor conditions
         -> Olfactory
-        channel_idx          : int                      # delivery idx for channel mapping
-        ---
         -> Odorants
+        ---
+        delivery_port        : int                      # delivery idx for channel mapping
         dutycycle            : int                      # odor dutycycle
         """
 
