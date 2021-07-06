@@ -273,7 +273,7 @@ class Ball(Interface):
             self.loc_x = loc_x
             self.loc_y = loc_y
             self.timestamp = timestamp
-            print(self.loc_x, self.loc_y, self.theta/np.pi*180)
+            #print(self.loc_x, self.loc_y, self.theta/np.pi*180)
             self.append2Dataset()
             time.sleep(.1)
 
@@ -304,11 +304,9 @@ class Ball(Interface):
         self.dataset.append('tracking_data', [self.loc_x, self.loc_y, self.theta, self.timestamp])
 
     def closeDatasets(self):
-        print('GIATI')
         self.dataset.exit()
 
     def quit(self):
-        print('I m quitting')
         try:
             self.thread_end.set()
             self.closeDatasets()
@@ -320,7 +318,6 @@ class Ball(Interface):
 
 class MouseReader:
     def __init__(self, path, logger, dpm=31200):
-        print('setting up mouse')
         self.logger = logger
         self.dpm = dpm
         self.queue = multiprocessing.Queue()
