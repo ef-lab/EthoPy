@@ -1,7 +1,7 @@
 import numpy
 from core.Interface import *
 from utils.TouchInterface import TouchInterface
-import datetime
+import time as systime
 
 class ProbeTest:
     def __init__(self, logger, params):
@@ -52,8 +52,8 @@ class ProbeTest:
     def log_test(self, port=0, pulses=0, result='Passed'):
         self.screen.cleanup()
         self.screen.draw('Probe %d %s!' % (port, result))
-        key = dict(setup=self.logger.setup, port=port, result=result, pulses=pulses, date=)
+        key = dict(setup=self.logger.setup, port=port, result=result, pulses=pulses, date=systime.strftime("%Y-%m-%d"),
+                   timestamp=systime.strftime("%Y-%m-%d %H:%M:%S"))
         self.logger.put(table='PortCalibration', tuple=key, schema='behavior', priority=5)
         self.logger.put(table='PortCalibration.Test',  schema='behavior', replace=True, tuple=key)
-
         time.sleep(1)

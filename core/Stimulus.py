@@ -35,9 +35,26 @@ class Stimulus:
         """setup stimulation for presentation before experiment starts"""
         pass
 
-    def prepare(self, curr_cond=False, stim_periods=''):
+    def prepare(self, curr_cond=False, stim_period=''):
         """prepares stuff for presentation before trial starts"""
-        self.curr_cond = curr_cond
+        self.curr_cond = curr_cond if stim_period == '' else curr_cond[stim_period]
+        self.period = stim_period
+
+    def start(self):
+        """start stimulus"""
+        pass
+
+    def present(self):
+        """stimulus presentation method"""
+        pass
+
+    def stop(self):
+        """stop stimulus"""
+        pass
+
+    def exit(self):
+        """exit stimulus stuff"""
+        pass
 
     def ready_stim(self):
         """Stim Cue for ready"""
@@ -49,18 +66,6 @@ class Stimulus:
 
     def punish_stim(self):
         """Stim Cue for punishment"""
-        pass
-
-    def present(self):
-        """trial presentation method"""
-        pass
-
-    def stop(self):
-        """stop trial"""
-        pass
-
-    def exit(self):
-        """exit stimulus stuff"""
         pass
 
     def set_intensity(self):

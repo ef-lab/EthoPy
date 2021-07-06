@@ -48,6 +48,7 @@ class Entry(Experiment):
 class PreTrial(Experiment):
     def entry(self):
         self.prepare_trial()
+        self.stim.prepare(self.curr_cond)
         if self.is_stopped():
             self.logger.update_setup_info({'status': 'stop'})
         super().entry()
@@ -61,7 +62,7 @@ class PreTrial(Experiment):
 
 class Trial(Experiment):
     def entry(self):
-        self.stim.prepare(self.curr_cond)
+        self.stim.start()
         super().entry()
 
     def run(self):
