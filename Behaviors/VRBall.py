@@ -8,18 +8,14 @@ class VRBall(Behavior, dj.Manual):
     # This class handles the behavior variables for RP
     ->BehCondition
     ---
+    x_sz                 : float
+    y_sz                 : float
     x0                   : float
     y0                   : float            
     theta0               : float
     radius               : float
+    speed_thr            : float # in m/sec
     """
-
-    class Position(dj.Part):
-        definition = """
-        # Lick response condition
-        -> VRBall
-        response_port             : tinyint          # response port id
-        """
 
     class Response(dj.Part):
         definition = """
@@ -42,23 +38,29 @@ class VRBall(Behavior, dj.Manual):
         reward_type               : varchar(16)      # reward type
         """
 
-    cond_tables = ['MultiPort', 'MultiPort.Response', 'MultiPort.Reward']
-    required_fields = ['response_port', 'reward_port', 'reward_amount']
-    default_key = {'reward_type': 'water'}
+    cond_tables = ['VRBall', 'VRBall.Response', 'VRBall.Reward', 'VRBall.Position']
+    required_fields = ['x0', 'y0', 'radius', 'response_loc_y', 'response_loc_x',
+                       'reward_loc_x', 'reward_loc_y', 'reward_amount']
+    default_key = {'reward_type': 'water', 'speed_thr': 0.025,
+                   'response_port': 1, 'reward_port': 1, 'theta0': 0}
 
     def setup(self, exp):
         self.previous_x = 0
         self.previous_y = 0
         self.resp_loc_x = None
         self.resp_loc_y = None
-        self.speed_thr = 0.025  # in m/sec
         self.interface = VRProbe(exp.logger)
         super(VRBall, self).setup(exp)
-        self.vr = Ball(exp.logger, path ='/home/eflab/Tracking/', target_path='/mnt/lab/data/Tracking/')
+        source_path = '/home/eflab/Tracking/'
+        target_path = '/mnt/lab/data/Tracking/'
+        self.vr = Ball(exp.logger, path=source_path, target_path=target_path)
+        self.logger.log('Session.Recording', dict(rec_aim='ball', software='PyMouse', version='0.1',
+                                                  filename=self.vr.filename, source_path=source_path,
+                                                  target_path=target_path), schema='experiment')
 
     def prepare(self, condition):
         self.reward_amount = self.interface.calc_pulse_dur(condition['reward_amount'])
-        self.vr.setPosition(condition['x_max'], condition['y_max'], condition['x0'], condition['y0'], condition['theta0'])
+        self.vr.setPosition(condition['x_sz'], condition['y_sz'], condition['x0'], condition['y0'], condition['theta0'])
         self.curr_cond = condition
 
     def is_licking(self, since=0):
@@ -77,7 +79,7 @@ class VRBall(Behavior, dj.Manual):
         return in_position
 
     def is_running(self):
-        return self.vr.getSpeed() > self.speed_thr
+        return self.vr.getSpeed() > self.curr_cond['speed_thr']
 
     def is_correct(self):
         x, y, theta, tmst = self.get_position()

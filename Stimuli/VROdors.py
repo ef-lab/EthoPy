@@ -20,7 +20,7 @@ class VROdors(Stimulus, dj.Manual):
         odor_y               : tinyint
         """
 
-    cond_tables = ['VROdors', 'Source']
+    cond_tables = ['VROdors', 'VROdors.Source']
     required_fields = ['odorant_id', 'delivery_port', 'odor_x', 'odor_y']
     default_key = {'extiction_factor': 1}
 

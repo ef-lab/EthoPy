@@ -291,7 +291,8 @@ class Ball(Interface):
         return self.speed
 
     def createDataset(self, path='', target_path=False):
-        datapath = path + datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".h5"
+        self.filename = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".h5"
+        self.datapath = path + self.filename
         TIME_SERIES_DOUBLE = np.dtype([("loc_x", np.double),
                                        ("loc_y", np.double),
                                        ("theta", np.double),

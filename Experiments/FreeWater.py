@@ -21,7 +21,7 @@ class Experiment(State, ExperimentClass):
                    'max_reward'            : 6000,
                    'bias_window'           : 5,
                    'noresponse_intertrial' : True,
-                   'intertrial_duration'    : 1000}
+                   'intertrial_duration'   : 1000}
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
         self.logger.curr_state = self.name()
@@ -79,7 +79,7 @@ class Reward(Experiment):
 
 class InterTrial(Experiment):
     def run(self):
-        if self.beh.get_response(self.period_start) & self.params.get('noresponse_intertrial'):
+        if self.beh.get_response(self.start_time) & self.params.get('noresponse_intertrial'):
             self.state_timer.start()
 
     def next(self):

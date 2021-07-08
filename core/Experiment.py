@@ -242,21 +242,24 @@ class SetupConfiguration(dj.Lookup):
 
 
 @experiment.schema
-class Aims(dj.Lookup):
+class Aim(dj.Lookup):
     definition = """
-    # Experimental aim
-    aim                  : varchar(16)                  # aim
+    # Recording aim
+    rec_aim              : varchar(16)                  # aim
     ---
+    rec_type             : enum('functional','structural','behavior','other') 
     description=""       : varchar(2048)                # description
     """
 
     contents = [
-        ['2pScan'   , 'Classic 2p scan'],
-        ['intrinsic', 'intrinsic imaging'],
-        ['patching' , 'patching'],
-        ['stack'    , '2p stack'],
-        ['vessels'  , 'map of vessels'],
-        ['widefield', 'wide field imaging']
+        ['two-photon', 'functional', 'Classic two-photon scan'],
+        ['widefield' , 'functional', 'wide field imaging of caclium fluorescence'],
+        ['intrinsic' , 'functional', 'intrinsic imaging'],
+        ['patching'  , 'functional', 'patching'],
+        ['stack'     , 'structural', 'two-photon stack of images'],
+        ['vessels'   , 'structural', 'map of vessels'],
+        ['ball'      , 'behavior'  , '2D Navigation on ball'],
+        ['eye'       , 'behavior'  , 'eye movements']
     ]
 
 
@@ -269,6 +272,13 @@ class Software(dj.Lookup):
     ---
     description=""       : varchar(2048)                # description
     """
+    contents = [
+        ['PyMouse'  , '0.1'  , 'self generated files'],
+        ['Imager'   , '0.1'  , 'Imager recording program'],
+        ['OpenEphys', '0.5.4', 'Neuropixel recordings'],
+        ['Miniscope', '1.10' , 'miniscope recordings'],
+    ]
+
 
 
 @experiment.schema
@@ -345,12 +355,12 @@ class Session(dj.Manual):
         definition = """
         # File session info
         -> Session
-        -> Aims
+        -> Aim
         ---
         -> Software
         filename=null        : varchar(256)              # file
         source_path=null     : varchar(512)              # local path
-        target_path=null     : varchar(512)              # remote drive path
+        target_path=null     : varchar(512)              # shared drive path
         timestamp            : timestamp                 # timestamp
         """
 
