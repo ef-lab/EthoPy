@@ -39,29 +39,24 @@ class Navigate(dj.Manual):
 
 
 class Experiment(State, ExperimentClass):
-    cond_tables = ['Match2Sample', 'Match2Sample.SessionParams', 'Match2Sample.TrialParams']
-    required_fields = ['difficulty']
-    default_key = {'trial_selection'     : 'staircase',
-                   'max_reward'            : 3000,
-                   'min_reward'            : 500,
+    cond_tables = ['Navigate', 'Navigate.SessionParams', 'Navigate.TrialParams']
+    required_fields = []
+    default_key = {'trial_selection'       : 'staircase',
                    'bias_window'           : 5,
                    'staircase_window'      : 20,
                    'stair_up'              : 0.7,
                    'stair_down'            : 0.55,
                    'noresponse_intertrial' : True,
+                   'norun_response'        : True,
                    'incremental_punishment': True,
 
+                   'difficulty'             : 0,
                    'init_ready'             : 0,
-                   'cue_ready'              : 0,
-                   'delay_ready'            : 0,
-                   'resp_ready'             : 0,
+                   'trial_ready'            : 0,
                    'intertrial_duration'    : 1000,
-                   'cue_duration'           : 1000,
-                   'delay_duration'         : 0,
-                   'response_duration'      : 5000,
+                   'trial_duration'         : 1000,
                    'reward_duration'        : 2000,
-                   'punish_duration'        : 1000,
-                   'abort_duration'         : 0}
+                   'punish_duration'        : 1000}
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
         self.logger.curr_state = self.name()
@@ -154,7 +149,7 @@ class Punish(Experiment):
         self.stim.punish_stim()
 
     def next(self):
-        if self.timer.elapsed_time() >= self.stim.curr_cond['punish_duration']:
+        if self.state_timer.elapsed_time() >= self.stim.curr_cond['punish_duration']:
             return 'InterTrial'
         else:
             return 'Punish'
@@ -169,7 +164,7 @@ class InterTrial(Experiment):
         super().entry()
 
     def run(self):
-        if self.beh.get_response(self.period_start) & self.params.get('noresponse_intertrial'):
+        if self.beh.get_response(self.start_time) & self.params.get('noresponse_intertrial'):
             self.state_timer.start()
 
     def next(self):

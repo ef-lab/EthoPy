@@ -180,7 +180,7 @@ class Punish(Experiment):
 
 class InterTrial(Experiment):
     def run(self):
-        if self.beh.get_response(self.period_start) & self.params.get('noresponse_intertrial'):
+        if self.beh.get_response(self.start_time) & self.params.get('noresponse_intertrial'):
             self.state_timer.start()
 
     def next(self):
