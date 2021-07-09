@@ -4,79 +4,77 @@ from Behaviors.MultiPort import *
 
 # define session parameters
 session_params = {
-    'trial_selection'    : 'staircase',
-    'start_time'         : '08:00:00',
-    'stop_time'          : '22:00:00',
-    'min_reward'         : 100,
-    'max_reward'         : 3000,
-    'bias_window'        : 5,
-    'staircase_window'   : 10,
-    'stair_up'           : 0.7,
-    'stair_down'         : 0.6,
+    'trial_selection'      : 'staircase',
+    'start_time'           : '08:00:00',
+    'stop_time'            : '22:00:00',
+    'min_reward'           : 100,
+    'max_reward'           : 3000,
+    'bias_window'          : 5,
+    'staircase_window'     : 10,
+    'stair_up'             : 0.7,
+    'stair_down'           : 0.6,
     'noresponse_intertrial': True,
+    'setup_conf_idx'       : 1,
 }
 
 exp = Experiment()
 exp.setup(logger, MultiPort, session_params)
-vo_conds = []
-v_conds = []
-o_conds = []
-
-# define stimulus conditions
-odor_ratios = {2: [(100, 0)],
-               1: [(0, 100)]}
-objects = {1: 'obj4v6',
-           2: 'obj3v6'}
-v_dur = 4000
-o_dur = 500
+vo = [], vis = [], olf = []
 
 trial_params = {
     'difficulty'            : 0,
     'timeout_duration'      : 6000,
-    'trial_duration'        : 5000,
+    'cue_duration'          : 5000,
     'intertrial_duration'   : 500,
     'init_duration'         : 100,
-    'delay_duration'        : 500,
-    'reward_amount'         : 3,
+    'delay_duration'        : 0,
+    'reward_amount'         : 5,
 }
 
 v_params = {
-    'clip_number'           : 1,
-    'skip_time'             : [0],
-    'static_frame'          : False,
-    'movie_duration'        : 4000,
+    'obj_mag'               : .5,
+    'obj_rot'               : 0,
+    'obj_tilt'              : 0,
+    'obj_yaw'               : 0
 }
 
 o_params = {
     'odorant_id'            : (1, 3),
     'delivery_port'         : (1, 2),
-    'odor_duration'         : 500
 }
 
-for port in [1, 2]:
-    vo_conds += exp.make_conditions(stim_class=SmellyObjects(), conditions={**trial_params, **o_params, **v_params,
-                          'reward_port': port,
-                          'response_port': port,
-                          'movie_name': objects[port],
-                          'dutycycle': odor_ratios[port]})
-    o_conds += exp.make_conditions(stim_class=SmellyObjects(), conditions={**trial_params, **o_params,
-                          'reward_port': port,
-                          'response_port': port,
-                          'movie_name': objects[port],
-                          'dutycycle': odor_ratios[port],
-                          'clip_number': 1,
-                          'skip_time': 0,
-                          'static_frame': False,
-                          'movie_duration': 0})
-    v_conds += exp.make_conditions(stim_class=SmellyObjects(), conditions={**trial_params, **v_params,
-                          'port': port,
-                          'movie_name': objects[port],
-                          'odorant_id': (1, 3),
-                          'delivery_port': (1, 2),
-                          'dutycycle': (0, 0),
-                          'odor_duration': 0})
+cue_obj = [2, 2, 3, 3]
+resp_obj = [(3, 2), (2, 3), (3, 2), (2, 3)]
+rew_port = [2, 1, 1, 2]
+odor_ratios = [(100, 0), (100, 0), (0, 100), (0, 100)]
 
-conditions = vo_conds + v_conds + o_conds
+for idx, port in enumerate(rew_port):
+    vo += exp.make_conditions(stim_class=SmellyObjects(), stim_periods=['Cue', 'Response'], conditions={**trial_params,
+        'Cue': {**v_params, **o_params,
+            'obj_id'        : cue_obj[idx],
+            'obj_pos_x'     : 0,
+            'obj_dur'       : 2000,
+            'odor_duration' : 500,
+            'dutycycle'     : odor_ratios[idx]},
+        'Response': {**v_params, **o_params,
+            'obj_id'        : resp_obj[idx],
+            'obj_pos_x'     : (-.25, .25),
+            'obj_dur'       : 2000},
+        'reward_port'       : port,
+        'response_port'     : port})
+    vis += exp.make_conditions(stim_class=SmellyObjects(), stim_periods=['Cue', 'Response'], conditions={**trial_params,
+        'Cue': {**v_params, **o_params,
+            'obj_id'        : cue_obj[idx],
+            'obj_pos_x'     : 0,
+            'obj_dur'       : 2000},
+        'Response': {**v_params, **o_params,
+            'obj_id'        : resp_obj[idx],
+            'obj_pos_x'     : (-.25, .25),
+            'obj_dur'       : 2000},
+        'reward_port'       : port,
+        'response_port'     : port})
+
+conditions = vo + vis
 
 # run experiments
 exp.push_conditions(conditions)

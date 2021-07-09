@@ -12,7 +12,7 @@ class VROdors(Stimulus, dj.Manual):
         definition = """
         # odor conditions
         -> VROdors
-        -> Odorants
+        -> stimulus.Odorants
         ---
         extiction_factor     : float    
         delivery_port        : int                      # delivery idx for channel mapping

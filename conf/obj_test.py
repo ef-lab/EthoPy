@@ -21,7 +21,7 @@ np.random.seed(0)
 conditions = []
 
 # two static objects (1 target + 1 distractor) multiple delays & rotation
-cue_obj = [1, 1, 1, 1]
+cue_obj = [2, 2, 3, 3]
 resp_obj = [(3, 2), (2, 3), (3, 2), (2, 3)]
 rew_prob = [2, 1, 1, 2]
 reps = 2
