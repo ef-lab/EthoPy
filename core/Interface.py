@@ -93,22 +93,28 @@ class RPProbe(Interface):
         self.thread = ThreadPoolExecutor(max_workers=2)
         self.frequency = 20
         self.pulses = dict()
-        self.GPIO.setup(list(self.channels['lick'].values()) + list(self.channels['proximity'].values()),
-                        self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        if 'lick' in self.channels:
+            self.GPIO.setup(list(self.channels['lick'].values()), self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        if 'proximity' in self.channels:
+            self.GPIO.setup(list(self.channels['proximity'].values()), self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         self.GPIO.setup(list(self.channels['air'].values()), self.GPIO.OUT, initial=self.GPIO.LOW)
         self.Pulser = pigpio.pi()
         self.PulseGen = pigpio.pulse
-        for channel in self.channels['liquid']:
-            self.Pulser.set_mode(self.channels['liquid'][channel], pigpio.OUTPUT)
-        for channel in self.channels['sound']:
-            self.Pulser.set_mode(self.channels['sound'][channel], pigpio.OUTPUT)
+        if 'liquid' in self.channels:
+            for channel in self.channels['liquid']:
+                self.Pulser.set_mode(self.channels['liquid'][channel], pigpio.OUTPUT)
+        if 'sound' in self.channels:
+            for channel in self.channels['sound']:
+                self.Pulser.set_mode(self.channels['sound'][channel], pigpio.OUTPUT)
         if self.callbacks:
-            for channel in self.channels['lick']:
-                self.GPIO.add_event_detect(self.channels['lick'][channel], self.GPIO.RISING,
-                                           callback=self._port_licked, bouncetime=100)
-            for channel in self.channels['proximity']:
-                self.GPIO.add_event_detect(self.channels['proximity'][channel], self.GPIO.BOTH,
-                                           callback=self._position_change, bouncetime=50)
+            if 'lick' in self.channels:
+                for channel in self.channels['lick']:
+                    self.GPIO.add_event_detect(self.channels['lick'][channel], self.GPIO.RISING,
+                                               callback=self._port_licked, bouncetime=100)
+            if 'proximity' in self.channels:
+                for channel in self.channels['proximity']:
+                    self.GPIO.add_event_detect(self.channels['proximity'][channel], self.GPIO.BOTH,
+                                               callback=self._position_change, bouncetime=50)
 
     def setup_touch_exit(self):
         import ft5406 as TS

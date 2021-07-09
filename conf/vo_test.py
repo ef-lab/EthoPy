@@ -19,7 +19,7 @@ session_params = {
 
 exp = Experiment()
 exp.setup(logger, MultiPort, session_params)
-vo = [], vis = [], olf = []
+vo, vis = [], []
 
 trial_params = {
     'difficulty'            : 0,
@@ -41,6 +41,7 @@ v_params = {
 o_params = {
     'odorant_id'            : (1, 3),
     'delivery_port'         : (1, 2),
+    'dutycycle'             : (0, 0),
 }
 
 cue_obj = [2, 2, 3, 3]
