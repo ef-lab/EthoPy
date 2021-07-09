@@ -47,6 +47,8 @@ class RPScreen(Stimulus):
 
     def stop(self):
         self.isrunning = False
+        self.screen.fill([0, 0, 0])
+        self.flip()
 
     def unshow(self, color=False):
         """update background color"""

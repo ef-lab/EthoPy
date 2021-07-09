@@ -231,9 +231,6 @@ class Panda(Stimulus, dj.Manual):
                 for k, v in self.curr_cond.items() if k.startswith(cond_name)}
 
     def make_conditions(self, conditions):
-        # for cond in conditions:
-        #     if 'light_idx' not in cond:
-        #         cond.update({'light_idx':})
         conditions = super().make_conditions(conditions)
 
         # setup parameters
