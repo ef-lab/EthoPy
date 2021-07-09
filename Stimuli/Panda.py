@@ -102,7 +102,6 @@ class Panda(Stimulus, dj.Manual):
         ShowBase.__init__(self, fStartDirect=True, windowType=None)
 
     def setup(self):
-        print('setting up panda')
         self.props = core.WindowProperties()
         self.props.setSize(self.pipe.getDisplayWidth(), self.pipe.getDisplayHeight())
         #self.props.setFullscreen(True)

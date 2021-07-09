@@ -4,12 +4,13 @@ from Experiments.FreeWater import *
 
 # define session parameters
 session_params = {
-    'trial_selection'       : 'biased',
+    'trial_selection'       : 'bias',
     'start_time'            : '00:00:00',
     'stop_time'             : '23:50:00',
     'max_reward'            : 5000,
     'bias_window'           : 5,
-    'noresponse_intertrial' : False
+    'noresponse_intertrial' : False,
+    'setup_conf_idx'        : 1,
 }
 
 exp = Experiment()
@@ -23,7 +24,8 @@ conditions = exp.make_conditions(stim_class=RPScreen(), conditions={
     'init_duration'      : 0,
     'delay_duration'     : 0,
     'reward_amount'      : 3,
-    'probe'              : (1, 2),
+    'reward_port': -1,
+    'response_port': -1,
 })
 
 # run experiments

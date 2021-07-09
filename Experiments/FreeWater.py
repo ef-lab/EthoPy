@@ -30,15 +30,12 @@ class Experiment(State, ExperimentClass):
         self.state_timer.start()
 
 
-class Prepare(Experiment):
-    def run(self):
-        self.stim.setup()  # prepare stimulus
-
+class Entry(Experiment):
     def next(self):
         if self.beh.is_sleep_time():
             return 'Offtime'
         else:
-            return 'PreTrial'
+            return 'Trial'
 
 
 class Trial(Experiment):
@@ -48,7 +45,6 @@ class Trial(Experiment):
         self.beh.prepare(self.curr_cond)
         super().entry()
         self.stim.start()
-        self.trial_start = self.logger.init_trial(self.curr_cond['cond_hash'])
 
     def run(self):
         self.stim.present()  # Start Stimulus
@@ -63,7 +59,6 @@ class Trial(Experiment):
             return 'Trial'
 
     def exit(self):
-        self.logger.log_trial()
         self.stim.stop()  # stop stimulus when timeout
         self.logger.ping()
 
@@ -123,6 +118,6 @@ class Offtime(Experiment):
 
 class Exit(Experiment):
     def run(self):
-        self.beh.cleanup()
-        self.stim.close()
+        self.beh.exit()
+        self.stim.exit()
         self.logger.ping(0)

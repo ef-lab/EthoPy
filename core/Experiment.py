@@ -203,6 +203,9 @@ class ExperimentClass:
                                                        self.difs == self.cur_dif)) if v]
             self.curr_cond = np.random.choice(sel_conds)
             self.dif_h.append(self.cur_dif)
+        else:
+            print('Selection method not implemented!')
+            self.quit = True
 
 
 @experiment.schema

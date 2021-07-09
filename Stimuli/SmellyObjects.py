@@ -12,5 +12,5 @@ class SmellyObjects(Panda):
         odor_dur = self.curr_cond['odor_duration']
         odor_dutycycle = self.curr_cond['dutycycle']
         super().start()
-        self.interface.give_odor(delivery_port, odor_id, odor_dur, odor_dutycycle)
+        self.exp.interface.give_odor(delivery_port, odor_id, odor_dur, odor_dutycycle)
         self.timer.start()

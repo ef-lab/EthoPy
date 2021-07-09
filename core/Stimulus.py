@@ -30,9 +30,10 @@ class Stimulus:
         """store parent objects """
         self.logger = exp.logger
         self.exp = exp
-        intensity = self.logger.get(schema='experiment', table='SetupConfiguration.Screen')
+        intensity = self.logger.get(schema='experiment', table='SetupConfiguration.Screen',
+                                    key=dict(setup_conf_idx=exp.params['setup_conf_idx']), fields=['intensity'])
         if self.logger.is_pi:
-            cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % intensity
+            cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % intensity[0]
             os.system(cmd)
 
     def setup(self):

@@ -41,8 +41,6 @@ class RPScreen(Stimulus):
             if event.type == QUIT:
                 pygame.quit()
 
-        self.flip_count += 1
-
     def exit(self):
         """Close stuff"""
         pygame.mouse.set_visible(1)
