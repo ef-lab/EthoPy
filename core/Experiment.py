@@ -1,5 +1,4 @@
 import datajoint as dj
-import numpy as np
 from utils.helper_functions import *
 from utils.Timer import *
 import itertools

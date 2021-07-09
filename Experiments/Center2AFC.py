@@ -1,7 +1,8 @@
 from core.Experiment import *
 
 
-class State(dj.Manual):
+@experiment.schema
+class Center2AFC(dj.Manual):
     definition = """
     # 2AFC experiment conditions
     -> Condition
@@ -10,7 +11,7 @@ class State(dj.Manual):
     class SessionParams(dj.Part):
         definition = """
         # Match2Sample experiment conditions
-        -> Match2Sample
+        -> Center2AFC
         ---
         trial_selection='staircase': enum('fixed','random','staircase','biased') 
         max_reward=3000            : smallint
@@ -26,7 +27,7 @@ class State(dj.Manual):
     class TrialParams(dj.Part):
         definition = """
         # Match2Sample experiment conditions
-        -> Match2Sample
+        -> Center2AFC
         ---
         difficulty            : int   
         init_ready            : int
@@ -40,7 +41,7 @@ class State(dj.Manual):
 
 
 class Experiment(State, ExperimentClass):
-    cond_tables = ['Match2Sample', 'Match2Sample.SessionParams', 'Match2Sample.TrialParams']
+    cond_tables = ['Center2AFC', 'Center2AFC.SessionParams', 'Center2AFC.TrialParams']
     required_fields = ['difficulty']
     default_key = {'trial_selection': 'staircase',
                    'max_reward': 3000,
@@ -54,15 +55,11 @@ class Experiment(State, ExperimentClass):
 
                    'init_ready': 0,
                    'trial_ready': 0,
-                   'delay_ready': 0,
-                   'resp_ready': 0,
                    'intertrial_duration': 1000,
-                   'cue_duration': 1000,
-                   'delay_duration': 0,
+                   'tial_duration': 1000,
                    'response_duration': 5000,
                    'reward_duration': 2000,
-                   'punish_duration': 1000,
-                   'abort_duration': 0}
+                   'punish_duration': 1000}
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
         self.logger.curr_state = self.name()
@@ -73,7 +70,7 @@ class Experiment(State, ExperimentClass):
 
 class Entry(Experiment):
     def run(self):
-        pass#self.stim.setup()  # prepare stimulus
+        pass
 
     def next(self):
         if self.logger.setup_status in ['stop', 'exit']:

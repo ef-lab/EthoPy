@@ -1,12 +1,9 @@
-from core.Logger import *
-import sys
-global logger
 from Experiments.Match2Sample import *
 from Behaviors.MultiPort import *
 from Stimuli.Panda import *
-from utils.helper_functions import *
 from scipy import interpolate
 import numpy as np
+global logger
 interp = lambda x: interpolate.splev(np.linspace(0, len(x), 100),
                                      interpolate.splrep(np.linspace(0, len(x), len(x)), x)) if len(x) > 3 else x
 
@@ -25,7 +22,7 @@ conditions = []
 
 # two static objects (1 target + 1 distractor) multiple delays & rotation
 cue_obj = [1, 1, 1, 1]
-resp_obj = [[3, 2], [2, 3], [3, 2], [2, 3]]
+resp_obj = [(3, 2), (2, 3), (3, 2), (2, 3)]
 rew_prob = [2, 1, 1, 2]
 reps = 2
 
@@ -51,7 +48,7 @@ for irep in range(0, reps):
                 'obj_tilt'      : 0,
                 'obj_yaw'       : 0},
             'Response': {
-                'obj_id'        : (obj_comb),
+                'obj_id'        : obj_comb,
                 'obj_dur'       : 240000,
                 'obj_pos_x'     : (-.25, .25),
                 'obj_mag'       : .5,

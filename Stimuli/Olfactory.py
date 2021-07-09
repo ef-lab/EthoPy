@@ -35,7 +35,7 @@ class Olfactory(Stimulus, dj.Manual):
         """
 
     cond_tables = ['Olfactory', 'Olfactory.Channel']
-    required_fields = ['odor_duration', 'odorant_id', 'channel_idx']
+    required_fields = ['odor_duration', 'odorant_id', 'delivery_port']
     default_key = {'dutycycle': 50}
 
     def setup(self):
