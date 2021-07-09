@@ -7,7 +7,7 @@ import threading, multiprocessing, struct, time, socket
 
 
 class Interface:
-    port, lick_tmst, ready_dur, activity_tmst, ready_tmst = 0, 0, 0, 0, 0
+    port, lick_tmst, ready_dur, activity_tmst, ready_tmst, pulse_rew = 0, 0, 0, 0, 0, dict()
     ready, logging, timer_ready, weight_per_pulse, pulse_dur, channels = False, False, Timer(), dict(), dict(), dict()
 
     def __init__(self, exp=[], callbacks=True, logging=True):
@@ -19,9 +19,10 @@ class Interface:
 
     def load_calibration(self):
         for port in list(set(self.ports)):
+            self.pulse_rew[port] = dict()
             key = dict(setup=self.logger.setup, port=port)
             dates = self.logger.get(schema='behavior', table='PortCalibration', key=key, fields=['date'], order_by='date')
-            if not dates:
+            if np.size(dates) < 1:
                 print('No PortCalibration found!')
                 self.exp.stop()
                 break
@@ -64,9 +65,12 @@ class Interface:
     def calc_pulse_dur(self, reward_amount):  # calculate pulse duration for the desired reward amount
         actual_rew = dict()
         for port in list(set(self.ports)):
-            duration = np.interp(reward_amount/1000, self.weight_per_pulse[port], self.pulse_dur[port])
-            self.create_pulse(port, duration)
-            actual_rew[port] = np.max((np.min(self.weight_per_pulse[port]), reward_amount/1000)) * 1000 # in uL
+            if reward_amount not in self.pulse_rew[port]:
+                duration = np.interp(reward_amount/1000, self.weight_per_pulse[port], self.pulse_dur[port])
+                self._create_pulse(port, duration)
+                self.pulse_rew[port][reward_amount] = np.max((np.min(self.weight_per_pulse[port]),
+                                                              reward_amount/1000)) * 1000 # in uL
+            actual_rew[port] = self.pulse_rew[port][reward_amount]
         return actual_rew
 
     def cleanup(self):

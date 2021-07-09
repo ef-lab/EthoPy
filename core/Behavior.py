@@ -158,7 +158,10 @@ class Behavior:
             return dict(conditions=conditions, condition_tables=[], schema='behavior')
 
     def prepare(self, condition):
-        pass
+        self.curr_cond = condition
+        self.reward_amount = self.interface.calc_pulse_dur(condition['reward_amount'])
+        self.logger.log('BehCondition.Trial', dict(beh_hash=self.curr_cond['beh_hash']),
+                        schema='behavior')
 
     def update_history(self, choice=np.nan, reward=np.nan):
         self.choice_history.append(choice)

@@ -59,9 +59,8 @@ class VRBall(Behavior, dj.Manual):
                                                   target_path=target_path), schema='experiment')
 
     def prepare(self, condition):
-        self.reward_amount = self.interface.calc_pulse_dur(condition['reward_amount'])
         self.vr.setPosition(condition['x_sz'], condition['y_sz'], condition['x0'], condition['y0'], condition['theta0'])
-        self.curr_cond = condition
+        super().prepare()
 
     def is_licking(self, since=0):
         licked_probe, tmst = self.interface.get_last_lick()

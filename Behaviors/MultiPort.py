@@ -74,10 +74,6 @@ class MultiPort(Behavior, dj.Manual):
         self.interface.cleanup()
         self.interface.ts.stop()
 
-    def prepare(self, condition):
-        self.curr_cond = condition
-        self.reward_amount = self.interface.calc_pulse_dur(condition['reward_amount'])
-
     def punish(self):
         port = self.licked_port if self.licked_port > 0 else np.nan
         self.update_history(port)
@@ -126,20 +122,21 @@ class DummyPorts(MultiPort):
     def is_correct(self):
         return np.any(np.equal(self.licked_port, self.curr_cond['response_port']))
 
-    def prepare(self, condition):
-        self.curr_cond = condition
-        self.reward_amount = condition['reward_amount']
-
     def reward(self):
         self.update_history(self.licked_port, self.reward_amount)
         self.log_reward(self.reward_amount)
         print('Giving Water at port:%1d' % self.licked_port)
         return True
 
+    def prepare(self, condition):
+        self.curr_cond = condition
+        self.reward_amount = condition['reward_amount']
+        self.logger.log('BehCondition.Trial', dict(beh_hash=self.curr_cond['beh_hash']),
+                        schema='behavior')
+
     def punish(self):
         print('punishing')
         port = self.licked_port if self.licked_port > 0 else np.nan
-        #self.log_activity('Punishment', dict(punishment_type=self.curr_cond['punishment_type']))
         self.update_history(port)
 
     def exit(self):
