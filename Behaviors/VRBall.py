@@ -49,7 +49,7 @@ class VRBall(Behavior, dj.Manual):
         self.previous_y = 0
         self.resp_loc_x = None
         self.resp_loc_y = None
-        self.interface = VRProbe(exp.logger)
+        self.interface = VRProbe(exp=exp)
         super(VRBall, self).setup(exp)
         source_path = '/home/eflab/Tracking/'
         target_path = '/mnt/lab/data/Tracking/'

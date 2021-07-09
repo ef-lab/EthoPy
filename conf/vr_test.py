@@ -6,6 +6,7 @@ from Stimuli.VROdors import *
 session_params = {
     'trial_selection'        : 'random',
     'noresponse_intertrial'  : True,
+    'setup_conf_idx'         : 1,
 }
 
 exp = Experiment()
