@@ -56,7 +56,7 @@ class Logger:
             try:
                 table.insert1(item.tuple, ignore_extra_fields=ignore, skip_duplicates=skip, replace=item.replace)
             except Exception as e:
-                print('Failed to insert:\n', item.tuple, '\n With error:\n', e)
+                print('Failed to insert:\n', item.tuple, '\n in ', table, '\n With error:\n', e)
 
             self.thread_lock.release()
             if item.block: self.queue.task_done()

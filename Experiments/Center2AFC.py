@@ -83,20 +83,19 @@ class Entry(Experiment):
 
 class PreTrial(Experiment):
     def entry(self):
-        self.stim.prepare()
-        if not self.stim.curr_cond:
-            self.logger.update_setup_info({'status': 'stop'})
-        else:
-            self.beh.prepare(self.stim.curr_cond)
+        self.prepare_trial()
+        self.stim.prepare(self.curr_cond)
+        self.beh.prepare(self.curr_cond)
         super().entry()
 
     def run(self):
-        self.logger.ping()
+        if not self.is_stopped() and self.beh.is_ready(self.curr_cond['init_ready'], self.start_time):
+            self.resp_ready = True
 
     def next(self):
-        if self.is_stopped() or not self.stim.curr_cond:
+        if self.is_stopped():
             return 'Exit'
-        elif self.beh.is_ready(self.stim.curr_cond['init_ready']):
+        elif self.resp_ready:
             return 'Trial'
         else:
             return 'PreTrial'

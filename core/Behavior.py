@@ -142,6 +142,9 @@ class Behavior:
         self.logger.log('Activity.' + table, key, schema='behavior')
 
     def log_reward(self, reward_amount):
+        if isinstance(self.curr_cond['reward_port'], list):
+            self.curr_cond['reward_port'] = [self.licked_probe]
+            self.curr_cond['response_port'] = [self.licked_probe]
         self.logger.log('Rewards', {**self.curr_cond, 'reward_amount': reward_amount}, schema='behavior')
 
     def make_conditions(self, conditions):
