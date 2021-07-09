@@ -30,6 +30,10 @@ class Stimulus:
         """store parent objects """
         self.logger = exp.logger
         self.exp = exp
+        intensity = self.logger.get(schema='experiment', table='SetupConfiguration.Screen')
+        if self.logger.is_pi:
+            cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % intensity
+            os.system(cmd)
 
     def setup(self):
         """setup stimulation for presentation before experiment starts"""
@@ -42,7 +46,9 @@ class Stimulus:
 
     def start(self):
         """start stimulus"""
-        pass
+        self.isrunning = True
+        self.logger.log('StimCondition.Trial', dict(period='', stim_hash=self.curr_cond['stim_hash']),
+                        schema='stimulus')
 
     def present(self):
         """stimulus presentation method"""
@@ -50,7 +56,7 @@ class Stimulus:
 
     def stop(self):
         """stop stimulus"""
-        pass
+        self.isrunning = False
 
     def exit(self):
         """exit stimulus stuff"""
@@ -67,12 +73,6 @@ class Stimulus:
     def punish_stim(self):
         """Stim Cue for punishment"""
         pass
-
-    def set_intensity(self):
-        intensity = self.logger.get(schema='experiment', table='SetupConfiguration.Screen')
-        if self.logger.is_pi:
-            cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % intensity
-            os.system(cmd)
 
     def make_conditions(self, conditions=[]):
         """generate and store stimulus condition hashes"""

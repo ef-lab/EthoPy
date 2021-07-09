@@ -128,7 +128,6 @@ class RPMovies(Movies):
         self.phd_size = (50, 50)    # default photodiode signal size in pixels
         self.flip_count = 0
         self.timer = Timer()
-        #self.set_intensity(self.params['intensity'])
 
         # setup pygame
         if not pygame.get_init():
@@ -185,12 +184,6 @@ class RPMovies(Movies):
             self.vid.stop()
         self.unshow()
         self.isrunning = False
-
-    def set_intensity(self, intensity=None):
-        if intensity is None:
-            intensity = self.params['intensity']
-        cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % intensity
-        os.system(cmd)
 
     def _init_player(self):
         self.filename = self.path + self.get_clip_info(self.curr_cond, 'Movie.Clip', 'file_name')

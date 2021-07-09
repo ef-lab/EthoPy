@@ -215,11 +215,6 @@ class Panda(Stimulus, dj.Manual):
         self.set_background_color(*color)
         self.flip(2)
 
-    def set_intensity(self, intensity=None):
-        if not intensity: intensity = self.params['intensity']
-        cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % intensity
-        os.system(cmd)
-
     def close(self):
         pass
 
