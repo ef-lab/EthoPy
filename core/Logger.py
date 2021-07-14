@@ -79,6 +79,10 @@ class Logger:
 
     def log(self, table, data=dict(), **kwargs):
         tmst = self.logger_timer.elapsed_time()
+        print(table)
+        print(self.trial_key)
+        print(data)
+        print(kwargs)
         self.put(table=table, tuple={**self.trial_key, 'time': tmst, **data}, **kwargs)
         return tmst
 
