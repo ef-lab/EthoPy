@@ -1,5 +1,5 @@
 from Stimuli.SmellyObjects import *
-from Experiments.Match2Sample import *
+from Experiments.MatchToSample import *
 from Behaviors.MultiPort import *
 
 # define session parameters

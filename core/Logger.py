@@ -81,24 +81,26 @@ class Logger:
         key = {**key, 'ip': self.get_ip(), 'status': self.setup_status}
         self.put(table='SetupControl', tuple=key, replace=True, priority=1, block=True)
 
-    def log_session(self, params, aim=''):
+    def log_session(self, params, log_protocol=False):
         self.total_reward = 0
         self.trial_key = dict(animal_id=self.get_setup_info('animal_id'), trial_idx=0)
         last_sessions = (Session() & self.trial_key).fetch('session')
         self.trial_key['session'] = 1 if numpy.size(last_sessions) == 0 else numpy.max(last_sessions) + 1
         session_key = {**self.trial_key, 'setup_conf_idx': params['setup_conf_idx'], 'setup': self.setup,
-                       'aim': aim, 'user': params['user'] if 'user' in params else 'RP'}
+                       'user': params['user'] if 'user' in params else 'bot'}
         self.put(table='Session', tuple=session_key, priority=1)
-        pr_name, pr_file = self.get_protocol(raw_file=True)
-        git_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
-        self.put(table='Session.Protocol', tuple={**self.trial_key, 'protocol_name': pr_name,
-                                                  'protocol_file': pr_file, 'git_hash': git_hash})
+        if log_protocol:
+            pr_name, pr_file = self.get_protocol(raw_file=True)
+            git_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
+            self.put(table='Session.Protocol', tuple={**self.trial_key, 'protocol_name': pr_name,
+                                                      'protocol_file': pr_file, 'git_hash': git_hash})
         key = {'session': self.trial_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1}
         if 'start_time' in params:
             tdelta = lambda t: datetime.strptime(t, "%H:%M:%S") - datetime.strptime("00:00:00", "%H:%M:%S")
             key = {**key, 'start_time': tdelta(params['start_time']), 'stop_time': tdelta(params['stop_time'])}
         self.update_setup_info(key)
         self.logger_timer.start()  # start sessio n time
+        return self.trial_key['session']
 
     def update_setup_info(self, info):
         self.setup_info = {**(SetupControl() & dict(setup=self.setup)).fetch1(), **info}

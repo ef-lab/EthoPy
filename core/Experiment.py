@@ -63,7 +63,7 @@ class ExperimentClass:
         self.conditions, self.quit, self.curr_cond, self.dif_h, self.stims = [], False, dict(), [], dict()
         self.params = {**self.default_key, **session_params}
         self.logger = logger
-        self.logger.log_session({**self.default_key, **session_params}, self.__class__.__name__)
+        self.logger.log_session({**self.default_key, **session_params}, log_protocol=True)
         self.beh = BehaviorClass()
         self.beh.setup(self)
         self.interface = self.beh.interface
@@ -282,9 +282,8 @@ class Software(dj.Lookup):
     ]
 
 
-
 @experiment.schema
-class SurgeryTypes(dj.Lookup):
+class SurgeryType(dj.Lookup):
     definition = """
     # Surgery types
     type                 : varchar(16)                  # aim
@@ -307,8 +306,9 @@ class Surgery(dj.Manual):
     animal_id            : smallint UNSIGNED            # animal id
     timestamp            : timestamp                    # timestamp
     ---
-    ->SurgeryTypes      
-    note=null            : varchar(2048)                # session notes
+    ->User
+    ->SurgeryType      
+    note=null            : varchar(2048)                # surgery notes
     """
 
 
@@ -320,7 +320,7 @@ class Session(dj.Manual):
     session              : smallint UNSIGNED            # session number
     ---
     -> SetupConfiguration
-    user                 : varchar(32)
+    user_name            : varchar(16)                  # user performing the experiment
     setup=null           : varchar(256)                 # computer id
     session_tmst         : timestamp                    # session timestamp
     """
@@ -353,18 +353,31 @@ class Session(dj.Manual):
         timestamp=CURRENT_TIMESTAMP : timestamp  
         """
 
-    class Recording(dj.Part):
+    class Anesthesia(dj.Part):
         definition = """
-        # File session info
+        # Excluded sessions
         -> Session
-        -> Aim
+        timestamp                   : timestamp          # timestamp
         ---
-        -> Software
-        filename=null        : varchar(256)              # file
-        source_path=null     : varchar(512)              # local path
-        target_path=null     : varchar(512)              # shared drive path
-        timestamp            : timestamp                 # timestamp
+        -> Anesthesia
+        note=null                   : varchar(2048)      # anesthesia notes
         """
+
+
+@experiment.schema
+class Recording(dj.Manual):
+    definition = """
+    # File session info
+    -> Session
+    rec_idx              : smallint UNSIGNED         # unique recording index
+    ---
+    -> Aim
+    -> Software
+    filename=null        : varchar(256)              # file
+    source_path=null     : varchar(512)              # local path
+    target_path=null     : varchar(512)              # shared drive path
+    timestamp            : timestamp                 # timestamp
+    """
 
 
 @experiment.schema
@@ -384,10 +397,10 @@ class Trial(dj.Manual):
     definition = """
     # Trial information
     -> Session
-    trial_idx            : smallint UNSIGNED            # unique condition index
+    trial_idx            : smallint UNSIGNED         # unique trial index
     ---
     -> Condition
-    time                 : int                          # start time from session start (ms)
+    time                 : int                       # start time from session start (ms)
     """
 
     class Aborted(dj.Part):
