@@ -205,6 +205,7 @@ class VRProbe(RPProbe):
     channels = {'odor': {1: 19, 2: 16, 3: 26, 4: 20},
                 'liquid': {1: 22},
                 'lick': {1: 17}}
+    pwm = dict()
 
     def start_odor(self, dutycycle=50):
         for idx, channel in enumerate(list(self.channels['odor'].values())):
