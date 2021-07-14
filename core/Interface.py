@@ -282,7 +282,7 @@ class Ball(Interface):
             self.loc_x = loc_x
             self.loc_y = loc_y
             self.timestamp = timestamp
-            #print(self.loc_x, self.loc_y, self.theta/np.pi*180)
+            print(self.loc_x, self.loc_y, self.theta/np.pi*180)
             self.append2Dataset()
             time.sleep(.1)
 
