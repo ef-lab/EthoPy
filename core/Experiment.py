@@ -332,6 +332,19 @@ class Surgery(dj.Manual):
 
 
 @experiment.schema
+class Anesthesia(dj.Part):
+    definition = """
+    # Excluded sessions
+    animal_id                   : smallint UNSIGNED  # animal id
+    timestamp                   : timestamp          # timestamp
+    ---
+    -> AnesthesiaType
+    dose=""                     : varchar(10)        # anesthesia dosage
+    note=null                   : varchar(2048)      # anesthesia notes
+    """
+
+
+@experiment.schema
 class Session(dj.Manual):
     definition = """
     # Session info
@@ -339,6 +352,7 @@ class Session(dj.Manual):
     session              : smallint UNSIGNED            # session number
     ---
     -> SetupConfiguration
+    -> AnesthesiaType
     user_name            : varchar(16)                  # user performing the experiment
     setup=null           : varchar(256)                 # computer id
     session_tmst         : timestamp                    # session timestamp
@@ -372,15 +386,11 @@ class Session(dj.Manual):
         timestamp=CURRENT_TIMESTAMP : timestamp  
         """
 
-    class Anesthesia(dj.Part):
+    class Anesthetized(dj.Part):
         definition = """
-        # Excluded sessions
+        # Anesthetized sessions
         -> Session
-        timestamp                   : timestamp          # timestamp
-        ---
-        -> AnesthesiaType
-        dose=""                     : varchar(10)        # anesthesia dosage
-        note=null                   : varchar(2048)      # anesthesia notes
+        -> Anesthesia
         """
 
 
