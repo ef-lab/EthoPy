@@ -1,5 +1,5 @@
 import numpy as np
-import scipy
+#import scipy
 from scipy import ndimage
 from itertools import product
 import hashlib, base64, functools
