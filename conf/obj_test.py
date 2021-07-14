@@ -60,7 +60,7 @@ for irep in range(0, reps):
             'response_port'     : rew_prob[idx],
             'cue_ready'         : 100,
             'cue_duration'      : 240000,
-            'delay_duration'    : 300,
+            'delay_duration'    : 100,
             'response_duration' : 5000,
             'reward_duration'   : 2000,
             'punish_duration'   : 5000,

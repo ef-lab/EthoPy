@@ -57,6 +57,14 @@ class Logger:
                 table.insert1(item.tuple, ignore_extra_fields=ignore, skip_duplicates=skip, replace=item.replace)
             except Exception as e:
                 print('Failed to insert:\n', item.tuple, '\n in ', table, '\n With error:\n', e)
+                if not item.error:
+                    print('Will retry later')
+                    item.error = True
+                    item.priority = item.priority + 2
+                    self.queue.put(item)
+                else:
+                    print('Errored again, stopping')
+                    raise
 
             self.thread_lock.release()
             if item.block: self.queue.task_done()
@@ -87,7 +95,7 @@ class Logger:
         last_sessions = (Session() & self.trial_key).fetch('session')
         self.trial_key['session'] = 1 if numpy.size(last_sessions) == 0 else numpy.max(last_sessions) + 1
         session_key = {**self.trial_key, 'setup_conf_idx': params['setup_conf_idx'], 'setup': self.setup,
-                       'user': params['user'] if 'user' in params else 'bot'}
+                       'user_name': params['user'] if 'user_name' in params else 'bot'}
         self.put(table='Session', tuple=session_key, priority=1)
         if log_protocol:
             pr_name, pr_file = self.get_protocol(raw_file=True)
@@ -162,3 +170,4 @@ class PrioritizedItem:
     replace: bool = datafield(compare=False, default=False)
     block: bool = datafield(compare=False, default=False)
     priority: int = datafield(default=50)
+    error: bool = datafield(compare=False, default=False)
