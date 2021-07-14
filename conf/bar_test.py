@@ -22,15 +22,15 @@ session_params = {
 # define stimulus conditions
 key = {
     'center_x'              : 0,
-    'center_y'              : -0.17,
+    'center_y'              : 0,
     'max_res'               : 1000,
     'bar_width'             : 4,  # degrees
-    'bar_speed'             : 2,  # degrees/sec
-    'flash_speed'           : 2,
-    'grat_width'            : 10,  # degrees
-    'grat_freq'             : 1,
-    'grid_width'            : 10,
-    'grit_freq'             : .1,
+    'bar_speed'             : 12,  # degrees/sec
+    'flash_speed'           : 6,
+    'grat_width'            : 3,  # degrees
+    'grat_freq'             : 3,
+    'grid_width'            : 15,
+    'grit_freq'             : 3,
     'style'                 : 'checkerboard', # checkerboard, grating
     'direction'             : 1,             # 1 for UD LR, -1 for DU RL
     'flatness_correction'   : 1,
