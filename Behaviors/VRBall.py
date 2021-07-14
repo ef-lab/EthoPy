@@ -83,7 +83,7 @@ class VRBall(Behavior, dj.Manual):
 
     def is_correct(self):
         x, y, theta, tmst = self.get_position()
-        cor_loc = np.array([self.curr_cond['correct_loc_x'], self.curr_cond['correct_loc_y']])
+        cor_loc = np.array([self.curr_cond['reward_loc_x'], self.curr_cond['reward_loc_y']])
         in_position = np.sum((cor_loc - [x, y]) ** 2) ** .5 < self.curr_cond['radius']
         return in_position
 
