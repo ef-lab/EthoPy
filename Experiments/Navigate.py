@@ -17,7 +17,6 @@ class Navigate(dj.Manual):
     incremental_punishment=1    : tinyint(1)
 
     difficulty                  : int   
-    init_ready                  : int
     trial_ready                 : int
     trial_duration              : int
     intertrial_duration         : int
@@ -39,7 +38,6 @@ class Experiment(State, ExperimentClass):
                    'incremental_punishment': True,
 
                    'difficulty'             : 0,
-                   'init_ready'             : 0,
                    'trial_ready'            : 0,
                    'intertrial_duration'    : 1000,
                    'trial_duration'         : 1000,
@@ -69,20 +67,14 @@ class PreTrial(Experiment):
         self.prepare_trial()
         self.beh.prepare(self.curr_cond)
         self.stim.prepare(self.curr_cond)
-        super().entry()
-
-    def run(self):
-        if not self.is_stopped() and self.beh.is_ready(self.curr_cond['init_ready'], self.start_time):
-            self.resp_ready = True
         self.logger.ping()
+        super().entry()
 
     def next(self):
         if self.is_stopped():
             return 'Exit'
-        elif self.resp_ready:
-            return 'Trial'
         else:
-            return 'PreTrial'
+            return 'Trial'
 
 
 class Trial(Experiment):
