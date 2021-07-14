@@ -74,7 +74,8 @@ class VRBall(Behavior, dj.Manual):
     def is_ready(self):
         x, y, theta, tmst = self.get_position()
         in_position = any(
-            [np.sum((np.array(r) - [x, y]) ** 2) ** .5 < self.curr_cond['radius'] for r in self.curr_cond['response_loc_x', 'response_loc_y']])
+            [np.sum((np.array(r) - [x, y]) ** 2) ** .5 < self.curr_cond['radius'] for r in self.curr_cond[('response_loc_x', 'response_loc_y')]])
+
         return in_position
 
     def is_running(self):
