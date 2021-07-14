@@ -1,4 +1,5 @@
 from core.Stimulus import *
+from utils.Timer import *
 
 
 @stimulus.schema
