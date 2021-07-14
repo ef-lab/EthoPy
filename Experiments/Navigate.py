@@ -109,7 +109,7 @@ class Trial(Experiment):
 class Abort(Experiment):
     def run(self):
         self.beh.update_history()
-        self.logger.log('AbortedTrial')
+        self.logger.log('Aborted')
 
     def next(self):
         return 'InterTrial'
