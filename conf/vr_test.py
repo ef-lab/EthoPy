@@ -9,7 +9,6 @@ session_params = {
     'setup_conf_idx'         : 1,
 }
 
-print('lol')
 exp = Experiment()
 exp.setup(logger, VRBall, session_params)
 
