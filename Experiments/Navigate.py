@@ -27,7 +27,7 @@ class Navigate(dj.Manual):
 
 
 class Experiment(State, ExperimentClass):
-    cond_tables = ['Navigate', 'Navigate.SessionParams', 'Navigate.TrialParams']
+    cond_tables = ['Navigate']
     required_fields = []
     default_key = {'trial_selection'       : 'staircase',
                    'bias_window'           : 5,
