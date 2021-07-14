@@ -143,7 +143,6 @@ class Punish(Experiment):
 
 class InterTrial(Experiment):
     def entry(self):
-        self.logger.log()
         super().entry()
 
     def run(self):
