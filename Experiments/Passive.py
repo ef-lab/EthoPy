@@ -14,7 +14,7 @@ class Passive(dj.Manual):
 
 
 class Experiment(State, ExperimentClass):
-    cond_tables = ['Passive', 'Passive.SessionParams', 'Passive.TrialParams']
+    cond_tables = ['Passive']
     default_key = {'trial_selection'       : 'fixed',
 
                    'intertrial_duration'    : 1000}
