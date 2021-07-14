@@ -266,6 +266,21 @@ class Aim(dj.Lookup):
 
 
 @experiment.schema
+class AnesthesiaType(dj.Lookup):
+    definition = """
+    # Acquisition program
+    anesthesia           : varchar(32)                  # anesthesia type
+    ---
+    description=""       : varchar(2048)                # description
+    """
+    contents = [
+        ['awake'            , 'anesthesia not used'],
+        ['isoflurane'       , 'through evaporator' ],
+        ['ketamine/xylazine', 'mixtured injected IP'],
+    ]
+
+
+@experiment.schema
 class Software(dj.Lookup):
     definition = """
     # Acquisition program
@@ -359,7 +374,8 @@ class Session(dj.Manual):
         -> Session
         timestamp                   : timestamp          # timestamp
         ---
-        -> Anesthesia
+        -> AnesthesiaType
+        dose=""                     : varchar(10)        # anesthesia dosage
         note=null                   : varchar(2048)      # anesthesia notes
         """
 
