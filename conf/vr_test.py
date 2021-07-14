@@ -20,6 +20,7 @@ key = {
     'odor_y'                : (0, 0, 10, 10),
     'x_sz'                  : 10,
     'y_sz'                  : 10,
+    'init_duration'         : 0,
     'trial_duration'        : 300000,
     'theta0'                : 0,
     'x0'                    : 5,
