@@ -1,7 +1,7 @@
 from core.Stimulus import *
 
 
-@experiment.schema
+@stimulus.schema
 class VROdors(Stimulus, dj.Manual):
     definition = """
     # vr conditions
