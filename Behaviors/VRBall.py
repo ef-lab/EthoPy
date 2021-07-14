@@ -38,7 +38,7 @@ class VRBall(Behavior, dj.Manual):
         reward_type               : varchar(16)      # reward type
         """
 
-    cond_tables = ['VRBall', 'VRBall.Response', 'VRBall.Reward', 'VRBall.Position']
+    cond_tables = ['VRBall', 'VRBall.Response', 'VRBall.Reward']
     required_fields = ['x0', 'y0', 'radius', 'response_loc_y', 'response_loc_x',
                        'reward_loc_x', 'reward_loc_y', 'reward_amount']
     default_key = {'reward_type': 'water', 'speed_thr': 0.025,
