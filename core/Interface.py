@@ -90,6 +90,7 @@ class RPProbe(Interface):
         self.thread = ThreadPoolExecutor(max_workers=2)
         self.frequency = 20
         self.pulses = dict()
+        self.pwm = pwm
         if 'lick' in self.channels:
             self.GPIO.setup(list(self.channels['lick'].values()), self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         if 'proximity' in self.channels:
