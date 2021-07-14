@@ -24,7 +24,7 @@ class SmellyObjects(Panda):
 
     def start(self):
         delivery_port = self.curr_cond['delivery_port']
-        odor_id = self.curr_cond['odor_id']
+        odor_id = self.curr_cond['odorant_id']
         odor_dur = self.curr_cond['odor_duration']
         odor_dutycycle = self.curr_cond['dutycycle']
         super().start()

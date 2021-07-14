@@ -94,7 +94,6 @@ class Trial(Experiment):
         self.resp_ready = False
         super().entry()
         self.stim.start()
-        self.trial_start = self.logger.log_trial(self.stim.curr_cond['cond_hash'])
 
     def run(self):
         self.stim.present()  # Start Stimulus
@@ -126,7 +125,7 @@ class Trial(Experiment):
 class Abort(Experiment):
     def run(self):
         self.beh.update_history()
-        self.logger.log('AbortedTrial')
+        self.logger.log('Trial.Aborted')
 
     def next(self):
         return 'InterTrial'
