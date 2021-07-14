@@ -47,7 +47,6 @@ class Stimulus:
 
     def start(self):
         """start stimulus"""
-        self.beh = BehaviorClass()
         self.isrunning = True
         self.logger.log('StimCondition.Trial', dict(period='', stim_hash=self.curr_cond['stim_hash']),
                         schema='stimulus')
