@@ -161,6 +161,11 @@ class ExperimentClass:
                 priority += 1
         return conditions
 
+    def log_recording(self, key):
+        recs = self.logger.get(schema='experiment',table='Recording', key=self.logger.trial_key, fields=('rec_idx'))
+        rec_idx = 1 if not recs else max(recs)+1
+        self.logger.log('Recording', key.update(dict(rec_idx=rec_idx)), schema='experiment')
+
     def _anti_bias(self, choice_h, un_choices):
         choice_h = np.array([make_hash(c) for c in choice_h[-self.params['bias_window']:]])
         if len(choice_h) < self.params['bias_window']: choice_h = self.choices
