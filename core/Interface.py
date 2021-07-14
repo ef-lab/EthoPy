@@ -4,7 +4,7 @@ from utils.Timer import *
 from utils.helper_functions import *
 from concurrent.futures import ThreadPoolExecutor
 import threading, multiprocessing, struct, time, socket
-
+from datetime import datetime
 
 class Interface:
     port, lick_tmst, ready_dur, activity_tmst, ready_tmst, pulse_rew = 0, 0, 0, 0, 0, dict()
@@ -340,7 +340,7 @@ class MouseReader:
             # print('Reading file')
             data = self.file.read(3)  # Reads the 3 bytes
             x, y = struct.unpack("2b", data[1:])
-            queue.put({'x': x/dpm, 'y': y/dpm, 'timestamp': self.logger.session_timer.elapsed_time()})
+            queue.put({'x': x/dpm, 'y': y/dpm, 'timestamp': self.logger.logger_timer.elapsed_time()})
 
     def close(self):
         self.thread_end.set()
