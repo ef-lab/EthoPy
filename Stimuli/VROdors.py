@@ -42,8 +42,8 @@ class VROdors(Stimulus, dj.Manual):
         y_dist = (np.abs(odors_y - y) / mx)
         return (1 - ((x_dist ** 2 + y_dist ** 2) / 2) ** .5) ** extiction_factors * 100
 
-    def present(self, beh):
-        x, y, theta, tmst = self.beh.get_position()
+    def present(self):
+        x, y, theta, tmst = self.beh.setup.get_position()
         odor_dutycycles = self.loc2odor(x, y)
         self.exp.interface.update_odor(odor_dutycycles[np.array(self.curr_cond['delivery_port']) - 1])
 
