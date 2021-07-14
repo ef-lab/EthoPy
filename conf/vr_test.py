@@ -29,7 +29,8 @@ key = {
     'response_loc_x'        : (0, 10, 10, 0),
     'response_loc_y'        : (0, 0, 10, 10),
     'fun'                   : 2,
-    'radius'                : 0.8
+    'radius'                : 0.8,
+    'reward_amount'         : 10,
 }
 
 # run experiments
