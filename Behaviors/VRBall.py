@@ -60,7 +60,7 @@ class VRBall(Behavior, dj.Manual):
 
     def prepare(self, condition):
         self.vr.setPosition(condition['x_sz'], condition['y_sz'], condition['x0'], condition['y0'], condition['theta0'])
-        super().prepare()
+        super().prepare(condition)
 
     def is_licking(self, since=0):
         licked_probe, tmst = self.interface.get_last_lick()
