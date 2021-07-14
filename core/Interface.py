@@ -24,7 +24,7 @@ class Interface:
             dates = self.logger.get(schema='behavior', table='PortCalibration', key=key, fields=['date'], order_by='date')
             if np.size(dates) < 1:
                 print('No PortCalibration found!')
-                self.exp.stop()
+                self.exp.quit = True
                 break
             key['date'] = dates[-1]  # use the most recent calibration
             self.pulse_dur[port], pulse_num, weight = self.logger.get(schema='behavior', table='PortCalibration.Liquid',
