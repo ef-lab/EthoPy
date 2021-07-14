@@ -30,7 +30,8 @@ class VROdors(Stimulus, dj.Manual):
         self.logger.log('StimCondition.Trial', dict(period=self.period, stim_hash=self.curr_cond['stim_hash']),
                         schema='stimulus')
         self.isrunning = True
-        self.time.start()
+        self.timer = Timer()
+        self.timer.start()
 
     def loc2odor(self, x, y):
         odors_x = np.array(self.curr_cond['odor_x'])
