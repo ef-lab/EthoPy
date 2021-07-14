@@ -133,7 +133,6 @@ class ExperimentClass:
             if 'stimulus_class' in old_cond: self.stim.exit()
             self.stim = self.stims[self.curr_cond['stimulus_class']]
             self.stim.setup()
-
         self.curr_trial += 1
         self.logger.update_trial_idx(self.curr_trial)
         self.trial_start = self.logger.logger_timer.elapsed_time()
@@ -151,7 +150,6 @@ class ExperimentClass:
             cond.update({hsh: make_hash(key)})
             hash_dict[cond[hsh]] = cond[hsh]
             for ctable in condition_tables:  # insert dependant condition tables
-                priority += 1
                 core = [field for field in rgetattr(eval(schema), ctable).primary_key if field != hsh]
                 fields = [field for field in rgetattr(eval(schema), ctable).heading.names]
                 if not np.all([np.any(np.array(k) == list(cond.keys())) for k in fields]): continue # only insert complete tuples
@@ -160,6 +158,7 @@ class ExperimentClass:
                         cond_key = {k: cond[k] if type(cond[k]) in [int, float, str] else cond[k][idx] for k in fields}
                         self.logger.put(table=ctable, tuple=cond_key, schema=schema, priority=priority)
                 else: self.logger.put(table=ctable, tuple=cond.copy(), schema=schema, priority=priority)
+                priority += 1
         return conditions
 
     def _anti_bias(self, choice_h, un_choices):
@@ -321,7 +320,7 @@ class Surgery(dj.Manual):
     animal_id            : smallint UNSIGNED            # animal id
     timestamp            : timestamp                    # timestamp
     ---
-    ->User
+    user_name            : varchar(16)                  # user performing the surgery
     ->SurgeryType      
     note=null            : varchar(2048)                # surgery notes
     """
