@@ -58,7 +58,10 @@ class Entry(Experiment):
         pass
 
     def next(self):
-        return 'PreTrial'
+        if self.is_stopped():
+            return 'Exit'
+        else:
+            return 'PreTrial'
 
 
 class PreTrial(Experiment):
