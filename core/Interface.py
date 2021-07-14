@@ -99,9 +99,11 @@ class RPProbe(Interface):
         self.Pulser = pigpio.pi()
         self.PulseGen = pigpio.pulse
         if 'liquid' in self.channels:
-            self.Pulser.set_mode(list(self.channels['liquid'].values()), pigpio.OUTPUT)
+            for channel in self.channels['liquid']:
+                self.Pulser.set_mode(self.channels['liquid'][channel], pigpio.OUTPUT)
         if 'sound' in self.channels:
-            self.Pulser.set_mode(list(self.channels['sound'].values()), pigpio.OUTPUT)
+            for channel in self.channels['sound']:
+                self.Pulser.set_mode(self.channels['sound'][channel], pigpio.OUTPUT)
         if self.callbacks:
             if 'lick' in self.channels:
                 self.GPIO.add_event_detect(list(self.channels['lick'].values()), self.GPIO.RISING,
