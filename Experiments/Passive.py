@@ -6,23 +6,11 @@ class Passive(dj.Manual):
     definition = """
     # Passive experiment conditions
     -> Condition
+    ---
+    trial_selection='fixed' : enum('fixed','random') 
+
+    intertrial_duration     : int
     """
-
-    class SessionParams(dj.Part):
-        definition = """
-        # Passive experiment conditions
-        -> Passive
-        ---
-        trial_selection='fixed'    : enum('fixed','random') 
-        """
-
-    class TrialParams(dj.Part):
-        definition = """
-        # Match2Sample experiment conditions
-        -> Passive
-        ---
-        intertrial_duration   : int
-        """
 
 
 class Experiment(State, ExperimentClass):

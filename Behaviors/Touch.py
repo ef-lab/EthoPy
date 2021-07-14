@@ -1,10 +1,41 @@
 from core.Behavior import *
+from core.Interface import *
+import numpy as np
 
 
-class TouchBehavior(Behavior):
-    def __init__(self, logger, params):
+@behavior.schema
+class Touch(Behavior, dj.Manual):
+    definition = """
+    # This class handles the behavior variables for RP
+    ->BehCondition
+    """
+
+    class Response(dj.Part):
+        definition = """
+        # Touch response condition
+        -> Touch
+        response_loc_x            : float            # response port id
+        response_loc_y            : float   
+        """
+
+    class Reward(dj.Part):
+        definition = """
+        # reward port conditions
+        -> Touch
+        ---
+        reward_port               : tinyint          # reward port id
+        reward_amount=0           : float            # reward amount
+        reward_type               : varchar(16)      # reward type
+        """
+
+    cond_tables = ['Touch', 'Touch.Response', 'Touch.Reward']
+    required_fields = ['response_loc_x', 'response_loc_y', 'reward_amount']
+    default_key = {'reward_type': 'water', 'reward_port': 1}
+
+    def setup(self, exp):
         import ft5406 as TS
-        super(TouchBehavior, self).__init__(logger, params)
+        self.interface = RPProbe(exp=exp)
+        super(Touch, self).setup(exp)
         self.screen_sz = np.array([800, 480])
         self.touch_area = 50  # +/- area in pixels that a touch can occur
         self.since = 0
@@ -12,7 +43,6 @@ class TouchBehavior(Behavior):
         self.buttons = list()
         self.loc2px = lambda x: self.screen_sz/2 + np.array(x)*self.screen_sz[0]
         self.px2loc = lambda x: np.array(x)/self.screen_sz[0] - self.screen_sz/2
-        self.interface = RPProbe(logger)
         self.ts = TS.Touchscreen()
         self.ts_press_event = TS.TS_PRESS
         self.last_touch_tmst = 0
@@ -21,9 +51,6 @@ class TouchBehavior(Behavior):
             touch.on_press = self._touch_handler
             touch.on_release = self._touch_handler
         self.ts.run()
-
-    def get_cond_tables(self):
-        return ['RewardCond']
 
     def is_licking(self, since=0):
         licked_probe, tmst = self.interface.get_last_lick()

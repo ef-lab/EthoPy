@@ -6,36 +6,24 @@ class Navigate(dj.Manual):
     definition = """
     # Navigation experiment conditions
     -> Condition
+    ---
+    trial_selection='staircase' : enum('fixed','random','staircase','biased') 
+    bias_window=5               : smallint
+    staircase_window=20         : smallint
+    stair_up=0.7                : float
+    stair_down=0.55             : float
+    noresponse_intertrial=1     : tinyint(1)
+    norun_response=1            : tinyint(1)
+    incremental_punishment=1    : tinyint(1)
+
+    difficulty                  : int   
+    init_ready                  : int
+    trial_ready                 : int
+    trial_duration              : int
+    intertrial_duration         : int
+    reward_duration             : int
+    punish_duration             : int
     """
-
-    class SessionParams(dj.Part):
-        definition = """
-        # Navigation session conditions
-        -> Navigate
-        ---
-        trial_selection='staircase': enum('fixed','random','staircase','biased') 
-        bias_window=5              : smallint
-        staircase_window=20        : smallint
-        stair_up=0.7               : float
-        stair_down=0.55            : float
-        noresponse_intertrial=1    : tinyint(1)
-        norun_response=1           : tinyint(1)
-        incremental_punishment=1   : tinyint(1)
-        """
-
-    class TrialParams(dj.Part):
-        definition = """
-        # Navigation trial conditions
-        -> Navigate
-        ---
-        difficulty            : int   
-        init_ready            : int
-        trial_ready           : int
-        trial_duration        : int
-        intertrial_duration   : int
-        reward_duration       : int
-        punish_duration       : int
-        """
 
 
 class Experiment(State, ExperimentClass):

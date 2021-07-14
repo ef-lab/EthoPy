@@ -3,7 +3,8 @@ from core.Interface import *
 from utils.TouchInterface import TouchInterface
 import time as systime
 
-class ProbeTest:
+
+class PortTest:
     def __init__(self, logger, params):
         self.params = params
         self.logger = logger

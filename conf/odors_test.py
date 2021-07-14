@@ -1,5 +1,5 @@
 from Stimuli.Olfactory import *
-from Experiments.Center2AFC import *
+from Experiments.MatchPort import *
 from Behaviors.MultiPort import *
 
 
