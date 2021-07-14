@@ -94,8 +94,8 @@ class RPProbe(Interface):
             self.GPIO.setup(list(self.channels['lick'].values()), self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
         if 'proximity' in self.channels:
             self.GPIO.setup(list(self.channels['proximity'].values()), self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-        if 'air' in self.channels:
-            self.GPIO.setup(list(self.channels['air'].values()), self.GPIO.OUT, initial=self.GPIO.LOW)
+        if 'odor' in self.channels:
+            self.GPIO.setup(list(self.channels['odor'].values()), self.GPIO.OUT, initial=self.GPIO.LOW)
         self.Pulser = pigpio.pi()
         self.PulseGen = pigpio.pulse
         if 'liquid' in self.channels:
@@ -106,11 +106,13 @@ class RPProbe(Interface):
                 self.Pulser.set_mode(self.channels['sound'][channel], pigpio.OUTPUT)
         if self.callbacks:
             if 'lick' in self.channels:
-                self.GPIO.add_event_detect(list(self.channels['lick'].values()), self.GPIO.RISING,
-                                           callback=self._port_licked, bouncetime=100)
+                for channel in self.channels['lick']:
+                    self.GPIO.add_event_detect(self.channels['lick'][channel], self.GPIO.RISING,
+                                               callback=self._port_licked, bouncetime=100)
             if 'proximity' in self.channels:
-                self.GPIO.add_event_detect(list(self.channels['proximity'].values()), self.GPIO.BOTH,
-                                           callback=self._position_change, bouncetime=50)
+                for channel in self.channels['proximity']:
+                    self.GPIO.add_event_detect(self.channels['proximity'][channel], self.GPIO.BOTH,
+                                               callback=self._position_change, bouncetime=50)
 
     def setup_touch_exit(self):
         import ft5406 as TS
