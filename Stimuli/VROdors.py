@@ -29,7 +29,6 @@ class VROdors(Stimulus, dj.Manual):
         self.exp.interface.start_odor(0)
         self.logger.log('StimCondition.Trial', dict(period=self.period, stim_hash=self.curr_cond['stim_hash']),
                         schema='stimulus')
-        self.beh = BehaviorClass()
         self.isrunning = True
         self.timer = Timer()
         self.timer.start()
@@ -43,7 +42,7 @@ class VROdors(Stimulus, dj.Manual):
         y_dist = (np.abs(odors_y - y) / mx)
         return (1 - ((x_dist ** 2 + y_dist ** 2) / 2) ** .5) ** extiction_factors * 100
 
-    def present(self):
+    def present(self, beh):
         x, y, theta, tmst = self.beh.get_position()
         odor_dutycycles = self.loc2odor(x, y)
         self.exp.interface.update_odor(odor_dutycycles[np.array(self.curr_cond['delivery_port']) - 1])
