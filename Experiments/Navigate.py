@@ -154,7 +154,7 @@ class InterTrial(Experiment):
             return 'Exit'
         elif self.state_timer.elapsed_time() >= self.stim.curr_cond['intertrial_duration']:
             return 'PreTrial'
-        elif not self.isrunning:
+        elif not self.beh.is_running():
             return 'Pretrial'
         else:
             return 'InterTrial'
