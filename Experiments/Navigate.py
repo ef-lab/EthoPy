@@ -67,7 +67,7 @@ class PreTrial(Experiment):
         self.prepare_trial()
         self.beh.prepare(self.curr_cond)
         self.stim.prepare(self.curr_cond)
-        self.vr.prepare(self.curr_cond)
+        self.vr.is_running(self.curr_cond)
         self.logger.ping()
         super().entry()
 
