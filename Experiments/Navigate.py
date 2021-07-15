@@ -67,7 +67,6 @@ class PreTrial(Experiment):
         self.prepare_trial()
         self.beh.prepare(self.curr_cond)
         self.stim.prepare(self.curr_cond)
-        self.vr.is_running(self.curr_cond)
         self.logger.ping()
         super().entry()
 
@@ -155,7 +154,7 @@ class InterTrial(Experiment):
             return 'Exit'
         elif self.state_timer.elapsed_time() >= self.stim.curr_cond['intertrial_duration']:
             return 'PreTrial'
-        elif not self.vr.is_running():
+        elif not self.isrunning:
             return 'Pretrial'
         else:
             return 'InterTrial'

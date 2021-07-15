@@ -29,7 +29,7 @@ class VROdors(Stimulus, dj.Manual):
         self.exp.interface.start_odor(0)
         self.logger.log('StimCondition.Trial', dict(period=self.period, stim_hash=self.curr_cond['stim_hash']),
                         schema='stimulus')
-        self.is_running = True
+        self.isrunning = True
         self.timer = Timer()
         self.timer.start()
 
@@ -49,4 +49,4 @@ class VROdors(Stimulus, dj.Manual):
 
     def stop(self):
         self.exp.interface.stop_odor()
-        self.is_running = False
+        self.isrunning = False
