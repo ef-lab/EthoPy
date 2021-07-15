@@ -332,7 +332,7 @@ class Surgery(dj.Manual):
 
 
 @experiment.schema
-class Anesthesia(dj.Part):
+class Anesthesia(dj.Manual):
     definition = """
     # Excluded sessions
     animal_id                   : smallint UNSIGNED  # animal id
