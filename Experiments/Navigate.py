@@ -114,7 +114,6 @@ class Abort(Experiment):
     def run(self):
         self.beh.update_history()
         self.logger.log('Trial.Aborted')
-        print('trial aborted')
 
     def next(self):
         return 'InterTrial'
@@ -123,7 +122,6 @@ class Abort(Experiment):
 class Reward(Experiment):
     def run(self):
         self.beh.reward()
-        print('is rewarded')
 
     def next(self):
         return 'InterTrial'
@@ -154,7 +152,7 @@ class InterTrial(Experiment):
     def run(self):
         if self.beh.get_response(self.start_time) & self.params.get('noresponse_intertrial'):
             self.state_timer.start()
-            print('intertrial')
+        print('intertrial')
 
     def next(self):
         if self.is_stopped():
