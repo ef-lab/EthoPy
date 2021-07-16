@@ -91,8 +91,8 @@ class VRBall(Behavior, dj.Manual):
         return self.vr.getPosition()
 
     def reward(self):
-        self.interface.give_liquid(self.is_licking())
-        self.log_reward(self.reward_amount[self.licked_port])
+        self.interface.give_liquid(self.licked_probe)
+        self.log_reward(self.reward_amount[self.licked_probe])
         self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
 
     def start_odor(self):
