@@ -279,7 +279,7 @@ class AnesthesiaType(dj.Lookup):
     description=""       : varchar(2048)                # description
     """
     contents = [
-        ['awake'            , 'anesthesia not used'],
+        ['none'             , 'anesthesia not used'],
         ['isoflurane'       , 'through evaporator' ],
         ['ketamine/xylazine', 'mixtured injected IP'],
     ]
@@ -391,7 +391,7 @@ class Session(dj.Manual):
         definition = """
         # Anesthetized sessions
         -> Session
-        -> Anesthesia
+        -> AnesthesiaType
         """
 
 
