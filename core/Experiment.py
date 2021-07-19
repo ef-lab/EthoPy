@@ -2,6 +2,7 @@ import datajoint as dj
 from utils.helper_functions import *
 from utils.Timer import *
 import itertools
+import matplotlib.pyplot as plt
 
 experiment = dj.create_virtual_module('experiment', 'test_experiments', create_tables=True)
 stimulus = dj.create_virtual_module('stimulus', 'test_stimuli', create_tables=True)
@@ -421,6 +422,37 @@ class Condition(dj.Manual):
     experiment_class      : varchar(128)
     """
 
+    def getGroups(self):
+        odor_flag = (len(Trial & OdorCond.Port() & self) > 0)  # filter trials by hash number of odor
+        movie_flag = (len(Trial & MovieCond & self) > 0)  # filter trials by hash number of movies
+        obj_flag = (len(Trial & ObjectCond & self) > 0)  # filter trials by hash number of objects
+
+        if obj_flag:
+            conditions = (RewardCond() * ObjectCond() & (Trial & self)).proj(
+                movie_duration='0', probe='probe', dutycycle='0', odor_duration='0', obj_duration='obj_dur')
+        elif movie_flag and odor_flag:
+            conditions = (RewardCond() * MovieCond() * (OdorCond.Port() & 'delivery_port=1') \
+                          * OdorCond() & (Trial & self)).proj(movie_duration='movie_duration', dutycycle='dutycycle',
+                                                              odor_duration='odor_duration', probe='probe',
+                                                              obj_duration='0')
+        elif not movie_flag and odor_flag:
+            conditions = (RewardCond() * (OdorCond.Port() & 'delivery_port=1') * OdorCond() & (Trial & self)).proj(
+                movie_duration='0', dutycycle='dutycycle', odor_duration='odor_duration', probe='probe',
+                obj_duration='0')
+        elif movie_flag and not odor_flag:
+            conditions = (RewardCond() * MovieCond() & (Trial & self)).proj(
+                movie_duration='movie_duration', probe='probe', dutycycle='0', odor_duration='0', obj_duration='0')
+        else:
+            return []
+
+        uniq_groups, groups_idx = np.unique(
+            [cond.astype(int) for cond in
+             conditions.fetch('movie_duration', 'dutycycle', 'odor_duration', 'obj_duration', 'probe')],
+            axis=1, return_inverse=True)
+        conditions = conditions.fetch()
+        condition_groups = [conditions[groups_idx == group] for group in set(groups_idx)]
+        return condition_groups
+
 
 @experiment.schema
 class Trial(dj.Manual):
@@ -447,6 +479,55 @@ class Trial(dj.Manual):
         ---
         state               : varchar(64)
         """
+
+    def plotDifficulty(self, **kwargs):
+        conds = (self * Condition()).fetch('cond_tuple')
+        min_difficulty = np.min([cond['difficulty'] for cond in conds])
+
+        params = {'probe_colors': [[1, 0, 0], [0, .5, 1]],
+                  'trial_bins': 10,
+                  'range': 0.9,
+                  'xlim': (-1,),
+                  'ylim': (min_difficulty - 0.6,), **kwargs}
+
+        def plot_trials(trials, **kwargs):
+            conds, trial_idxs = ((Trial & trials) * Condition()).fetch('cond_tuple', 'trial_idx')
+            offset = ((trial_idxs - 1) % params['trial_bins'] - params['trial_bins'] / 2) * params['range'] * 0.1
+            difficulties = [cond['difficulty'] for cond in conds]
+            plt.scatter(trial_idxs, difficulties + offset, zorder=10, **kwargs)
+
+        # correct trials
+        correct_trials = ((LiquidDelivery * self).proj(
+            selected='ABS(time - end_time)<200 AND (time - start_time)>0') & 'selected > 0')
+
+        # missed trials
+        missed_trials = (self & AbortedTrial).proj()
+
+        # incorrect trials
+        incorrect_trials = ((self - correct_trials) - missed_trials).proj()
+        print('correct: {}, incorrect: {}, missed: {}'.format(len(correct_trials), len(incorrect_trials),
+                                                              len(missed_trials)))
+        print('correct: {}, incorrect: {}, missed: {}'.format(len(np.unique(correct_trials.fetch('trial_idx'))),
+                                                              len(np.unique(incorrect_trials.fetch('trial_idx'))),
+                                                              len(np.unique(missed_trials.fetch('trial_idx')))))
+
+        # plot trials
+        fig = plt.figure(figsize=(10, 5), tight_layout=True)
+        plot_trials(correct_trials, s=4, c=np.array(params['probe_colors'])[correct_trials.fetch('probe') - 1])
+        plot_trials(incorrect_trials, s=4, marker='o', facecolors='none', edgecolors=[.3, .3, .3], linewidths=.5)
+        plot_trials(missed_trials, s=.1, c=[[0, 0, 0]])
+
+        # plot info
+        plt.xlabel('Trials')
+        plt.ylabel('Difficulty')
+        plt.title('Animal:%d  Session:%d' % (Session() & self).fetch1('animal_id', 'session'))
+        plt.yticks(range(int(min(plt.gca().get_ylim())), int(max(plt.gca().get_ylim())) + 1))
+        plt.ylim(params['ylim'][0])
+        plt.xlim(params['xlim'][0])
+        plt.gca().xaxis.set_ticks_position('none')
+        plt.gca().yaxis.set_ticks_position('none')
+        plt.box(False)
+        plt.show()
 
 
 @experiment.schema
