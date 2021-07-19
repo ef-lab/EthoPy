@@ -2,15 +2,16 @@ from core.Experiment import *
 
 
 @experiment.schema
-class Passive(dj.Manual):
-    definition = """
-    # Passive experiment conditions
-    -> Condition
-    ---
-    trial_selection='fixed' : enum('fixed','random') 
-
-    intertrial_duration     : int
-    """
+class Condition(dj.Manual):
+    class Passive(dj.Part):
+        definition = """
+        # Passive experiment conditions
+        -> Condition
+        ---
+        trial_selection='fixed' : enum('fixed','random') 
+    
+        intertrial_duration     : int
+        """
 
 
 class Experiment(State, ExperimentClass):

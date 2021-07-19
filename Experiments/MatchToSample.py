@@ -2,38 +2,39 @@ from core.Experiment import *
 
 
 @experiment.schema
-class MatchToSample(dj.Manual):
-    definition = """
-    # Match2Sample experiment conditions
-    -> Condition
-    ---
-    trial_selection='staircase' : enum('fixed','random','staircase','biased') 
-    max_reward=3000             : smallint
-    min_reward=500              : smallint
-    bias_window=5               : smallint
-    staircase_window=20         : smallint
-    stair_up=0.7                : float
-    stair_down=0.55             : float
-    noresponse_intertrial=1     : tinyint(1)
-    incremental_punishment=1    : tinyint(1)
-
-    difficulty                  : int   
-    init_ready                  : int
-    cue_ready                   : int
-    delay_ready                 : int
-    resp_ready                  : int
-    intertrial_duration         : int
-    cue_duration                : int
-    delay_duration              : int
-    response_duration           : int
-    reward_duration             : int
-    punish_duration             : int
-    abort_duration              : int 
-    """
+class Condition(dj.Manual):
+    class MatchToSample(dj.Part):
+        definition = """
+        # Match2Sample experiment conditions
+        -> Condition
+        ---
+        trial_selection='staircase' : enum('fixed','random','staircase','biased') 
+        max_reward=3000             : smallint
+        min_reward=500              : smallint
+        bias_window=5               : smallint
+        staircase_window=20         : smallint
+        stair_up=0.7                : float
+        stair_down=0.55             : float
+        noresponse_intertrial=1     : tinyint(1)
+        incremental_punishment=1    : tinyint(1)
+    
+        difficulty                  : int   
+        init_ready                  : int
+        cue_ready                   : int
+        delay_ready                 : int
+        resp_ready                  : int
+        intertrial_duration         : int
+        cue_duration                : int
+        delay_duration              : int
+        response_duration           : int
+        reward_duration             : int
+        punish_duration             : int
+        abort_duration              : int 
+        """
 
 
 class Experiment(State, ExperimentClass):
-    cond_tables = ['MatchToSample']
+    cond_tables = ['Condition.MatchToSample']
     required_fields = ['difficulty']
     default_key = {'trial_selection'     : 'staircase',
                    'max_reward'            : 3000,
