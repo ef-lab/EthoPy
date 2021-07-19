@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 import threading, multiprocessing, struct, time, socket
 from datetime import datetime
 
+
 class Interface:
     port, lick_tmst, ready_dur, activity_tmst, ready_tmst, pulse_rew = 0, 0, 0, 0, 0, dict()
     ready, logging, timer_ready, weight_per_pulse, pulse_dur, channels = False, False, Timer(), dict(), dict(), dict()
@@ -247,7 +248,6 @@ class Ball(Interface):
         self.thread_end = threading.Event()
         self.thread_runner = threading.Thread(target=self.readMouse)
         self.thread_runner.start()
-
 
     def readMouse(self):
         while not self.thread_end.is_set():

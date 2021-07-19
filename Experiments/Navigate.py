@@ -2,27 +2,28 @@ from core.Experiment import *
 
 
 @experiment.schema
-class Navigate(dj.Manual):
-    definition = """
-    # Navigation experiment conditions
-    -> Condition
-    ---
-    trial_selection='staircase' : enum('fixed','random','staircase','biased') 
-    bias_window=5               : smallint
-    staircase_window=20         : smallint
-    stair_up=0.7                : float
-    stair_down=0.55             : float
-    noresponse_intertrial=1     : tinyint(1)
-    norun_response=1            : tinyint(1)
-    incremental_punishment=1    : tinyint(1)
-
-    difficulty                  : int   
-    trial_ready                 : int
-    trial_duration              : int
-    intertrial_duration         : int
-    reward_duration             : int
-    punish_duration             : int
-    """
+class Condition(dj.Manual):
+    class Navigate(dj.Part):
+        definition = """
+        # Navigation experiment conditions
+        -> Condition
+        ---
+        trial_selection='staircase' : enum('fixed','random','staircase','biased') 
+        bias_window=5               : smallint
+        staircase_window=20         : smallint
+        stair_up=0.7                : float
+        stair_down=0.55             : float
+        noresponse_intertrial=1     : tinyint(1)
+        norun_response=1            : tinyint(1)
+        incremental_punishment=1    : tinyint(1)
+    
+        difficulty                  : int   
+        trial_ready                 : int
+        trial_duration              : int
+        intertrial_duration         : int
+        reward_duration             : int
+        punish_duration             : int
+        """
 
 
 class Experiment(State, ExperimentClass):

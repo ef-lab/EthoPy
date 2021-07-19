@@ -2,30 +2,31 @@ from core.Experiment import *
 
 
 @experiment.schema
-class MatchPort(dj.Manual):
-    definition = """
-    # 2AFC experiment conditions
-    -> Condition
-    ---
-    trial_selection='staircase' : enum('fixed','random','staircase','biased') 
-    max_reward=3000             : smallint
-    min_reward=500              : smallint
-    bias_window=5               : smallint
-    staircase_window=20         : smallint
-    stair_up=0.7                : float
-    stair_down=0.55             : float
-    noresponse_intertrial=1     : tinyint(1)
-    incremental_punishment=1    : tinyint(1)
-    
-    difficulty                  : int   
-    init_ready                  : int
-    trial_ready                 : int
-    intertrial_duration         : int
-    trial_duration              : int
-    response_duration           : int
-    reward_duration             : int
-    punish_duration             : int
-    """
+class Condition(dj.Manual):
+    class MatchPort(dj.Part):
+        definition = """
+        # 2AFC experiment conditions
+        -> Condition
+        ---
+        trial_selection='staircase' : enum('fixed','random','staircase','biased') 
+        max_reward=3000             : smallint
+        min_reward=500              : smallint
+        bias_window=5               : smallint
+        staircase_window=20         : smallint
+        stair_up=0.7                : float
+        stair_down=0.55             : float
+        noresponse_intertrial=1     : tinyint(1)
+        incremental_punishment=1    : tinyint(1)
+        
+        difficulty                  : int   
+        init_ready                  : int
+        trial_ready                 : int
+        intertrial_duration         : int
+        trial_duration              : int
+        response_duration           : int
+        reward_duration             : int
+        punish_duration             : int
+        """
 
 
 class Experiment(State, ExperimentClass):

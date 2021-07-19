@@ -2,17 +2,18 @@ from core.Experiment import *
 
 
 @experiment.schema
-class FreeWater(dj.Manual):
-    definition = """
-    # Passive experiment conditions
-    -> Condition
-    ---
-    trial_selection='staircase': enum('fixed','random','staircase','biased') 
-    max_reward=3000            : smallint
-    bias_window=5              : smallint
-    noresponse_intertrial=1    : tinyint(1)
-    intertrial_duration        : int
-    """
+class Condition(dj.Manual):
+    class FreeWater(dj.Part):
+        definition = """
+        # Passive experiment conditions
+        -> Condition
+        ---
+        trial_selection='staircase': enum('fixed','random','staircase','biased') 
+        max_reward=3000            : smallint
+        bias_window=5              : smallint
+        noresponse_intertrial=1    : tinyint(1)
+        intertrial_duration        : int
+        """
 
 
 class Experiment(State, ExperimentClass):
