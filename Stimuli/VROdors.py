@@ -34,7 +34,7 @@ class VROdors(Stimulus, dj.Manual):
     def loc2odor(self, x, y):
         odors_x = np.array(self.curr_cond['odor_x'])
         odors_y = np.array(self.curr_cond['odor_y'])
-        mx = max(self.curr_cond['x_max'], self.curr_cond['y_max'])
+        mx = max(self.curr_cond['x_sz'], self.curr_cond['x_sz'])
         extiction_factors = np.array(self.curr_cond['extiction_factor'])
         x_dist = (np.abs(odors_x - x) / mx)
         y_dist = (np.abs(odors_y - y) / mx)

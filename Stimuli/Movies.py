@@ -127,7 +127,6 @@ class RPMovies(Movies):
         self.fps = 30              # default presentation framerate
         self.phd_size = (50, 50)    # default photodiode signal size in pixels
         self.flip_count = 0
-        self.timer = Timer()
 
         # setup pygame
         if not pygame.get_init():

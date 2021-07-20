@@ -63,18 +63,18 @@ class VRBall(Behavior, dj.Manual):
         super().prepare(condition)
 
     def is_licking(self, since=0):
-        licked_probe, tmst = self.interface.get_last_lick()
-        if tmst >= since and licked_probe:
-            self.licked_probe = licked_probe
+        licked_port, tmst = self.interface.get_last_lick()
+        if tmst >= since and licked_port:
+            self.licked_port = licked_port
             self.resp_timer.start()
         else:
-            self.licked_probe = 0
-        return self.licked_probe
+            self.licked_port = 0
+        return self.licked_port
 
     def is_ready(self):
         x, y, theta, tmst = self.get_position()
         in_position = False
-        for r_x, r_y in zip(self.curr_cond['resp_loc_x'], self.curr_cond['resp_loc_y']):
+        for r_x, r_y in zip(self.curr_cond['response_loc_x'], self.curr_cond['response_loc_y']):
             in_position = in_position or np.sum((np.array([r_x, r_y]) - [x, y]) ** 2) ** .5 < self.curr_cond['radius']
         return in_position
 
@@ -83,7 +83,7 @@ class VRBall(Behavior, dj.Manual):
 
     def is_correct(self):
         x, y, theta, tmst = self.get_position()
-        cor_loc = np.array([self.curr_cond['correct_loc_x'], self.curr_cond['correct_loc_y']])
+        cor_loc = np.array([self.curr_cond['reward_loc_x'], self.curr_cond['reward_loc_y']])
         in_position = np.sum((cor_loc - [x, y]) ** 2) ** .5 < self.curr_cond['radius']
         return in_position
 
@@ -93,7 +93,7 @@ class VRBall(Behavior, dj.Manual):
     def reward(self):
         self.interface.give_liquid(self.licked_port)
         self.log_reward(self.reward_amount[self.licked_port])
-        self.update_history(self.licked_probe, self.reward_amount[self.licked_probe])
+        self.update_history(self.licked_port, self.reward_amount[self.licked_port])
 
     def start_odor(self):
         self.interface.start_odor(0)

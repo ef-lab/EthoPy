@@ -24,7 +24,7 @@ class StimCondition(dj.Manual):
 class Stimulus:
     """ This class handles the stimulus presentation use function overrides for each stimulus class """
 
-    cond_tables, required_fields, default_key, curr_cond, conditions = [], [], dict(), dict(), []
+    cond_tables, required_fields, default_key, curr_cond, conditions, timer = [], [], dict(), dict(), [], Timer()
 
     def init(self, exp):
         """store parent objects """

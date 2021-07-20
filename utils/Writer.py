@@ -39,8 +39,6 @@ class Writer(object):
         while not self.thread_end.is_set():
             if not self.queue.empty():
                 values = self.queue.get()
-                # if values['dataset'] == 'frames':
-                #     data = values['data']
                 with h5py.File(self.datapath, mode='a') as h5f:
                     self.dset = h5f[values['dataset']]
                     self.dset.resize((self.datasets[values['dataset']].i + 1, ) + self.datasets[values['dataset']].shape)

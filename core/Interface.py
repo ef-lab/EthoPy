@@ -275,14 +275,14 @@ class Ball(Interface):
             x = -xm*np.sin(self.theta) - ym*np.cos(self.theta)
             y = -xm*np.cos(self.theta) + ym*np.sin(self.theta)
 
-            loc_x = min(self.loc_x + np.double(x), self.xmx)
-            loc_y = min(self.loc_y + np.double(y), self.ymx)
+            loc_x = self.loc_x + np.double(x)
+            loc_y = self.loc_y + np.double(y)
             timestamp = max(tmst1, tmst2)
             self.speed = np.sqrt((loc_x - self.loc_x)**2 + (loc_y - self.loc_y)**2)/(timestamp - self.timestamp)
-            self.loc_x = loc_x
-            self.loc_y = loc_y
+            self.loc_x = max(min(loc_x, self.xmx), 0)
+            self.loc_y = max(min(loc_y, self.ymx), 0)
             self.timestamp = timestamp
-            #print(self.loc_x, self.loc_y, self.theta/np.pi*180)
+            print(self.loc_x, self.loc_y, self.theta/np.pi*180)
             self.append2Dataset()
             time.sleep(.1)
 

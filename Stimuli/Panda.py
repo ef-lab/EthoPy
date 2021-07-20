@@ -113,7 +113,6 @@ class Panda(Stimulus, dj.Manual):
         self.disableMouse()
         self.isrunning = False
         self.movie = False
-        self.timer = Timer()
 
         #info = self.pipe.getDisplayInformation()
         #print(info.getTotalDisplayModes())

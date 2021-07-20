@@ -110,7 +110,7 @@ class Trial(Experiment):
 class Abort(Experiment):
     def run(self):
         self.beh.update_history()
-        self.logger.log('AbortedTrial')
+        self.logger.log('Trial.Aborted')
 
     def next(self):
         return 'InterTrial'
@@ -144,7 +144,6 @@ class Punish(Experiment):
 
 class InterTrial(Experiment):
     def entry(self):
-        self.logger.log_trial()
         super().entry()
 
     def run(self):
@@ -156,8 +155,8 @@ class InterTrial(Experiment):
             return 'Exit'
         elif self.state_timer.elapsed_time() >= self.stim.curr_cond['intertrial_duration']:
             return 'PreTrial'
-        elif not self.is_running:
-            return 'Pretrial'
+        elif not self.beh.is_running():
+            return 'PreTrial'
         else:
             return 'InterTrial'
 
