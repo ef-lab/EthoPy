@@ -91,13 +91,10 @@ class Trial(Experiment):
     def next(self):
         if self.response and self.beh.is_correct() and not self.beh.is_running():  # correct response
             return 'Reward'
-            print('is rewarded')
         elif not self.beh.is_ready() and self.response:
             return 'Abort'
-            print('is aborted')
         elif self.response and self.beh.is_ready():  # incorrect response
             return 'Punish'
-            print('is punished')
         elif self.state_timer.elapsed_time() > self.stim.curr_cond['trial_duration']:  # timed out
             return 'InterTrial'
         elif self.is_stopped():
@@ -152,7 +149,6 @@ class InterTrial(Experiment):
     def run(self):
         if self.beh.get_response(self.start_time) & self.params.get('noresponse_intertrial'):
             self.state_timer.start()
-        print('intertrial')
 
     def next(self):
         if self.is_stopped():
@@ -171,4 +167,3 @@ class Exit(Experiment):
         if self.stim:
             self.stim.exit()
         self.logger.ping(0)
-        print('exiteeddd')

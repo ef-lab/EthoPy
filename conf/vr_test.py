@@ -16,8 +16,8 @@ exp.setup(logger, VRBall, session_params)
 key = {
     'odorant_id'            : (1, 2, 3, 4),
     'delivery_port'         : (1, 2, 3, 4),
-    'odor_x'                : (0, 10, 10, 0),
-    'odor_y'                : (0, 0, 10, 10),
+    'odor_x'                : (4, 6, 6, 4),
+    'odor_y'                : (4, 4, 6, 6),
     'x_sz'                  : 10,
     'y_sz'                  : 10,
     'trial_duration'        : 300000,
@@ -28,7 +28,7 @@ key = {
     'reward_loc_y'          : 7,
     'response_loc_x'        : (0, 10, 10, 0),
     'response_loc_y'        : (0, 0, 10, 10),
-    'fun'                   : 2,
+    'fun'                   : 5,
     'radius'                : 0.8,
     'reward_amount'         : 10,
 }

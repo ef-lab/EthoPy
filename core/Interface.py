@@ -306,12 +306,14 @@ class Ball(Interface):
                                        ("loc_y", np.double),
                                        ("theta", np.double),
                                        ("tmst", np.double)])
+        #                               ("trial_idx", np.double)])
 
         self.dataset = self.Writer(self.datapath, target_path)
         self.dataset.createDataset('tracking_data', shape=(4,), dtype=TIME_SERIES_DOUBLE)
 
     def append2Dataset(self):
-        self.dataset.append('tracking_data', [self.loc_x, self.loc_y, self.theta, self.timestamp])
+    #    self.trial_idx = trial_idx
+        self.dataset.append('tracking_data', [self.loc_x, self.loc_y, self.theta, self.timestamp, self.trial_idx])
 
     def closeDatasets(self):
         self.dataset.exit()
