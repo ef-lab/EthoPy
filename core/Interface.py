@@ -286,7 +286,7 @@ class Ball(Interface):
             self.append2Dataset()
             time.sleep(.1)
 
-    def setPosition(self, xmx=1, ymx=1, x0=0, y0=0, theta0=0):
+    def setPosition(self, xmn=0, ymn=0, xmx=1, ymx=1, x0=0, y0=0, theta0=0):
         self.loc_x = x0
         self.loc_y = y0
         self.theta = theta0
