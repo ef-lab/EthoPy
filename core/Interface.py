@@ -290,6 +290,8 @@ class Ball(Interface):
         self.loc_x = x0
         self.loc_y = y0
         self.theta = theta0
+        self.xmn = xmn
+        self.ymn = ymn
         self.xmx = xmx
         self.ymx = ymx
 
