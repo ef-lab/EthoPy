@@ -313,7 +313,7 @@ class Ball(Interface):
 
     def append2Dataset(self):
     #    self.trial_idx = trial_idx
-        self.dataset.append('tracking_data', [self.loc_x, self.loc_y, self.theta, self.timestamp, self.trial_idx])
+        self.dataset.append('tracking_data', [self.loc_x, self.loc_y, self.theta, self.timestamp]) #self.trial_idx])
 
     def closeDatasets(self):
         self.dataset.exit()
