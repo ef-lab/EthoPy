@@ -34,7 +34,7 @@ class Writer(object):
 
     def append(self, dataset, data):
         self.queue.put({'dataset': dataset, 'data':data})
-        self.queue.put({'trial_idx': tria})
+    #    self.queue.put({'trial_idx': tria})
 
     def dequeue(self):
         while not self.thread_end.is_set():
