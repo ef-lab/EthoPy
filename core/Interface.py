@@ -275,8 +275,8 @@ class Ball(Interface):
             x = -xm*np.sin(self.theta) - ym*np.cos(self.theta)
             y = -xm*np.cos(self.theta) + ym*np.sin(self.theta)
 
-            loc_x = min(max(self.loc_x + np.double(x), self.xmn), self.xmx)
-            loc_y = min(max(self.loc_y + np.double(y), self.ymn), self.ymx)
+            loc_x = min(self.loc_x + np.double(x), self.xmx)
+            loc_y = min(self.loc_y + np.double(y), self.ymx)
             timestamp = max(tmst1, tmst2)
             self.speed = np.sqrt((loc_x - self.loc_x)**2 + (loc_y - self.loc_y)**2)/(timestamp - self.timestamp)
             self.loc_x = loc_x
@@ -286,12 +286,10 @@ class Ball(Interface):
             self.append2Dataset()
             time.sleep(.1)
 
-    def setPosition(self, xmn=0, ymn=0, xmx=1, ymx=1, x0=0, y0=0, theta0=0):
+    def setPosition(self, xmx=1, ymx=1, x0=0, y0=0, theta0=0):
         self.loc_x = x0
         self.loc_y = y0
         self.theta = theta0
-        self.xmn = xmn
-        self.ymn = ymn
         self.xmx = xmx
         self.ymx = ymx
 
