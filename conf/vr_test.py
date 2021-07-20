@@ -28,7 +28,7 @@ key = {
     'reward_loc_y'          : 0,
     'response_loc_x'        : (0, 2, 2, 0),
     'response_loc_y'        : (0, 0, 2, 2),
-    'fun'                   : 5,
+    'extiction_factor'      : 5,
     'radius'                : 0.5,
     'reward_amount'         : 10,
 }
