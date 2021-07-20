@@ -300,6 +300,5 @@ class Offtime(Experiment):
 class Exit(Experiment):
     def run(self):
         self.beh.exit()
-        if len(self.stim):
-            self.stim.exit()
+        self.stim.exit()
         self.logger.ping(0)
