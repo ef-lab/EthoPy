@@ -208,10 +208,10 @@ class VRProbe(RPProbe):
                 'lick': {1: 17}}
     pwm = dict()
 
-    def start_odor(self, dutycycle=50):
+    def start_odor(self, dutycycle=50, frequency=10):
         for idx, channel in enumerate(list(self.channels['odor'].values())):
-            self.pwm[idx] = self.GPIO.PWM(channel, self.frequency)
-            self.pwm[idx].ChangeFrequency(self.frequency)
+            self.pwm[idx] = self.GPIO.PWM(channel, frequency)
+            self.pwm[idx].ChangeFrequency(frequency)
             self.pwm[idx].start(dutycycle)
 
     def update_odor(self, dutycycles):  # for 2D olfactory setup
