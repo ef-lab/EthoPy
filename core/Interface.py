@@ -321,11 +321,14 @@ class Ball(Interface):
 
     def cleanup(self):
         try:
+            print('stopping thread')
             self.thread_end.set()
-            print('')
+            print('closing dataset')
             self.closeDatasets()
+            print('closing mice')
             self.mouse1.close()
             self.mouse2.close()
+            print('done')
         except:
             print('ball not running')
 
