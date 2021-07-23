@@ -352,4 +352,4 @@ class MouseReader:
 
     def close(self):
         self.thread_end.set()
-        self.thread_runner.join()
+        #self.thread_runner.join()
