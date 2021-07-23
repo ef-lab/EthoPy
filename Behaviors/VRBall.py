@@ -98,7 +98,7 @@ class VRBall(Behavior, dj.Manual):
     def start_odor(self):
         self.interface.start_odor(0)
 
-    def cleanup(self):
+    def exit(self):
         self.vr.quit()
         self.interface.cleanup()
 
