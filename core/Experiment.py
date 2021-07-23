@@ -81,6 +81,7 @@ class ExperimentClass:
         self.quit = self.quit or self.logger.setup_status in ['stop', 'exit']
         if self.quit and self.logger.setup_status not in ['stop', 'exit']:
             self.logger.update_setup_info({'status': 'stop'})
+        print(self.quit)
         return self.quit
 
     def make_conditions(self, stim_class, conditions, stim_periods=None):

@@ -133,6 +133,7 @@ class RPProbe(Interface):
     def give_liquid(self, port, duration=False):
         if duration: self._create_pulse(port, duration)
         self.thread.submit(self._give_pulse, port)
+        print('give water')
 
     def give_odor(self, delivery_port, odor_id, odor_duration, dutycycle):
         for i, idx in enumerate(odor_id):
