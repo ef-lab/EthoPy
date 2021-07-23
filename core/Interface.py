@@ -234,7 +234,7 @@ class VRProbe(RPProbe):
 class Ball(Interface):
     def __init__(self, logger, ball_radius=0.125, path="", target_path=False):
         from utils.Writer import Writer
-        self.quit()
+        self.cleanup()
         self.logger = logger
         self.mouse1 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.1:1.0-mouse", logger)
         self.mouse2 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.2:1.0-mouse", logger)
