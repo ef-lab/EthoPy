@@ -321,14 +321,10 @@ class Ball(Interface):
 
     def cleanup(self):
         try:
-            print('stopping thread')
             self.thread_end.set()
-            print('closing dataset')
             self.closeDatasets()
-            print('closing mice')
             self.mouse1.close()
             self.mouse2.close()
-            print('done')
         except:
             print('ball not running')
 
@@ -345,11 +341,10 @@ class MouseReader:
 
     def reader(self, queue, dpm):
         while not self.thread_end.is_set():
-            # print('Reading file')
             data = self.file.read(3)  # Reads the 3 bytes
             x, y = struct.unpack("2b", data[1:])
             queue.put({'x': x/dpm, 'y': y/dpm, 'timestamp': self.logger.logger_timer.elapsed_time()})
 
     def close(self):
         self.thread_end.set()
-        #self.thread_runner.join()
+        self.thread_runner.join()
