@@ -150,10 +150,12 @@ class RPProbe(Interface):
     def cleanup(self):
         self.Pulser.wave_clear()
         if self.callbacks:
-            for channel in self.channels['lick']:
-                self.GPIO.remove_event_detect(self.channels['lick'][channel])
-            for channel in self.channels['proximity']:
-                self.GPIO.remove_event_detect(self.channels['proximity'][channel])
+            if 'lick' in self.channels:
+                 for channel in self.channels['lick']:
+                     self.GPIO.remove_event_detect(self.channels['lick'][channel])
+            if 'proximity' in self.channels:
+                 for channel in self.channels['proximity']:
+                     self.GPIO.remove_event_detect(self.channels['proximity'][channel])
         self.GPIO.cleanup()
 
     def _create_pulse(self, port, duration):
@@ -231,7 +233,7 @@ class VRProbe(RPProbe):
 class Ball(Interface):
     def __init__(self, logger, ball_radius=0.125, path="", target_path=False):
         from utils.Writer import Writer
-        self.quit()
+        self.cleanup()
         self.logger = logger
         self.mouse1 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.1:1.0-mouse", logger)
         self.mouse2 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.2:1.0-mouse", logger)
@@ -318,7 +320,7 @@ class Ball(Interface):
     def closeDatasets(self):
         self.dataset.exit()
 
-    def quit(self):
+    def cleanup(self):
         try:
             self.thread_end.set()
             self.closeDatasets()
