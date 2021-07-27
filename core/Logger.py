@@ -107,6 +107,8 @@ class Logger:
         for port in ports: self.put(table='Session.Port', tuple={**port, **self.trial_key})
         screens = (SetupConfiguration.Screen & {'setup_conf_idx': params['setup_conf_idx']}).fetch(as_dict=True)
         for screen in screens: self.put(table='Session.Screen', tuple={**screen, **self.trial_key})
+        ball = (SetupConfiguration.Ball & {'setup_conf_idx': params['setup_conf_idx']}).fetch1(as_dict=True)
+        if ball: self.put(table='Session.Ball', tuple={**ball, **self.trial_key})
         if 'start_time' in params:
             tdelta = lambda t: datetime.strptime(t, "%H:%M:%S") - datetime.strptime("00:00:00", "%H:%M:%S")
             key = {**key, 'start_time': tdelta(params['start_time']), 'stop_time': tdelta(params['stop_time'])}

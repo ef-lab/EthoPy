@@ -247,6 +247,17 @@ class SetupConfiguration(dj.Lookup):
         discription              : varchar(256)
         """
 
+    class Ball(dj.Part):
+        definition = """
+        # Ball information
+        -> SetupConfiguration
+        ---
+        ball_radius=0.125        : float                   # in meters
+        material="styrofoam"     : varchar(64)             # ball material
+        coupling="bearings"      : enum('bearings','air')  # mechanical coupling
+        discription              : varchar(256)
+        """
+
 
 @experiment.schema
 class Aim(dj.Lookup):
@@ -414,6 +425,17 @@ class Session(dj.Manual):
         fps                      : tinyint UNSIGNED
         resolution_x             : smallint
         resolution_y             : smallint
+        discription              : varchar(256)
+        """
+
+    class Ball(dj.Part):
+        definition = """
+        # Ball information
+        -> Session
+        ---
+        ball_radius=0.125        : float                   # in meters
+        material="styrofoam"     : varchar(64)             # ball material
+        coupling="bearings"      : enum('bearings','air')  # mechanical coupling
         discription              : varchar(256)
         """
 
