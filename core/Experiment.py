@@ -352,8 +352,6 @@ class Session(dj.Manual):
     animal_id            : smallint UNSIGNED            # animal id
     session              : smallint UNSIGNED            # session number
     ---
-    -> SetupConfiguration
-    -> AnesthesiaType
     user_name            : varchar(16)                  # user performing the experiment
     setup=null           : varchar(256)                 # computer id
     session_tmst         : timestamp                    # session timestamp
@@ -392,6 +390,31 @@ class Session(dj.Manual):
         # Anesthetized sessions
         -> Session
         -> AnesthesiaType
+        """
+
+    class Port(dj.Part):
+        definition = """
+        # Probe identity
+        -> Session
+        port                     : tinyint                      # port id
+        ---
+        discription              : varchar(256)
+        """
+
+    class Screen(dj.Part):
+        definition = """
+        # Screen information
+        -> Session
+        screen_id                : tinyint
+        ---
+        intensity                : tinyint UNSIGNED 
+        monitor_distance         : float
+        monitor_aspect           : float
+        monitor_size             : float
+        fps                      : tinyint UNSIGNED
+        resolution_x             : smallint
+        resolution_y             : smallint
+        discription              : varchar(256)
         """
 
 

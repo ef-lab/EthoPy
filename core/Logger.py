@@ -103,6 +103,10 @@ class Logger:
             self.put(table='Session.Protocol', tuple={**self.trial_key, 'protocol_name': pr_name,
                                                       'protocol_file': pr_file, 'git_hash': git_hash})
         key = {'session': self.trial_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1}
+        ports = (SetupConfiguration.Port & {'setup_conf_idx': params['setup_conf_idx']}).fetch(as_dict=True)
+        for port in ports: self.put(table='Session.Port', tuple={**port, **self.trial_key})
+        screens = (SetupConfiguration.Screen & {'setup_conf_idx': params['setup_conf_idx']}).fetch(as_dict=True)
+        for screen in screens: self.put(table='Session.Screen', tuple={**screen, **self.trial_key})
         if 'start_time' in params:
             tdelta = lambda t: datetime.strptime(t, "%H:%M:%S") - datetime.strptime("00:00:00", "%H:%M:%S")
             key = {**key, 'start_time': tdelta(params['start_time']), 'stop_time': tdelta(params['stop_time'])}
