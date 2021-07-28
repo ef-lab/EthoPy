@@ -1,26 +1,22 @@
-import numpy, socket, json, os, pathlib, threading, subprocess
+import numpy, socket, json, os, pathlib, threading, subprocess, time
 from queue import PriorityQueue
-import time as systime
 from datetime import datetime
 from dataclasses import dataclass
 from dataclasses import field as datafield
 from typing import Any
-from core.Experiment import *
+import datajoint as dj
 from utils.helper_functions import *
+from utils.Timer import Timer
 dj.config["enable_python_native_blobs"] = True
-from core.Experiment import *
-from core.Stimulus import *
-from core.Behavior import *
 
 
 class Logger:
     trial_key, schemata, setup_info, _schemata = dict(animal_id=0, session=1, trial_idx=0), dict(),dict(), dict()
     lock, queue, ping_timer, logger_timer, total_reward, curr_state = False, PriorityQueue(), Timer(), Timer(), 0, ''
 
-    schemata = {'experiment': 'test_experiments',
-                'stimulus'  : 'test_stimuli',
-                'behavior'  : 'test_behavior',
-                'stimulus2' : 'lab_stimuli'}
+    schemata = {'experiment': 'lab_experiments',
+                'stimulus'  : 'lab_stimuli',
+                'behavior'  : 'lab_behavior'}
 
     def __init__(self, protocol=False):
         self.setup = socket.gethostname()
@@ -83,17 +79,20 @@ class Logger:
         return tmst
 
     def log_setup(self, task_idx=False):
-        rel = SetupControl() & dict(setup=self.setup)
+        rel = self.schemata['experiment'].SetupControl() & dict(setup=self.setup)
         key = rel.fetch1() if numpy.size(rel.fetch()) else dict(setup=self.setup)
         if task_idx: key['task_idx'] = task_idx
         key = {**key, 'ip': self.get_ip(), 'status': self.setup_status}
         self.put(table='SetupControl', tuple=key, replace=True, priority=1, block=True)
 
+    def get_last_session(self):
+        last_sessions = (self.schemata['experiment'].Session() & dict(animal_id=self.get_setup_info('animal_id'))).fetch('session')
+        return 0 if numpy.size(last_sessions) == 0 else numpy.max(last_sessions)
+
     def log_session(self, params, log_protocol=False):
         self.total_reward = 0
-        self.trial_key = dict(animal_id=self.get_setup_info('animal_id'), trial_idx=0)
-        last_sessions = (Session() & self.trial_key).fetch('session')
-        self.trial_key['session'] = 1 if numpy.size(last_sessions) == 0 else numpy.max(last_sessions) + 1
+        self.trial_key = dict(animal_id=self.get_setup_info('animal_id'),
+                              trial_idx=0, session=self.get_last_session() + 1)
         session_key = {**self.trial_key, 'setup_conf_idx': params['setup_conf_idx'], 'setup': self.setup,
                        'user_name': params['user'] if 'user_name' in params else 'bot'}
         self.put(table='Session', tuple=session_key, priority=1)
@@ -103,22 +102,30 @@ class Logger:
             self.put(table='Session.Protocol', tuple={**self.trial_key, 'protocol_name': pr_name,
                                                       'protocol_file': pr_file, 'git_hash': git_hash})
         key = {'session': self.trial_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1}
+        ports = (self.schemata['experiment'].SetupConfiguration.Port & {'setup_conf_idx': params['setup_conf_idx']}
+                 ).fetch(as_dict=True)
+        for port in ports: self.put(table='Session.Port', tuple={**port, **self.trial_key})
+        screens = (self.schemata['experiment'].SetupConfiguration.Screen & {'setup_conf_idx': params['setup_conf_idx']}
+                   ).fetch(as_dict=True)
+        for screen in screens: self.put(table='Session.Screen', tuple={**screen, **self.trial_key})
+        balls = (self.schemata['experiment'].SetupConfiguration.Ball & {'setup_conf_idx': params['setup_conf_idx']}
+                 ).fetch(as_dict=True)
+        for ball in balls: self.put(table='Session.Ball', tuple={**ball, **self.trial_key})
         if 'start_time' in params:
             tdelta = lambda t: datetime.strptime(t, "%H:%M:%S") - datetime.strptime("00:00:00", "%H:%M:%S")
             key = {**key, 'start_time': tdelta(params['start_time']), 'stop_time': tdelta(params['stop_time'])}
         self.update_setup_info(key)
         self.logger_timer.start()  # start sessio n time
-        return self.trial_key['session']
 
     def update_setup_info(self, info):
-        self.setup_info = {**(SetupControl() & dict(setup=self.setup)).fetch1(), **info}
+        self.setup_info = {**(self.schemata['experiment'].SetupControl() & dict(setup=self.setup)).fetch1(), **info}
         self.put(table='SetupControl', tuple=self.setup_info, replace=True, priority=1)
         self.setup_status = self.setup_info['status']
         if 'status' in info:
             while self.get_setup_info('status') != info['status']: time.sleep(.5)
 
     def get_setup_info(self, field):
-        return (SetupControl() & dict(setup=self.setup)).fetch1(field)
+        return (self.schemata['experiment'].SetupControl() & dict(setup=self.setup)).fetch1(field)
 
     def get(self, schema='experiment', table='SetupControl', fields='', key='', **kwargs):
         table = rgetattr(self.schemata[schema], table)
@@ -126,8 +133,8 @@ class Logger:
 
     def get_protocol(self, task_idx=None, raw_file=False):
         if not task_idx: task_idx = self.get_setup_info('task_idx')
-        if len(Task() & dict(task_idx=task_idx)) > 0:
-            protocol = (Task() & dict(task_idx=task_idx)).fetch1('protocol')
+        if len(self.schemata['experiment'].Task() & dict(task_idx=task_idx)) > 0:
+            protocol = (self.schemata['experiment'].Task() & dict(task_idx=task_idx)).fetch1('protocol')
             path, filename = os.path.split(protocol)
             if not path: protocol = str(pathlib.Path(__file__).parent.absolute()) + '/../conf/' + filename
             if raw_file:

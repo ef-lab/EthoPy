@@ -4,9 +4,9 @@ from utils.Timer import *
 import itertools
 import matplotlib.pyplot as plt
 
-experiment = dj.create_virtual_module('experiment', 'test_experiments', create_tables=True)
-stimulus = dj.create_virtual_module('stimulus', 'test_stimuli', create_tables=True)
-behavior = dj.create_virtual_module('behavior', 'test_behavior', create_tables=True)
+experiment = dj.create_virtual_module('experiment', 'lab_experiments', create_tables=True)
+stimulus = dj.create_virtual_module('stimulus', 'lab_stimuli', create_tables=True)
+behavior = dj.create_virtual_module('behavior', 'lab_behavior', create_tables=True)
 
 
 class State:
@@ -35,7 +35,7 @@ class State:
 
 class ExperimentClass:
     """  Parent Experiment """
-    curr_state, curr_trial, total_reward, cur_dif, flip_count, states, stim = '', 0, 0, 0, 0, dict(), []
+    curr_state, curr_trial, total_reward, cur_dif, flip_count, states, stim = '', 0, 0, 0, 0, dict(), False
     rew_probe, un_choices, difs, iter, curr_cond, dif_h, stims = [], [], [], [], dict(), [], dict()
     required_fields, default_key, conditions, cond_tables, quit = [], dict(), [], [], False
 
@@ -247,6 +247,17 @@ class SetupConfiguration(dj.Lookup):
         discription              : varchar(256)
         """
 
+    class Ball(dj.Part):
+        definition = """
+        # Ball information
+        -> SetupConfiguration
+        ---
+        ball_radius=0.125        : float                   # in meters
+        material="styrofoam"     : varchar(64)             # ball material
+        coupling="bearings"      : enum('bearings','air')  # mechanical coupling
+        discription              : varchar(256)
+        """
+
 
 @experiment.schema
 class Aim(dj.Lookup):
@@ -306,7 +317,7 @@ class Software(dj.Lookup):
 class SurgeryType(dj.Lookup):
     definition = """
     # Surgery types
-    type                 : varchar(16)                  # aim
+    surgery              : varchar(16)                  # aim
     ---
     description=""       : varchar(2048)                # description
     """
@@ -324,7 +335,7 @@ class Surgery(dj.Manual):
     definition = """
     # Surgery information
     animal_id            : smallint UNSIGNED            # animal id
-    timestamp            : timestamp                    # timestamp
+    timestamp            : datetime                     # timestamp
     ---
     user_name            : varchar(16)                  # user performing the surgery
     ->SurgeryType      
@@ -337,7 +348,7 @@ class Anesthesia(dj.Manual):
     definition = """
     # Excluded sessions
     animal_id                   : smallint UNSIGNED  # animal id
-    timestamp                   : timestamp          # timestamp
+    timestamp                   : datetime           # timestamp
     ---
     -> AnesthesiaType
     dose=""                     : varchar(10)        # anesthesia dosage
@@ -352,8 +363,6 @@ class Session(dj.Manual):
     animal_id            : smallint UNSIGNED            # animal id
     session              : smallint UNSIGNED            # session number
     ---
-    -> SetupConfiguration
-    -> AnesthesiaType
     user_name            : varchar(16)                  # user performing the experiment
     setup=null           : varchar(256)                 # computer id
     session_tmst         : timestamp                    # session timestamp
@@ -392,6 +401,42 @@ class Session(dj.Manual):
         # Anesthetized sessions
         -> Session
         -> AnesthesiaType
+        """
+
+    class Port(dj.Part):
+        definition = """
+        # Probe identity
+        -> Session
+        port                     : tinyint                      # port id
+        ---
+        discription              : varchar(256)
+        """
+
+    class Screen(dj.Part):
+        definition = """
+        # Screen information
+        -> Session
+        screen_id                : tinyint
+        ---
+        intensity                : tinyint UNSIGNED 
+        monitor_distance         : float
+        monitor_aspect           : float
+        monitor_size             : float
+        fps                      : tinyint UNSIGNED
+        resolution_x             : smallint
+        resolution_y             : smallint
+        discription              : varchar(256)
+        """
+
+    class Ball(dj.Part):
+        definition = """
+        # Ball information
+        -> Session
+        ---
+        ball_radius=0.125        : float                   # in meters
+        material="styrofoam"     : varchar(64)             # ball material
+        coupling="bearings"      : enum('bearings','air')  # mechanical coupling
+        discription              : varchar(256)
         """
 
 

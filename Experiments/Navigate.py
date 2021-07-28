@@ -27,7 +27,7 @@ class Condition(dj.Manual):
 
 
 class Experiment(State, ExperimentClass):
-    cond_tables = ['Navigate']
+    cond_tables = ['Condition.Navigate']
     required_fields = []
     default_key = {'trial_selection'       : 'staircase',
                    'bias_window'           : 5,
@@ -166,6 +166,5 @@ class InterTrial(Experiment):
 class Exit(Experiment):
     def run(self):
         self.beh.exit()
-        if self.stim:
-            self.stim.exit()
+        self.stim.exit()
         self.logger.ping(0)

@@ -30,7 +30,7 @@ class Condition(dj.Manual):
 
 
 class Experiment(State, ExperimentClass):
-    cond_tables = ['MatchPort']
+    cond_tables = ['Condition.MatchPort']
     required_fields = ['difficulty']
     default_key = {'trial_selection': 'staircase',
                    'max_reward': 3000,
@@ -227,6 +227,5 @@ class Offtime(Experiment):
 class Exit(Experiment):
     def run(self):
         self.beh.exit()
-        if self.stim:
-            self.stim.exit()
+        self.stim.exit()
         self.logger.ping(0)

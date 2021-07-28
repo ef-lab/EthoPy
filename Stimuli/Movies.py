@@ -96,8 +96,7 @@ class Movies(Stimulus, dj.Manual):
         pygame.quit()
 
     def get_clip_info(self, key, table, *fields):
-        return self.exp.logger.get(schema='stimulus2', table=table, key=key, fields=fields)
-
+        return self.exp.logger.get(schema='stimulus', table=table, key=key, fields=fields)
 
     def encode_photodiode(self):
         """Encodes the flip number n in the flip amplitude.

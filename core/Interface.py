@@ -133,7 +133,6 @@ class RPProbe(Interface):
     def give_liquid(self, port, duration=False):
         if duration: self._create_pulse(port, duration)
         self.thread.submit(self._give_pulse, port)
-        print('give water')
 
     def give_odor(self, delivery_port, odor_id, odor_duration, dutycycle):
         for i, idx in enumerate(odor_id):
@@ -152,11 +151,11 @@ class RPProbe(Interface):
         self.Pulser.wave_clear()
         if self.callbacks:
             if 'lick' in self.channels:
-                for channel in self.channels['lick']:
-                    self.GPIO.remove_event_detect(self.channels['lick'][channel])
+                 for channel in self.channels['lick']:
+                     self.GPIO.remove_event_detect(self.channels['lick'][channel])
             if 'proximity' in self.channels:
-                for channel in self.channels['proximity']:
-                    self.GPIO.remove_event_detect(self.channels['proximity'][channel])
+                 for channel in self.channels['proximity']:
+                     self.GPIO.remove_event_detect(self.channels['proximity'][channel])
         self.GPIO.cleanup()
 
     def _create_pulse(self, port, duration):
@@ -211,10 +210,10 @@ class VRProbe(RPProbe):
                 'lick': {1: 17}}
     pwm = dict()
 
-    def start_odor(self, dutycycle=50, frequency=10):
+    def start_odor(self, dutycycle=50):
         for idx, channel in enumerate(list(self.channels['odor'].values())):
-            self.pwm[idx] = self.GPIO.PWM(channel, frequency)
-            self.pwm[idx].ChangeFrequency(frequency)
+            self.pwm[idx] = self.GPIO.PWM(channel, self.frequency)
+            self.pwm[idx].ChangeFrequency(self.frequency)
             self.pwm[idx].start(dutycycle)
 
     def update_odor(self, dutycycles):  # for 2D olfactory setup
@@ -303,7 +302,9 @@ class Ball(Interface):
         return self.speed
 
     def createDataset(self, path='', target_path=False):
-        self.filename = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".h5"
+        self.filename = '%d_%d_%s.h5' % (self.logger.trial_key['animal_id'],
+                                         self.logger.trial_key['session'],
+                                         datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
         self.datapath = path + self.filename
         TIME_SERIES_DOUBLE = np.dtype([("loc_x", np.double),
                                        ("loc_y", np.double),
@@ -341,6 +342,7 @@ class MouseReader:
 
     def reader(self, queue, dpm):
         while not self.thread_end.is_set():
+            # print('Reading file')
             data = self.file.read(3)  # Reads the 3 bytes
             x, y = struct.unpack("2b", data[1:])
             queue.put({'x': x/dpm, 'y': y/dpm, 'timestamp': self.logger.logger_timer.elapsed_time()})
