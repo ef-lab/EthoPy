@@ -17,6 +17,7 @@ exp.setup(logger, Behavior, session_params)
 session_params = {
     'trial_selection'       : 'fixed',
     'setup_conf_idx'        : 1,
+    'max_res'               : 1000,
 }
 
 # define stimulus conditions
