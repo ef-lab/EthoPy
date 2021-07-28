@@ -4,21 +4,15 @@ from Experiments.Passive import *
 from Stimuli.Bar import *
 from core.Behavior import *
 
-
-# define session parameters
-session_params = {
-    'setup_conf_idx'        : 1,
-}
-
-exp = Experiment()
-exp.setup(logger, Behavior, session_params)
-
 # define session parameters
 session_params = {
     'trial_selection'       : 'fixed',
     'setup_conf_idx'        : 1,
     'max_res'               : 1000,
 }
+
+exp = Experiment()
+exp.setup(logger, Behavior, session_params)
 
 # define stimulus conditions
 key = {
