@@ -25,7 +25,7 @@ class Logger:
         background_conn = dj.Connection(connect_info['database.host'], connect_info['database.user'],
                                         connect_info['database.password'])
         self.schemata = dict()
-        self.schemata['lab'] = dj.create_virtual_module('beh.py', 'lab_behavior', connection=background_conn)
+        self.schemata['lab'] = dj.create_virtual_module('beh.py', 'lab_behavior_old', connection=background_conn)
         self.schemata['mice'] = dj.create_virtual_module('mice.py', 'lab_mice', connection=background_conn)
         self.thread_end, self.thread_lock = threading.Event(),  threading.Lock()
         self.inserter_thread = threading.Thread(target=self.inserter)

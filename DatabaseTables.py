@@ -7,7 +7,7 @@ import bisect
 import itertools
 import pandas as pd
 
-schema = dj.schema('lab_behavior')
+schema = dj.schema('lab_behavior_old')
 Mice = dj.create_virtual_module('mice.py', 'lab_mice')
 
 @schema
