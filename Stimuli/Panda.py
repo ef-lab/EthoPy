@@ -234,11 +234,11 @@ class Panda(Stimulus, dj.Manual):
             os.makedirs(self.path)
         for cond in conditions:
             if 'movie_name' in cond:
-                file = self.exp.logger.get(schema='stimulus2', table='Movie.Clip', key=cond, fields=('file_name',))
+                file = self.exp.logger.get(schema='stimulus', table='Movie.Clip', key=cond, fields=('file_name',))
                 filename = self.path + file[0]
                 if not os.path.isfile(filename):
                     print('Saving %s' % filename)
-                    clip = self.exp.logger.get(schema='stimulus2', table='Movie.Clip', key=cond, fields=('clip',))
+                    clip = self.exp.logger.get(schema='stimulus', table='Movie.Clip', key=cond, fields=('clip',))
                     clip[0].tofile(filename)
             if not 'obj_id' in cond: continue
             for obj_id in iterable(cond['obj_id']):
@@ -249,7 +249,7 @@ class Panda(Stimulus, dj.Manual):
         return conditions
 
     def get_clip_info(self, key, *fields):
-        return self.logger.get(schema='stimulus2', table='Movie.Clip', key=key, fields=fields)
+        return self.logger.get(schema='stimulus', table='Movie.Clip', key=key, fields=fields)
 
 
 class Agent(Panda):

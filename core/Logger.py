@@ -17,10 +17,9 @@ class Logger:
     trial_key, schemata, setup_info, _schemata = dict(animal_id=0, session=1, trial_idx=0), dict(),dict(), dict()
     lock, queue, ping_timer, logger_timer, total_reward, curr_state = False, PriorityQueue(), Timer(), Timer(), 0, ''
 
-    schemata = {'experiment': 'test_experiments',
-                'stimulus'  : 'test_stimuli',
-                'behavior'  : 'test_behavior',
-                'stimulus2' : 'lab_stimuli'}
+    schemata = {'experiment': 'lab_experiments',
+                'stimulus'  : 'lab_stimuli',
+                'behavior'  : 'lab_behavior'}
 
     def __init__(self, protocol=False):
         self.setup = socket.gethostname()
