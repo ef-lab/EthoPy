@@ -119,6 +119,8 @@ class Abort(Experiment):
 class Reward(Experiment):
     def run(self):
         self.beh.reward()
+        print('reward_taken')
+
 
     def next(self):
         return 'InterTrial'

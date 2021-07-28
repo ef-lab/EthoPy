@@ -6,6 +6,8 @@ class VROdors(Stimulus, dj.Manual):
     definition = """
     # vr conditions
     -> StimCondition
+    ---
+    frequency           : int   # pulse frequency
     """
 
     class Source(dj.Part):
@@ -22,10 +24,10 @@ class VROdors(Stimulus, dj.Manual):
 
     cond_tables = ['VROdors', 'VROdors.Source']
     required_fields = ['odorant_id', 'delivery_port', 'odor_x', 'odor_y']
-    default_key = {'extiction_factor': 1}
+    default_key = {'extiction_factor': 1, 'frequency': 10}
 
     def start(self):
-        self.exp.interface.start_odor(0)
+        self.exp.interface.start_odor(0,self.curr_cond['frequency'])
         self.logger.log('StimCondition.Trial', dict(period=self.period, stim_hash=self.curr_cond['stim_hash']),
                         schema='stimulus')
         self.isrunning = True
