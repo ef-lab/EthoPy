@@ -1,16 +1,17 @@
-import numpy, socket, json, os, pathlib, threading, subprocess
+import numpy, socket, json, os, pathlib, threading, subprocess, time
 from queue import PriorityQueue
 import time as systime
 from datetime import datetime
 from dataclasses import dataclass
 from dataclasses import field as datafield
 from typing import Any
-from core.Experiment import *
+import datajoint as dj
 from utils.helper_functions import *
+from utils.Timer import Timer
 dj.config["enable_python_native_blobs"] = True
-from core.Experiment import *
-from core.Stimulus import *
-from core.Behavior import *
+#from core.Experiment import *
+#from core.Stimulus import *
+#from core.Behavior import *
 
 
 class Logger:
@@ -82,7 +83,7 @@ class Logger:
         return tmst
 
     def log_setup(self, task_idx=False):
-        rel = SetupControl() & dict(setup=self.setup)
+        rel = self.schemata['experiment'].SetupControl() & dict(setup=self.setup)
         key = rel.fetch1() if numpy.size(rel.fetch()) else dict(setup=self.setup)
         if task_idx: key['task_idx'] = task_idx
         key = {**key, 'ip': self.get_ip(), 'status': self.setup_status}
@@ -123,7 +124,7 @@ class Logger:
             while self.get_setup_info('status') != info['status']: time.sleep(.5)
 
     def get_setup_info(self, field):
-        return (SetupControl() & dict(setup=self.setup)).fetch1(field)
+        return (self.schemata['experiment'].SetupControl() & dict(setup=self.setup)).fetch1(field)
 
     def get(self, schema='experiment', table='SetupControl', fields='', key='', **kwargs):
         table = rgetattr(self.schemata[schema], table)

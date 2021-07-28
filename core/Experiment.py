@@ -4,9 +4,9 @@ from utils.Timer import *
 import itertools
 import matplotlib.pyplot as plt
 
-experiment = dj.create_virtual_module('experiment', 'lab_experiments', create_tables=True)
-stimulus = dj.create_virtual_module('stimulus', 'lab_stimuli', create_tables=True)
-behavior = dj.create_virtual_module('behavior', 'lab_behavior', create_tables=True)
+experiment = dj.create_virtual_module('experiment', 'lab_experiments', create_tables=True, create_schema=True)
+stimulus = dj.create_virtual_module('stimulus', 'lab_stimuli', create_tables=True, create_schema=True)
+behavior = dj.create_virtual_module('behavior', 'lab_behavior', create_tables=True, create_schema=True)
 
 
 class State:
