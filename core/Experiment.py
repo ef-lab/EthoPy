@@ -4,9 +4,9 @@ from utils.Timer import *
 import itertools
 import matplotlib.pyplot as plt
 
-experiment = dj.create_virtual_module('experiment', 'lab_experiments', create_tables=True, create_schema=True)
-stimulus = dj.create_virtual_module('stimulus', 'lab_stimuli', create_tables=True, create_schema=True)
-behavior = dj.create_virtual_module('behavior', 'lab_behavior', create_tables=True, create_schema=True)
+experiment = dj.create_virtual_module('experiment', 'lab_experiments', create_tables=True)
+stimulus = dj.create_virtual_module('stimulus', 'lab_stimuli', create_tables=True)
+behavior = dj.create_virtual_module('behavior', 'lab_behavior', create_tables=True)
 
 
 class State:
@@ -317,7 +317,7 @@ class Software(dj.Lookup):
 class SurgeryType(dj.Lookup):
     definition = """
     # Surgery types
-    type                 : varchar(16)                  # aim
+    surgery              : varchar(16)                  # aim
     ---
     description=""       : varchar(2048)                # description
     """
@@ -335,7 +335,7 @@ class Surgery(dj.Manual):
     definition = """
     # Surgery information
     animal_id            : smallint UNSIGNED            # animal id
-    timestamp            : timestamp                    # timestamp
+    timestamp            : datetime                     # timestamp
     ---
     user_name            : varchar(16)                  # user performing the surgery
     ->SurgeryType      
@@ -348,7 +348,7 @@ class Anesthesia(dj.Manual):
     definition = """
     # Excluded sessions
     animal_id                   : smallint UNSIGNED  # animal id
-    timestamp                   : timestamp          # timestamp
+    timestamp                   : datetime           # timestamp
     ---
     -> AnesthesiaType
     dose=""                     : varchar(10)        # anesthesia dosage
