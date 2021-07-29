@@ -467,38 +467,7 @@ class Condition(dj.Manual):
     experiment_class      : varchar(128)
     """
 
-    def getGroups(self):
-        odor_flag = (len(Trial & OdorCond.Port() & self) > 0)  # filter trials by hash number of odor
-        movie_flag = (len(Trial & MovieCond & self) > 0)  # filter trials by hash number of movies
-        obj_flag = (len(Trial & ObjectCond & self) > 0)  # filter trials by hash number of objects
-
-        if obj_flag:
-            conditions = (RewardCond() * ObjectCond() & (Trial & self)).proj(
-                movie_duration='0', probe='probe', dutycycle='0', odor_duration='0', obj_duration='obj_dur')
-        elif movie_flag and odor_flag:
-            conditions = (RewardCond() * MovieCond() * (OdorCond.Port() & 'delivery_port=1') \
-                          * OdorCond() & (Trial & self)).proj(movie_duration='movie_duration', dutycycle='dutycycle',
-                                                              odor_duration='odor_duration', probe='probe',
-                                                              obj_duration='0')
-        elif not movie_flag and odor_flag:
-            conditions = (RewardCond() * (OdorCond.Port() & 'delivery_port=1') * OdorCond() & (Trial & self)).proj(
-                movie_duration='0', dutycycle='dutycycle', odor_duration='odor_duration', probe='probe',
-                obj_duration='0')
-        elif movie_flag and not odor_flag:
-            conditions = (RewardCond() * MovieCond() & (Trial & self)).proj(
-                movie_duration='movie_duration', probe='probe', dutycycle='0', odor_duration='0', obj_duration='0')
-        else:
-            return []
-
-        uniq_groups, groups_idx = np.unique(
-            [cond.astype(int) for cond in
-             conditions.fetch('movie_duration', 'dutycycle', 'odor_duration', 'obj_duration', 'probe')],
-            axis=1, return_inverse=True)
-        conditions = conditions.fetch()
-        condition_groups = [conditions[groups_idx == group] for group in set(groups_idx)]
-        return condition_groups
-
-
+    
 @experiment.schema
 class Trial(dj.Manual):
     definition = """
@@ -525,10 +494,28 @@ class Trial(dj.Manual):
         state               : varchar(64)
         """
 
-    def plotDifficulty(self, **kwargs):
-        conds = (self * Condition()).fetch('cond_tuple')
-        min_difficulty = np.min([cond['difficulty'] for cond in conds])
+    def getGroups(self):
+       
+        mts_flag = (np.unique((Condition & self).fetch('experiment_class')) == ['Condition.MatchToSample'])
 
+        if mts_flag:
+            conditions = self * ((stimulus.StimCondition.Trial() & 'period = "Cue"').proj('stim_hash', stime = 'time') & self) * stimulus.Panda.Object() * ((behavior.BehCondition.Trial().proj(btime = 'time') & self) * behavior.MultiPort.Response())
+        else:
+            return []
+
+        uniq_groups, groups_idx = np.unique(
+            [cond.astype(int) for cond in
+             conditions.fetch('obj_id', 'response_port', order_by = ('trial_idx'))],
+            axis=1, return_inverse=True)
+        conditions = conditions.fetch(order_by = 'trial_idx')
+        condition_groups = [conditions[groups_idx == group] for group in set(groups_idx)]
+        return condition_groups
+    
+    
+    def plotDifficulty(self, **kwargs):
+        difficulties = (self * experiment.Condition.MatchToSample()).fetch('difficulty')
+        min_difficulty = np.min(difficulties)
+        
         params = {'probe_colors': [[1, 0, 0], [0, .5, 1]],
                   'trial_bins': 10,
                   'range': 0.9,
@@ -536,20 +523,19 @@ class Trial(dj.Manual):
                   'ylim': (min_difficulty - 0.6,), **kwargs}
 
         def plot_trials(trials, **kwargs):
-            conds, trial_idxs = ((Trial & trials) * Condition()).fetch('cond_tuple', 'trial_idx')
+            difficulties, trial_idxs = ((self & trials) * experiment.Condition.MatchToSample()).fetch('difficulty', 'trial_idx')
             offset = ((trial_idxs - 1) % params['trial_bins'] - params['trial_bins'] / 2) * params['range'] * 0.1
-            difficulties = [cond['difficulty'] for cond in conds]
             plt.scatter(trial_idxs, difficulties + offset, zorder=10, **kwargs)
 
         # correct trials
-        correct_trials = ((LiquidDelivery * self).proj(
-            selected='ABS(time - end_time)<200 AND (time - start_time)>0') & 'selected > 0')
-
+        correct_trials = (self & behavior.Rewards.proj(rtime = 'time')).proj()
+    
         # missed trials
-        missed_trials = (self & AbortedTrial).proj()
+        missed_trials = (self & Trial.Aborted()).proj()
 
         # incorrect trials
-        incorrect_trials = ((self - correct_trials) - missed_trials).proj()
+        incorrect_trials = (self - missed_trials - correct_trials).proj()
+        
         print('correct: {}, incorrect: {}, missed: {}'.format(len(correct_trials), len(incorrect_trials),
                                                               len(missed_trials)))
         print('correct: {}, incorrect: {}, missed: {}'.format(len(np.unique(correct_trials.fetch('trial_idx'))),
@@ -558,7 +544,7 @@ class Trial(dj.Manual):
 
         # plot trials
         fig = plt.figure(figsize=(10, 5), tight_layout=True)
-        plot_trials(correct_trials, s=4, c=np.array(params['probe_colors'])[correct_trials.fetch('probe') - 1])
+        plot_trials(correct_trials, s=4, c=np.array(params['probe_colors'])[(correct_trials * behavior.BehCondition.Trial() * behavior.MultiPort.Response()).fetch('response_port', order_by='trial_idx') - 1])
         plot_trials(incorrect_trials, s=4, marker='o', facecolors='none', edgecolors=[.3, .3, .3], linewidths=.5)
         plot_trials(missed_trials, s=.1, c=[[0, 0, 0]])
 
