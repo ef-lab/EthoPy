@@ -1,174 +1,123 @@
-from utils.Timer import *
-from StateMachine import *
-from datetime import datetime, timedelta
+from core.Experiment import *
 
 
-class State(StateClass):
-    def __init__(self, parent=None):
-        self.timer = Timer()
-        if parent:
-            self.__dict__.update(parent.__dict__)
+@experiment.schema
+class Condition(dj.Manual):
+    class FreeWater(dj.Part):
+        definition = """
+        # Passive experiment conditions
+        -> Condition
+        ---
+        trial_selection='staircase': enum('fixed','random','staircase','biased') 
+        max_reward=3000            : smallint
+        bias_window=5              : smallint
+        noresponse_intertrial=1    : tinyint(1)
+        intertrial_duration        : int
+        """
 
-    def setup(self, logger, BehaviorClass, StimulusClass, session_params, conditions):
-        self.logger = logger
-        self.logger.log_session(session_params, 'FreeWater')
-        # Initialize params & Behavior/Stimulus objects
-        self.beh = BehaviorClass(self.logger, session_params)
-        self.stim = StimulusClass(self.logger, session_params, conditions, self.beh)
-        self.params = session_params
-        self.logger.log_conditions(conditions, self.stim.get_cond_tables() + self.beh.get_cond_tables())
 
-        # Initialize states
-        exitState = Exit(self)
-        self.StateMachine = StateMachine(Prepare(self), exitState)
-        global states
-        states = {
-            'PreTrial'     : PreTrial(self),
-            'Trial'        : Trial(self),
-            'Abort'        : Abort(self),
-            'InterTrial'   : InterTrial(self),
-            'Reward'       : Reward(self),
-            'Offtime'      : Offtime(self),
-            'Exit'         : exitState}
+class Experiment(State, ExperimentClass):
+    cond_tables = ['Condition.FreeWater']
+    default_key = {'trial_selection'       : 'biased',
+                   'max_reward'            : 6000,
+                   'bias_window'           : 5,
+                   'noresponse_intertrial' : True,
+                   'intertrial_duration'   : 1000}
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
-        self.logger.curr_state = type(self).__name__
-        self.period_start = self.logger.log('StateOnset', {'state': type(self).__name__})
-        self.timer.start()
-
-    def run(self):
-        self.StateMachine.run()
+        self.logger.curr_state = self.name()
+        self.resp_ready = False
+        self.state_timer.start()
 
 
-class Prepare(State):
-    def run(self):
-        self.stim.setup()  # prepare stimulus
-
+class Entry(Experiment):
     def next(self):
         if self.beh.is_sleep_time():
-            return states['Offtime']
+            return 'Offtime'
         else:
-            return states['PreTrial']
+            return 'Trial'
 
 
-class PreTrial(State):
+class Trial(Experiment):
     def entry(self):
-        self.stim.prepare()
-        if not self.stim.curr_cond:
-            self.logger.update_setup_info({'status': 'stop'})
-        else:
-            self.beh.prepare(self.stim.curr_cond)
+        self.prepare_trial()
+        self.stim.prepare(self.curr_cond)
+        self.beh.prepare(self.curr_cond)
         super().entry()
-
-    def run(self):
-        self.logger.ping()
-
-    def next(self):
-        if self.logger.setup_status in ['stop', 'exit'] or not self.stim.curr_cond:
-            return states['Exit']
-        elif self.beh.is_ready(self.stim.curr_cond['init_duration']):
-            return states['Trial']
-        else:
-            return states['PreTrial']
-
-
-class Trial(State):
-    def entry(self):
-        self.resp_ready = False
-        super().entry()
-        self.stim.init()
-        self.trial_start = self.logger.init_trial(self.stim.curr_cond['cond_hash'])
+        self.stim.start()
 
     def run(self):
         self.stim.present()  # Start Stimulus
         self.response = self.beh.get_response(self.trial_start)
-        if self.beh.is_ready(self.stim.curr_cond['delay_duration'], self.trial_start):
-            self.resp_ready = True
-            self.stim.ready_stim()
 
     def next(self):
-        if not self.resp_ready and self.response:                           # did not wait
-            return states['Abort']
-        elif self.response and self.beh.is_correct():  # response to correct probe
-            return states['Reward']
-        elif self.timer.elapsed_time() > self.stim.curr_cond['trial_duration']:      # timed out
-            return states['InterTrial']
+        if self.response and self.beh.is_correct():  # response to correct probe
+            return 'Reward'
+        elif self.is_stopped():  # if wake up then update session
+            return 'Exit'
         else:
-            return states['Trial']
+            return 'Trial'
 
     def exit(self):
-        self.logger.log_trial()
         self.stim.stop()  # stop stimulus when timeout
         self.logger.ping()
 
 
-class Abort(State):
-    def run(self):
-        self.beh.update_history()
-        self.logger.log('AbortedTrial')
-
-    def next(self):
-        return states['InterTrial']
-
-
-class Reward(State):
-    def run(self):
+class Reward(Experiment):
+    def entry(self):
         self.stim.reward_stim()
         self.beh.reward()
 
     def next(self):
-        return states['InterTrial']
+        return 'InterTrial'
 
 
-class InterTrial(State):
+class InterTrial(Experiment):
     def run(self):
-        if self.beh.get_response(self.period_start) & self.params.get('noresponse_intertrial'):
-            self.timer.start()
+        if self.beh.get_response(self.start_time) & self.params.get('noresponse_intertrial'):
+            self.state_timer.start()
 
     def next(self):
-        if self.logger.setup_status in ['stop', 'exit']:
-            return states['Exit']
+        if self.is_stopped():
+            return 'Exit'
         elif self.beh.is_hydrated():
-            return states['Offtime']
-        elif self.timer.elapsed_time() >= self.stim.curr_cond['intertrial_duration']:
-            return states['PreTrial']
+            return 'Offtime'
+        elif self.state_timer.elapsed_time() >= self.stim.curr_cond['intertrial_duration']:
+            return 'Trial'
         else:
-            return states['InterTrial']
+            return 'InterTrial'
 
 
-class Offtime(State):
+class Offtime(Experiment):
     def entry(self):
         super().entry()
         self.stim.unshow([0, 0, 0])
 
     def run(self):
-        response = self.beh.get_response()
-        if not self.beh.is_hydrated(self.params['min_reward']) and response:
-            self.beh.reward()
         if self.logger.setup_status not in ['sleeping', 'wakeup'] and self.beh.is_sleep_time():
             self.logger.update_setup_info({'status': 'sleeping'})
         self.logger.ping()
         time.sleep(1)
 
     def next(self):
-        if self.logger.setup_status in ['stop', 'exit']:  # if wake up then update session
-            return states['Exit']
+        if self.is_stopped():
+            return 'Exit'
         elif self.logger.setup_status == 'wakeup' and not self.beh.is_sleep_time():
-            return states['PreTrial']
+            return 'Trial'
         elif self.logger.setup_status == 'sleeping' and not self.beh.is_sleep_time():  # if wake up then update session
-            return states['Exit']
+            return 'Exit'
         elif not self.beh.is_hydrated() and not self.beh.is_sleep_time():
-            return states['Exit']
+            return 'Exit'
         else:
-            return states['Offtime']
+            return 'Offtime'
 
     def exit(self):
         if self.logger.setup_status in ['wakeup', 'sleeping']:
             self.logger.update_setup_info({'status': 'running'})
 
 
-class Exit(State):
+class Exit(Experiment):
     def run(self):
-        self.beh.cleanup()
-        self.stim.close()
+        self.beh.exit()
+        self.stim.exit()
         self.logger.ping(0)

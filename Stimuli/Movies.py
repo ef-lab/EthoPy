@@ -1,46 +1,61 @@
-from Stimulus import *
-import io, os
+from core.Stimulus import *
 from time import sleep
 import pygame
 from pygame.locals import *
-import datajoint as dj
-stim = dj.create_virtual_module('lab_stim.py', 'lab_stimuli')
+import io, os, imageio
+stimuli2 = dj.create_virtual_module('stim2', 'lab_stimuli')
 
 
-class Movies(Stimulus):
-    """ This class handles the presentation of Movies"""
+@stimuli2.schema
 
-    def get_cond_tables(self):
-        return ['MovieCond']
+
+@stimulus.schema
+class Movies(Stimulus, dj.Manual):
+    definition = """
+    # movie clip conditions
+    -> StimCondition
+    ---
+    movie_name            : char(8)                      # short movie title
+    clip_number           : int                          # clip index
+    movie_duration       : smallint                     # movie duration
+    skip_time            : smallint                     # start time in clip
+    static_frame         : smallint                     # static frame presentation
+    """
+
+    default_key = dict(movie_duration=10, skip_time=0, static_frame=False)
+    required_fields = ['movie_name', 'clip_number', 'movie_duration', 'skip_time', 'static_frame']
+    cond_tables = ['Movies']
 
     def setup(self):
         # setup parameters
-        import imageio
-        self.path = 'stimuli/'     # default path to copy local stimuli
+        self.path = 'stimuli/'     # default path to copy local  stimuli
         self.size = (400, 240)     # window size
         self.color = [127, 127, 127]  # default background color
         self.loc = (0, 0)          # default starting location of stimulus surface
         self.fps = 30              # default presentation framerate
         self.phd_size = (50, 50)    # default photodiode signal size in pixels
+        self.flip_count = 0
 
         # setup pygame
         pygame.init()
         self.screen = pygame.display.set_mode(self.size)
         self.unshow()
+        self.timer = Timer()
         pygame.mouse.set_visible(0)
 
-    def prepare(self):
-        self._get_new_cond()
-
-    def init(self):
+    def prepare(self, curr_cond, stim_period=''):
+        self.curr_cond = curr_cond
         self.curr_frame = 1
         self.clock = pygame.time.Clock()
-        clip_info = self.get_clip_info(self.curr_cond)
-        self.vid = imageio.get_reader(io.BytesIO(clip_info['clip'].tobytes()), 'ffmpeg')
-        self.vsize = (clip_info['frame_width'], clip_info['frame_height'])
+        clip = self.get_clip_info(self.curr_cond, 'Movie.Clip', 'clip')
+        frame_height, frame_width = self.get_clip_info(self.curr_cond, 'Movie', 'frame_height', 'frame_width')
+        self.vid = imageio.get_reader( io.BytesIO(clip[0].tobytes()), 'mov')
+        self.vsize = (frame_width[0], frame_height[0])
         self.pos = np.divide(self.size, 2) - np.divide(self.vsize, 2)
         self.isrunning = True
         self.timer.start()
+        self.logger.log('StimCondition.Trial', dict(period=stim_period, stim_hash=self.curr_cond['stim_hash']),
+                        schema='stimulus')
 
     def present(self):
         if self.timer.elapsed_time() < self.curr_cond['movie_duration']:
@@ -57,6 +72,7 @@ class Movies(Stimulus):
     def stop(self):
         self.vid.close()
         self.unshow()
+        self.log_stop()
         self.isrunning = False
 
     def punish_stim(self):
@@ -75,14 +91,13 @@ class Movies(Stimulus):
         self.flip_count += 1
 
     @staticmethod
-    def close():
+    def exit():
         pygame.mouse.set_visible(1)
         pygame.display.quit()
         pygame.quit()
 
-    @staticmethod
-    def get_clip_info(key):
-        return (stim.Movie() * stim.Movie.Clip() & key).fetch1()
+    def get_clip_info(self, key, table, *fields):
+        return self.exp.logger.get(schema='stimulus', table=table, key=key, fields=fields)
 
     def encode_photodiode(self):
         """Encodes the flip number n in the flip amplitude.
@@ -111,7 +126,7 @@ class RPMovies(Movies):
         self.loc = (0, 0)          # default starting location of stimulus surface
         self.fps = 30              # default presentation framerate
         self.phd_size = (50, 50)    # default photodiode signal size in pixels
-        self.set_intensity(self.params['intensity'])
+        self.flip_count = 0
 
         # setup pygame
         if not pygame.get_init():
@@ -128,21 +143,22 @@ class RPMovies(Movies):
         if not os.path.isdir(self.path):  # create path if necessary
             os.makedirs(self.path)
         for cond in self.conditions:
-            clip_info = self.get_clip_info(cond)
-            filename = self.path + clip_info['file_name']
+            file = self.get_clip_info(cond, 'Movie.Clip', 'file_name')
+            filename = self.path + file[0]
             if not os.path.isfile(filename):
                 print('Saving %s ...' % filename)
-                clip_info['clip'].tofile(filename)
+                clip = self.get_clip_info(cond, 'Movie.Clip', 'clip')
+                clip[0].tofile(filename)
         # initialize player
         self.vid = self.player(filename, args=['--aspect-mode', 'stretch', '--no-osd'],
                     dbus_name='org.mpris.MediaPlayer2.omxplayer1')
         self.vid.stop()
 
-    def prepare(self):
-        self._get_new_cond()
+    def prepare(self, curr_cond, stim_period=''):
+        self.curr_cond = curr_cond
+        self.logger.log('StimCondition.Trial', dict(period=stim_period, stim_hash=self.curr_cond['stim_hash']),
+                        schema='stimulus')
         self._init_player()
-
-    def init(self):
         self.isrunning = True
         try:
             self.vid.play()
@@ -153,7 +169,6 @@ class RPMovies(Movies):
             sleep(0.2)
             self.vid.pause()
         self.timer.start()
-        self.logger.log('StimOnset')
 
     def present(self):
         if self.timer.elapsed_time() > self.curr_cond['movie_duration']:
@@ -169,19 +184,14 @@ class RPMovies(Movies):
         self.unshow()
         self.isrunning = False
 
-    def set_intensity(self, intensity=None):
-        if intensity is None:
-            intensity = self.params['intensity']
-        cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % intensity
-        os.system(cmd)
-
     def _init_player(self):
-        clip_info = self.get_clip_info(self.curr_cond)
-        self.filename = self.path + clip_info['file_name']
+        self.filename = self.path + self.get_clip_info(self.curr_cond, 'Movie.Clip', 'file_name')
         try:
-            self.vid.load(self.filename)
+            self.vid.load(self.filename[0])
         except:
-            self.vid = self.player(self.filename, args=['--aspect-mode', 'stretch', '--no-osd'],
+            self.vid = self.player(self.filename[0], args=['--aspect-mode', 'stretch', '--no-osd'],
                         dbus_name='org.mpris.MediaPlayer2.omxplayer1')
         self.vid.pause()
         self.vid.set_position(self.curr_cond['skip_time'])
+
+

@@ -1,44 +1,78 @@
-from Stimulus import *
-from utils.flat2curve import flat2curve
+from core.Stimulus import *
+from utils.helper_functions import flat2curve
 import pygame
 from pygame.locals import *
 
 
-class FancyBar(Stimulus):
-    """ This class handles the presentation of Movies"""
+@stimulus.schema
+class Bar(Stimulus, dj.Manual):
+    definition = """
+    # This class handles the presentation of area mapping Bar stimulus
+    -> StimCondition
+    ---
+    axis                  : enum('vertical','horizontal')
+    bar_width             : float  # degrees
+    bar_speed             : float  # degrees/sec
+    flash_speed           : float  # cycles/sec
+    grat_width            : float  # degrees
+    grat_freq             : float
+    grid_width            : float
+    grit_freq             : float
+    style                 : enum('checkerboard', 'grating','none')
+    direction             : float             # 1 for UD LR, -1 for DU RL
+    flatness_correction   : tinyint(1)        # 1 correct for flatness of monitor, 0 do not
+    intertrial_duration   : int
+    center_x              : float
+    center_y              : float
+    max_res               : smallint
+    """
 
-    def __init__(self, logger, params, conditions, beh=False):
-        super().__init__(logger, params, conditions, beh)
-        self.cycles = None
+    cond_tables = ['Bar']
+    default_key =  {'center_x'              : 0,
+                    'center_y'              : -0.17,
+                    'max_res'               : 1000,
+                    'bar_width'             : 4,  # degrees
+                    'bar_speed'             : 2,  # degrees/sec
+                    'flash_speed'           : 2,
+                    'grat_width'            : 10,  # degrees
+                    'grat_freq'             : 1,
+                    'grid_width'            : 10,
+                    'grit_freq'             : .1,
+                    'style'                 : 'checkerboard', # checkerboard, grating
+                    'direction'             : 1,             # 1 for UD LR, -1 for DU RL
+                    'flatness_correction'   : 1,
+                    'intertrial_duration'   : 0}
 
-    def get_cond_tables(self):
-        return ['BarCond']
+    def init(self, exp):
+        self.conditions = exp.conditions
+        self.logger = exp.logger
+        self.exp = exp
 
-    def setup(self):
         # setup parameters
-        ymonsize = self.params['monitor_size'] * 2.54 / np.sqrt(1 + self.params['monitor_aspect'] ** 2)  # cm Y monitor size
-        monSize = [ymonsize * self.params['monitor_aspect'], ymonsize ]
-        y_res = int(self.params['max_res'] / self.params['monitor_aspect'])
-        self.monRes = [self.params['max_res'],int(y_res + np.ceil(y_res % 2))]
-        self.FoV = np.arctan(np.array(monSize) / 2 / self.params['monitor_distance']) * 2 * 180 / np.pi  # in degrees
-        self.FoV[1] = self.FoV[0]/ self.params['monitor_aspect']
+        self.monitor_size, self.monitor_aspect, self.monitor_distance = self.logger.get(table='SetupConfiguration.Screen',
+                                                                         key=self.exp.params,
+                                                                         fields=('monitor_size', 'monitor_aspect',
+                                                                                 'monitor_distance'))
+        self.monitor_distance = self.monitor_distance
+        ymonsize = self.monitor_size * 2.54 / np.sqrt(1 + self.monitor_aspect ** 2)  # cm Y monitor size
+        monSize = [ymonsize * self.monitor_aspect, ymonsize]
+        y_res = int(self.exp.params['max_res'] / self.monitor_aspect)
+        self.monRes = [self.exp.params['max_res'], int(y_res + np.ceil(y_res % 2))]
+        self.FoV = np.arctan(np.array(monSize) / 2 / self.monitor_distance) * 2 * 180 / np.pi  # in degrees
+        self.FoV[1] = self.FoV[0] / self.monitor_aspect
         self.color = [0, 0, 0]
         self.fps = 30              # default presentation framerate
 
         # setup pygame
         pygame.init()
         self.clock = pygame.time.Clock()
-        self.screen = pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF | NOFRAME) #---> this works but minimizes when clicking (Emina)
+        self.screen = pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF | NOFRAME, display=1) #---> this works but minimizes when clicking (Emina)
         self.unshow()
         pygame.mouse.set_visible(0)
 
-    def prepare(self):
-        self._get_new_cond()
-        if not self.curr_cond:
-            self.isrunning = False
-            return
+    def prepare(self, curr_cond):
+        self.curr_cond = curr_cond
         self.isrunning = True
-        self.timer.start()
         self.curr_frame = 1
 
         # initialize hor/ver gradients
@@ -49,9 +83,9 @@ class FancyBar(Stimulus):
         [self.cycles[abs(caxis - 1)], self.cycles[caxis]] = np.meshgrid(-Yspace/2/self.curr_cond['bar_width'],
                                                                         -Xspace/2/self.curr_cond['bar_width'])
         if self.curr_cond['flatness_correction']:
-            I_c, self.transform = flat2curve(self.cycles[0], self.params['monitor_distance'],
-                                             self.params['monitor_size'], method='index',
-                                             center_x=self.params['center_x'], center_y=self.params['center_y'])
+            I_c, self.transform = flat2curve(self.cycles[0], self.monitor_distance,
+                                             self.monitor_size, method='index',
+                                             center_x=self.curr_cond['center_x'], center_y=self.curr_cond['center_y'])
             self.BarOffset = -np.max(I_c) - 0.5
             deg_range = (np.ptp(I_c)+1)*self.curr_cond['bar_width']
         else:
@@ -98,6 +132,7 @@ class FancyBar(Stimulus):
 
     def stop(self):
         self.unshow()
+        self.log_stop()
         self.isrunning = False
 
     def unshow(self, color=False):
@@ -111,9 +146,9 @@ class FancyBar(Stimulus):
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
-        self.flip_count += 1
+        #self.flip_count += 1
 
-    def close(self):
+    def exit(self):
         pygame.mouse.set_visible(1)
         pygame.display.quit()
         pygame.quit()
