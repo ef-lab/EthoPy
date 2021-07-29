@@ -26,7 +26,6 @@ class Experiment(State, ExperimentClass):
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
         self.logger.curr_state = self.name()
-        self.start_time = self.logger.log('Trial.StateOnset', {'state': self.name()})
         self.resp_ready = False
         self.state_timer.start()
 

@@ -132,6 +132,7 @@ class Bar(Stimulus, dj.Manual):
 
     def stop(self):
         self.unshow()
+        self.log_stop()
         self.isrunning = False
 
     def unshow(self, color=False):

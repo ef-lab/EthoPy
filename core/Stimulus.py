@@ -13,10 +13,10 @@ class StimCondition(dj.Manual):
         definition = """
         # Stimulus onset timestamps
         -> experiment.Trial
-        time                 : int                          # start time from session start (ms)
+        period='Trial'       : varchar(16)
         ---
         -> StimCondition
-        period=NULL          : varchar(64)
+        start_time           : int                          # start time from session start (ms)
         end_time=NULL        : int                          # end time from session start (ms)
         """
 
@@ -48,8 +48,7 @@ class Stimulus:
     def start(self):
         """start stimulus"""
         self.isrunning = True
-        self.logger.log('StimCondition.Trial', dict(period='', stim_hash=self.curr_cond['stim_hash']),
-                        schema='stimulus')
+        self.log_start()
 
     def present(self):
         """stimulus presentation method"""
@@ -57,6 +56,7 @@ class Stimulus:
 
     def stop(self):
         """stop stimulus"""
+        self.log_stop()
         self.isrunning = False
 
     def exit(self):
@@ -74,6 +74,17 @@ class Stimulus:
     def punish_stim(self):
         """Stim Cue for punishment"""
         pass
+
+    def log_start(self):
+        """Start time logging"""
+        self.start_time = self.logger.logger_timer.elapsed_time()
+
+    def log_stop(self):
+        """Log stimulus condition start & stop time"""
+        stop_time = self.logger.logger_timer.elapsed_time()
+        self.logger.log('StimCondition.Trial', dict(period=self.period, stim_hash=self.curr_cond['stim_hash'],
+                                                    start_time=self.start_time, end_time=stop_time),
+                        schema='stimulus')
 
     def make_conditions(self, conditions=[]):
         """generate and store stimulus condition hashes"""

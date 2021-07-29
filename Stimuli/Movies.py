@@ -72,6 +72,7 @@ class Movies(Stimulus, dj.Manual):
     def stop(self):
         self.vid.close()
         self.unshow()
+        self.log_stop()
         self.isrunning = False
 
     def punish_stim(self):

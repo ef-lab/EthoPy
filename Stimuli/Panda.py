@@ -172,12 +172,11 @@ class Panda(Stimulus, dj.Manual):
             self.isrunning = True
 
     def start(self):
+        self.log_start()
         if self.movie: self.mov_texture.play()
         for idx, obj in enumerate(iterable(self.curr_cond['obj_id'])):
             self.objects[idx].run()
         self.flip(2)
-        self.logger.log('StimCondition.Trial', dict(period=self.period, stim_hash=self.curr_cond['stim_hash']),
-                        schema='stimulus')
 
     def present(self):
         self.flip()
@@ -200,6 +199,7 @@ class Panda(Stimulus, dj.Manual):
         self.render.clearLight
 
         self.flip(2) # clear double buffer
+        self.log_stop()
         self.isrunning = False
 
     def punish_stim(self):
