@@ -27,7 +27,7 @@ class VROdors(Stimulus, dj.Manual):
     default_key = {'extiction_factor': 1, 'frequency': 10}
 
     def start(self):
-        self.exp.interface.start_odor(0,self.curr_cond['frequency'])
+        self.exp.interface.start_odor(dutycycle=0, frequency=self.curr_cond['frequency'])
         self.logger.log('StimCondition.Trial', dict(period=self.period, stim_hash=self.curr_cond['stim_hash']),
                         schema='stimulus')
         self.log_start()
