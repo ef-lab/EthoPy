@@ -54,8 +54,6 @@ class Movies(Stimulus, dj.Manual):
         self.pos = np.divide(self.size, 2) - np.divide(self.vsize, 2)
         self.isrunning = True
         self.timer.start()
-        self.logger.log('StimCondition.Trial', dict(period=stim_period, stim_hash=self.curr_cond['stim_hash']),
-                        schema='stimulus')
 
     def present(self):
         if self.timer.elapsed_time() < self.curr_cond['movie_duration']:

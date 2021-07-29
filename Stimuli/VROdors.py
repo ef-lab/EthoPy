@@ -28,8 +28,6 @@ class VROdors(Stimulus, dj.Manual):
 
     def start(self):
         self.exp.interface.start_odor(dutycycle=0, frequency=self.curr_cond['frequency'])
-        self.logger.log('StimCondition.Trial', dict(period=self.period, stim_hash=self.curr_cond['stim_hash']),
-                        schema='stimulus')
         self.log_start()
         self.isrunning = True
         self.timer.start()
