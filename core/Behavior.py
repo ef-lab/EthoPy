@@ -83,41 +83,34 @@ class Activity(dj.Manual):
         """
 
         def plot(self, **kwargs):
-            params = {'probe_colors': ['red', 'blue'],  # set function parameters with defaults
-                      'xlim': [-500, 3000],
+            params = {'port_colors': ['red', 'blue'],  # set function parameters with defaults
+                      'xlim': [-500, 10000],
                       'figsize': (15, 15),
                       'dotsize': 4, **kwargs}
-            conds = (Condition() & self).getGroups()  # conditions in trials for animal
+            
+            key = {"animal_id" : np.unique(self.fetch('animal_id'))[0],
+                   "session" : np.unique(self.fetch('session'))[0]}
+
+            conds = ((Trial & key)).getGroups()  # conditions in trials for animal
+            
             fig, axs = plt.subplots(round(len(conds) ** .5), -(-len(conds) // round(len(conds) ** .5)),
                                     sharex=True, figsize=params['figsize'])
 
             for idx, cond in enumerate(conds):  # iterate through conditions
-                selected_trials = (Lick * (self - AbortedTrial) & (Condition & cond)).proj(  # select trials with licks
-                    selected='(time <= end_time) AND (time >= start_time)') & 'selected > 0'
-                trials, probes, times = ((Lick * (self & selected_trials)).proj(  # get licks for all trials
-                    trial_time='time-start_time') & ('(trial_time>{}) AND (trial_time<{})'.format(
-                    params['xlim'][0], params['xlim'][1]))).fetch('trial_idx', 'probe', 'trial_time', order_by='time')
+                
+                selected_trials = (self.proj(ltime = 'time') * ((Trial & key) & cond)).proj(ltime = 'ltime - time')
+                trials, ports, times = selected_trials.fetch('trial_idx', 'port', 'ltime', order_by='ltime')
                 un_trials, idx_trials = np.unique(trials, return_inverse=True)  # get unique trials
 
                 axs.item(idx).scatter(times, idx_trials, params['dotsize'],  # plot all of them
-                                      c=np.array(params['probe_colors'])[probes - 1])
+                                      c=np.array(params['port_colors'])[ports - 1])
                 axs.item(idx).axvline(x=0, color='green', linestyle='-')
 
-                if np.unique(cond['obj_duration'])[0]:
-                    name = 'Obj:{}'.format(np.unique((ObjectCond & cond).fetch('obj_id')))
-                elif np.unique(cond['movie_duration'])[0] and np.unique(cond['odor_duration'])[0]:
-                    name = 'Mov:%s  Odor:%d' % (np.unique((MovieCond & cond).fetch('movie_name'))[0],
-                                                np.unique(cond['dutycycle'])[0])
-                elif np.unique(cond['movie_duration'])[0]:
-                    name = 'Mov:{}'.format(np.unique((MovieCond & cond).fetch('movie_name'))[0])
-                elif np.unique(cond['odor_duration'])[0]:
-                    name = 'Odor:{}'.format(np.unique(cond['dutycycle'])[0])
+                name = f'Object: {cond[0][5]}, Response Port: {cond[0][8]}'
+                perf = len(np.unique((selected_trials & f'port = {cond[0][8]}').fetch('trial_idx')))/len(cond)
+                title = f'{name}, Performance:{perf:.2f}'
 
-                selected_pd = pd.DataFrame(selected_trials.fetch(order_by=('trial_idx', 'time')))
-                selected_pd.drop_duplicates(subset=["trial_idx"], keep='first', inplace=True)
-                name = '{} p:{:.2f}'.format(name, np.nanmean(selected_pd['probe'] == np.unique(cond['probe'])[0]))
-
-                axs.item(idx).set_title(name, color=np.array(params['probe_colors'])[np.unique(cond['probe'])[0] - 1],
+                axs.item(idx).set_title(title, color=np.array(params['port_colors'])[cond[0][8] - 1],
                                         fontsize=9)
                 axs.item(idx).invert_yaxis()
             plt.xlim(params['xlim'])
