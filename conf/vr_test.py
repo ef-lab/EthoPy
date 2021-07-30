@@ -31,7 +31,7 @@ for idx, loc in enumerate(rew_locs):
         'reward_loc_y'          : loc[1],
         'response_loc_x'        : (0, 5, 5, 0),
         'response_loc_y'        : (0, 0, 5, 5),
-        'fun'                   : 3,
+        'extiction_factor'      : 3,
         'radius'                : 0.3,
         'reward_amount'         : 10,
     })
