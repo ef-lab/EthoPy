@@ -32,7 +32,7 @@ for idx, loc in enumerate(rew_locs):
         'response_loc_x'        : (0, 5, 5, 0),
         'response_loc_y'        : (0, 0, 5, 5),
         'extiction_factor'      : 3,
-        'radius'                : 0.3,
+        'radius'                : 5,
         'reward_amount'         : 10,
     })
 
