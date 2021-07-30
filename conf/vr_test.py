@@ -13,7 +13,7 @@ exp = Experiment()
 exp.setup(logger, VRBall, session_params)
 conditions = []
 
-rew_locs = ([2.5, 2.5], [2.5, 2.5])
+rew_locs = ([4, 4], [4, 4])
 odors = ((1, 2, 3, 4), (1, 2, 4, 3))
 for idx, loc in enumerate(rew_locs):
     conditions += exp.make_conditions(stim_class=VROdors(), conditions={
