@@ -16,7 +16,8 @@ class Interface:
         self.logging = logging
         self.exp = exp
         self.logger = exp.logger
-        self.ports = self.channels['liquid'].keys()
+        ports = self.logger.get(table='SetupConfiguration.Port', field='port', key=self.exp.params)
+        self.ports = list(set(ports) & set(self.channels['liquid'].keys()))
 
     def load_calibration(self):
         for port in list(set(self.ports)):
