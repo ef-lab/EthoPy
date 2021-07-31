@@ -91,6 +91,7 @@ class RPProbe(Interface):
         self.GPIO.setmode(self.GPIO.BCM)
         self.thread = ThreadPoolExecutor(max_workers=2)
         self.frequency = 20
+        self.ts = False
         self.pulses = dict()
         if 'lick' in self.channels:
             self.GPIO.setup(list(self.channels['lick'].values()), self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
