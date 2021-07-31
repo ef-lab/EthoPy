@@ -32,7 +32,8 @@ class Stimulus:
         self.logger = exp.logger
         self.exp = exp
         screen_properties = self.logger.get(table='SetupConfiguration.Screen', key=self.exp.params, as_dict=True)
-        for key in screen_properties[0]:  setattr(self, key, screen_properties[0][key])
+        if np.size(screen_properties) > 0:
+            for key in screen_properties[0]:  setattr(self, key, screen_properties[0][key])
 
         if self.logger.is_pi:
             cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % self.intensity
