@@ -15,7 +15,7 @@ class Condition(dj.Manual):
 
 
 class Experiment(State, ExperimentClass):
-    cond_tables = ['Condition.Passive']
+    cond_tables = ['Passive']
     default_key = {'trial_selection'       : 'fixed',
 
                    'intertrial_duration'    : 1000}

@@ -64,7 +64,8 @@ class ExperimentClass:
         self.conditions, self.quit, self.curr_cond, self.dif_h, self.stims = [], False, dict(), [], dict()
         self.params = {**self.default_key, **session_params}
         self.logger = logger
-        self.logger.log_session({**self.default_key, **session_params}, log_protocol=True)
+        self.logger.log_session({**self.default_key, **session_params, 'experiment_type': self.cond_tables[0]},
+                                log_protocol=True)
         self.beh = BehaviorClass()
         self.beh.setup(self)
         self.interface = self.beh.interface
@@ -104,7 +105,8 @@ class ExperimentClass:
         for cond in conditions:
             assert np.all([field in cond for field in self.required_fields])
             cond.update({**self.default_key, **cond, 'experiment_class': self.cond_tables[0]})
-        conditions = self.log_conditions(conditions, condition_tables=['Condition'] + self.cond_tables, priority=2)
+        cond_tables = ['Condition.' + table for table in self.cond_tables]
+        conditions = self.log_conditions(conditions, condition_tables=['Condition'] + cond_tables, priority=2)
         return conditions
 
     def push_conditions(self, conditions):
@@ -365,6 +367,7 @@ class Session(dj.Manual):
     ---
     user_name            : varchar(16)                  # user performing the experiment
     setup=null           : varchar(256)                 # computer id
+    experiment_type      : varchar(128)
     session_tmst         : timestamp                    # session timestamp
     """
 
@@ -495,7 +498,6 @@ class Trial(dj.Manual):
         """
 
     def getGroups(self):
-       
         mts_flag = (np.unique((Condition & self).fetch('experiment_class')) == ['Condition.MatchToSample'])
 
         if mts_flag:
@@ -510,7 +512,6 @@ class Trial(dj.Manual):
         conditions = conditions.fetch(order_by = 'trial_idx')
         condition_groups = [conditions[groups_idx == group] for group in set(groups_idx)]
         return condition_groups
-    
     
     def plotDifficulty(self, **kwargs):
         difficulties = (self * experiment.Condition.MatchToSample()).fetch('difficulty')

@@ -15,7 +15,7 @@ exp.setup(logger, Behavior, session_params)
 conditions = []
 
 # define stimulus conditions
-objects = ('obj1v6', 'obj2v6','MadMax')
+objects = ('obj1v6','MadMax')
 
 key = {
     'clip_number'        : [20,30],

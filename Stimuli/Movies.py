@@ -47,15 +47,16 @@ class Movies(Stimulus, dj.Manual):
         frame_height, frame_width = self.get_clip_info(self.curr_cond, 'Movie', 'frame_height', 'frame_width')
         self.vid = imageio.get_reader( io.BytesIO(clip[0].tobytes()), 'mov')
         self.vsize = (frame_width[0], frame_height[0])
-        self.pos = np.divide(self.size, 2) - np.divide(self.vsize, 2)
+        self.upscale = self.size[0] / self.vsize[0]
+        self.y_pos = int((self.size[1] - self.vsize[1]*self.upscale)/2)
         self.isrunning = True
         self.timer.start()
 
     def present(self):
         if self.timer.elapsed_time() < self.curr_cond['movie_duration']:
             py_image = pygame.image.frombuffer(self.vid.get_next_data(), self.vsize, "RGB")
-            py_image = pygame.transform.scale(py_image, (self.size[0], self.size[1]))
-            self.screen.blit(py_image,(0,0))
+            py_image = pygame.transform.scale(py_image, (self.size[0], int(self.vsize[1]*self.upscale)))
+            self.screen.blit(py_image, (0, self.y_pos))
             self.flip()
             self.curr_frame += 1
             self.clock.tick_busy_loop(self.fps)

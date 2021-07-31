@@ -93,7 +93,7 @@ class Logger:
         self.total_reward = 0
         self.trial_key = dict(animal_id=self.get_setup_info('animal_id'),
                               trial_idx=0, session=self.get_last_session() + 1)
-        session_key = {**self.trial_key, 'setup_conf_idx': params['setup_conf_idx'], 'setup': self.setup,
+        session_key = {**self.trial_key, **params, 'setup': self.setup,
                        'user_name': params['user'] if 'user_name' in params else 'bot'}
         self.put(table='Session', tuple=session_key, priority=1)
         if log_protocol:
