@@ -126,6 +126,7 @@ class RPProbe(Interface):
                 touch.on_release = self._touch_handler
             self.ts.run()
         except:
+            self.ts = False
             print('Cannot create a touch exit!')
 
     def _touch_handler(self, event, touch):
@@ -161,6 +162,8 @@ class RPProbe(Interface):
                  for channel in self.channels['proximity']:
                      self.GPIO.remove_event_detect(self.channels['proximity'][channel])
         self.GPIO.cleanup()
+        if self.ts:
+            self.ts.stop()
 
     def _create_pulse(self, port, duration):
         if port in self.pulses:

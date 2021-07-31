@@ -60,7 +60,6 @@ class MultiPort(Behavior, dj.Manual):
 
     def exit(self):
         self.interface.cleanup()
-        self.interface.ts.stop()
 
     def punish(self):
         port = self.licked_port if self.licked_port > 0 else np.nan
