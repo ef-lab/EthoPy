@@ -15,10 +15,10 @@ exp.setup(logger, Behavior, session_params)
 conditions = []
 
 # define stimulus conditions
-objects = ('obj1v6', 'obj2v6')
+objects = ('obj1v6', 'obj2v6','MadMax')
 
 key = {
-    'clip_number'        : 20,
+    'clip_number'        : [20,30],
     'skip_time'          : [0],
     'movie_duration'     : 2000,
     'static_frame'       : False,
@@ -26,7 +26,7 @@ key = {
 }
 
 for object in objects:
-    conditions += exp.make_conditions(stim_class=RPMovies(), conditions={**key, 'movie_name': object})
+    conditions += exp.make_conditions(stim_class=Movies(), conditions={**key, 'movie_name': object})
 
 # run experiment
 exp.push_conditions(conditions)

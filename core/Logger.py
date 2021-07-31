@@ -169,7 +169,7 @@ class Logger:
 
 @dataclass(order=True)
 class PrioritizedItem:
-    table: str = datafield(compare=False)
+    table: str = datafield(compare =False)
     tuple: Any = datafield(compare=False)
     field: str = datafield(compare=False, default='')
     value: Any = datafield(compare=False, default='')

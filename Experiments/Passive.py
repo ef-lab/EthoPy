@@ -36,10 +36,11 @@ class Entry(Experiment):
 class PreTrial(Experiment):
     def entry(self):
         self.prepare_trial()
-        self.stim.prepare(self.curr_cond)
         if self.is_stopped():
             self.logger.update_setup_info({'status': 'stop'})
-        super().entry()
+        else:
+            self.stim.prepare(self.curr_cond)
+            super().entry()
 
     def next(self):
         if self.is_stopped():  # if run out of conditions exit

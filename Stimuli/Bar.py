@@ -44,16 +44,7 @@ class Bar(Stimulus, dj.Manual):
                     'intertrial_duration'   : 0}
 
     def init(self, exp):
-        self.conditions = exp.conditions
-        self.logger = exp.logger
-        self.exp = exp
-
-        # setup parameters
-        self.monitor_size, self.monitor_aspect, self.monitor_distance = self.logger.get(table='SetupConfiguration.Screen',
-                                                                         key=self.exp.params,
-                                                                         fields=('monitor_size', 'monitor_aspect',
-                                                                                 'monitor_distance'))
-        self.monitor_distance = self.monitor_distance
+        super().init(exp)
         ymonsize = self.monitor_size * 2.54 / np.sqrt(1 + self.monitor_aspect ** 2)  # cm Y monitor size
         monSize = [ymonsize * self.monitor_aspect, ymonsize]
         y_res = int(self.exp.params['max_res'] / self.monitor_aspect)
@@ -66,7 +57,7 @@ class Bar(Stimulus, dj.Manual):
         # setup pygame
         pygame.init()
         self.clock = pygame.time.Clock()
-        self.screen = pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF | NOFRAME, display=1) #---> this works but minimizes when clicking (Emina)
+        self.screen = pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF | NOFRAME, display=0) #---> this works but minimizes when clicking (Emina)
         self.unshow()
         pygame.mouse.set_visible(0)
 

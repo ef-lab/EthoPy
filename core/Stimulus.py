@@ -25,16 +25,19 @@ class Stimulus:
     """ This class handles the stimulus presentation use function overrides for each stimulus class """
 
     cond_tables, required_fields, default_key, curr_cond, conditions, timer = [], [], dict(), dict(), [], Timer()
+    period = 'Trial'
 
     def init(self, exp):
         """store parent objects """
         self.logger = exp.logger
         self.exp = exp
-        intensity = self.logger.get(schema='experiment', table='SetupConfiguration.Screen',
-                                    key=dict(setup_conf_idx=exp.params['setup_conf_idx']), fields=['intensity'])
+        screen_properties = self.logger.get(table='SetupConfiguration.Screen', key=self.exp.params, as_dict=True)
+        for key in screen_properties[0]:  setattr(self, key, screen_properties[0][key])
+
         if self.logger.is_pi:
-            cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % intensity[0]
+            cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % self.intensity
             os.system(cmd)
+            self.interface.setup_touch_exit()
 
     def setup(self):
         """setup stimulation for presentation before experiment starts"""

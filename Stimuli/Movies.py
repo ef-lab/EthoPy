@@ -3,10 +3,6 @@ from time import sleep
 import pygame
 from pygame.locals import *
 import io, os, imageio
-stimuli2 = dj.create_virtual_module('stim2', 'lab_stimuli')
-
-
-@stimuli2.schema
 
 
 @stimulus.schema
@@ -28,8 +24,8 @@ class Movies(Stimulus, dj.Manual):
 
     def setup(self):
         # setup parameters
-        self.path = 'stimuli/'     # default path to copy local  stimuli
-        self.size = (400, 240)     # window size
+        self.path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
+        self.size = (self.resolution_x, self.resolution_y)     # window size
         self.color = [127, 127, 127]  # default background color
         self.loc = (0, 0)          # default starting location of stimulus surface
         self.fps = 30              # default presentation framerate
@@ -58,7 +54,8 @@ class Movies(Stimulus, dj.Manual):
     def present(self):
         if self.timer.elapsed_time() < self.curr_cond['movie_duration']:
             py_image = pygame.image.frombuffer(self.vid.get_next_data(), self.vsize, "RGB")
-            self.screen.blit(py_image, self.pos)
+            py_image = pygame.transform.scale(py_image, (self.size[0], self.size[1]))
+            self.screen.blit(py_image,(0,0))
             self.flip()
             self.curr_frame += 1
             self.clock.tick_busy_loop(self.fps)
@@ -118,8 +115,8 @@ class RPMovies(Movies):
 
     def setup(self):
         # setup parameters
-        self.path = 'stimuli/'     # default path to copy local stimuli
-        self.size = (800, 480)     # window size
+        self.path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
+        self.size = (self.resolution_x, self.resolution_y)     # window size
         self.color = [127, 127, 127]  # default background color
         self.loc = (0, 0)          # default starting location of stimulus surface
         self.fps = 30              # default presentation framerate

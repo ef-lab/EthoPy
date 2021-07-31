@@ -116,13 +116,16 @@ class RPProbe(Interface):
                                                callback=self._position_change, bouncetime=50)
 
     def setup_touch_exit(self):
-        import ft5406 as TS
-        self.ts = TS.Touchscreen()
-        self.ts_press_event = TS.TS_PRESS
-        for touch in self.ts.touches:
-            touch.on_press = self._touch_handler
-            touch.on_release = self._touch_handler
-        self.ts.run()
+        try:
+            import ft5406 as TS
+            self.ts = TS.Touchscreen()
+            self.ts_press_event = TS.TS_PRESS
+            for touch in self.ts.touches:
+                touch.on_press = self._touch_handler
+                touch.on_release = self._touch_handler
+            self.ts.run()
+        except:
+            print('Cannot create a touch exit!')
 
     def _touch_handler(self, event, touch):
         if event == self.ts_press_event:
