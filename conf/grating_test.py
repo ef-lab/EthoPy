@@ -8,7 +8,6 @@ from core.Behavior import *
 session_params = {
     'trial_selection'       : 'fixed',
     'setup_conf_idx'        : 1,
-    'max_res'               : 1000,
 }
 
 exp = Experiment()
@@ -24,7 +23,7 @@ key = {
 repeat_n = 1
 conditions = []
 for rep in range(0, repeat_n):
-    conditions += exp.make_conditions(stim_class=Grating(), conditions={**key})
+    conditions += exp.make_conditions(stim_class=GratingRP(), conditions={**key})
 
 
 # run experiments
