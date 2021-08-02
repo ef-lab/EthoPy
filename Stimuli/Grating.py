@@ -137,8 +137,8 @@ class Grating(Stimulus, dj.Manual):
         pygame.display.quit()
         pygame.quit()
 
-    def _gray2rgb(self, im):
-        return np.transpose(np.tile(im, [1, 1, 1]), (1, 2, 0))
+    def _gray2rgb(self, im, c=1):
+        return np.transpose(np.tile(im, [c, 1, 1]), (1, 2, 0))
 
     def _get_filename(self, cond):
         basename = ''.join([c for c in cond['stim_hash'] if c.isalpha()])
@@ -248,5 +248,31 @@ class GratingRP(Grating):
         return self.exp.logger.get(schema='stimulus', table=table, key=key, fields=fields)
 
 
+class GratingOld(Grating):
+    """ This class handles the presentation of Gratigs with shifting surfaces but no flatness correction"""
+    def prepare(self, curr_cond):
+        curr_cond['lamda'] = int(self.px_per_deg / curr_cond['spatial_freq'])
+        self.curr_cond = curr_cond
+        self.isrunning = True
+        self.frame_idx = 0
+        self.clock = pygame.time.Clock()
+        self.grating = pygame.surfarray.make_surface(self._gray2rgb(self._make_grating(**curr_cond),3))
+        self.frame_step = self.curr_cond['lamda'] * (self.curr_cond['temporal_freq'] / self.fps)
+
+        self.xt = np.cos((self.curr_cond['theta'] / 180) * np.pi)
+        self.yt = np.sin((self.curr_cond['theta'] / 180) * np.pi)
+        self.timer.start()
+
+    def present(self):
+        displacement = np.mod(self.frame_idx * self.frame_step, self.curr_cond['lamda'])
+        self.screen.blit(self.grating,
+                         (-self.curr_cond['lamda'] + self.yt * displacement,
+                          -self.curr_cond['lamda'] + self.xt * displacement))
+        self.clock.tick_busy_loop(self.fps)
+        self.flip()
+        self.frame_idx += 1
+        if self.timer.elapsed_time() > self.curr_cond['duration']:
+            self.isrunning = False
+            self.unshow()
 
 
