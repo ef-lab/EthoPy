@@ -85,9 +85,9 @@ class Grating(Stimulus, dj.Manual):
                     images = np.dstack((images, self._gray2rgb(transform(image[:self.monitor['resolution_x'],
                                                                                :self.monitor['resolution_y']]))))
                 images = np.transpose(images[:, :, :], [2, 1, 0])
-                self._im2mov(filename, images)
+                self._im2mov(self.path + filename, images)
                 self.logger.log('Grating.Movie', {**cond, 'file_name': filename,
-                                                  'clip': np.fromfile(filename, dtype=np.int8)},
+                                                  'clip': np.fromfile(self.path + filename, dtype=np.int8)},
                                 schema='stimulus', priority=2, block=True)
         return conditions
 
@@ -143,7 +143,7 @@ class Grating(Stimulus, dj.Manual):
     def _get_filename(self, cond):
         basename = ''.join([c for c in cond['stim_hash'] if c.isalpha()])
         pname = '_'.join('{}'.format(p) for p in self.monitor.values())
-        return self.path + basename + '-' + pname + '.mov'
+        return basename + '-' + pname + '.mov'
 
     def _im2mov(self, fn, images):
         w = imageio.get_writer(fn, fps=self.fps)
