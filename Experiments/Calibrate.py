@@ -38,11 +38,12 @@ class Experiment:
                 self.screen.cleanup()
                 msg = 'Pulse %d/%d' % (pulse + 1, self.params['pulsenum'][cal_idx])
                 self.screen.draw(msg)
-                print(msg)
+                print('\r' + msg, end='')
                 for port in self.params['ports']:
                     valve.give_liquid(port, self.params['duration'][cal_idx])
                     time.sleep(self.params['duration'][cal_idx] / 1000 + self.params['pulse_interval'][cal_idx] / 1000)
                 pulse += 1  # update trial
+            print('\r' + 'done')
             if self.params['save']:
                 for port in self.params['ports']:
                     value, exit_flag = self.button_input('Enter weight for port %d' % port)

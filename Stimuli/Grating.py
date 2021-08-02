@@ -65,8 +65,9 @@ class Grating(Stimulus, dj.Manual):
         for cond in conditions:
             filename = self._get_filename(cond)
             tuple = self.exp.logger.get(schema='stimulus', table='Grating.Movie',
-                                        key={**cond, 'filename': filename}, fields=['stim_hash'])
+                                        key={**cond, 'file_name': filename}, fields=['stim_hash'])
             if not tuple:
+                print('Making movie %s', filename)
                 cond['lamda'] = int(self.px_per_deg/cond['spatial_freq'])
                 theta_frame_step = (cond['temporal_freq'] / self.fps) * np.pi * 2
                 image = self._make_grating(**cond)
@@ -80,10 +81,12 @@ class Grating(Stimulus, dj.Manual):
                 else:
                     transform = lambda x: x
                 for iframe in range(0, int(cond['duration']*self.fps/1000 + 10)):
+                    print('\r' + ('frame %d/%d' % (iframe, int(cond['duration']*self.fps/1000 + 10))), end='')
                     cond['phase'] += theta_frame_step
                     image = self._make_grating(**cond)
                     images = np.dstack((images, self._gray2rgb(transform(image[:self.monitor['resolution_x'],
                                                                                :self.monitor['resolution_y']]))))
+                print('\r' + 'done!')
                 images = np.transpose(images[:, :, :], [2, 1, 0])
                 self._im2mov(self.path + filename, images)
                 self.logger.log('Grating.Movie', {**cond, 'file_name': filename,
@@ -220,7 +223,7 @@ class GratingRP(Grating):
         self.timer.start()
 
     def present(self):
-        if self.timer.elapsed_time() > self.curr_cond['movie_duration']:
+        if self.timer.elapsed_time() > self.curr_cond['duration']:
             self.isrunning = False
             self.vid.quit()
 
@@ -241,7 +244,6 @@ class GratingRP(Grating):
             self.vid = self.player(self.filename[0], args=['--aspect-mode', 'stretch', '--no-osd'],
                         dbus_name='org.mpris.MediaPlayer2.omxplayer1')
         self.vid.pause()
-        self.vid.set_position(self.curr_cond['skip_time'])
 
     def get_clip_info(self, key, table, *fields):
         key['file_name'] = self._get_filename(key)

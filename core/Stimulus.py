@@ -37,7 +37,7 @@ class Stimulus:
             if self.logger.is_pi:
                 cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % self.monitor['intensity']
                 os.system(cmd)
-                self.exp.interface.setup_touch_exit()
+                exp.interface.setup_touch_exit()
 
     def setup(self):
         """setup stimulation for presentation before experiment starts"""

@@ -56,7 +56,7 @@ class Interface:
     def log_activity(self, table, key):
         self.activity_tmst = self.logger.logger_timer.elapsed_time()
         key.update({'time': self.activity_tmst, **self.logger.trial_key})
-        if self.logging:
+        if self.logging and self.exp.running:
             self.logger.log('Activity', key, schema='behavior', priority=5)
             self.logger.log('Activity.' + table, key, schema='behavior')
         return self.activity_tmst

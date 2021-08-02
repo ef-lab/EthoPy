@@ -37,7 +37,7 @@ class ExperimentClass:
     """  Parent Experiment """
     curr_state, curr_trial, total_reward, cur_dif, flip_count, states, stim = '', 0, 0, 0, 0, dict(), False
     rew_probe, un_choices, difs, iter, curr_cond, dif_h, stims = [], [], [], [], dict(), [], dict()
-    required_fields, default_key, conditions, cond_tables, quit = [], dict(), [], [], False
+    required_fields, default_key, conditions, cond_tables, quit, running = [], dict(), [], [], False, False
 
     # move from State to State using a template method.
     class StateMachine:
@@ -140,6 +140,8 @@ class ExperimentClass:
         self.logger.update_trial_idx(self.curr_trial)
         self.trial_start = self.logger.logger_timer.elapsed_time()
         self.logger.log('Trial', dict(cond_hash=self.curr_cond['cond_hash'], time=self.trial_start), priority=3)
+        if not self.running:
+            self.running = True
 
     def name(self): return type(self).__name__
 
