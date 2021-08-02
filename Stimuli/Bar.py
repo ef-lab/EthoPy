@@ -22,15 +22,11 @@ class Bar(Stimulus, dj.Manual):
     direction             : float             # 1 for UD LR, -1 for DU RL
     flatness_correction   : tinyint(1)        # 1 correct for flatness of monitor, 0 do not
     intertrial_duration   : int
-    center_x              : float
-    center_y              : float
     max_res               : smallint
     """
 
     cond_tables = ['Bar']
-    default_key =  {'center_x'              : 0,
-                    'center_y'              : -0.17,
-                    'max_res'               : 1000,
+    default_key =  {'max_res'               : 1000,
                     'bar_width'             : 4,  # degrees
                     'bar_speed'             : 2,  # degrees/sec
                     'flash_speed'           : 2,
@@ -45,19 +41,20 @@ class Bar(Stimulus, dj.Manual):
 
     def init(self, exp):
         super().init(exp)
-        ymonsize = self.monitor_size * 2.54 / np.sqrt(1 + self.monitor_aspect ** 2)  # cm Y monitor size
-        monSize = [ymonsize * self.monitor_aspect, ymonsize]
-        y_res = int(self.exp.params['max_res'] / self.monitor_aspect)
+        ymonsize = self.monitor['monitor_size'] * 2.54 / np.sqrt(1 + self.monitor['monitor_aspect'] ** 2)  # cm Y monitor size
+        monSize = [ymonsize * self.monitor['monitor_aspect'], ymonsize]
+        y_res = int(self.exp.params['max_res'] / self.monitor['monitor_aspect'])
         self.monRes = [self.exp.params['max_res'], int(y_res + np.ceil(y_res % 2))]
-        self.FoV = np.arctan(np.array(monSize) / 2 / self.monitor_distance) * 2 * 180 / np.pi  # in degrees
-        self.FoV[1] = self.FoV[0] / self.monitor_aspect
+        self.FoV = np.arctan(np.array(monSize) / 2 / self.monitor['monitor_distance']) * 2 * 180 / np.pi  # in degrees
+        self.FoV[1] = self.FoV[0] / self.monitor['monitor_aspect']
         self.color = [0, 0, 0]
-        self.fps = 30              # default presentation framerate
+        self.fps = self.monitor['fps']
 
         # setup pygame
         pygame.init()
         self.clock = pygame.time.Clock()
-        self.screen = pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF | NOFRAME, display=0) #---> this works but minimizes when clicking (Emina)
+        self.screen = pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF | NOFRAME,
+                                              display=self.monitor['screen_idx']-1) #---> this works but minimizes when clicking (Emina)
         self.unshow()
         pygame.mouse.set_visible(0)
 
@@ -74,9 +71,10 @@ class Bar(Stimulus, dj.Manual):
         [self.cycles[abs(caxis - 1)], self.cycles[caxis]] = np.meshgrid(-Yspace/2/self.curr_cond['bar_width'],
                                                                         -Xspace/2/self.curr_cond['bar_width'])
         if self.curr_cond['flatness_correction']:
-            I_c, self.transform = flat2curve(self.cycles[0], self.monitor_distance,
-                                             self.monitor_size, method='index',
-                                             center_x=self.curr_cond['center_x'], center_y=self.curr_cond['center_y'])
+            I_c, self.transform = flat2curve(self.cycles[0], self.monitor['monitor_distance'],
+                                             self.monitor['monitor_size'], method='index',
+                                             center_x=self.monitor['monitor_center_x'],
+                                             center_y=self.monitor['monitor_center_y'])
             self.BarOffset = -np.max(I_c) - 0.5
             deg_range = (np.ptp(I_c)+1)*self.curr_cond['bar_width']
         else:
@@ -108,10 +106,10 @@ class Bar(Stimulus, dj.Manual):
             offset_cycles = self.cycles[0] + self.BarOffset
             offset_cycles[np.logical_or(offset_cycles < -0.5, offset_cycles > .5)] = 0.5  # threshold grading to create a single bar
             texture = np.uint8((np.cos(offset_cycles * 2 * np.pi) > -1) * self.fill(self.StimOffset)*254)
-            new_surface = pygame.surfarray.make_surface(self.transform(np.tile(texture[:,:,np.newaxis],(1,3))))
+            new_surface = pygame.surfarray.make_surface(self.transform(np.tile(texture[:, :, np.newaxis], (1, 3))))
             screen_width = self.screen.get_width()
             screen_height = self.screen.get_height()
-            pygame.transform.scale(new_surface, (screen_width, screen_height), self.screen)
+            pygame.transform.smoothscale(new_surface, (screen_width, screen_height), self.screen)
             self.flip()
             self.curr_frame += 1
             self.StimOffset += self.StimOffsetCyclesPerFrame

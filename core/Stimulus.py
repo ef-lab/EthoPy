@@ -25,7 +25,7 @@ class Stimulus:
     """ This class handles the stimulus presentation use function overrides for each stimulus class """
 
     cond_tables, required_fields, default_key, curr_cond, conditions, timer = [], [], dict(), dict(), [], Timer()
-    period = 'Trial'
+    period, isrunning, flip_count = 'Trial', False, 0
 
     def init(self, exp):
         """store parent objects """
@@ -33,7 +33,7 @@ class Stimulus:
         self.exp = exp
         screen_properties = self.logger.get(table='SetupConfiguration.Screen', key=self.exp.params, as_dict=True)
         if np.size(screen_properties) > 0:
-            for key in screen_properties[0]:  setattr(self, key, screen_properties[0][key])
+            self.monitor = screen_properties[0]
             if self.logger.is_pi:
                 cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % self.intensity
                 os.system(cmd)

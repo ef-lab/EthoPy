@@ -27,7 +27,7 @@ class Experiment(State, ExperimentClass):
 
 class Entry(Experiment):
     def entry(self):
-        pass
+        self.stim.prepare
 
     def next(self):
         return 'PreTrial'
@@ -81,6 +81,5 @@ class InterTrial(Experiment):
 class Exit(Experiment):
     def run(self):
         self.beh.exit()
-        if self.stim:
-            self.stim.exit()
+        self.stim.exit()
         self.logger.ping(0)

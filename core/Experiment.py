@@ -236,11 +236,13 @@ class SetupConfiguration(dj.Lookup):
     class Screen(dj.Part):
         definition = """
         # Screen information
-        screen_id                : tinyint
+        screen_idx               : tinyint
         -> SetupConfiguration
         ---
         intensity                : tinyint UNSIGNED 
         monitor_distance         : float
+        monitor_center_x         : float
+        monitor_center_y         : float
         monitor_aspect           : float
         monitor_size             : float
         fps                      : tinyint UNSIGNED
@@ -419,10 +421,12 @@ class Session(dj.Manual):
         definition = """
         # Screen information
         -> Session
-        screen_id                : tinyint
+        screen_idx               : tinyint
         ---
         intensity                : tinyint UNSIGNED 
         monitor_distance         : float
+        monitor_center_x         : float
+        monitor_center_y         : float
         monitor_aspect           : float
         monitor_size             : float
         fps                      : tinyint UNSIGNED
