@@ -499,7 +499,7 @@ class Trial(dj.Manual):
         mts_flag = (np.unique((Condition & self).fetch('experiment_class')) == ['Condition.MatchToSample'])
 
         if mts_flag:
-            conditions = self * ((stimulus.StimCondition.Trial() & 'period = "Cue"').proj('stim_hash', stime = 'time') & self) * stimulus.Panda.Object() * ((behavior.BehCondition.Trial().proj(btime = 'time') & self) * behavior.MultiPort.Response())
+            conditions = self * ((stimulus.StimCondition.Trial() & 'period = "Cue"').proj('stim_hash', stime = 'start_time') & self) * stimulus.Panda.Object() * ((behavior.BehCondition.Trial().proj(btime = 'time') & self) * behavior.MultiPort.Response())
         else:
             return []
 
@@ -531,7 +531,7 @@ class Trial(dj.Manual):
         correct_trials = (self & behavior.Rewards.proj(rtime = 'time')).proj()
     
         # missed trials
-        missed_trials = (self & Trial.Aborted()).proj()
+        missed_trials = Trial.Aborted() & self
 
         # incorrect trials
         incorrect_trials = (self - missed_trials - correct_trials).proj()
