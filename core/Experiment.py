@@ -1,12 +1,6 @@
-import datajoint as dj
-from utils.helper_functions import *
-from utils.Timer import *
+from core.Logger import *
 import itertools
 import matplotlib.pyplot as plt
-
-experiment = dj.create_virtual_module('experiment', 'lab_experiments', create_tables=True)
-stimulus = dj.create_virtual_module('stimulus', 'lab_stimuli', create_tables=True)
-behavior = dj.create_virtual_module('behavior', 'lab_behavior', create_tables=True)
 
 
 class State:
@@ -225,6 +219,7 @@ class SetupConfiguration(dj.Lookup):
     ---
     discription              : varchar(256)
     """
+    contents = [[1, 'default RP']]
 
     class Port(dj.Part):
         definition = """
@@ -234,6 +229,7 @@ class SetupConfiguration(dj.Lookup):
         ---
         discription              : varchar(256)
         """
+        contents = [[1, 1, 'left probe'], [2, 1, 'right probe']]
 
     class Screen(dj.Part):
         definition = """
@@ -252,6 +248,7 @@ class SetupConfiguration(dj.Lookup):
         resolution_y             : smallint
         discription              : varchar(256)
         """
+        contents = [[1, 1, 64, 5, 1.66, 7, 30, 800, 480, 'RP monitor', 0, -.1]]
 
     class Ball(dj.Part):
         definition = """
