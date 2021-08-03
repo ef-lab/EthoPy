@@ -592,11 +592,14 @@ class SetupControl(dj.Lookup):
 class Task(dj.Lookup):
     definition = """
     # Behavioral experiment parameters
-    task_idx             : int                          # task identification number
+    task_idx                    : int                          # task identification number
     ---
-    protocol             : varchar(4095)                # stimuli to be presented (array of dictionaries)
-    description=""       : varchar(2048)                # task description
-    timestamp            : timestamp    
+    protocol                    : varchar(4095)                # stimuli to be presented (array of dictionaries)
+    description=""              : varchar(2048)                # task description
+    timestamp=CURRENT_TIMESTAMP : timestamp    
     """
 
+    contents = [[0, 'calibrate_ports.py', 'RP monitor'],
+                [1, 'free_water.py'     , 'RP monitor'],
+                [2, 'grating_test.py'   , 'RP monitor']]
 

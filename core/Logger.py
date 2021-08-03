@@ -9,9 +9,9 @@ from utils.helper_functions import *
 from utils.Timer import Timer
 dj.config["enable_python_native_blobs"] = True
 
-schemata = {'experiment': 'lab_experiments2',
-            'stimulus'  : 'lab_stimuli2',
-            'behavior'  : 'lab_behavior2'}
+schemata = {'experiment': 'lab_experiments',
+            'stimulus'  : 'lab_stimuli',
+            'behavior'  : 'lab_behavior'}
 
 for schema, value in schemata.items():
     globals()[schema] = dj.create_virtual_module(schema, value, create_tables=True, create_schema=True)
