@@ -2,7 +2,7 @@
 State control system for automated behavioral training
 
 
-# INSTRUCTIONS FOR INSTALL
+# INSTALLATION INSTRUCTIONS
 
 Get latest raspbian OS
 in raspi-config:
