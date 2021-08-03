@@ -219,7 +219,6 @@ class SetupConfiguration(dj.Lookup):
     ---
     discription              : varchar(256)
     """
-    contents = [[1, 'default RP']]
 
     class Port(dj.Part):
         definition = """
@@ -229,7 +228,6 @@ class SetupConfiguration(dj.Lookup):
         ---
         discription              : varchar(256)
         """
-        contents = [[1, 1, 'left probe'], [2, 1, 'right probe']]
 
     class Screen(dj.Part):
         definition = """
@@ -248,7 +246,6 @@ class SetupConfiguration(dj.Lookup):
         resolution_y             : smallint
         discription              : varchar(256)
         """
-        contents = [[1, 1, 64, 5, 1.66, 7, 30, 800, 480, 'RP monitor', 0, -.1]]
 
     class Ball(dj.Part):
         definition = """
