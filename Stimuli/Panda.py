@@ -95,8 +95,7 @@ class Panda(Stimulus, dj.Manual):
     object_files = dict()
 
     def init(self, exp):
-        self.logger = exp.logger
-        self.exp = exp
+        super().init(exp)
         cls = self.__class__
         self.__class__ = cls.__class__(cls.__name__ + "ShowBase", (cls, ShowBase), {})
         ShowBase.__init__(self, fStartDirect=True, windowType=None)
@@ -104,7 +103,7 @@ class Panda(Stimulus, dj.Manual):
     def setup(self):
         self.props = core.WindowProperties()
         self.props.setSize(self.pipe.getDisplayWidth(), self.pipe.getDisplayHeight())
-        #self.props.setFullscreen(True)
+        self.props.setFullscreen(True)
         self.props.setCursorHidden(True)
         self.props.setUndecorated(True)
         self.win.requestProperties(self.props)
@@ -156,7 +155,7 @@ class Panda(Stimulus, dj.Manual):
             self.movie = True
             loader = Loader(self)
             file_name = self.get_clip_info(self.curr_cond, 'file_name')
-            self.mov_texture = loader.loadTexture(self.path + file_name[0])
+            self.mov_texture = loader.loadTexture(self.movie_path + file_name[0])
             cm = CardMaker("card")
             tx_scale = self.mov_texture.getTexScale()
             cm.setFrame(-1, 1, -tx_scale[1]/tx_scale[0], tx_scale[1]/tx_scale[0])
@@ -228,6 +227,7 @@ class Panda(Stimulus, dj.Manual):
 
         # setup parameters
         self.path = os.path.dirname(os.path.abspath(__file__)) + '/objects/'     # default path to copy local stimuli
+        self.movie_path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
 
         # store local copy of files
         if not os.path.isdir(self.path):  # create path if necessary
@@ -235,7 +235,7 @@ class Panda(Stimulus, dj.Manual):
         for cond in conditions:
             if 'movie_name' in cond:
                 file = self.exp.logger.get(schema='stimulus', table='Movie.Clip', key=cond, fields=('file_name',))
-                filename = self.path + file[0]
+                filename = self.movie_path + file[0]
                 if not os.path.isfile(filename):
                     print('Saving %s' % filename)
                     clip = self.exp.logger.get(schema='stimulus', table='Movie.Clip', key=cond, fields=('clip',))

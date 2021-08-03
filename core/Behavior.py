@@ -277,6 +277,18 @@ class Behavior:
         else:
             return False
 
+    def is_licking(self, since=0):
+        licked_port, tmst = self.interface.get_last_lick()
+        if tmst >= since and licked_port:
+            self.licked_port = licked_port
+            self.resp_timer.start()
+        else:
+            self.licked_port = 0
+        return self.licked_port
+
+    def get_response(self, since=0):
+        return self.is_licking(since) > 0
+
 
 
 

@@ -62,15 +62,6 @@ class VRBall(Behavior, dj.Manual):
         self.vr.setPosition(condition['x_sz'], condition['y_sz'], condition['x0'], condition['y0'], condition['theta0'])
         super().prepare(condition)
 
-    def is_licking(self, since=0):
-        licked_port, tmst = self.interface.get_last_lick()
-        if tmst >= since and licked_port:
-            self.licked_port = licked_port
-            self.resp_timer.start()
-        else:
-            self.licked_port = 0
-        return self.licked_port
-
     def is_ready(self):
         x, y, theta, tmst = self.get_position()
         in_position = False

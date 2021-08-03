@@ -1,12 +1,6 @@
-import datajoint as dj
-from utils.helper_functions import *
-from utils.Timer import *
+from core.Logger import *
 import itertools
 import matplotlib.pyplot as plt
-
-experiment = dj.create_virtual_module('experiment', 'lab_experiments', create_tables=True)
-stimulus = dj.create_virtual_module('stimulus', 'lab_stimuli', create_tables=True)
-behavior = dj.create_virtual_module('behavior', 'lab_behavior', create_tables=True)
 
 
 class State:
@@ -37,7 +31,7 @@ class ExperimentClass:
     """  Parent Experiment """
     curr_state, curr_trial, total_reward, cur_dif, flip_count, states, stim = '', 0, 0, 0, 0, dict(), False
     rew_probe, un_choices, difs, iter, curr_cond, dif_h, stims = [], [], [], [], dict(), [], dict()
-    required_fields, default_key, conditions, cond_tables, quit = [], dict(), [], [], False
+    required_fields, default_key, conditions, cond_tables, quit, running = [], dict(), [], [], False, False
 
     # move from State to State using a template method.
     class StateMachine:
@@ -64,7 +58,8 @@ class ExperimentClass:
         self.conditions, self.quit, self.curr_cond, self.dif_h, self.stims = [], False, dict(), [], dict()
         self.params = {**self.default_key, **session_params}
         self.logger = logger
-        self.logger.log_session({**self.default_key, **session_params}, log_protocol=True)
+        self.logger.log_session({**self.default_key, **session_params, 'experiment_type': self.cond_tables[0]},
+                                log_protocol=True)
         self.beh = BehaviorClass()
         self.beh.setup(self)
         self.interface = self.beh.interface
@@ -104,7 +99,8 @@ class ExperimentClass:
         for cond in conditions:
             assert np.all([field in cond for field in self.required_fields])
             cond.update({**self.default_key, **cond, 'experiment_class': self.cond_tables[0]})
-        conditions = self.log_conditions(conditions, condition_tables=['Condition'] + self.cond_tables, priority=2)
+        cond_tables = ['Condition.' + table for table in self.cond_tables]
+        conditions = self.log_conditions(conditions, condition_tables=['Condition'] + cond_tables, priority=2)
         return conditions
 
     def push_conditions(self, conditions):
@@ -138,6 +134,8 @@ class ExperimentClass:
         self.logger.update_trial_idx(self.curr_trial)
         self.trial_start = self.logger.logger_timer.elapsed_time()
         self.logger.log('Trial', dict(cond_hash=self.curr_cond['cond_hash'], time=self.trial_start), priority=3)
+        if not self.running:
+            self.running = True
 
     def name(self): return type(self).__name__
 
@@ -234,11 +232,13 @@ class SetupConfiguration(dj.Lookup):
     class Screen(dj.Part):
         definition = """
         # Screen information
-        screen_id                : tinyint
+        screen_idx               : tinyint
         -> SetupConfiguration
         ---
         intensity                : tinyint UNSIGNED 
         monitor_distance         : float
+        monitor_center_x         : float
+        monitor_center_y         : float
         monitor_aspect           : float
         monitor_size             : float
         fps                      : tinyint UNSIGNED
@@ -365,6 +365,7 @@ class Session(dj.Manual):
     ---
     user_name            : varchar(16)                  # user performing the experiment
     setup=null           : varchar(256)                 # computer id
+    experiment_type      : varchar(128)
     session_tmst         : timestamp                    # session timestamp
     """
 
@@ -416,10 +417,12 @@ class Session(dj.Manual):
         definition = """
         # Screen information
         -> Session
-        screen_id                : tinyint
+        screen_idx               : tinyint
         ---
         intensity                : tinyint UNSIGNED 
         monitor_distance         : float
+        monitor_center_x         : float
+        monitor_center_y         : float
         monitor_aspect           : float
         monitor_size             : float
         fps                      : tinyint UNSIGNED
@@ -495,7 +498,6 @@ class Trial(dj.Manual):
         """
 
     def getGroups(self):
-       
         mts_flag = (np.unique((Condition & self).fetch('experiment_class')) == ['Condition.MatchToSample'])
 
         if mts_flag:
@@ -510,7 +512,6 @@ class Trial(dj.Manual):
         conditions = conditions.fetch(order_by = 'trial_idx')
         condition_groups = [conditions[groups_idx == group] for group in set(groups_idx)]
         return condition_groups
-    
     
     def plotDifficulty(self, **kwargs):
         difficulties = (self * experiment.Condition.MatchToSample()).fetch('difficulty')
@@ -588,11 +589,14 @@ class SetupControl(dj.Lookup):
 class Task(dj.Lookup):
     definition = """
     # Behavioral experiment parameters
-    task_idx             : int                          # task identification number
+    task_idx                    : int                          # task identification number
     ---
-    protocol             : varchar(4095)                # stimuli to be presented (array of dictionaries)
-    description=""       : varchar(2048)                # task description
-    timestamp            : timestamp    
+    protocol                    : varchar(4095)                # stimuli to be presented (array of dictionaries)
+    description=""              : varchar(2048)                # task description
+    timestamp                   : timestamp    
     """
 
+    contents = [[0, 'calibrate_ports.py', 'Test calibration protocol', '2021-01-01 00:00:00'],
+                [1, 'free_water.py'     , 'Test free water protocol', '2021-01-01 00:00:00'],
+                [2, 'grating_test.py'   , 'Test grating discimination protocol', '2021-01-01 00:00:00']]
 

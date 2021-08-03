@@ -27,7 +27,7 @@ class Condition(dj.Manual):
 
 
 class Experiment(State, ExperimentClass):
-    cond_tables = ['Condition.Navigate']
+    cond_tables = ['Navigate']
     required_fields = []
     default_key = {'trial_selection'       : 'staircase',
                    'bias_window'           : 5,
@@ -66,10 +66,11 @@ class Entry(Experiment):
 class PreTrial(Experiment):
     def entry(self):
         self.prepare_trial()
-        self.beh.prepare(self.curr_cond)
-        self.stim.prepare(self.curr_cond)
-        self.logger.ping()
-        super().entry()
+        if not self.is_stopped():
+            self.beh.prepare(self.curr_cond)
+            self.stim.prepare(self.curr_cond)
+            self.logger.ping()
+            super().entry()
 
     def next(self):
         if self.is_stopped():
@@ -93,7 +94,7 @@ class Trial(Experiment):
             return 'Reward'
         elif not self.beh.is_ready() and self.response:
             return 'Abort'
-        elif self.response and self.beh.is_ready():  # incorrect response
+        elif self.response and self.beh.is_ready() and not self.beh.is_running():  # incorrect response
             return 'Punish'
         elif self.state_timer.elapsed_time() > self.stim.curr_cond['trial_duration']:  # timed out
             return 'InterTrial'

@@ -17,7 +17,7 @@ class Condition(dj.Manual):
 
 
 class Experiment(State, ExperimentClass):
-    cond_tables = ['Condition.FreeWater']
+    cond_tables = ['FreeWater']
     default_key = {'trial_selection'       : 'biased',
                    'max_reward'            : 6000,
                    'bias_window'           : 5,
@@ -26,6 +26,7 @@ class Experiment(State, ExperimentClass):
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
         self.logger.curr_state = self.name()
+        self.start_time = self.logger.logger_timer.elapsed_time()
         self.resp_ready = False
         self.state_timer.start()
 

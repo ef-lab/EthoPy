@@ -30,7 +30,7 @@ class Condition(dj.Manual):
 
 
 class Experiment(State, ExperimentClass):
-    cond_tables = ['Condition.MatchPort']
+    cond_tables = ['MatchPort']
     required_fields = ['difficulty']
     default_key = {'trial_selection': 'staircase',
                    'max_reward': 3000,

@@ -34,7 +34,7 @@ class Condition(dj.Manual):
 
 
 class Experiment(State, ExperimentClass):
-    cond_tables = ['Condition.MatchToSample']
+    cond_tables = ['MatchToSample']
     required_fields = ['difficulty']
     default_key = {'trial_selection'     : 'staircase',
                    'max_reward'            : 3000,

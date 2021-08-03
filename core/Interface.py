@@ -16,7 +16,8 @@ class Interface:
         self.logging = logging
         self.exp = exp
         self.logger = exp.logger
-        self.ports = self.channels['liquid'].keys()
+        ports = self.logger.get(table='SetupConfiguration.Port', fields=['port'], key=self.exp.params)
+        self.ports = list(set(ports) & set(self.channels['liquid'].keys()))
 
     def load_calibration(self):
         for port in list(set(self.ports)):
@@ -55,7 +56,7 @@ class Interface:
     def log_activity(self, table, key):
         self.activity_tmst = self.logger.logger_timer.elapsed_time()
         key.update({'time': self.activity_tmst, **self.logger.trial_key})
-        if self.logging:
+        if self.logging and self.exp.running:
             self.logger.log('Activity', key, schema='behavior', priority=5)
             self.logger.log('Activity.' + table, key, schema='behavior')
         return self.activity_tmst
@@ -90,6 +91,7 @@ class RPProbe(Interface):
         self.GPIO.setmode(self.GPIO.BCM)
         self.thread = ThreadPoolExecutor(max_workers=2)
         self.frequency = 20
+        self.ts = False
         self.pulses = dict()
         if 'lick' in self.channels:
             self.GPIO.setup(list(self.channels['lick'].values()), self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
@@ -116,13 +118,17 @@ class RPProbe(Interface):
                                                callback=self._position_change, bouncetime=50)
 
     def setup_touch_exit(self):
-        import ft5406 as TS
-        self.ts = TS.Touchscreen()
-        self.ts_press_event = TS.TS_PRESS
-        for touch in self.ts.touches:
-            touch.on_press = self._touch_handler
-            touch.on_release = self._touch_handler
-        self.ts.run()
+        try:
+            import ft5406 as TS
+            self.ts = TS.Touchscreen()
+            self.ts_press_event = TS.TS_PRESS
+            for touch in self.ts.touches:
+                touch.on_press = self._touch_handler
+                touch.on_release = self._touch_handler
+            self.ts.run()
+        except:
+            self.ts = False
+            print('Cannot create a touch exit!')
 
     def _touch_handler(self, event, touch):
         if event == self.ts_press_event:
@@ -157,6 +163,8 @@ class RPProbe(Interface):
                  for channel in self.channels['proximity']:
                      self.GPIO.remove_event_detect(self.channels['proximity'][channel])
         self.GPIO.cleanup()
+        if self.ts:
+            self.ts.stop()
 
     def _create_pulse(self, port, duration):
         if port in self.pulses:
@@ -210,7 +218,8 @@ class VRProbe(RPProbe):
                 'lick': {1: 17}}
     pwm = dict()
 
-    def start_odor(self, dutycycle=50):
+    def start_odor(self, dutycycle=50, frequency=20):
+        self.frequency = frequency
         for idx, channel in enumerate(list(self.channels['odor'].values())):
             self.pwm[idx] = self.GPIO.PWM(channel, self.frequency)
             self.pwm[idx].ChangeFrequency(self.frequency)
