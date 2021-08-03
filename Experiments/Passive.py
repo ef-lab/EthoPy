@@ -36,9 +36,7 @@ class Entry(Experiment):
 class PreTrial(Experiment):
     def entry(self):
         self.prepare_trial()
-        if self.is_stopped():
-            self.logger.update_setup_info({'status': 'stop'})
-        else:
+        if not self.is_stopped():
             self.stim.prepare(self.curr_cond)
             super().entry()
 
