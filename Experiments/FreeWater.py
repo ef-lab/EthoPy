@@ -32,11 +32,11 @@ class Experiment(State, ExperimentClass):
 
 
 class Entry(Experiment):
+    def entry(self):
+        pass
+
     def next(self):
-        if self.beh.is_sleep_time():
-            return 'Offtime'
-        else:
-            return 'Trial'
+        return 'Trial'
 
 
 class Trial(Experiment):
@@ -52,10 +52,12 @@ class Trial(Experiment):
         self.response = self.beh.get_response(self.trial_start)
 
     def next(self):
-        if self.response and self.beh.is_correct():  # response to correct probe
-            return 'Reward'
-        elif self.is_stopped():  # if wake up then update session
+        if self.is_stopped():  # if wake up then update session
             return 'Exit'
+        elif self.beh.is_sleep_time():
+            return 'Offtime'
+        elif self.response and self.beh.is_correct():  # response to correct probe
+            return 'Reward'
         else:
             return 'Trial'
 
