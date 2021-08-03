@@ -599,7 +599,7 @@ class Task(dj.Lookup):
     timestamp=CURRENT_TIMESTAMP : timestamp    
     """
 
-    contents = [[0, 'calibrate_ports.py', 'RP monitor'],
-                [1, 'free_water.py'     , 'RP monitor'],
-                [2, 'grating_test.py'   , 'RP monitor']]
+    contents = [[0, 'calibrate_ports.py', 'Test calibration protocol'],
+                [1, 'free_water.py'     , 'Test free water protocol'],
+                [2, 'grating_test.py'   , 'Test grating discimination protocol']]
 
