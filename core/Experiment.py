@@ -64,6 +64,7 @@ class ExperimentClass:
         self.beh.setup(self)
         self.interface = self.beh.interface
         self.session_timer = Timer()
+        np.random.seed(0)   # fix random seed for repeatability, it can be overidden in the conf file
 
     def start(self):
         states = dict()
