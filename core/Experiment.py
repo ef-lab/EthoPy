@@ -596,10 +596,10 @@ class Task(dj.Lookup):
     ---
     protocol                    : varchar(4095)                # stimuli to be presented (array of dictionaries)
     description=""              : varchar(2048)                # task description
-    timestamp=NULL              : timestamp    
+    timestamp                   : timestamp    
     """
 
-    contents = [[0, 'calibrate_ports.py', 'Test calibration protocol', ''],
-                [1, 'free_water.py'     , 'Test free water protocol', ''],
-                [2, 'grating_test.py'   , 'Test grating discimination protocol', '']]
+    contents = [[0, 'calibrate_ports.py', 'Test calibration protocol', '0000-00-00 00:00:00'],
+                [1, 'free_water.py'     , 'Test free water protocol', '0000-00-00 00:00:00'],
+                [2, 'grating_test.py'   , 'Test grating discimination protocol', '0000-00-00 00:00:00']]
 
