@@ -38,7 +38,7 @@ for irep in range(0, reps):
         tilt_f = lambda: interp(np.random.rand(30)*30)
         yaw_f = lambda: interp(np.random.rand(20)*10)
 
-        conditions = exp.make_conditions(stim_class=Panda(), stim_periods=['Cue', 'Response'], conditions={
+        conditions += exp.make_conditions(stim_class=Panda(), stim_periods=['Cue', 'Response'], conditions={
             'Cue': {
                 'obj_id'        : cue_obj[idx],
                 'obj_dur'       : 240000,
