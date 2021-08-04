@@ -1,33 +1,110 @@
 # PyMouse
-State control system for automated behavioral training
+State control system for automated, high-throughput behavioral training
+It is tightly intergated with Database storage & control
+
+Core modules:
+
+#### Experiment
+Main state experiment Empty class that is overriden by other classes depending on the type of experiment.
+Each state in the Experiment is discribed by 4 funcions:
+
+_entry_: code that is run on entry to each state.  
+_run_: Main run command.  
+_next_: Defines the conditions for the transition to the next state.  
+_exit_: Code that runs uppon the exit of the state.
+
+Tables that are needed for the experiment that discribe the setup:
+
+> SetupConfiguration  
+> SetupConfiguration.Port  
+> SetupConfiguration.Screen
+
+The experiment parameters are specified in *.py script configuration files that are entered in the Task table within the lab_experriment schema. Some examples are in the conf folder but any folder that is accessible to the system can be used. Each protocol has a unique task_idx identifier that is used uppon running. 
+
+Implemented experiment types:  
+* MatchToSample: Experiment with Cue/Delay/Response periods 
+* MatchPort: Stimulus matched to ports
+* Navigate: Navigation experiment
+* Passive: Passive stimulus presentation experiment
+* FreeWater: Free water delivery experiment
+* Calibrate: Port Calibration of water amount
+* PortTest: Testing port for water delivery
+
+#### Behavior
+Empty class that handles the animal behavior in the experiment.  
+
+IMPORTANT: Liquid calibration protocol needs to be run frequently for accurate liquid delivery
+
+Implemented Behavior types:
+* MultiPort:  Default RP setup with lick, liquid delivery and proximity port
+* VRBall (beta): Ball for 2D environments with single lick/liquid delivery port
+* Touch (beta): Touchscreen interface
+
+#### Stimulus
+Empty class that handles the stimuli used in the experiment.
+
+Implemented stimulus types:
+* Grating: Orientation gratings
+* Bar: Moving bar for retinotopic mapping
+* Movies: Movie presentation
+* Olfactory: Odor persentation
+* Panda: Object presentation
+* VROdors: Virtual environment with odors
+* SmellyObjects: Odor-Visual objects
 
 
-# INSTALLATION INSTRUCTIONS
+Non-overridable classes:
+#### Logger (non-overridable)
+Handles all database interactions and it is shared across Experiment/Behavior/Stimulus classes
+non-overridable
 
+Data are storred in tables within 3 different schemata that are automatically created:
+
+> lab_experiments  
+> lab_behavior  
+> lab_stimuli
+
+#### Interface (non-overridable)
+Handles all communication with hardware
+
+## HOW TO RUN
+Can be run either as a service that is controled by the SetupControl table
+```bash
+sudo python3 run.py
+```
+
+or can specify a task_idx to run directly. After it completes, the process ends.
+```bash
+sudo python3 run.py 1 
+```
+
+This process can be automated by either a bash script that runs on startup or through control from a salt server. 
+
+## INSTALLATION INSTRUCTIONS (for Raspberry pi)
 Get latest raspbian OS
 in raspi-config:
  - enable ssh
  - disable screen blanking
  - enable Desktop auto-login
 
-Change hostname - Optional
+Change hostname - Optional, but it will make it easier to identify later
 ```bash
-sed -r -i s/raspberrypi/HOSTNAME/g /etc/hostname /etc/hostname
-sed -r -i s/raspberrypi/HOSTNAME/g /etc/hosts /etc/hosts
+sed -r -i s/raspberrypi/<<HOSTNAME>>/g /etc/hostname /etc/hostname
+sed -r -i s/raspberrypi/<<HOSTNAME>>/g /etc/hosts /etc/hosts
 ```
 
 Change username - Optional
 ```bash
-sudo useradd -s /bin/bash -d /home/USERNAME/ -m -G sudo USERNAME
-sudo passwd USERNAME
-mkhomedir_helper USERNAME
+sudo useradd -s /bin/bash -d /home/<<USERNAME>>/ -m -G sudo USERNAME
+sudo passwd <<USERNAME>>
+mkhomedir_helper <<USERNAME>>
 sudo userdel -r -f pi
 ```
 
 Install salt for remote control, you need to have a salt-master server! - Optional
 ```bash
 sudo apt install salt-minion
-echo 'master: YOUR_SALT-MASTER_IP' | sudo tee -a /etc/salt/minion
+echo 'master: <<YOUR_SALT-MASTER_IP>>' | sudo tee -a /etc/salt/minion
 echo 'id: HOSTNAME' | sudo tee -a /etc/salt/minion
 sudo service salt-minion restart
 ```
@@ -79,8 +156,8 @@ Create dj_local_conf.json with the correct parameters in the PyMouse folder:
 {
    "database.host": "YOUR DATABASE",
     "database.user": "USERNAME",
-    "database.password": "PWD",
-    "database.port": PORT,
+    "database.password": "PASSWORD",
+    "database.port": "PORT",
     "database.reconnect": true,
     "database.enable_python_native_blobs": true
 }
