@@ -100,6 +100,7 @@ class Activity(dj.Manual):
                 selected_trials = (self.proj(ltime = 'time') * (((Trial & key) - Trial.Aborted()) & cond)).proj(ltime = 'ltime - time')
                 trials, ports, times = selected_trials.fetch('trial_idx', 'port', 'ltime', order_by='trial_idx')
                 un_trials, idx_trials = np.unique(trials, return_inverse=True)  # get unique trials
+                #print(un_trials)
 
                 axs.item(idx).scatter(times, idx_trials, params['dotsize'],  # plot all of them
                                       c=np.array(params['port_colors'])[ports - 1])
