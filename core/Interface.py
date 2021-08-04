@@ -190,7 +190,7 @@ class RPProbe(Interface):
             self.ready = True
             self.ready_tmst = self.log_activity('Proximity', dict(port=port, in_position=self.ready))
             print('in position')
-        elif position and self.ready:
+        elif not position and self.ready:
             self.ready = False
             tmst = self.log_activity('Proximity', dict(port=port, in_position=self.ready))
             self.ready_dur = tmst - self.ready_tmst
