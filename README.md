@@ -32,14 +32,6 @@ echo 'id: HOSTNAME' | sudo tee -a /etc/salt/minion
 sudo service salt-minion restart
 ```
 
-Install salt for remote control, you need to have a salt-master server! - Optional
-```bash
-sudo apt install salt-minion
-echo 'master: YOUR_SALT-MASTER_IP' | sudo tee -a /etc/salt/minion
-echo 'id: HOSTNAME' | sudo tee -a /etc/salt/minion
-sudo service salt-minion restart
-```
-
 X display settings for ssh run, important for Panda stimulus
 ```bash
 sed -i -e '$aexport DISPLAY=:0' ~/.profile
