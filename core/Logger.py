@@ -63,6 +63,7 @@ class Logger:
                     self.queue.put(item)
                 else:
                     print('Errored again, stopping')
+                    self.thread_end.set()
                     raise
 
             self.thread_lock.release()
@@ -118,10 +119,11 @@ class Logger:
             tdelta = lambda t: datetime.strptime(t, "%H:%M:%S") - datetime.strptime("00:00:00", "%H:%M:%S")
             key = {**key, 'start_time': tdelta(params['start_time']), 'stop_time': tdelta(params['stop_time'])}
         self.update_setup_info(key)
-        self.logger_timer.start()  # start sessio n time
+        self.logger_timer.start()  # start session time
 
     def update_setup_info(self, info):
         self.setup_info = {**(experiment.SetupControl() & dict(setup=self.setup)).fetch1(), **info}
+        if self.thread_end.is_set(): self.setup_info['status'] = 'exit'
         self.put(table='SetupControl', tuple=self.setup_info, replace=True, priority=1)
         self.setup_status = self.setup_info['status']
         if 'status' in info:
