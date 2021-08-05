@@ -6,8 +6,6 @@ from Behaviors.MultiPort import *
 # define session parameters
 session_params = {
     'trial_selection'    : 'staircase',
-    'start_time'         : '10:00:00',
-    'stop_time'          : '22:00:00',
     'max_reward'         : 3000,
     'bias_window'        : 5,
     'staircase_window'   : 10,
