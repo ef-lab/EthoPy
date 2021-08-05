@@ -1,19 +1,29 @@
 # PyMouse
-State control system for automated, high-throughput behavioral training
-It is tightly intergated with Database storage & control
+State control system for automated, high-throughput behavioral training based on Python. 
+It is tightly intergated with Database storage & control using the [Datajoint] framework. 
+It can run on Linux, MacOS, Windows and it is optimized for use with Raspberry pi boards. 
 
-Core modules:
+It is comprised of several overridable modules that define the structure of experiment, stimulus and behavioral control.
+A diagram that illustrates the relationship between the core modules:
 
 [<img src="http://www.plantuml.com/plantuml/png/TP91Q-D038Nl_XM2FTkRN8CnOPT22-sblVQYsB8zT4PZPZHDwQylJXt5WV4jqVUafwVnCGe6ISuMySFmX04T16e5UR3qwXDt_trW2h3V5Lg7Xw-9Wd740d-i6KOP0X6l16zYNB8fRk1_DEAdyU4EH_411u9dFmmKGFy_iL3eiQMYGy4JHeBhZ-9NMvTfAXijhhOhEt_cicnqeHpKTTQmhcPQDSiwXIQggpJTofgahYpraj7h8CsXJJbsQPz9c2zpXzWBmQKClb-_mG7gQBxfiDyrBsWOeg0Ga0hglpDkxWTewdNx8t9dAOAC1CZ6eONJ8bk6m3lVv8PdvPQJfNusqjjl6SKBDpc35Ac3Z4icptBud0bQgvzCFePGm5QCvvXDe6-mDRtrpYKsBSupSXPd8oEC6Bep1hfw78cxvEmF">]
+
+[Datajoint]: https://github.com/datajoint/datajoint-python
+
+--- 
+
+Core modules:
 
 ### Experiment
 Main state experiment Empty class that is overriden by other classes depending on the type of experiment.
 
+This class can have various State classes. An Entry and Exit State are necessary, all the rest can be customized.
+ 
 A typical experiment state diagram:
 
 [<img src="http://www.plantuml.com/plantuml/png/SoWkIImgAStDuT9mpIifgjHKqDMrKz08A4eDASfCpD7aWZEXCZ1XP377fFoY4ZIneDJonA8KDC60qhpCuWoG8AQ945EWOfvv9Qb5K0cOKPWoCFCmPP0vG4aDrufCe0CTKlDIW5u50000">]
 
-Each of the states is discribed by 4 funcions:
+Each of the states is discribed by 4 overridable funcions:
 
 _entry_: code that is run on entry to each state.  
 _run_: Main run command.  
@@ -73,6 +83,8 @@ Data are storred in tables within 3 different schemata that are automatically cr
 
 ### Interface (non-overridable)
 Handles all communication with hardware
+
+---
 
 ## HOW TO RUN
 Can be run either as a service that is controled by the SetupControl table

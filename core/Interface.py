@@ -11,7 +11,7 @@ class Interface:
     port, lick_tmst, ready_dur, activity_tmst, ready_tmst, pulse_rew = 0, 0, 0, 0, 0, dict()
     ready, logging, timer_ready, weight_per_pulse, pulse_dur, channels = False, False, Timer(), dict(), dict(), dict()
 
-    def __init__(self, exp=[], callbacks=True, logging=True):
+    def __init__(self, exp=[], callbacks=True, logging=False):
         self.callbacks = callbacks
         self.logging = logging
         self.exp = exp
@@ -56,8 +56,9 @@ class Interface:
     def log_activity(self, table, key):
         self.activity_tmst = self.logger.logger_timer.elapsed_time()
         key.update({'time': self.activity_tmst, **self.logger.trial_key})
+        print('Logging: ', self.logging, self.exp.running)
         if self.logging and self.exp.running:
-            self.logger.log('Activity', key, schema='behavior', priority=5)
+            self.logger.log('Activity', key, schema='behavior', priority=10)
             self.logger.log('Activity.' + table, key, schema='behavior')
         return self.activity_tmst
 
@@ -154,6 +155,7 @@ class RPProbe(Interface):
         return self.ready, ready_dur, self.ready_tmst
 
     def cleanup(self):
+        self.logging = False
         self.Pulser.wave_clear()
         if self.callbacks:
             if 'lick' in self.channels:

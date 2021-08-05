@@ -123,7 +123,6 @@ class Logger:
 
     def update_setup_info(self, info):
         self.setup_info = {**(experiment.SetupControl() & dict(setup=self.setup)).fetch1(), **info}
-        if self.thread_end.is_set(): self.setup_info['status'] = 'exit'
         self.put(table='SetupControl', tuple=self.setup_info, replace=True, priority=1)
         self.setup_status = self.setup_info['status']
         if 'status' in info:
