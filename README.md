@@ -11,7 +11,6 @@ Main state experiment Empty class that is overriden by other classes depending o
 
 A typical experiment state diagram:
 
-
 [<img src="http://www.plantuml.com/plantuml/png/SoWkIImgAStDuT9mpIifgjHKqDMrKz08A4eDASfCpD7aWZEXCZ1XP377fFoY4ZIneDJonA8KDC60qhpCuWoG8AQ945EWOfvv9Qb5K0cOKPWoCFCmPP0vG4aDrufCe0CTKlDIW5u50000">]
 
 Each of the states is discribed by 4 funcions:

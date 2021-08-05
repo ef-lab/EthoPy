@@ -22,3 +22,15 @@ note right of Logger : <size:10>Handles all database</size> \n <size:10>interact
 note left of Interface : <size:10>Handles all communication</size> \n <size:10>with hardware</size>
 ```
 
+```puml
+(Entry) --> (PreTrial)
+(PreTrial) --> (Trial)
+(Trial) --> (Abort)
+(Trial) --> (Reward)
+(Trial) --> (Punish)
+(Trial) --> (Trial)
+(Abort) --> (InterTrial)
+(Reward) --> (InterTrial)
+(Punish) --> (InterTrial)
+(InterTrial)-->(Exit)
+```
