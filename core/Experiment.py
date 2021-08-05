@@ -55,7 +55,7 @@ class ExperimentClass:
             self.exitState.run()
 
     def setup(self, logger, BehaviorClass, session_params):
-        self.conditions, self.quit, self.curr_cond, self.dif_h, self.stims = [], False, dict(), [], dict()
+        self.conditions, self.quit, self.curr_cond, self.dif_h, self.stims, self.curr_trial = [], False, dict(), [], dict(),0
         self.params = {**self.default_key, **session_params}
         self.logger = logger
         self.logger.log_session({**self.default_key, **session_params, 'experiment_type': self.cond_tables[0]},
