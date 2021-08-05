@@ -4,9 +4,48 @@ It is tightly intergated with Database storage & control
 
 Core modules:
 
+```puml
+skinparam rectangleRoundCorner 10
+rectangle Experiment #lightgreen
+rectangle Stimulus #lightgreen
+rectangle Behavior #lightgreen
+storage Logger 
+storage Interface
+database database
+Logger<-up->database
+Experiment -down--> Stimulus
+Experiment -down--> Behavior
+Experiment <.down.> Logger
+Stimulus <.up.> Logger
+Behavior <.left.> Logger
+Stimulus <.down.> Interface
+Behavior <.down.> Interface
+Logger <.right.> Interface
+note right of Experiment : <size:10>Main state experiment</size>
+note right of Behavior : <size:10>Handles the animal behavior</size> \n <size:10>in the experiment</size>
+note left of Stimulus : <size:10>Handles the stimuli</size> \n <size:10>used in the experiment</size>
+note right of Logger : <size:10>Handles all database</size> \n <size:10>interactions</size>
+note left of Interface : <size:10>Handles all communication</size> \n <size:10>with hardware</size>
+```
+
 #### Experiment
 Main state experiment Empty class that is overriden by other classes depending on the type of experiment.
-Each state in the Experiment is discribed by 4 funcions:
+
+A typical experiment state diagram:
+```puml
+(Entry) --> (PreTrial)
+(PreTrial) --> (Trial)
+(Trial) --> (Abort)
+(Trial) --> (Reward)
+(Trial) --> (Punish)
+(Trial) --> (Trial)
+(Abort) --> (InterTrial)
+(Reward) --> (InterTrial)
+(Punish) --> (InterTrial)
+(InterTrial)-->(Exit)
+```
+
+Each of the states is discribed by 4 funcions:
 
 _entry_: code that is run on entry to each state.  
 _run_: Main run command.  
