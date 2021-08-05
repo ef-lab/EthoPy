@@ -6,7 +6,7 @@ Core modules:
 
 [<img src="http://www.plantuml.com/plantuml/png/TP91Q-D038Nl_XM2FTkRN8CnOPT22-sblVQYsB8zT4PZPZHDwQylJXt5WV4jqVUafwVnCGe6ISuMySFmX04T16e5UR3qwXDt_trW2h3V5Lg7Xw-9Wd740d-i6KOP0X6l16zYNB8fRk1_DEAdyU4EH_411u9dFmmKGFy_iL3eiQMYGy4JHeBhZ-9NMvTfAXijhhOhEt_cicnqeHpKTTQmhcPQDSiwXIQggpJTofgahYpraj7h8CsXJJbsQPz9c2zpXzWBmQKClb-_mG7gQBxfiDyrBsWOeg0Ga0hglpDkxWTewdNx8t9dAOAC1CZ6eONJ8bk6m3lVv8PdvPQJfNusqjjl6SKBDpc35Ac3Z4icptBud0bQgvzCFePGm5QCvvXDe6-mDRtrpYKsBSupSXPd8oEC6Bep1hfw78cxvEmF">]
 
-#### Experiment
+### Experiment
 Main state experiment Empty class that is overriden by other classes depending on the type of experiment.
 
 A typical experiment state diagram:
@@ -37,7 +37,7 @@ Implemented experiment types:
 * Calibrate: Port Calibration of water amount
 * PortTest: Testing port for water delivery
 
-#### Behavior
+### Behavior
 Empty class that handles the animal behavior in the experiment.  
 
 IMPORTANT: Liquid calibration protocol needs to be run frequently for accurate liquid delivery
@@ -47,7 +47,7 @@ Implemented Behavior types:
 * VRBall (beta): Ball for 2D environments with single lick/liquid delivery port
 * Touch (beta): Touchscreen interface
 
-#### Stimulus
+### Stimulus
 Empty class that handles the stimuli used in the experiment.
 
 Implemented stimulus types:
@@ -61,7 +61,7 @@ Implemented stimulus types:
 
 
 Non-overridable classes:
-#### Logger (non-overridable)
+### Logger (non-overridable)
 Handles all database interactions and it is shared across Experiment/Behavior/Stimulus classes
 non-overridable
 
@@ -71,7 +71,7 @@ Data are storred in tables within 3 different schemata that are automatically cr
 > lab_behavior  
 > lab_stimuli
 
-#### Interface (non-overridable)
+### Interface (non-overridable)
 Handles all communication with hardware
 
 ## HOW TO RUN
