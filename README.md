@@ -97,6 +97,7 @@ or can specify a task_idx to run directly. After it completes, the process ends.
 sudo python3 run.py 1 
 ```
 
+
 This process can be automated by either a bash script that runs on startup or through control from a salt server. 
 
 ## INSTALLATION INSTRUCTIONS (for Raspberry pi)
@@ -124,7 +125,7 @@ Install salt for remote control, you need to have a salt-master server! - Option
 ```bash
 sudo apt install salt-minion
 echo 'master: <<YOUR_SALT-MASTER_IP>>' | sudo tee -a /etc/salt/minion
-echo 'id: HOSTNAME' | sudo tee -a /etc/salt/minion
+echo 'id: <<HOSTNAME>>' | sudo tee -a /etc/salt/minion
 sudo service salt-minion restart
 ```
 

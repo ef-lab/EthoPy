@@ -1,0 +1,12 @@
+@startuml
+(Entry) --> (PreTrial)
+(PreTrial) --> (Trial)
+(Trial) --> (Abort)
+(Trial) --> (Reward)
+(Trial) --> (Punish)
+(Trial) --> (Trial)
+(Abort) --> (InterTrial)
+(Reward) --> (InterTrial)
+(Punish) --> (InterTrial)
+(InterTrial)-->(Exit)
+@enduml
