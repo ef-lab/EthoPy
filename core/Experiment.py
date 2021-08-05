@@ -55,6 +55,7 @@ class ExperimentClass:
             self.exitState.run()
 
     def setup(self, logger, BehaviorClass, session_params):
+        self.running = False
         self.conditions, self.quit, self.curr_cond, self.dif_h, self.stims, self.curr_trial = [], False, dict(), [], dict(),0
         self.params = {**self.default_key, **session_params}
         self.logger = logger
@@ -77,6 +78,7 @@ class ExperimentClass:
         self.quit = self.quit or self.logger.setup_status in ['stop', 'exit']
         if self.quit and self.logger.setup_status not in ['stop', 'exit']:
             self.logger.update_setup_info({'status': 'stop'})
+        if self.quit: self.running = False
         return self.quit
 
     def make_conditions(self, stim_class, conditions, stim_periods=None):
@@ -101,7 +103,7 @@ class ExperimentClass:
             assert np.all([field in cond for field in self.required_fields])
             cond.update({**self.default_key, **cond, 'experiment_class': self.cond_tables[0]})
         cond_tables = ['Condition.' + table for table in self.cond_tables]
-        conditions = self.log_conditions(conditions, condition_tables=['Condition'] + cond_tables, priority=2)
+        conditions = self.log_conditions(conditions, condition_tables=['Condition'] + cond_tables)
         return conditions
 
     def push_conditions(self, conditions):
@@ -124,7 +126,7 @@ class ExperimentClass:
     def prepare_trial(self):
         old_cond = self.curr_cond
         self._get_new_cond()
-        if not self.curr_cond:
+        if not self.curr_cond or self.logger.thread_end.is_set():
             self.quit = True
             return
         if 'stimulus_class' not in old_cond or old_cond['stimulus_class'] != self.curr_cond['stimulus_class']:
@@ -136,11 +138,12 @@ class ExperimentClass:
         self.trial_start = self.logger.logger_timer.elapsed_time()
         self.logger.log('Trial', dict(cond_hash=self.curr_cond['cond_hash'], time=self.trial_start), priority=3)
         if not self.running:
+            self.interface.logging = True
             self.running = True
 
     def name(self): return type(self).__name__
 
-    def log_conditions(self, conditions, condition_tables=['Condition'], schema='experiment', hsh='cond_hash', priority=5):
+    def log_conditions(self, conditions, condition_tables=['Condition'], schema='experiment', hsh='cond_hash', priority=2):
         fields, hash_dict = list(), dict()
         for ctable in condition_tables:
             table = rgetattr(eval(schema), ctable)
