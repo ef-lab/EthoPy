@@ -44,6 +44,10 @@ class Logger:
         self.queue.put(item)
         if not item.block: self.queue.task_done()
         else: self.queue.join()
+        if item.validate:
+            table = rgetattr(self._schemata[item.schema], item.table)
+            while not len(table & item.tuple) > 0:
+                time.sleep(.1)
 
     def inserter(self):
         while not self.thread_end.is_set():
@@ -100,14 +104,14 @@ class Logger:
                               trial_idx=0, session=self.get_last_session() + 1)
         session_key = {**self.trial_key, **params, 'setup': self.setup,
                        'user_name': params['user'] if 'user_name' in params else 'bot'}
-        self.put(table='Session', tuple=session_key, priority=1, block=True)
+        self.put(table='Session', tuple=session_key, priority=1, validate=True)
         if log_protocol:
             pr_name, pr_file = self.get_protocol(raw_file=True)
             git_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
             self.put(table='Session.Protocol', tuple={**self.trial_key, 'protocol_name': pr_name,
                                                       'protocol_file': pr_file, 'git_hash': git_hash})
-        self.put(table='Configuration', tuple=self.trial_key, schema='behavior', priority=2, block=True)
-        self.put(table='Configuration', tuple=self.trial_key, schema='stimulus', priority=2, block=True)
+        self.put(table='Configuration', tuple=self.trial_key, schema='behavior', priority=2, validate=True)
+        self.put(table='Configuration', tuple=self.trial_key, schema='stimulus', priority=2, validate=True)
         ports = (experiment.SetupConfiguration.Port & {'setup_conf_idx': params['setup_conf_idx']}
                  ).fetch(as_dict=True)
         for port in ports: self.put(table='Configuration.Port', tuple={**port, **self.trial_key}, schema='behavior')
@@ -184,6 +188,7 @@ class PrioritizedItem:
     schema: str = datafield(compare=False, default='experiment')
     replace: bool = datafield(compare=False, default=False)
     block: bool = datafield(compare=False, default=False)
+    validate: bool = datafield(compare=False, default=False)
     priority: int = datafield(default=50)
     error: bool = datafield(compare=False, default=False)
     ignore_extra_fields: bool = datafield(compare=False, default=True)
