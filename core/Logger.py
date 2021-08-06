@@ -46,11 +46,9 @@ class Logger:
         else: self.queue.join()
         if item.validate:
             table = rgetattr(self._schemata[item.schema], item.table)
-            #primary_key = [field for field in table.primary_key]
-            print(table)
-            print(item.tuple)
-            print(table& item.tuple)
-            while not len(table & item.tuple) > 0: time.sleep(.5)
+            key = {k: v for (k, v) in item.tuple.items() if k in table.primary_key}
+            if 'status' in item.tuple.keys(): key['status'] = item.tuple['status']
+            while not len(table & key) > 0: print('waiting'); time.sleep(.5)
 
     def inserter(self):
         while not self.thread_end.is_set():
@@ -87,6 +85,7 @@ class Logger:
     def log_setup(self, task_idx=False):
         rel = experiment.Control() & dict(setup=self.setup)
         key = rel.fetch1() if numpy.size(rel.fetch()) else dict(setup=self.setup)
+        print(key)
         if task_idx: key['task_idx'] = task_idx
         key = {**key, 'ip': self.get_ip(), 'status': self.setup_status}
         self.put(table='Control', tuple=key, replace=True, priority=1, block=True, validate=True)
@@ -122,7 +121,7 @@ class Logger:
         key = {'session': self.trial_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1}
         if 'start_time' in params:
             tdelta = lambda t: datetime.strptime(t, "%H:%M:%S") - datetime.strptime("00:00:00", "%H:%M:%S")
-            key = {**key, 'start_time': tdelta(params['start_time']), 'stop_time': tdelta(params['stop_time'])}
+            key = {**key, 'start_time': str(tdelta(params['start_time'])), 'stop_time': str(tdelta(params['stop_time']))}
         self.update_setup_info(key)
         self.logger_timer.start()  # start session time
 
