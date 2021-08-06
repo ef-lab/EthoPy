@@ -1,7 +1,7 @@
 @startuml
 top to bottom direction
-rectangle Entry #light
-rectangle Exit #light
+rectangle Entry #white
+rectangle Exit #white
 Entry -down->> (PreTrial)
 (PreTrial) -down->> (Trial)
 (Trial) -down->> (Abort)
