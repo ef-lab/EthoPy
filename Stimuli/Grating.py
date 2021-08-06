@@ -91,7 +91,7 @@ class Grating(Stimulus, dj.Manual):
                 self._im2mov(self.path + filename, images)
                 self.logger.log('Grating.Movie', {**cond, 'file_name': filename,
                                                   'clip': np.fromfile(self.path + filename, dtype=np.int8)},
-                                schema='stimulus', priority=2, block=True)
+                                schema='stimulus', priority=2, block=True, validate=True)
         return conditions
 
     def prepare(self, curr_cond):
