@@ -11,7 +11,8 @@ dj.config["enable_python_native_blobs"] = True
 
 schemata = {'experiment': 'lab_experiments',
             'stimulus'  : 'lab_stimuli',
-            'behavior'  : 'lab_behavior'}
+            'behavior'  : 'lab_behavior',
+            'mice'      : 'common_mice'}
 
 for schema, value in schemata.items():
     globals()[schema] = dj.create_virtual_module(schema, value, create_tables=True, create_schema=True)
