@@ -45,9 +45,8 @@ class Logger:
         if not item.block: self.queue.task_done()
         else: self.queue.join()
         if item.validate:
-            table = rgetattr(self._schemata[item.schema], item.table)
-            while not len(table & item.tuple) > 0:
-                time.sleep(.1)
+            table = rgetattr(eval(item.schema), item.table)
+            while not len(table & item.tuple) > 0: time.sleep(.1)
 
     def inserter(self):
         while not self.thread_end.is_set():
