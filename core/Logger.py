@@ -46,6 +46,10 @@ class Logger:
         else: self.queue.join()
         if item.validate:
             table = rgetattr(self._schemata[item.schema], item.table)
+            #primary_key = [field for field in table.primary_key]
+            print(table)
+            print(item.tuple)
+            print(table& item.tuple)
             while not len(table & item.tuple) > 0: time.sleep(.5)
 
     def inserter(self):
