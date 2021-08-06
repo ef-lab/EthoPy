@@ -140,11 +140,14 @@ class Logger:
 
     def get_protocol(self, task_idx=None, raw_file=False):
         if not task_idx: task_idx = self.get_setup_info('task_idx')
-        if not len(experiment.Task() & dict(task_idx=task_idx)) > 0: return false
+        if not len(experiment.Task() & dict(task_idx=task_idx)) > 0: return False
         protocol = (experiment.Task() & dict(task_idx=task_idx)).fetch1('protocol')
         path, filename = os.path.split(protocol)
         if not path: protocol = str(pathlib.Path(__file__).parent.absolute()) + '/../conf/' + filename
-        return protocol, np.fromfile(protocol, dtype=np.int8) if raw_file else protocol
+        if raw_file:
+            return protocol, np.fromfile(protocol, dtype=np.int8)
+        else:
+            return protocol
 
     def update_trial_idx(self, trial_idx): self.trial_key['trial_idx'] = trial_idx
 
