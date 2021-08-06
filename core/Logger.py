@@ -45,10 +45,8 @@ class Logger:
         if not item.block: self.queue.task_done()
         else: self.queue.join()
         if item.validate:
-            table = rgetattr(self._schemata[item.schema], item.table)
-            key = {k: v for (k, v) in item.tuple.items() if k in table.primary_key}
-            if 'status' in item.tuple.keys(): key['status'] = item.tuple['status']
-            while not len(table & key) > 0: print('waiting'); time.sleep(.5)
+            table = rgetattr(eval(item.schema), item.table)
+            while not len(table & item.tuple) > 0: time.sleep(.1)
 
     def inserter(self):
         while not self.thread_end.is_set():
@@ -61,11 +59,17 @@ class Logger:
                 table.insert1(item.tuple, ignore_extra_fields=item.ignore_extra_fields,
                               skip_duplicates=skip, replace=item.replace)
             except Exception as e:
-                if item.error: self.thread_end.set(); raise
-                print('Failed to insert:\n', item.tuple, '\n in ', table, '\n With error:\n', e, '\nWill retry later')
-                item.error = True
-                item.priority = item.priority + 2
-                self.queue.put(item)
+                print('Failed to insert:\n', item.tuple, '\n in ', table, '\n With error:\n', e)
+                if not item.error:
+                    print('Will retry later')
+                    item.error = True
+                    item.priority = item.priority + 2
+                    self.queue.put(item)
+                else:
+                    print('Errored again, stopping')
+                    self.thread_end.set()
+                    raise
+
             self.thread_lock.release()
             if item.block: self.queue.task_done()
 
@@ -85,10 +89,9 @@ class Logger:
     def log_setup(self, task_idx=False):
         rel = experiment.Control() & dict(setup=self.setup)
         key = rel.fetch1() if numpy.size(rel.fetch()) else dict(setup=self.setup)
-        print(key)
         if task_idx: key['task_idx'] = task_idx
         key = {**key, 'ip': self.get_ip(), 'status': self.setup_status}
-        self.put(table='Control', tuple=key, replace=True, priority=1, block=True, validate=True)
+        self.put(table='Control', tuple=key, replace=True, priority=1, block=True)
 
     def get_last_session(self):
         last_sessions = (experiment.Session() & dict(animal_id=self.get_setup_info('animal_id'))).fetch('session')
@@ -100,14 +103,14 @@ class Logger:
                               trial_idx=0, session=self.get_last_session() + 1)
         session_key = {**self.trial_key, **params, 'setup': self.setup,
                        'user_name': params['user'] if 'user_name' in params else 'bot'}
-        self.put(table='Session', tuple=session_key, priority=1, validate=True, block=True)
+        self.put(table='Session', tuple=session_key, priority=1, validate=True)
         if log_protocol:
             pr_name, pr_file = self.get_protocol(raw_file=True)
             git_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
             self.put(table='Session.Protocol', tuple={**self.trial_key, 'protocol_name': pr_name,
                                                       'protocol_file': pr_file, 'git_hash': git_hash})
-        self.put(table='Configuration', tuple=self.trial_key, schema='behavior', priority=2, validate=True, block=True)
-        self.put(table='Configuration', tuple=self.trial_key, schema='stimulus', priority=2, validate=True, block=True)
+        self.put(table='Configuration', tuple=self.trial_key, schema='behavior', priority=2, validate=True)
+        self.put(table='Configuration', tuple=self.trial_key, schema='stimulus', priority=2, validate=True)
         ports = (experiment.SetupConfiguration.Port & {'setup_conf_idx': params['setup_conf_idx']}
                  ).fetch(as_dict=True)
         for port in ports: self.put(table='Configuration.Port', tuple={**port, **self.trial_key}, schema='behavior')
@@ -121,15 +124,16 @@ class Logger:
         key = {'session': self.trial_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1}
         if 'start_time' in params:
             tdelta = lambda t: datetime.strptime(t, "%H:%M:%S") - datetime.strptime("00:00:00", "%H:%M:%S")
-            key = {**key, 'start_time': str(tdelta(params['start_time'])), 'stop_time': str(tdelta(params['stop_time']))}
+            key = {**key, 'start_time': tdelta(params['start_time']), 'stop_time': tdelta(params['stop_time'])}
         self.update_setup_info(key)
         self.logger_timer.start()  # start session time
 
     def update_setup_info(self, info):
         self.setup_info = {**(experiment.Control() & dict(setup=self.setup)).fetch1(), **info}
-        block = True if 'status' in info else False
-        self.put(table='Control', tuple=self.setup_info, replace=True, priority=1, block=block, validate=block)
+        self.put(table='Control', tuple=self.setup_info, replace=True, priority=1)
         self.setup_status = self.setup_info['status']
+        if 'status' in info:
+            while self.get_setup_info('status') != info['status']: time.sleep(.5)
 
     def get_setup_info(self, field):
         return (experiment.Control() & dict(setup=self.setup)).fetch1(field)
@@ -140,14 +144,17 @@ class Logger:
 
     def get_protocol(self, task_idx=None, raw_file=False):
         if not task_idx: task_idx = self.get_setup_info('task_idx')
-        if not len(experiment.Task() & dict(task_idx=task_idx)) > 0: return False
-        protocol = (experiment.Task() & dict(task_idx=task_idx)).fetch1('protocol')
-        path, filename = os.path.split(protocol)
-        if not path: protocol = str(pathlib.Path(__file__).parent.absolute()) + '/../conf/' + filename
-        if raw_file:
-            return protocol, np.fromfile(protocol, dtype=np.int8)
+        if len(experiment.Task() & dict(task_idx=task_idx)) > 0:
+            protocol = (experiment.Task() & dict(task_idx=task_idx)).fetch1('protocol')
+            path, filename = os.path.split(protocol)
+            if not path: protocol = str(pathlib.Path(__file__).parent.absolute()) + '/../conf/' + filename
+            if raw_file:
+                file = np.fromfile(protocol, dtype=np.int8)
+                return protocol, file
+            else:
+                return protocol
         else:
-            return protocol
+            return False
 
     def update_trial_idx(self, trial_idx): self.trial_key['trial_idx'] = trial_idx
 
@@ -159,7 +166,7 @@ class Logger:
                                     'total_liquid': self.total_reward, 'state': self.curr_state})
 
     def cleanup(self):
-        while not self.queue.empty(): print('Waiting for empty queue... qsize: %d' % self.queue.qsize()); time.sleep(1)
+        while not self.queue.empty(): print('Waiting for empty queue... qsize: %d' % self.queue.qsize()); time.sleep(2)
         self.thread_end.set()
 
     @staticmethod
@@ -184,4 +191,3 @@ class PrioritizedItem:
     priority: int = datafield(default=50)
     error: bool = datafield(compare=False, default=False)
     ignore_extra_fields: bool = datafield(compare=False, default=True)
-
