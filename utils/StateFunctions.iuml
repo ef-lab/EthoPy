@@ -1,0 +1,29 @@
+@startuml
+top to bottom direction
+
+rectangle PreviousState{
+}
+rectangle NextState{
+}
+
+rectangle  {
+object "<size:16>**entry**</size>" as entry {
+  Code that runs on state entry
+}
+object "<size:16>**run**</size>" as run {
+  Main state code
+}
+object "<size:16>**next**</size>" as next {
+  Code that determines the next state to be run
+}
+object "<size:16>**exit**</size>" as exit {
+  Code that runs uppon the exit of the state
+}
+}
+PreviousState.[#gray,dotted,thickness=1].>entry
+entry-down->run
+run-down->next
+next-down->exit
+next-up->run
+exit.[#gray,dotted,thickness=1].>NextState
+@enduml

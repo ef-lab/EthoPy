@@ -19,7 +19,7 @@ for schema, value in schemata.items():
 
 
 class Logger:
-    trial_key, schemata, setup_info, _schemata = dict(animal_id=0, session=1, trial_idx=0), dict(),dict(), dict()
+    trial_key, setup_info, _schemata = dict(animal_id=0, session=1, trial_idx=0), dict(), dict()
     lock, queue, ping_timer, logger_timer, total_reward, curr_state = False, PriorityQueue(), Timer(), Timer(), 0, ''
 
     def __init__(self, protocol=False):
@@ -29,8 +29,7 @@ class Logger:
         fileobject = open(os.path.dirname(os.path.abspath(__file__)) + '/../dj_local_conf.json')
         con_info = json.loads(fileobject.read())
         conn = dj.Connection(con_info['database.host'], con_info['database.user'], con_info['database.password'])
-        for schema, value in schemata.items():
-            self.schemata.update({schema: dj.create_virtual_module(schema, value, create_tables=True)})
+        for schema, value in schemata.items():  # separate connection for internal comminication
             self._schemata.update({schema: dj.create_virtual_module(schema, value, connection=conn)})
         self.thread_end, self.thread_lock = threading.Event(),  threading.Lock()
         self.inserter_thread = threading.Thread(target=self.inserter)
@@ -133,7 +132,7 @@ class Logger:
         return (experiment.SetupControl() & dict(setup=self.setup)).fetch1(field)
 
     def get(self, schema='experiment', table='SetupControl', fields='', key='', **kwargs):
-        table = rgetattr(self.schemata[schema], table)
+        table = rgetattr(schema, table)
         return (table() & key).fetch(*fields, **kwargs)
 
     def get_protocol(self, task_idx=None, raw_file=False):
