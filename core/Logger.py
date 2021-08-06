@@ -49,11 +49,12 @@ class Logger:
         while not self.thread_end.is_set():
             if self.queue.empty():  time.sleep(.5); continue
             item = self.queue.get()
-            ignore, skip = (False, False) if item.replace else (True, True)
+            skip = False if item.replace else True
             table = rgetattr(self._schemata[item.schema], item.table)
             self.thread_lock.acquire()
             try:
-                table.insert1(item.tuple, ignore_extra_fields=ignore, skip_duplicates=skip, replace=item.replace)
+                table.insert1(item.tuple, ignore_extra_fields=item.ignore_extra_fields,
+                              skip_duplicates=skip, replace=item.replace)
             except Exception as e:
                 print('Failed to insert:\n', item.tuple, '\n in ', table, '\n With error:\n', e)
                 if not item.error:
@@ -72,7 +73,7 @@ class Logger:
     def getter(self):
         while not self.thread_end.is_set():
             self.thread_lock.acquire()
-            self.setup_info = (self._schemata['experiment'].SetupControl() & dict(setup=self.setup)).fetch1()
+            self.setup_info = (self._schemata['experiment'].Control() & dict(setup=self.setup)).fetch1()
             self.thread_lock.release()
             self.setup_status = self.setup_info['status']
             time.sleep(1)  # update once a second
@@ -83,11 +84,11 @@ class Logger:
         return tmst
 
     def log_setup(self, task_idx=False):
-        rel = experiment.SetupControl() & dict(setup=self.setup)
+        rel = experiment.Control() & dict(setup=self.setup)
         key = rel.fetch1() if numpy.size(rel.fetch()) else dict(setup=self.setup)
         if task_idx: key['task_idx'] = task_idx
         key = {**key, 'ip': self.get_ip(), 'status': self.setup_status}
-        self.put(table='SetupControl', tuple=key, replace=True, priority=1, block=True)
+        self.put(table='Control', tuple=key, replace=True, priority=1, block=True)
 
     def get_last_session(self):
         last_sessions = (experiment.Session() & dict(animal_id=self.get_setup_info('animal_id'))).fetch('session')
@@ -99,22 +100,25 @@ class Logger:
                               trial_idx=0, session=self.get_last_session() + 1)
         session_key = {**self.trial_key, **params, 'setup': self.setup,
                        'user_name': params['user'] if 'user_name' in params else 'bot'}
-        self.put(table='Session', tuple=session_key, priority=1)
+        self.put(table='Session', tuple=session_key, priority=1, block=True)
         if log_protocol:
             pr_name, pr_file = self.get_protocol(raw_file=True)
             git_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
             self.put(table='Session.Protocol', tuple={**self.trial_key, 'protocol_name': pr_name,
                                                       'protocol_file': pr_file, 'git_hash': git_hash})
-        key = {'session': self.trial_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1}
+        self.put(table='Configuration', tuple=self.trial_key, schema='behavior', priority=2, block=True)
+        self.put(table='Configuration', tuple=self.trial_key, schema='stimulus', priority=2, block=True)
         ports = (experiment.SetupConfiguration.Port & {'setup_conf_idx': params['setup_conf_idx']}
                  ).fetch(as_dict=True)
-        for port in ports: self.put(table='Session.Port', tuple={**port, **self.trial_key})
+        for port in ports: self.put(table='Configuration.Port', tuple={**port, **self.trial_key}, schema='behavior')
         screens = (experiment.SetupConfiguration.Screen & {'setup_conf_idx': params['setup_conf_idx']}
                    ).fetch(as_dict=True)
-        for screen in screens: self.put(table='Session.Screen', tuple={**screen, **self.trial_key})
+        for scr in screens: self.put(table='Configuration.Screen', tuple={**scr, **self.trial_key}, schema='stimulus')
         balls = (experiment.SetupConfiguration.Ball & {'setup_conf_idx': params['setup_conf_idx']}
                  ).fetch(as_dict=True)
-        for ball in balls: self.put(table='Session.Ball', tuple={**ball, **self.trial_key})
+        for ball in balls: self.put(table='Configuration.Ball', tuple={**ball, **self.trial_key}, schema='behavior')
+
+        key = {'session': self.trial_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1}
         if 'start_time' in params:
             tdelta = lambda t: datetime.strptime(t, "%H:%M:%S") - datetime.strptime("00:00:00", "%H:%M:%S")
             key = {**key, 'start_time': tdelta(params['start_time']), 'stop_time': tdelta(params['stop_time'])}
@@ -122,17 +126,17 @@ class Logger:
         self.logger_timer.start()  # start session time
 
     def update_setup_info(self, info):
-        self.setup_info = {**(experiment.SetupControl() & dict(setup=self.setup)).fetch1(), **info}
-        self.put(table='SetupControl', tuple=self.setup_info, replace=True, priority=1)
+        self.setup_info = {**(experiment.Control() & dict(setup=self.setup)).fetch1(), **info}
+        self.put(table='Control', tuple=self.setup_info, replace=True, priority=1)
         self.setup_status = self.setup_info['status']
         if 'status' in info:
             while self.get_setup_info('status') != info['status']: time.sleep(.5)
 
     def get_setup_info(self, field):
-        return (experiment.SetupControl() & dict(setup=self.setup)).fetch1(field)
+        return (experiment.Control() & dict(setup=self.setup)).fetch1(field)
 
-    def get(self, schema='experiment', table='SetupControl', fields='', key='', **kwargs):
-        table = rgetattr(schema, table)
+    def get(self, schema='experiment', table='Control', fields='', key='', **kwargs):
+        table = rgetattr(eval(schema), table)
         return (table() & key).fetch(*fields, **kwargs)
 
     def get_protocol(self, task_idx=None, raw_file=False):
@@ -182,3 +186,5 @@ class PrioritizedItem:
     block: bool = datafield(compare=False, default=False)
     priority: int = datafield(default=50)
     error: bool = datafield(compare=False, default=False)
+    ignore_extra_fields: bool = datafield(compare=False, default=True)
+

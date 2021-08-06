@@ -25,7 +25,7 @@ A typical experiment state diagram:
 
 Each of the states is discribed by 4 overridable funcions:
 
-[<img src="http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/ef-lab/PyMouse/master/utils/StateFunctions.iuml">]
+[<img src="http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/ef-lab/PyMouse/master/utils/state_functions.iuml">]
 
 Tables that are needed for the experiment that discribe the setup:
 
@@ -84,7 +84,7 @@ Handles all communication with hardware
 ---
 
 ## HOW TO RUN
-Can be run either as a service that is controled by the SetupControl table
+Can be run either as a service that is controled by the Control table
 ```bash
 sudo python3 run.py
 ```

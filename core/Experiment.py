@@ -216,151 +216,6 @@ class ExperimentClass:
 
 
 @experiment.schema
-class SetupConfiguration(dj.Lookup):
-    definition = """
-    # Setup configuration
-    setup_conf_idx           : tinyint                      # configuration version
-    ---
-    discription              : varchar(256)
-    """
-
-    class Port(dj.Part):
-        definition = """
-        # Probe identity
-        port                     : tinyint                      # port id
-        -> SetupConfiguration
-        ---
-        discription              : varchar(256)
-        """
-
-    class Screen(dj.Part):
-        definition = """
-        # Screen information
-        screen_idx               : tinyint
-        -> SetupConfiguration
-        ---
-        intensity                : tinyint UNSIGNED 
-        monitor_distance         : float
-        monitor_center_x         : float
-        monitor_center_y         : float
-        monitor_aspect           : float
-        monitor_size             : float
-        fps                      : tinyint UNSIGNED
-        resolution_x             : smallint
-        resolution_y             : smallint
-        discription              : varchar(256)
-        """
-
-    class Ball(dj.Part):
-        definition = """
-        # Ball information
-        -> SetupConfiguration
-        ---
-        ball_radius=0.125        : float                   # in meters
-        material="styrofoam"     : varchar(64)             # ball material
-        coupling="bearings"      : enum('bearings','air')  # mechanical coupling
-        discription              : varchar(256)
-        """
-
-
-@experiment.schema
-class Aim(dj.Lookup):
-    definition = """
-    # Recording aim
-    rec_aim              : varchar(16)                  # aim
-    ---
-    rec_type             : enum('functional','structural','behavior','other') 
-    description=""       : varchar(2048)                # description
-    """
-
-    contents = [
-        ['two-photon', 'functional', 'Classic two-photon scan'],
-        ['widefield' , 'functional', 'wide field imaging of caclium fluorescence'],
-        ['intrinsic' , 'functional', 'intrinsic imaging'],
-        ['patching'  , 'functional', 'patching'],
-        ['stack'     , 'structural', 'two-photon stack of images'],
-        ['vessels'   , 'structural', 'map of vessels'],
-        ['ball'      , 'behavior'  , '2D Navigation on ball'],
-        ['eye'       , 'behavior'  , 'eye movements']
-    ]
-
-
-@experiment.schema
-class AnesthesiaType(dj.Lookup):
-    definition = """
-    # Acquisition program
-    anesthesia           : varchar(32)                  # anesthesia type
-    ---
-    description=""       : varchar(2048)                # description
-    """
-    contents = [
-        ['none'             , 'anesthesia not used'],
-        ['isoflurane'       , 'through evaporator' ],
-        ['ketamine/xylazine', 'mixtured injected IP'],
-    ]
-
-
-@experiment.schema
-class Software(dj.Lookup):
-    definition = """
-    # Acquisition program
-    software             : varchar(64)                  # program identification number
-    version              : varchar(10)                  # version of program
-    ---
-    description=""       : varchar(2048)                # description
-    """
-    contents = [
-        ['PyMouse'  , '0.1'  , 'self generated files'],
-        ['Imager'   , '0.1'  , 'Imager recording program'],
-        ['OpenEphys', '0.5.4', 'Neuropixel recordings'],
-        ['Miniscope', '1.10' , 'miniscope recordings'],
-    ]
-
-
-@experiment.schema
-class SurgeryType(dj.Lookup):
-    definition = """
-    # Surgery types
-    surgery              : varchar(16)                  # aim
-    ---
-    description=""       : varchar(2048)                # description
-    """
-    contents = [
-        ['implant'  , 'Head implant'],
-        ['thinning' , 'Scull thinning for imaging'],
-        ['window'   , 'Scull window creation'],
-        ['injection', 'Viral injection'],
-        ['burrhole' , 'Burr hole creation'],
-    ]
-
-
-@experiment.schema
-class Surgery(dj.Manual):
-    definition = """
-    # Surgery information
-    animal_id            : smallint UNSIGNED            # animal id
-    timestamp            : datetime                     # timestamp
-    ---
-    user_name            : varchar(16)                  # user performing the surgery
-    ->SurgeryType      
-    note=null            : varchar(2048)                # surgery notes
-    """
-
-
-@experiment.schema
-class Anesthesia(dj.Manual):
-    definition = """
-    # Excluded sessions
-    animal_id                   : smallint UNSIGNED  # animal id
-    timestamp                   : datetime           # timestamp
-    ---
-    -> AnesthesiaType
-    dose=""                     : varchar(10)        # anesthesia dosage
-    note=null                   : varchar(2048)      # anesthesia notes
-    """
-
-
-@experiment.schema
 class Session(dj.Manual):
     definition = """
     # Session info
@@ -400,67 +255,6 @@ class Session(dj.Manual):
         reason=null                 : varchar(2048)      # notes for exclusion
         timestamp=CURRENT_TIMESTAMP : timestamp  
         """
-
-    class Anesthetized(dj.Part):
-        definition = """
-        # Anesthetized sessions
-        -> Session
-        -> AnesthesiaType
-        """
-
-    class Port(dj.Part):
-        definition = """
-        # Probe identity
-        -> Session
-        port                     : tinyint                      # port id
-        ---
-        discription              : varchar(256)
-        """
-
-    class Screen(dj.Part):
-        definition = """
-        # Screen information
-        -> Session
-        screen_idx               : tinyint
-        ---
-        intensity                : tinyint UNSIGNED 
-        monitor_distance         : float
-        monitor_center_x         : float
-        monitor_center_y         : float
-        monitor_aspect           : float
-        monitor_size             : float
-        fps                      : tinyint UNSIGNED
-        resolution_x             : smallint
-        resolution_y             : smallint
-        discription              : varchar(256)
-        """
-
-    class Ball(dj.Part):
-        definition = """
-        # Ball information
-        -> Session
-        ---
-        ball_radius=0.125        : float                   # in meters
-        material="styrofoam"     : varchar(64)             # ball material
-        coupling="bearings"      : enum('bearings','air')  # mechanical coupling
-        discription              : varchar(256)
-        """
-
-
-@experiment.schema
-class Recording(dj.Manual):
-    definition = """
-    # File session info
-    -> Session
-    rec_idx              : smallint UNSIGNED         # unique recording index
-    ---
-    -> Aim
-    -> Software
-    filename=null        : varchar(256)              # file
-    source_path=null     : varchar(512)              # local path
-    target_path=null     : varchar(512)              # shared drive path
-    timestamp            : timestamp                 # timestamp
-    """
 
 
 @experiment.schema
@@ -567,7 +361,55 @@ class Trial(dj.Manual):
 
 
 @experiment.schema
-class SetupControl(dj.Lookup):
+class SetupConfiguration(dj.Lookup):
+    definition = """
+    # Setup configuration
+    setup_conf_idx           : tinyint                      # configuration version
+    ---
+    discription              : varchar(256)
+    """
+
+    class Port(dj.Part):
+        definition = """
+        # Probe identity
+        port                     : tinyint                      # port id
+        -> SetupConfiguration
+        ---
+        discription              : varchar(256)
+        """
+
+    class Screen(dj.Part):
+        definition = """
+        # Screen information
+        screen_idx               : tinyint
+        -> SetupConfiguration
+        ---
+        intensity                : tinyint UNSIGNED 
+        monitor_distance         : float
+        monitor_center_x         : float
+        monitor_center_y         : float
+        monitor_aspect           : float
+        monitor_size             : float
+        fps                      : tinyint UNSIGNED
+        resolution_x             : smallint
+        resolution_y             : smallint
+        discription              : varchar(256)
+        """
+
+    class Ball(dj.Part):
+        definition = """
+        # Ball information
+        -> SetupConfiguration
+        ---
+        ball_radius=0.125        : float                   # in meters
+        material="styrofoam"     : varchar(64)             # ball material
+        coupling="bearings"      : enum('bearings','air')  # mechanical coupling
+        discription              : varchar(256)
+        """
+
+
+@experiment.schema
+class Control(dj.Lookup):
     definition = """
     # Control table 
     setup                       : varchar(256)                 # Setup name
