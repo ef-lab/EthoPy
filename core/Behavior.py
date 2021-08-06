@@ -127,6 +127,34 @@ class Activity(dj.Manual):
 
 
 @behavior.schema
+class Configuration(dj.Manual):
+    definition = """
+    # Session behavior configuration info
+    -> experiment.Session
+    """
+
+    class Port(dj.Part):
+        definition = """
+        # Probe identity
+        -> Configuration
+        port                     : tinyint                      # port id
+        ---
+        discription              : varchar(256)
+        """
+
+    class Ball(dj.Part):
+        definition = """
+        # Ball information
+        -> Configuration
+        ---
+        ball_radius=0.125        : float                   # in meters
+        material="styrofoam"     : varchar(64)             # ball material
+        coupling="bearings"      : enum('bearings','air')  # mechanical coupling
+        discription              : varchar(256)
+        """
+
+
+@behavior.schema
 class BehCondition(dj.Manual):
     definition = """
     # reward probe conditions
@@ -149,8 +177,6 @@ class PortCalibration(dj.Manual):
     setup                        : varchar(256)                 # Setup name
     port                         : tinyint                      # port id
     date                         : date                         # session date (only one per day is allowed)
-    ---
-    pressure                     : float 
     """
 
     class Liquid(dj.Part):
@@ -162,6 +188,7 @@ class PortCalibration(dj.Manual):
         pulse_num                : int                  # number of pulses
         weight                   : float                # weight of total liquid released in gr
         timestamp                : timestamp            # timestamp
+        pressure=0               : float                # air pressure (PSI)
         """
 
     class Test(dj.Part):

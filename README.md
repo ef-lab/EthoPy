@@ -25,10 +25,7 @@ A typical experiment state diagram:
 
 Each of the states is discribed by 4 overridable funcions:
 
-_entry_: code that is run on entry to each state.  
-_run_: Main run command.  
-_next_: Defines the conditions for the transition to the next state.  
-_exit_: Code that runs uppon the exit of the state.
+[<img src="http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/ef-lab/PyMouse/master/utils/state_functions.iuml">]
 
 Tables that are needed for the experiment that discribe the setup:
 
@@ -87,7 +84,7 @@ Handles all communication with hardware
 ---
 
 ## HOW TO RUN
-Can be run either as a service that is controled by the SetupControl table
+Can be run either as a service that is controled by the Control table
 ```bash
 sudo python3 run.py
 ```
@@ -115,7 +112,7 @@ sed -r -i s/raspberrypi/<<HOSTNAME>>/g /etc/hosts /etc/hosts
 
 Change username - Optional
 ```bash
-sudo useradd -s /bin/bash -d /home/<<USERNAME>>/ -m -G sudo USERNAME
+sudo useradd -s /bin/bash -d /home/<<USERNAME>>/ -m -G sudo <<USERNAME>>
 sudo passwd <<USERNAME>>
 mkhomedir_helper <<USERNAME>>
 sudo userdel -r -f pi
@@ -123,9 +120,10 @@ sudo userdel -r -f pi
 
 Install salt for remote control, you need to have a salt-master server! - Optional
 ```bash
-sudo apt install salt-minion
+sudo apt install salt-minion -y
 echo 'master: <<YOUR_SALT-MASTER_IP>>' | sudo tee -a /etc/salt/minion
 echo 'id: <<HOSTNAME>>' | sudo tee -a /etc/salt/minion
+echo 'master_finger: <<MASTER-FINGER>>' | sudo tee -a /etc/salt/minion
 sudo service salt-minion restart
 ```
 
@@ -138,7 +136,7 @@ sed -i -e '$axhost +  > /dev/null' ~/.profile
 Install dependent libraries
 ```bash
 sudo apt update
-sudo apt install python-dev libatlas-base-dev build-essential libavformat-dev libavcodec-dev libswscale-dev libsquish-dev libeigen3-dev libopenal-dev libfreetype6-dev zlib1g-dev libx11-dev libjpeg-dev libvorbis-dev libogg-dev libassimp-dev libode-dev libssl-dev libgles2 libgles1 libegl1 -Y
+sudo apt install python-dev libatlas-base-dev build-essential libavformat-dev libavcodec-dev libswscale-dev libsquish-dev libeigen3-dev libopenal-dev libfreetype6-dev zlib1g-dev libx11-dev libjpeg-dev libvorbis-dev libogg-dev libassimp-dev libode-dev libssl-dev libgles2 libgles1 libegl1 -y
 ```
 
 Install python packages

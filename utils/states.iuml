@@ -2,8 +2,7 @@
 top to bottom direction
 rectangle Entry #light
 rectangle Exit #light
-rectangle PreTrial #lightgreen {}
-Entry -down->> PreTrial
+Entry -down->> (PreTrial)
 (PreTrial) -down->> (Trial)
 (Trial) -down->> (Abort)
 (Trial) -down->> (Reward)

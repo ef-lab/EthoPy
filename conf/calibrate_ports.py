@@ -9,6 +9,7 @@ session_params = {
     'pulsenum'        : [600, 400, 100, 30],
     'pulse_interval'  : [30, 10, 0, 0],
     'save'            : True,
+    'setup_conf_idx'  : 1,
 }
 
 # run experiment

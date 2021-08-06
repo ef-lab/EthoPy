@@ -3,6 +3,32 @@ import os
 
 
 @stimulus.schema
+class Configuration(dj.Manual):
+    definition = """
+    # Session stimulus configuration info
+    -> experiment.Session
+    """
+
+    class Screen(dj.Part):
+        definition = """
+        # Screen information
+        -> Configuration
+        screen_idx               : tinyint
+        ---
+        intensity                : tinyint UNSIGNED 
+        monitor_distance         : float
+        monitor_center_x         : float
+        monitor_center_y         : float
+        monitor_aspect           : float
+        monitor_size             : float
+        fps                      : tinyint UNSIGNED
+        resolution_x             : smallint
+        resolution_y             : smallint
+        discription              : varchar(256)
+        """
+
+
+@stimulus.schema
 class StimCondition(dj.Manual):
     definition = """
     # This class handles the stimulus presentation use function overrides for each stimulus class
