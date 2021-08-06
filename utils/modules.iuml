@@ -20,5 +20,5 @@ note right of Behavior : <size:10>Handles the animal behavior</size> \n <size:10
 note left of Stimulus : <size:10>Handles the stimuli</size> \n <size:10>used in the experiment</size>
 note left of Logger : <size:10>Handles all database</size> \n <size:10>interactions</size>
 note left of Interface : <size:10>Handles all communication</size> \n <size:10>with hardware</size>
-note left of database : <size:10>lab_experiments</size> \n<size:10>lab_behavior</size> \n<size:10>lab_stimuli</size>
+note left of database : <size:10>Data storage in:</size> \n<size:10>lab_experiments</size> \n<size:10>lab_behavior</size> \n<size:10>lab_stimuli</size>
 @enduml
