@@ -23,7 +23,8 @@ class Interface:
         for port in list(set(self.ports)):
             self.pulse_rew[port] = dict()
             key = dict(setup=self.logger.setup, port=port)
-            dates = self.logger.get(schema='behavior', table='PortCalibration', key=key, fields=['date'], order_by='date')
+            dates = self.logger.get(schema='behavior', table='PortCalibration.Liquid',
+                                    key=key, fields=['date'], order_by='date')
             if np.size(dates) < 1:
                 print('No PortCalibration found!')
                 self.exp.quit = True
