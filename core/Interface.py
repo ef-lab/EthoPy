@@ -9,9 +9,9 @@ from datetime import datetime
 
 class Interface:
     port, lick_tmst, ready_dur, activity_tmst, ready_tmst, pulse_rew = 0, 0, 0, 0, 0, dict()
-    ready, logging, timer_ready, weight_per_pulse, pulse_dur, channels = False, False, Timer(), dict(), dict(), dict()
+    ready, logging, timer_ready, weight_per_pulse, pulse_dur, channels = False, True, Timer(), dict(), dict(), dict()
 
-    def __init__(self, exp=[], callbacks=True, logging=False):
+    def __init__(self, exp=[], callbacks=True, logging=True):
         self.callbacks = callbacks
         self.logging = logging
         self.exp = exp
