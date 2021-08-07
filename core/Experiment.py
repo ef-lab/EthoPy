@@ -138,7 +138,6 @@ class ExperimentClass:
         self.trial_start = self.logger.logger_timer.elapsed_time()
         self.logger.log('Trial', dict(cond_hash=self.curr_cond['cond_hash'], time=self.trial_start), priority=3)
         if not self.running:
-            self.interface.logging = True
             self.running = True
 
     def name(self): return type(self).__name__
