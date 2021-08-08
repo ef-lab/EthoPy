@@ -1,0 +1,38 @@
+@startwbs
+<style>
+node {
+    LineColor lightgray
+    BackgroundColor whitesmoke
+    RoundCorner 10
+    MaximumWidth 120
+}
+arrow {
+  // Targetting only connector between Mexico-Chihuahua and USA-Texas
+  LineColor gray
+  LineThickness .5
+}
+:depth(0) {
+  BackgroundColor White
+  RoundCorner 0
+  Shadowing 0
+  LineThickness 0
+ }
+</style>
+* Behavior Schema
+** Activity\n----\n<size:9>Activity Information</size> \n<size:9>for each trial</size>
+*** Lick
+*** Proximity
+*** Touch
+** Rewards\n----\n<size:9>Reward Information</size> \n<size:9>for each trial</size>
+** BehCondition\n----\n<size:9>Unique behavior hash</size>
+*** Trial\n----\n<size:9>Trial hash</size>
+** PortCalibration
+*** Liquid\n----\n<size:9>Liquid delivery calibration</size>
+*** Test\n----\n<size:9>Delivery test</size>
+** Configuration\n----\n<size:9>Session behavior configuration info</size>
+*** Port\n----\n<size:9>Reward probes</size>
+*** Ball\n----\n<size:9>Ball Info</size>
+** CUSTOM_BEH\n----\n<size:9>Custom beh object </size> \n<size:9>condition</size>
+*** Respose\n----\n<size:9>Behavioral response\n<size:9> conditionon</size>
+*** Reward\n----\n<size:9>Reward condition</size>
+@endwbs

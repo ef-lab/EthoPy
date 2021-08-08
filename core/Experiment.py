@@ -287,7 +287,7 @@ class Trial(dj.Manual):
 
     class StateOnset(dj.Part):
         definition = """
-        # Trial period timestamps
+        # Trial state timestamps
         -> Trial
         time			    : int 	            # time from session start (ms)
         ---
@@ -433,7 +433,7 @@ class Control(dj.Lookup):
 @experiment.schema
 class Task(dj.Lookup):
     definition = """
-    # Behavioral experiment parameters
+    # Experiment parameters
     task_idx                    : int                          # task identification number
     ---
     protocol                    : varchar(4095)                # stimuli to be presented (array of dictionaries)

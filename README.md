@@ -78,6 +78,12 @@ Data are storred in tables within 3 different schemata that are automatically cr
 > lab_behavior  
 > lab_stimuli
 
+Database tables:
+
+[<img src="http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/ef-lab/PyMouse/master/utils/experiments.iuml">]
+[<img src="http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/ef-lab/PyMouse/master/utils/behavior.iuml">]
+[<img src="http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/ef-lab/PyMouse/master/utils/stimuli.iuml">]
+
 ### Interface (non-overridable)
 Handles all communication with hardware
 
