@@ -44,11 +44,6 @@ class Logger:
         self.queue.put(item)
         if not item.block: self.queue.task_done()
         else: self.queue.join()
-        if item.validate:
-            table = rgetattr(eval(item.schema), item.table)
-            key = {k: v for (k, v) in item.tuple.items() if k in table.primary_key}
-            if 'status' in item.tuple.keys(): key['status'] = item.tuple['status']
-            while not len(table & key) > 0: time.sleep(.5)
 
     def inserter(self):
         while not self.thread_end.is_set():
@@ -60,6 +55,10 @@ class Logger:
             try:
                 table.insert1(item.tuple, ignore_extra_fields=item.ignore_extra_fields,
                               skip_duplicates=skip, replace=item.replace)
+                if item.validate:  # validate tuple exists in database
+                    key = {k: v for (k, v) in item.tuple.items() if k in table.primary_key}
+                    if 'status' in item.tuple.keys(): key['status'] = item.tuple['status']
+                    while not len(table & key) > 0: time.sleep(.5)
             except Exception as e:
                 if item.error: self.thread_end.set(); raise
                 print('Failed to insert:\n', item.tuple, '\n in ', table, '\n With error:\n', e, '\nWill retry later')
