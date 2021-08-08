@@ -173,7 +173,7 @@ class BehCondition(dj.Manual):
 @behavior.schema
 class PortCalibration(dj.Manual):
     definition = """
-    # Liquid deliver y calibration sessions for each port with water availability
+    # Liquid delivery calibration sessions for each port with water availability
     setup                        : varchar(256)                 # Setup name
     port                         : tinyint                      # port id
     date                         : date                         # session date (only one per day is allowed)

@@ -1,0 +1,28 @@
+@startwbs
+<style>
+node {
+    LineColor lightgray
+    BackgroundColor whitesmoke
+    RoundCorner 10
+    MaximumWidth 100
+}
+arrow {
+  // Targetting only connector between Mexico-Chihuahua and USA-Texas
+  LineColor gray
+  LineThickness .5
+}
+:depth(0) {
+  BackgroundColor White
+  RoundCorner 0
+  Shadowing 0
+  LineThickness 0
+ }
+}
+</style>
+* Stimulus Schema
+** StimCondition\n----\n<size:9>Unique stimulus hash</size>
+*** Trial\n----\n<size:9>Trial hash</size>
+** Configuration\n----\n<size:9>Session stimulus configuration info</size>
+*** Screen\n----\n<size:9>Screen info</size>
+** CUSTOM_STIM\n----\n<size:9>Custom stim object </size> \n<size:9>condition</size>
+@endwbs
