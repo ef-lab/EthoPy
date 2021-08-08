@@ -6,7 +6,7 @@ It can run on Linux, MacOS, Windows and it is optimized for use with Raspberry p
 It is comprised of several overridable modules that define the structure of experiment, stimulus and behavioral control.
 A diagram that illustrates the relationship between the core modules:
 
-[<img src="http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/ef-lab/PyMouse/master/utils/modules.iuml">]
+<img src="http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/ef-lab/PyMouse/master/utils/plantuml/modules.iuml">
 
 [Datajoint]: https://github.com/datajoint/datajoint-python
 
@@ -21,11 +21,11 @@ This class can have various State classes. An Entry and Exit State are necessary
  
 A typical experiment state diagram:
 
-[<img src="http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/ef-lab/PyMouse/master/utils/states.iuml">]
+<img src="http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/ef-lab/PyMouse/master/utils/plantuml/states.iuml">
 
 Each of the states is discribed by 4 overridable funcions:
 
-[<img src="http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/ef-lab/PyMouse/master/utils/state_functions.iuml">]
+<img src="http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/ef-lab/PyMouse/master/utils/plantuml/state_functions.iuml">
 
 Tables that are needed for the experiment that discribe the setup:
 
@@ -33,7 +33,8 @@ Tables that are needed for the experiment that discribe the setup:
 > SetupConfiguration.Port  
 > SetupConfiguration.Screen
 
-The experiment parameters are specified in *.py script configuration files that are entered in the Task table within the lab_experriment schema. Some examples are in the conf folder but any folder that is accessible to the system can be used. Each protocol has a unique task_idx identifier that is used uppon running. 
+The experiment parameters are specified in *.py script configuration files that are entered in the Task table within the lab_experriment schema.
+ Some examples are in the conf folder but any folder that is accessible to the system can be used. Each protocol has a unique task_idx identifier that is used uppon running. 
 
 Implemented experiment types:  
 * MatchToSample: Experiment with Cue/Delay/Response periods 
@@ -74,15 +75,15 @@ non-overridable
 
 Data are storred in tables within 3 different schemata that are automatically created:
 
-> lab_experiments  
-> lab_behavior  
-> lab_stimuli
+lab_experiments:  
+<img src="http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/ef-lab/PyMouse/master/utils/plantuml/experiments.iuml">
+  
 
-Database tables:
-
-[<img src="http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/ef-lab/PyMouse/master/utils/experiments.iuml">]
-[<img src="http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/ef-lab/PyMouse/master/utils/behavior.iuml">]
-[<img src="http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/ef-lab/PyMouse/master/utils/stimuli.iuml">]
+lab_behavior:  
+<img src="http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/ef-lab/PyMouse/master/utils/plantuml/behavior.iuml">
+  
+lab_stimuli:  
+<img src="http://www.plantuml.com/plantuml/proxy?cache=no&src=https://raw.githubusercontent.com/ef-lab/PyMouse/master/utils/plantuml/stimuli.iuml">
 
 ### Interface (non-overridable)
 Handles all communication with hardware
