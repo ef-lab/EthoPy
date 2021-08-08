@@ -48,7 +48,7 @@ class Trial(Experiment):
         self.stim.start()
 
     def run(self):
-        time.sleep(.1)
+        time.sleep(.01)
         self.logger.ping()
         self.stim.present()  # Start Stimulus
         self.response = self.beh.get_response(self.trial_start)
