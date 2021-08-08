@@ -48,6 +48,8 @@ class Trial(Experiment):
         self.stim.start()
 
     def run(self):
+        time.sleep(.1)
+        self.logger.ping()
         self.stim.present()  # Start Stimulus
         self.response = self.beh.get_response(self.trial_start)
 
@@ -63,7 +65,6 @@ class Trial(Experiment):
 
     def exit(self):
         self.stim.stop()  # stop stimulus when timeout
-        self.logger.ping()
 
 
 class Reward(Experiment):
