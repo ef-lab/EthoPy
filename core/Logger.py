@@ -48,9 +48,7 @@ class Logger:
             table = rgetattr(eval(item.schema), item.table)
             key = {k: v for (k, v) in item.tuple.items() if k in table.primary_key}
             if 'status' in item.tuple.keys(): key['status'] = item.tuple['status']
-            while not len(table & key) > 0:
-                table = rgetattr(eval(item.schema), item.table)
-                time.sleep(.5)
+            while not len(table & key) > 0: time.sleep(.5)
 
     def inserter(self):
         while not self.thread_end.is_set():
