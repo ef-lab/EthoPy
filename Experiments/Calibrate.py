@@ -86,8 +86,8 @@ class Experiment:
         return exit_button
 
     def log_pulse_weight(self, pulse_dur, port, pulse_num, weight=0, pressure=0):
-        key = dict(setup=self.logger.setup, port=port, date=systime.strftime("%Y-%m-%d"), pressure=pressure)
+        key = dict(setup=self.logger.setup, port=port, date=systime.strftime("%Y-%m-%d"))
         self.logger.put(table='PortCalibration', tuple=key, schema='behavior', priority=5,
-                        ignore_extra_fields=True, validate=True, block=True, replace=True)
+                        ignore_extra_fields=True, validate=True, block=True, replace=False)
         self.logger.put(table='PortCalibration.Liquid',  schema='behavior', replace=True, ignore_extra_fields=True,
-                        tuple=dict(key, pulse_dur=pulse_dur, pulse_num=pulse_num, weight=weight))
+                        tuple=dict(key, pulse_dur=pulse_dur, pulse_num=pulse_num, weight=weight, pressure=pressure))
