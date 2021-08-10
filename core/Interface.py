@@ -157,6 +157,7 @@ class RPProbe(Interface):
     def cleanup(self):
         self.logging = False
         self.Pulser.wave_clear()
+        self.Pulser.stop()
         if self.callbacks:
             if 'lick' in self.channels:
                  for channel in self.channels['lick']:
