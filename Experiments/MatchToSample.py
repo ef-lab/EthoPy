@@ -193,8 +193,8 @@ class Abort(Experiment):
 
 class Reward(Experiment):
     def entry(self):
-        self.stim.reward_stim()
         super().entry()
+        self.stim.reward_stim()
 
     def run(self):
         self.rewarded = self.beh.reward()
