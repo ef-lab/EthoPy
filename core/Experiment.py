@@ -445,3 +445,12 @@ class Task(dj.Lookup):
                 [1, 'free_water.py'     , 'Test free water protocol', '2021-01-01 00:00:00'],
                 [2, 'grating_test.py'   , 'Test grating discimination protocol', '2021-01-01 00:00:00']]
 
+
+@mice.schema
+class MouseWeight(dj.Manual):
+    definition = """
+    animal_id                       : int unsigned                 # id number
+    timestamp="current_timestamp()" : timestamp                    # timestamp of weight
+    ---
+    weight                          : double(5,2)                  # weight in grams
+    """

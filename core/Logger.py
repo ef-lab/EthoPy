@@ -28,9 +28,9 @@ class Logger:
         self.setup_status = 'running' if protocol else 'ready'
         fileobject = open(os.path.dirname(os.path.abspath(__file__)) + '/../dj_local_conf.json')
         con_info = json.loads(fileobject.read())
-        conn = dj.Connection(con_info['database.host'], con_info['database.user'], con_info['database.password'])
+        self.private_conn = dj.Connection(con_info['database.host'], con_info['database.user'], con_info['database.password'])
         for schema, value in schemata.items():  # separate connection for internal comminication
-            self._schemata.update({schema: dj.create_virtual_module(schema, value, connection=conn)})
+            self._schemata.update({schema: dj.create_virtual_module(schema, value, connection=self.private_conn)})
         self.thread_end, self.thread_lock = threading.Event(),  threading.Lock()
         self.inserter_thread = threading.Thread(target=self.inserter)
         self.getter_thread = threading.Thread(target=self.getter)
