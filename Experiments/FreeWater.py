@@ -18,7 +18,7 @@ class Condition(dj.Manual):
 
 class Experiment(State, ExperimentClass):
     cond_tables = ['FreeWater']
-    default_key = {'trial_selection'       : 'biased',
+    default_key = {'trial_selection'       : 'bias',
                    'max_reward'            : 6000,
                    'bias_window'           : 5,
                    'noresponse_intertrial' : True,

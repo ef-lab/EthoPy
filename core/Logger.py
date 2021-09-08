@@ -14,22 +14,20 @@ schemata = {'experiment': 'lab_experiments',
             'behavior'  : 'lab_behavior',
             'mice'      : 'lab_mice'}
 
-for schema, value in schemata.items():
-    globals()[schema] = dj.create_virtual_module(schema, value, create_tables=True, create_schema=True)
-
-
 class Logger:
     trial_key, setup_info, _schemata = dict(animal_id=0, session=1, trial_idx=0), dict(), dict()
     lock, queue, ping_timer, logger_timer, total_reward, curr_state = False, PriorityQueue(), Timer(), Timer(), 0, ''
 
-    def __init__(self, protocol=False):
+    def __init__(self, protocol=False, extra_schema=dict()):
         self.setup = socket.gethostname()
         self.is_pi = os.uname()[4][:3] == 'arm' if os.name == 'posix' else False
         self.setup_status = 'running' if protocol else 'ready'
         fileobject = open(os.path.dirname(os.path.abspath(__file__)) + '/../dj_local_conf.json')
         con_info = json.loads(fileobject.read())
         self.private_conn = dj.Connection(con_info['database.host'], con_info['database.user'], con_info['database.password'])
-        for schema, value in schemata.items():  # separate connection for internal comminication
+        all_schemata = {**schemata, **extra_schema}
+        for schema, value in all_schemata.items():  # separate connection for internal comminication
+            globals()[schema] = dj.create_virtual_module(schema, value, create_tables=True, create_schema=True)
             self._schemata.update({schema: dj.create_virtual_module(schema, value, connection=self.private_conn)})
         self.thread_end, self.thread_lock = threading.Event(),  threading.Lock()
         self.inserter_thread = threading.Thread(target=self.inserter)
@@ -132,7 +130,7 @@ class Logger:
     def get_setup_info(self, field):
         return (experiment.Control() & dict(setup=self.setup)).fetch1(field)
 
-    def get(self, schema='experiment', table='Control', fields='', key='', **kwargs):
+    def get(self, schema='experiment', table='Control', fields='', key=dict(), **kwargs):
         table = rgetattr(eval(schema), table)
         return (table() & key).fetch(*fields, **kwargs)
 

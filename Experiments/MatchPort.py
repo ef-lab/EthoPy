@@ -45,7 +45,7 @@ class Experiment(State, ExperimentClass):
                    'init_ready': 0,
                    'trial_ready': 0,
                    'intertrial_duration': 1000,
-                   'tial_duration': 1000,
+                   'trial_duration': 1000,
                    'response_duration': 5000,
                    'reward_duration': 2000,
                    'punish_duration': 1000}
