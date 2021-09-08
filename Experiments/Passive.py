@@ -15,7 +15,7 @@ class Condition(dj.Manual):
 
 
 class Experiment(State, ExperimentClass):
-    cond_tables = ['Condition.Passive']
+    cond_tables = ['Passive']
     default_key = {'trial_selection'       : 'fixed',
 
                    'intertrial_duration'    : 1000}
@@ -27,7 +27,7 @@ class Experiment(State, ExperimentClass):
 
 class Entry(Experiment):
     def entry(self):
-        pass
+        self.stim.prepare
 
     def next(self):
         return 'PreTrial'
@@ -36,10 +36,9 @@ class Entry(Experiment):
 class PreTrial(Experiment):
     def entry(self):
         self.prepare_trial()
-        self.stim.prepare(self.curr_cond)
-        if self.is_stopped():
-            self.logger.update_setup_info({'status': 'stop'})
-        super().entry()
+        if not self.is_stopped():
+            self.stim.prepare(self.curr_cond)
+            super().entry()
 
     def next(self):
         if self.is_stopped():  # if run out of conditions exit
@@ -80,6 +79,5 @@ class InterTrial(Experiment):
 class Exit(Experiment):
     def run(self):
         self.beh.exit()
-        if self.stim:
-            self.stim.exit()
+        self.stim.exit()
         self.logger.ping(0)

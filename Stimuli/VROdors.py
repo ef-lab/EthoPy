@@ -1,4 +1,4 @@
-from core.Stimulus import *
+from Stimuli.Olfactory import *
 
 
 @stimulus.schema
@@ -14,7 +14,7 @@ class VROdors(Stimulus, dj.Manual):
         definition = """
         # odor conditions
         -> VROdors
-        -> stimulus.Odorants
+        -> Odorants
         ---
         extiction_factor     : float    
         delivery_port        : int                      # delivery idx for channel mapping

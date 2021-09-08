@@ -97,17 +97,17 @@ class Activity(dj.Manual):
                                     sharex=True, figsize=params['figsize'])
 
             for idx, cond in enumerate(conds):  # iterate through conditions
-                
-                selected_trials = (self.proj(ltime = 'time') * ((Trial & key) & cond)).proj(ltime = 'ltime - time')
-                trials, ports, times = selected_trials.fetch('trial_idx', 'port', 'ltime', order_by='ltime')
+                selected_trials = (self.proj(ltime = 'time') * (((Trial & key) - Trial.Aborted()) & cond)).proj(ltime = 'ltime - time')
+                trials, ports, times = selected_trials.fetch('trial_idx', 'port', 'ltime', order_by='trial_idx')
                 un_trials, idx_trials = np.unique(trials, return_inverse=True)  # get unique trials
+                #print(un_trials)
 
                 axs.item(idx).scatter(times, idx_trials, params['dotsize'],  # plot all of them
                                       c=np.array(params['port_colors'])[ports - 1])
                 axs.item(idx).axvline(x=0, color='green', linestyle='-')
 
                 name = f'Object: {cond[0][5]}, Response Port: {cond[0][8]}'
-                perf = len(np.unique((selected_trials & f'port = {cond[0][8]}').fetch('trial_idx')))/len(cond)
+                perf = len(np.unique((selected_trials & f'port = {cond[0][8]}').fetch('trial_idx')))/len(un_trials)
                 title = f'{name}, Performance:{perf:.2f}'
 
                 axs.item(idx).set_title(title, color=np.array(params['port_colors'])[cond[0][8] - 1],
@@ -123,6 +123,34 @@ class Activity(dj.Manual):
         loc_x               : int               # x touch location
         loc_y               : int               # y touch location
         time	     	    : int           	# time from session start (ms)
+        """
+
+
+@behavior.schema
+class Configuration(dj.Manual):
+    definition = """
+    # Session behavior configuration info
+    -> experiment.Session
+    """
+
+    class Port(dj.Part):
+        definition = """
+        # Probe identity
+        -> Configuration
+        port                     : tinyint                      # port id
+        ---
+        discription              : varchar(256)
+        """
+
+    class Ball(dj.Part):
+        definition = """
+        # Ball information
+        -> Configuration
+        ---
+        ball_radius=0.125        : float                   # in meters
+        material="styrofoam"     : varchar(64)             # ball material
+        coupling="bearings"      : enum('bearings','air')  # mechanical coupling
+        discription              : varchar(256)
         """
 
 
@@ -145,12 +173,10 @@ class BehCondition(dj.Manual):
 @behavior.schema
 class PortCalibration(dj.Manual):
     definition = """
-    # Liquid deliver y calibration sessions for each port with water availability
+    # Liquid delivery calibration sessions for each port with water availability
     setup                        : varchar(256)                 # Setup name
     port                         : tinyint                      # port id
     date                         : date                         # session date (only one per day is allowed)
-    ---
-    pressure                     : float 
     """
 
     class Liquid(dj.Part):
@@ -162,6 +188,7 @@ class PortCalibration(dj.Manual):
         pulse_num                : int                  # number of pulses
         weight                   : float                # weight of total liquid released in gr
         timestamp                : timestamp            # timestamp
+        pressure=0               : float                # air pressure (PSI)
         """
 
     class Test(dj.Part):
@@ -277,6 +304,18 @@ class Behavior:
             return self.logger.total_reward >= self.params['max_reward']
         else:
             return False
+
+    def is_licking(self, since=0):
+        licked_port, tmst = self.interface.get_last_lick()
+        if tmst >= since and licked_port:
+            self.licked_port = licked_port
+            self.resp_timer.start()
+        else:
+            self.licked_port = 0
+        return self.licked_port
+
+    def get_response(self, since=0):
+        return self.is_licking(since) > 0
 
 
 

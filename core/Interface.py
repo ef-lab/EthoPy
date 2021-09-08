@@ -9,20 +9,22 @@ from datetime import datetime
 
 class Interface:
     port, lick_tmst, ready_dur, activity_tmst, ready_tmst, pulse_rew = 0, 0, 0, 0, 0, dict()
-    ready, logging, timer_ready, weight_per_pulse, pulse_dur, channels = False, False, Timer(), dict(), dict(), dict()
+    ready, logging, timer_ready, weight_per_pulse, pulse_dur, channels = False, True, Timer(), dict(), dict(), dict()
 
     def __init__(self, exp=[], callbacks=True, logging=True):
         self.callbacks = callbacks
         self.logging = logging
         self.exp = exp
         self.logger = exp.logger
-        self.ports = self.channels['liquid'].keys()
+        ports = self.logger.get(table='SetupConfiguration.Port', fields=['port'], key=self.exp.params)
+        self.ports = list(set(ports) & set(self.channels['liquid'].keys()))
 
     def load_calibration(self):
         for port in list(set(self.ports)):
             self.pulse_rew[port] = dict()
             key = dict(setup=self.logger.setup, port=port)
-            dates = self.logger.get(schema='behavior', table='PortCalibration', key=key, fields=['date'], order_by='date')
+            dates = self.logger.get(schema='behavior', table='PortCalibration.Liquid',
+                                    key=key, fields=['date'], order_by='date')
             if np.size(dates) < 1:
                 print('No PortCalibration found!')
                 self.exp.quit = True
@@ -55,8 +57,8 @@ class Interface:
     def log_activity(self, table, key):
         self.activity_tmst = self.logger.logger_timer.elapsed_time()
         key.update({'time': self.activity_tmst, **self.logger.trial_key})
-        if self.logging:
-            self.logger.log('Activity', key, schema='behavior', priority=5)
+        if self.logging and self.exp.running:
+            self.logger.log('Activity', key, schema='behavior', priority=10)
             self.logger.log('Activity.' + table, key, schema='behavior')
         return self.activity_tmst
 
@@ -90,6 +92,7 @@ class RPProbe(Interface):
         self.GPIO.setmode(self.GPIO.BCM)
         self.thread = ThreadPoolExecutor(max_workers=2)
         self.frequency = 20
+        self.ts = False
         self.pulses = dict()
         if 'lick' in self.channels:
             self.GPIO.setup(list(self.channels['lick'].values()), self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
@@ -116,13 +119,17 @@ class RPProbe(Interface):
                                                callback=self._position_change, bouncetime=50)
 
     def setup_touch_exit(self):
-        import ft5406 as TS
-        self.ts = TS.Touchscreen()
-        self.ts_press_event = TS.TS_PRESS
-        for touch in self.ts.touches:
-            touch.on_press = self._touch_handler
-            touch.on_release = self._touch_handler
-        self.ts.run()
+        try:
+            import ft5406 as TS
+            self.ts = TS.Touchscreen()
+            self.ts_press_event = TS.TS_PRESS
+            for touch in self.ts.touches:
+                touch.on_press = self._touch_handler
+                touch.on_release = self._touch_handler
+            self.ts.run()
+        except:
+            self.ts = False
+            print('Cannot create a touch exit!')
 
     def _touch_handler(self, event, touch):
         if event == self.ts_press_event:
@@ -148,7 +155,9 @@ class RPProbe(Interface):
         return self.ready, ready_dur, self.ready_tmst
 
     def cleanup(self):
+        self.logging = False
         self.Pulser.wave_clear()
+        self.Pulser.stop()
         if self.callbacks:
             if 'lick' in self.channels:
                  for channel in self.channels['lick']:
@@ -157,6 +166,8 @@ class RPProbe(Interface):
                  for channel in self.channels['proximity']:
                      self.GPIO.remove_event_detect(self.channels['proximity'][channel])
         self.GPIO.cleanup()
+        if self.ts:
+            self.ts.stop()
 
     def _create_pulse(self, port, duration):
         if port in self.pulses:
@@ -182,7 +193,7 @@ class RPProbe(Interface):
             self.ready = True
             self.ready_tmst = self.log_activity('Proximity', dict(port=port, in_position=self.ready))
             print('in position')
-        elif position and self.ready:
+        elif not position and self.ready:
             self.ready = False
             tmst = self.log_activity('Proximity', dict(port=port, in_position=self.ready))
             self.ready_dur = tmst - self.ready_tmst

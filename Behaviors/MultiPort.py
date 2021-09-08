@@ -36,19 +36,6 @@ class MultiPort(Behavior, dj.Manual):
     def setup(self, exp):
         self.interface = RPProbe(exp=exp)
         super(MultiPort, self).setup(exp)
-        self.interface.setup_touch_exit()
-
-    def is_licking(self, since=0):
-        licked_port, tmst = self.interface.get_last_lick()
-        if tmst >= since and licked_port:
-            self.licked_port = licked_port
-            self.resp_timer.start()
-        else:
-            self.licked_port = 0
-        return self.licked_port
-
-    def get_response(self, since=0):
-        return self.is_licking(since) > 0
 
     def is_ready(self, duration, since=False):
         ready, ready_time, tmst = self.interface.in_position()
@@ -73,7 +60,6 @@ class MultiPort(Behavior, dj.Manual):
 
     def exit(self):
         self.interface.cleanup()
-        self.interface.ts.stop()
 
     def punish(self):
         port = self.licked_port if self.licked_port > 0 else np.nan

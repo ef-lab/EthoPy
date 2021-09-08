@@ -30,7 +30,7 @@ class Condition(dj.Manual):
 
 
 class Experiment(State, ExperimentClass):
-    cond_tables = ['Condition.MatchPort']
+    cond_tables = ['MatchPort']
     required_fields = ['difficulty']
     default_key = {'trial_selection': 'staircase',
                    'max_reward': 3000,
@@ -62,12 +62,7 @@ class Entry(Experiment):
         pass
 
     def next(self):
-        if self.logger.setup_status in ['stop', 'exit']:
-            return 'Exit'
-        elif self.beh.is_sleep_time():
-            return 'Offtime'
-        else:
-            return 'PreTrial'
+        return 'PreTrial'
 
 
 class PreTrial(Experiment):
@@ -84,6 +79,8 @@ class PreTrial(Experiment):
     def next(self):
         if self.is_stopped():
             return 'Exit'
+        elif self.beh.is_sleep_time():
+            return 'Offtime'
         elif self.resp_ready:
             return 'Trial'
         else:

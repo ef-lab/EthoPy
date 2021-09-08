@@ -21,11 +21,10 @@ exp.setup(logger, MultiPort, session_params)
 conditions = exp.make_conditions(stim_class=RPScreen(), conditions={
     'difficulty'         : 1,
     'timeout_duration'   : 0,
-    'trial_duration'     : 30000,
     'intertrial_duration': 500,
     'init_duration'      : 0,
     'delay_duration'     : 0,
-    'reward_amount'      : 3,
+    'reward_amount'      : 10,
     'reward_port': -1,
     'response_port': -1,
 })

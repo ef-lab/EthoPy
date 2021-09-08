@@ -1,12 +1,6 @@
-import datajoint as dj
-from utils.helper_functions import *
-from utils.Timer import *
+from core.Logger import *
 import itertools
 import matplotlib.pyplot as plt
-
-experiment = dj.create_virtual_module('experiment', 'lab_experiments', create_tables=True)
-stimulus = dj.create_virtual_module('stimulus', 'lab_stimuli', create_tables=True)
-behavior = dj.create_virtual_module('behavior', 'lab_behavior', create_tables=True)
 
 
 class State:
@@ -37,7 +31,7 @@ class ExperimentClass:
     """  Parent Experiment """
     curr_state, curr_trial, total_reward, cur_dif, flip_count, states, stim = '', 0, 0, 0, 0, dict(), False
     rew_probe, un_choices, difs, iter, curr_cond, dif_h, stims = [], [], [], [], dict(), [], dict()
-    required_fields, default_key, conditions, cond_tables, quit = [], dict(), [], [], False
+    required_fields, default_key, conditions, cond_tables, quit, running = [], dict(), [], [], False, False
 
     # move from State to State using a template method.
     class StateMachine:
@@ -61,14 +55,17 @@ class ExperimentClass:
             self.exitState.run()
 
     def setup(self, logger, BehaviorClass, session_params):
-        self.conditions, self.quit, self.curr_cond, self.dif_h, self.stims = [], False, dict(), [], dict()
+        self.running = False
+        self.conditions, self.quit, self.curr_cond, self.dif_h, self.stims, self.curr_trial = [], False, dict(), [], dict(),0
         self.params = {**self.default_key, **session_params}
         self.logger = logger
-        self.logger.log_session({**self.default_key, **session_params}, log_protocol=True)
+        self.logger.log_session({**self.default_key, **session_params, 'experiment_type': self.cond_tables[0]},
+                                log_protocol=True)
         self.beh = BehaviorClass()
         self.beh.setup(self)
         self.interface = self.beh.interface
         self.session_timer = Timer()
+        np.random.seed(0)   # fix random seed for repeatability, it can be overidden in the conf file
 
     def start(self):
         states = dict()
@@ -81,6 +78,7 @@ class ExperimentClass:
         self.quit = self.quit or self.logger.setup_status in ['stop', 'exit']
         if self.quit and self.logger.setup_status not in ['stop', 'exit']:
             self.logger.update_setup_info({'status': 'stop'})
+        if self.quit: self.running = False
         return self.quit
 
     def make_conditions(self, stim_class, conditions, stim_periods=None):
@@ -104,7 +102,8 @@ class ExperimentClass:
         for cond in conditions:
             assert np.all([field in cond for field in self.required_fields])
             cond.update({**self.default_key, **cond, 'experiment_class': self.cond_tables[0]})
-        conditions = self.log_conditions(conditions, condition_tables=['Condition'] + self.cond_tables, priority=2)
+        cond_tables = ['Condition.' + table for table in self.cond_tables]
+        conditions = self.log_conditions(conditions, condition_tables=['Condition'] + cond_tables)
         return conditions
 
     def push_conditions(self, conditions):
@@ -127,7 +126,7 @@ class ExperimentClass:
     def prepare_trial(self):
         old_cond = self.curr_cond
         self._get_new_cond()
-        if not self.curr_cond:
+        if not self.curr_cond or self.logger.thread_end.is_set():
             self.quit = True
             return
         if 'stimulus_class' not in old_cond or old_cond['stimulus_class'] != self.curr_cond['stimulus_class']:
@@ -138,10 +137,12 @@ class ExperimentClass:
         self.logger.update_trial_idx(self.curr_trial)
         self.trial_start = self.logger.logger_timer.elapsed_time()
         self.logger.log('Trial', dict(cond_hash=self.curr_cond['cond_hash'], time=self.trial_start), priority=3)
+        if not self.running:
+            self.running = True
 
     def name(self): return type(self).__name__
 
-    def log_conditions(self, conditions, condition_tables=['Condition'], schema='experiment', hsh='cond_hash', priority=5):
+    def log_conditions(self, conditions, condition_tables=['Condition'], schema='experiment', hsh='cond_hash', priority=2):
         fields, hash_dict = list(), dict()
         for ctable in condition_tables:
             table = rgetattr(eval(schema), ctable)
@@ -214,149 +215,6 @@ class ExperimentClass:
 
 
 @experiment.schema
-class SetupConfiguration(dj.Lookup):
-    definition = """
-    # Setup configuration
-    setup_conf_idx           : tinyint                      # configuration version
-    ---
-    discription              : varchar(256)
-    """
-
-    class Port(dj.Part):
-        definition = """
-        # Probe identity
-        port                     : tinyint                      # port id
-        -> SetupConfiguration
-        ---
-        discription              : varchar(256)
-        """
-
-    class Screen(dj.Part):
-        definition = """
-        # Screen information
-        screen_id                : tinyint
-        -> SetupConfiguration
-        ---
-        intensity                : tinyint UNSIGNED 
-        monitor_distance         : float
-        monitor_aspect           : float
-        monitor_size             : float
-        fps                      : tinyint UNSIGNED
-        resolution_x             : smallint
-        resolution_y             : smallint
-        discription              : varchar(256)
-        """
-
-    class Ball(dj.Part):
-        definition = """
-        # Ball information
-        -> SetupConfiguration
-        ---
-        ball_radius=0.125        : float                   # in meters
-        material="styrofoam"     : varchar(64)             # ball material
-        coupling="bearings"      : enum('bearings','air')  # mechanical coupling
-        discription              : varchar(256)
-        """
-
-
-@experiment.schema
-class Aim(dj.Lookup):
-    definition = """
-    # Recording aim
-    rec_aim              : varchar(16)                  # aim
-    ---
-    rec_type             : enum('functional','structural','behavior','other') 
-    description=""       : varchar(2048)                # description
-    """
-
-    contents = [
-        ['two-photon', 'functional', 'Classic two-photon scan'],
-        ['widefield' , 'functional', 'wide field imaging of caclium fluorescence'],
-        ['intrinsic' , 'functional', 'intrinsic imaging'],
-        ['patching'  , 'functional', 'patching'],
-        ['stack'     , 'structural', 'two-photon stack of images'],
-        ['vessels'   , 'structural', 'map of vessels'],
-        ['ball'      , 'behavior'  , '2D Navigation on ball'],
-        ['eye'       , 'behavior'  , 'eye movements']
-    ]
-
-
-@experiment.schema
-class AnesthesiaType(dj.Lookup):
-    definition = """
-    # Acquisition program
-    anesthesia           : varchar(32)                  # anesthesia type
-    ---
-    description=""       : varchar(2048)                # description
-    """
-    contents = [
-        ['none'             , 'anesthesia not used'],
-        ['isoflurane'       , 'through evaporator' ],
-        ['ketamine/xylazine', 'mixtured injected IP'],
-    ]
-
-
-@experiment.schema
-class Software(dj.Lookup):
-    definition = """
-    # Acquisition program
-    software             : varchar(64)                  # program identification number
-    version              : varchar(10)                  # version of program
-    ---
-    description=""       : varchar(2048)                # description
-    """
-    contents = [
-        ['PyMouse'  , '0.1'  , 'self generated files'],
-        ['Imager'   , '0.1'  , 'Imager recording program'],
-        ['OpenEphys', '0.5.4', 'Neuropixel recordings'],
-        ['Miniscope', '1.10' , 'miniscope recordings'],
-    ]
-
-
-@experiment.schema
-class SurgeryType(dj.Lookup):
-    definition = """
-    # Surgery types
-    surgery              : varchar(16)                  # aim
-    ---
-    description=""       : varchar(2048)                # description
-    """
-    contents = [
-        ['implant'  , 'Head implant'],
-        ['thinning' , 'Scull thinning for imaging'],
-        ['window'   , 'Scull window creation'],
-        ['injection', 'Viral injection'],
-        ['burrhole' , 'Burr hole creation'],
-    ]
-
-
-@experiment.schema
-class Surgery(dj.Manual):
-    definition = """
-    # Surgery information
-    animal_id            : smallint UNSIGNED            # animal id
-    timestamp            : datetime                     # timestamp
-    ---
-    user_name            : varchar(16)                  # user performing the surgery
-    ->SurgeryType      
-    note=null            : varchar(2048)                # surgery notes
-    """
-
-
-@experiment.schema
-class Anesthesia(dj.Manual):
-    definition = """
-    # Excluded sessions
-    animal_id                   : smallint UNSIGNED  # animal id
-    timestamp                   : datetime           # timestamp
-    ---
-    -> AnesthesiaType
-    dose=""                     : varchar(10)        # anesthesia dosage
-    note=null                   : varchar(2048)      # anesthesia notes
-    """
-
-
-@experiment.schema
 class Session(dj.Manual):
     definition = """
     # Session info
@@ -365,6 +223,7 @@ class Session(dj.Manual):
     ---
     user_name            : varchar(16)                  # user performing the experiment
     setup=null           : varchar(256)                 # computer id
+    experiment_type      : varchar(128)
     session_tmst         : timestamp                    # session timestamp
     """
 
@@ -395,65 +254,6 @@ class Session(dj.Manual):
         reason=null                 : varchar(2048)      # notes for exclusion
         timestamp=CURRENT_TIMESTAMP : timestamp  
         """
-
-    class Anesthetized(dj.Part):
-        definition = """
-        # Anesthetized sessions
-        -> Session
-        -> AnesthesiaType
-        """
-
-    class Port(dj.Part):
-        definition = """
-        # Probe identity
-        -> Session
-        port                     : tinyint                      # port id
-        ---
-        discription              : varchar(256)
-        """
-
-    class Screen(dj.Part):
-        definition = """
-        # Screen information
-        -> Session
-        screen_id                : tinyint
-        ---
-        intensity                : tinyint UNSIGNED 
-        monitor_distance         : float
-        monitor_aspect           : float
-        monitor_size             : float
-        fps                      : tinyint UNSIGNED
-        resolution_x             : smallint
-        resolution_y             : smallint
-        discription              : varchar(256)
-        """
-
-    class Ball(dj.Part):
-        definition = """
-        # Ball information
-        -> Session
-        ---
-        ball_radius=0.125        : float                   # in meters
-        material="styrofoam"     : varchar(64)             # ball material
-        coupling="bearings"      : enum('bearings','air')  # mechanical coupling
-        discription              : varchar(256)
-        """
-
-
-@experiment.schema
-class Recording(dj.Manual):
-    definition = """
-    # File session info
-    -> Session
-    rec_idx              : smallint UNSIGNED         # unique recording index
-    ---
-    -> Aim
-    -> Software
-    filename=null        : varchar(256)              # file
-    source_path=null     : varchar(512)              # local path
-    target_path=null     : varchar(512)              # shared drive path
-    timestamp            : timestamp                 # timestamp
-    """
 
 
 @experiment.schema
@@ -487,7 +287,7 @@ class Trial(dj.Manual):
 
     class StateOnset(dj.Part):
         definition = """
-        # Trial period timestamps
+        # Trial state timestamps
         -> Trial
         time			    : int 	            # time from session start (ms)
         ---
@@ -495,12 +295,13 @@ class Trial(dj.Manual):
         """
 
     def getGroups(self):
-       
-        mts_flag = (np.unique((Condition & self).fetch('experiment_class')) == ['Condition.MatchToSample'])
+        mts_flag = (np.unique((Condition & self).fetch('experiment_class')) == ['MatchToSample'])
+        #print(mts_flag)
 
         if mts_flag:
-            conditions = self * ((stimulus.StimCondition.Trial() & 'period = "Cue"').proj('stim_hash', stime = 'time') & self) * stimulus.Panda.Object() * ((behavior.BehCondition.Trial().proj(btime = 'time') & self) * behavior.MultiPort.Response())
+            conditions = self * ((stimulus.StimCondition.Trial() & 'period = "Cue"').proj('stim_hash', stime = 'start_time') & self) * stimulus.Panda.Object() * ((behavior.BehCondition.Trial().proj(btime = 'time') & self) * behavior.MultiPort.Response())
         else:
+            print('no conditions!')
             return []
 
         uniq_groups, groups_idx = np.unique(
@@ -510,7 +311,6 @@ class Trial(dj.Manual):
         conditions = conditions.fetch(order_by = 'trial_idx')
         condition_groups = [conditions[groups_idx == group] for group in set(groups_idx)]
         return condition_groups
-    
     
     def plotDifficulty(self, **kwargs):
         difficulties = (self * experiment.Condition.MatchToSample()).fetch('difficulty')
@@ -531,7 +331,7 @@ class Trial(dj.Manual):
         correct_trials = (self & behavior.Rewards.proj(rtime = 'time')).proj()
     
         # missed trials
-        missed_trials = (self & Trial.Aborted()).proj()
+        missed_trials = Trial.Aborted() & self
 
         # incorrect trials
         incorrect_trials = (self - missed_trials - correct_trials).proj()
@@ -562,7 +362,55 @@ class Trial(dj.Manual):
 
 
 @experiment.schema
-class SetupControl(dj.Lookup):
+class SetupConfiguration(dj.Lookup):
+    definition = """
+    # Setup configuration
+    setup_conf_idx           : tinyint                      # configuration version
+    ---
+    discription              : varchar(256)
+    """
+
+    class Port(dj.Part):
+        definition = """
+        # Probe identity
+        port                     : tinyint                      # port id
+        -> SetupConfiguration
+        ---
+        discription              : varchar(256)
+        """
+
+    class Screen(dj.Part):
+        definition = """
+        # Screen information
+        screen_idx               : tinyint
+        -> SetupConfiguration
+        ---
+        intensity                : tinyint UNSIGNED 
+        monitor_distance         : float
+        monitor_center_x         : float
+        monitor_center_y         : float
+        monitor_aspect           : float
+        monitor_size             : float
+        fps                      : tinyint UNSIGNED
+        resolution_x             : smallint
+        resolution_y             : smallint
+        discription              : varchar(256)
+        """
+
+    class Ball(dj.Part):
+        definition = """
+        # Ball information
+        -> SetupConfiguration
+        ---
+        ball_radius=0.125        : float                   # in meters
+        material="styrofoam"     : varchar(64)             # ball material
+        coupling="bearings"      : enum('bearings','air')  # mechanical coupling
+        discription              : varchar(256)
+        """
+
+
+@experiment.schema
+class Control(dj.Lookup):
     definition = """
     # Control table 
     setup                       : varchar(256)                 # Setup name
@@ -587,12 +435,24 @@ class SetupControl(dj.Lookup):
 @experiment.schema
 class Task(dj.Lookup):
     definition = """
-    # Behavioral experiment parameters
-    task_idx             : int                          # task identification number
+    # Experiment parameters
+    task_idx                    : int                          # task identification number
     ---
-    protocol             : varchar(4095)                # stimuli to be presented (array of dictionaries)
-    description=""       : varchar(2048)                # task description
-    timestamp            : timestamp    
+    protocol                    : varchar(4095)                # stimuli to be presented (array of dictionaries)
+    description=""              : varchar(2048)                # task description
+    timestamp                   : timestamp    
     """
 
+    contents = [[0, 'calibrate_ports.py', 'Test calibration protocol', '2021-01-01 00:00:00'],
+                [1, 'free_water.py'     , 'Test free water protocol', '2021-01-01 00:00:00'],
+                [2, 'grating_test.py'   , 'Test grating discimination protocol', '2021-01-01 00:00:00']]
 
+
+@mice.schema
+class MouseWeight(dj.Manual):
+    definition = """
+    animal_id                       : int unsigned                 # id number
+    timestamp="current_timestamp()" : timestamp                    # timestamp of weight
+    ---
+    weight                          : double(5,2)                  # weight in grams
+    """

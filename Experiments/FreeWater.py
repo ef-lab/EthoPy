@@ -17,7 +17,7 @@ class Condition(dj.Manual):
 
 
 class Experiment(State, ExperimentClass):
-    cond_tables = ['Condition.FreeWater']
+    cond_tables = ['FreeWater']
     default_key = {'trial_selection'       : 'biased',
                    'max_reward'            : 6000,
                    'bias_window'           : 5,
@@ -26,16 +26,17 @@ class Experiment(State, ExperimentClass):
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
         self.logger.curr_state = self.name()
+        self.start_time = self.logger.logger_timer.elapsed_time()
         self.resp_ready = False
         self.state_timer.start()
 
 
 class Entry(Experiment):
+    def entry(self):
+        pass
+
     def next(self):
-        if self.beh.is_sleep_time():
-            return 'Offtime'
-        else:
-            return 'Trial'
+        return 'Trial'
 
 
 class Trial(Experiment):
@@ -47,20 +48,23 @@ class Trial(Experiment):
         self.stim.start()
 
     def run(self):
+        time.sleep(.01)
+        self.logger.ping()
         self.stim.present()  # Start Stimulus
         self.response = self.beh.get_response(self.trial_start)
 
     def next(self):
-        if self.response and self.beh.is_correct():  # response to correct probe
-            return 'Reward'
-        elif self.is_stopped():  # if wake up then update session
+        if self.is_stopped():  # if wake up then update session
             return 'Exit'
+        elif self.beh.is_sleep_time():
+            return 'Offtime'
+        elif self.response and self.beh.is_correct():  # response to correct probe
+            return 'Reward'
         else:
             return 'Trial'
 
     def exit(self):
         self.stim.stop()  # stop stimulus when timeout
-        self.logger.ping()
 
 
 class Reward(Experiment):

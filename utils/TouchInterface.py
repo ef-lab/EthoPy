@@ -41,6 +41,7 @@ class TouchInterface:
             pygame.init()
         pygame.mouse.set_visible(0)
         self.screen = pygame.display.set_mode(self.screen_size)
+        pygame.display.toggle_fullscreen()
         for touch in self.ts.touches:
             touch.on_press = self._touch_handler
             touch.on_release = self._touch_handler

@@ -3,10 +3,6 @@ from time import sleep
 import pygame
 from pygame.locals import *
 import io, os, imageio
-stimuli2 = dj.create_virtual_module('stim2', 'lab_stimuli')
-
-
-@stimuli2.schema
 
 
 @stimulus.schema
@@ -15,8 +11,8 @@ class Movies(Stimulus, dj.Manual):
     # movie clip conditions
     -> StimCondition
     ---
-    movie_name            : char(8)                      # short movie title
-    clip_number           : int                          # clip index
+    movie_name           : char(8)                      # short movie title
+    clip_number          : int                          # clip index
     movie_duration       : smallint                     # movie duration
     skip_time            : smallint                     # start time in clip
     static_frame         : smallint                     # static frame presentation
@@ -28,13 +24,10 @@ class Movies(Stimulus, dj.Manual):
 
     def setup(self):
         # setup parameters
-        self.path = 'stimuli/'     # default path to copy local  stimuli
-        self.size = (400, 240)     # window size
+        self.path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
+        self.size = (self.monitor['resolution_x'], self.monitor['resolution_y'])     # window size
         self.color = [127, 127, 127]  # default background color
-        self.loc = (0, 0)          # default starting location of stimulus surface
-        self.fps = 30              # default presentation framerate
         self.phd_size = (50, 50)    # default photodiode signal size in pixels
-        self.flip_count = 0
 
         # setup pygame
         pygame.init()
@@ -49,19 +42,23 @@ class Movies(Stimulus, dj.Manual):
         self.clock = pygame.time.Clock()
         clip = self.get_clip_info(self.curr_cond, 'Movie.Clip', 'clip')
         frame_height, frame_width = self.get_clip_info(self.curr_cond, 'Movie', 'frame_height', 'frame_width')
-        self.vid = imageio.get_reader( io.BytesIO(clip[0].tobytes()), 'mov')
+        self.vid = imageio.get_reader(io.BytesIO(clip[0].tobytes()), 'mov')
         self.vsize = (frame_width[0], frame_height[0])
-        self.pos = np.divide(self.size, 2) - np.divide(self.vsize, 2)
+        self.vfps = self.vid.get_meta_data()['fps']
+        self.upscale = self.size[0] / self.vsize[0]
+        self.y_pos = int((self.size[1] - self.vsize[1]*self.upscale)/2)
         self.isrunning = True
         self.timer.start()
 
     def present(self):
         if self.timer.elapsed_time() < self.curr_cond['movie_duration']:
             py_image = pygame.image.frombuffer(self.vid.get_next_data(), self.vsize, "RGB")
-            self.screen.blit(py_image, self.pos)
+            if self.upscale != 1:
+                py_image = pygame.transform.smoothscale(py_image, (self.size[0], int(self.vsize[1]*self.upscale)))
+            self.screen.blit(py_image, (0, self.y_pos))
             self.flip()
             self.curr_frame += 1
-            self.clock.tick_busy_loop(self.fps)
+            self.clock.tick_busy_loop(self.vfps)
         else:
             self.isrunning = False
             self.vid.close()
@@ -118,13 +115,10 @@ class RPMovies(Movies):
 
     def setup(self):
         # setup parameters
-        self.path = 'stimuli/'     # default path to copy local stimuli
-        self.size = (800, 480)     # window size
+        self.path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
+        self.size = (self.monitor['resolution_x'], self.monitor['resolution_y'])     # window size
         self.color = [127, 127, 127]  # default background color
-        self.loc = (0, 0)          # default starting location of stimulus surface
-        self.fps = 30              # default presentation framerate
         self.phd_size = (50, 50)    # default photodiode signal size in pixels
-        self.flip_count = 0
 
         # setup pygame
         if not pygame.get_init():
@@ -154,8 +148,6 @@ class RPMovies(Movies):
 
     def prepare(self, curr_cond, stim_period=''):
         self.curr_cond = curr_cond
-        self.logger.log('StimCondition.Trial', dict(period=stim_period, stim_hash=self.curr_cond['stim_hash']),
-                        schema='stimulus')
         self._init_player()
         self.isrunning = True
         try:

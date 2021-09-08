@@ -1,0 +1,16 @@
+@startuml
+top to bottom direction
+rectangle Entry #white
+rectangle Exit #white
+Entry -down->> (PreTrial)
+(PreTrial) -down->> (Trial)
+(Trial) -down->> (Abort)
+(Trial) -down->> (Reward)
+(Trial) -down->> (Punish)
+(Trial) -->> (Trial)
+(Abort) -down->> (InterTrial)
+(Reward) -down->> (InterTrial)
+(Punish) -down->> (InterTrial)
+(InterTrial) -[norank]>> (PreTrial)
+(InterTrial)-down->>(Exit)
+@enduml

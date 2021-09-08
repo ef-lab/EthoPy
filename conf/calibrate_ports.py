@@ -4,11 +4,12 @@ from Experiments.Calibrate import *
 
 # define calibration parameters
 session_params = {
-    'duration'        : [20, 40, 100, 250],
+    'duration'        : [20, 30, 40, 150],
     'ports'           : [1, 2],
-    'pulsenum'        : [30, 40, 10, 3],
-    'pulse_interval'  : [20, 10, 0, 0],
+    'pulsenum'        : [600, 300, 200, 100],
+    'pulse_interval'  : [40, 40, 40, 40],
     'save'            : True,
+    'setup_conf_idx'  : 1,
 }
 
 # run experiment
