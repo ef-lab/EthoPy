@@ -172,10 +172,8 @@ class RPProbe(Interface):
     def _create_pulse(self, port, duration):
         if port in self.pulses:
             self.Pulser.wave_delete(self.pulses[port])
-        pulse = []
-        pulse.append(self.PulseGen(1 << self.channels['liquid'][port], 0, int(duration*1000)))
-        pulse.append(self.PulseGen(0, 1 << self.channels['liquid'][port], int(duration)))
-        self.Pulser.wave_add_generic(pulse)  # 500 ms flashes
+        self.Pulser.wave_add_generic([self.PulseGen(1 << self.channels['liquid'][port], 0, int(duration*1000)),
+                                      self.PulseGen(0, 1 << self.channels['liquid'][port], 1)])
         self.pulses[port] = self.Pulser.wave_create()
 
     def _give_pulse(self, port):
