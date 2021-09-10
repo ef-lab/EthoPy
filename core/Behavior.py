@@ -97,17 +97,16 @@ class Activity(dj.Manual):
                                     sharex=True, figsize=params['figsize'])
 
             for idx, cond in enumerate(conds):  # iterate through conditions
-                
-                selected_trials = (self.proj(ltime = 'time') * ((Trial & key) & cond)).proj(ltime = 'ltime - time')
-                trials, ports, times = selected_trials.fetch('trial_idx', 'port', 'ltime', order_by='ltime')
+                selected_trials = (self.proj(ltime = 'time') * (((Trial & key) - Trial.Aborted()) & cond)).proj(ltime = 'ltime - time')
+                trials, ports, times = selected_trials.fetch('trial_idx', 'port', 'ltime', order_by='trial_idx')
                 un_trials, idx_trials = np.unique(trials, return_inverse=True)  # get unique trials
-
                 axs.item(idx).scatter(times, idx_trials, params['dotsize'],  # plot all of them
                                       c=np.array(params['port_colors'])[ports - 1])
                 axs.item(idx).axvline(x=0, color='green', linestyle='-')
 
                 name = f'Object: {cond[0][5]}, Response Port: {cond[0][8]}'
-                perf = len(np.unique((selected_trials & f'port = {cond[0][8]}').fetch('trial_idx')))/len(cond)
+                #perf = len(np.unique((selected_trials & f'port = {cond[0][8]}').fetch('trial_idx')))/len(un_trials)
+                perf = len(Trial & selected_trials & Rewards.proj(rtime = 'time'))/len(un_trials)
                 title = f'{name}, Performance:{perf:.2f}'
 
                 axs.item(idx).set_title(title, color=np.array(params['port_colors'])[cond[0][8] - 1],
