@@ -101,7 +101,7 @@ class ExperimentClass:
         conditions = self.log_conditions(**self.beh.make_conditions(conditions))
         for cond in conditions:
             assert np.all([field in cond for field in self.required_fields])
-            cond.update({**self.default_key, **cond, 'experiment_class': self.cond_tables[0]})
+            cond.update({**self.default_key, **self.params, **cond, 'experiment_class': self.cond_tables[0]})
         cond_tables = ['Condition.' + table for table in self.cond_tables]
         conditions = self.log_conditions(conditions, condition_tables=['Condition'] + cond_tables)
         return conditions
@@ -186,7 +186,7 @@ class ExperimentClass:
             self.curr_cond = cond
         elif self.params['trial_selection'] == 'random':
             self.curr_cond = np.random.choice(self.conditions)
-        elif self.params['trial_selection'] == 'bias':
+        elif self.params['trial_selection'] == 'biased':
             idx = [~np.isnan(ch).any() for ch in self.beh.choice_history]
             choice_h = np.asarray(self.beh.choice_history)
             anti_bias = self._anti_bias(choice_h[idx], self.un_choices)
