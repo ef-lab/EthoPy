@@ -101,7 +101,7 @@ class ExperimentClass:
         conditions = self.log_conditions(**self.beh.make_conditions(conditions))
         for cond in conditions:
             assert np.all([field in cond for field in self.required_fields])
-            cond.update({**self.default_key, **cond, 'experiment_class': self.cond_tables[0]})
+            cond.update({**self.default_key, **self.params, **cond, 'experiment_class': self.cond_tables[0]})
         cond_tables = ['Condition.' + table for table in self.cond_tables]
         conditions = self.log_conditions(conditions, condition_tables=['Condition'] + cond_tables)
         return conditions
