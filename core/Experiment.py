@@ -186,7 +186,7 @@ class ExperimentClass:
             self.curr_cond = cond
         elif self.params['trial_selection'] == 'random':
             self.curr_cond = np.random.choice(self.conditions)
-        elif self.params['trial_selection'] == 'bias':
+        elif self.params['trial_selection'] == 'biased':
             idx = [~np.isnan(ch).any() for ch in self.beh.choice_history]
             choice_h = np.asarray(self.beh.choice_history)
             anti_bias = self._anti_bias(choice_h[idx], self.un_choices)
