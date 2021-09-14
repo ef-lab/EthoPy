@@ -263,7 +263,8 @@ class Ball(Interface):
 
     def readMouse(self):
         while not self.thread_end.is_set():
-            x1, y1, x2, y2, tmst1, tmst2 = 0, 0, 0, 0, time.time(), time.time()
+            t = self.logger.logger_timer.elapsed_time()
+            x1, y1, x2, y2, tmst1, tmst2 = 0, 0, 0, 0, t, t
             while not self.mouse1.queue.empty():
                 data1 = self.mouse1.queue.get()
                 x1 += data1['x']; y1 += data1['y']; tmst1 = data1['timestamp']
