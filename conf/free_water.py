@@ -1,7 +1,5 @@
-#from Behaviors.MultiPort import *
-from Behaviors.VRBall import *
-#from Stimuli.RPScreen import *
-from Stimuli.VROdors import *
+from Behaviors.MultiPort import *
+from Stimuli.RPScreen import *
 from Experiments.FreeWater import *
 
 # define session parameters
@@ -29,19 +27,7 @@ conditions = exp.make_conditions(stim_class=RPScreen(), conditions={
     'response_port': -1,
 })
 
-conditions = exp.make_conditions(stim_class=VROdors(), conditions = {
-    'x0'            : 2.5,
-    'y0'            : 2.5,
-    'radius'        : 5,
-    'response_loc_x': (0, 5, 5, 0),
-    'response_loc_y': (0, 0, 5, 5),
-    'reward_loc_x'  : 2.5,
-    'reward_loc_y'  : 2.5,
-    'reward_amount' : 10
-})
-
 # run experiments
 exp.push_conditions(conditions)
 exp.start()
-
 

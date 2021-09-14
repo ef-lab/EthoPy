@@ -33,6 +33,7 @@ class VRBall(Behavior, dj.Manual):
         ---
         reward_loc_x              : float
         reward_loc_y              : float
+        radius                    : float
         reward_port               : tinyint          # reward port id
         reward_amount=0           : float            # reward amount
         reward_type               : varchar(16)      # reward type
