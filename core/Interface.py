@@ -219,24 +219,25 @@ class VRProbe(RPProbe):
                 'lick': {1: 17}}
     pwm = dict()
 
-    def start_odor(self, dutycycle=50, frequency=20):
+    def start_odor(self, channels, dutycycle=50, frequency=20):
         self.frequency = frequency
-        for idx, channel in enumerate(list(self.channels['odor'].values())):
-            self.pwm[idx] = self.GPIO.PWM(channel, self.frequency)
-            self.pwm[idx].ChangeFrequency(self.frequency)
-            self.pwm[idx].start(dutycycle)
+        self.channels = channels
+        for channel in channels:
+            self.pwm[channel] = self.GPIO.PWM(self.channels['odor'][channel], self.frequency)
+            self.pwm[channel].ChangeFrequency(self.frequency)
+            self.pwm[channel].start(dutycycle)
 
     def update_odor(self, dutycycles):  # for 2D olfactory setup
-        for idx, dutycycle in enumerate(dutycycles):
-            self.pwm[idx].ChangeDutyCycle(dutycycle)
+        for channel, dutycycle in zip(self.channels, dutycycles):
+            self.pwm[channel].ChangeDutyCycle(dutycycle)
 
     def stop_odor(self):
-        for idx, channel in enumerate(list(self.channels['odor'].values())):
-            self.pwm[idx].stop()
+        for channel in self.channels:
+            self.pwm[channel].stop()
 
     def cleanup(self):
-        for idx, channel in enumerate(list(self.channels['odor'].values())):
-            self.pwm[idx].stop()
+        for channel in self.channels:
+            self.pwm[channel].stop()
         super().cleanup()
 
 
