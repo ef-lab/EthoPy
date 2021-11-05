@@ -91,6 +91,9 @@ class InterTrial(Experiment):
         else:
             return 'InterTrial'
 
+    def exit(self):
+        self.stim.ready_stim()
+
 
 class Offtime(Experiment):
     def entry(self):
