@@ -89,9 +89,6 @@ class VRBall(Behavior, dj.Manual):
     def punish(self):
         self.update_history(self.licked_port)
 
-    def start_odor(self):
-        self.interface.start_odor(0)
-
     def exit(self):
         self.vr.cleanup()
         self.interface.cleanup()
