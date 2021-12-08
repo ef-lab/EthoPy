@@ -1,4 +1,4 @@
-# Retinotopic mapping experiment
+# Imagenet experiment
 
 from Experiments.Passive import *
 from Stimuli.Images import *
@@ -28,6 +28,7 @@ key = {
 
 for img in images:
     conditions += exp.make_conditions(stim_class=Images(), conditions={**key, 'image_name': img})
+    print(conditions)
     
 #repeat_n = 20
 

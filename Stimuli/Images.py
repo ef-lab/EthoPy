@@ -17,7 +17,7 @@ class Images(Stimulus, dj.Manual):
     image_duration       : int                          # image presentation duration
 
     """
-
+    print('inside class Images')
     default_key = dict(image_duration=10, test_image=False)
     required_fields = ['image_name', 'image_id', 'test_image', 'image_duration']
     cond_tables = ['Images']
