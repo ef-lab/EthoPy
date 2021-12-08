@@ -24,6 +24,7 @@ class Images(Stimulus, dj.Manual):
 
     def setup(self):
         # setup parameters
+        print(os.path.dirname(os.path.abspath(__file__)))
         self.path = os.path.dirname(os.path.abspath(__file__)) + '/images/'
         self.size = (self.monitor['resolution_x'], self.monitor['resolution_y'])     # window size
         self.color = [127, 127, 127]  # default background color
@@ -55,7 +56,7 @@ class Images(Stimulus, dj.Manual):
 
     def present(self):
         if self.timer.elapsed_time() < self.curr_cond['image_duration']:
-            py_image = pygame.image.load('racecar.png') #correct path
+            py_image = pygame.image.load('.jpg') #correct path
             #py_image = pygame.image.frombuffer(self.vid.get_next_data(), self.vsize, "RGB")
             if self.upscale != 1:
                 py_image = pygame.transform.smoothscale(py_image, (self.size[0], int(self.imsize[1]*self.upscale)))
