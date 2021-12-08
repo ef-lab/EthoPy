@@ -15,9 +15,10 @@ exp = Experiment()
 exp.setup(logger, Behavior, session_params)
 
 conditions = []
+print('empty conditions')
 
 # define stimulus conditions
-train_images = ('img1','img2')
+images = ('img1','img2')
 
 key = {
     'image_id'             : [1,2],                         # image index
@@ -28,12 +29,12 @@ key = {
 for img in images:
     conditions += exp.make_conditions(stim_class=Images(), conditions={**key, 'image_name': img})
     
-repeat_n = 20
+#repeat_n = 20
 
-conditions = []
-for axis in ['horizontal', 'vertical']:
-    for rep in range(0, repeat_n):
-        conditions += exp.make_conditions(stim_class=Bar(), conditions={**key, 'axis': axis})
+#conditions = []
+#for axis in ['horizontal', 'vertical']:
+#    for rep in range(0, repeat_n):
+#        conditions += exp.make_conditions(stim_class=Bar(), conditions={**key, 'axis': axis})
 
 # run experiment
 exp.push_conditions(conditions)
