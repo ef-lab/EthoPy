@@ -83,6 +83,10 @@ class Stimulus:
         """stimulus presentation method"""
         pass
 
+    def unshow(self, color=False):
+        """stimulus hidding method"""
+        pass
+
     def stop(self):
         """stop stimulus"""
         self.log_stop()
