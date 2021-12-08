@@ -12,9 +12,10 @@ dj.config["enable_python_native_blobs"] = True
 schemata = {'experiment': 'lab_experiments',
             'stimulus'  : 'lab_stimuli',
             'behavior'  : 'lab_behavior',
+            'recording' : 'lab_recordings',
             'mice'      : 'lab_mice'}
 
-for schema, value in schemata.items():
+for schema, value in schemata.items():  # separate connection for internal comminication
     globals()[schema] = dj.create_virtual_module(schema, value, create_tables=True, create_schema=True)
 
 
@@ -38,6 +39,11 @@ class Logger:
         self.log_setup(protocol)
         self.getter_thread.start()
         self.logger_timer.start()
+
+    def setup_schema(self, extra_schema):
+        for schema, value in extra_schema.items():
+            globals()[schema] = dj.create_virtual_module(schema, value, create_tables=True, create_schema=True)
+            self._schemata.update({schema: dj.create_virtual_module(schema, value, connection=self.private_conn)})
 
     def put(self, **kwargs):
         item = PrioritizedItem(**kwargs)
@@ -132,7 +138,7 @@ class Logger:
     def get_setup_info(self, field):
         return (experiment.Control() & dict(setup=self.setup)).fetch1(field)
 
-    def get(self, schema='experiment', table='Control', fields='', key='', **kwargs):
+    def get(self, schema='experiment', table='Control', fields='', key=dict(), **kwargs):
         table = rgetattr(eval(schema), table)
         return (table() & key).fetch(*fields, **kwargs)
 

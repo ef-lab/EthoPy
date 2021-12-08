@@ -109,11 +109,12 @@ class Cue(Experiment):
             self.resp_ready = True
 
     def next(self):
-        if self.resp_ready:
+        elapsed_time = self.state_timer.elapsed_time()
+        if self.resp_ready and (self.curr_cond['cue_ready'] or elapsed_time > self.curr_cond['cue_duration']):
             return 'Delay'
         elif self.response:
             return 'Abort'
-        elif self.state_timer.elapsed_time() > self.curr_cond['cue_duration']:
+        elif elapsed_time > self.curr_cond['cue_duration']:
             return 'Abort'
         elif self.is_stopped():  # if wake up then update session
             return 'Exit'
@@ -227,9 +228,6 @@ class Punish(Experiment):
         else:
             return 'Punish'
 
-    def exit(self):
-        self.stim.unshow()
-
 
 class InterTrial(Experiment):
     def entry(self):
@@ -250,6 +248,9 @@ class InterTrial(Experiment):
             return 'PreTrial'
         else:
             return 'InterTrial'
+
+    def exit(self):
+        self.stim.unshow()
 
 
 class Hydrate(Experiment):

@@ -101,7 +101,7 @@ class ExperimentClass:
         conditions = self.log_conditions(**self.beh.make_conditions(conditions))
         for cond in conditions:
             assert np.all([field in cond for field in self.required_fields])
-            cond.update({**self.default_key, **cond, 'experiment_class': self.cond_tables[0]})
+            cond.update({**self.default_key, **self.params, **cond, 'experiment_class': self.cond_tables[0]})
         cond_tables = ['Condition.' + table for table in self.cond_tables]
         conditions = self.log_conditions(conditions, condition_tables=['Condition'] + cond_tables)
         return conditions
@@ -164,9 +164,9 @@ class ExperimentClass:
         return conditions
 
     def log_recording(self, key):
-        recs = self.logger.get(schema='experiment', table='Recording', key=self.logger.trial_key, fields=['rec_idx'])
+        recs = self.logger.get(schema='recording', table='Recording', key=self.logger.trial_key, fields=['rec_idx'])
         rec_idx = 1 if not recs else max(recs)+1
-        self.logger.log('Recording', data={**key, 'rec_idx': rec_idx}, schema='experiment')
+        self.logger.log('Recording', data={**key, 'rec_idx': rec_idx}, schema='recording')
 
     def _anti_bias(self, choice_h, un_choices):
         choice_h = np.array([make_hash(c) for c in choice_h[-self.params['bias_window']:]])
@@ -186,7 +186,7 @@ class ExperimentClass:
             self.curr_cond = cond
         elif self.params['trial_selection'] == 'random':
             self.curr_cond = np.random.choice(self.conditions)
-        elif self.params['trial_selection'] == 'bias':
+        elif self.params['trial_selection'] == 'biased':
             idx = [~np.isnan(ch).any() for ch in self.beh.choice_history]
             choice_h = np.asarray(self.beh.choice_history)
             anti_bias = self._anti_bias(choice_h[idx], self.un_choices)

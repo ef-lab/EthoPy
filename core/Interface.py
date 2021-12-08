@@ -172,10 +172,8 @@ class RPProbe(Interface):
     def _create_pulse(self, port, duration):
         if port in self.pulses:
             self.Pulser.wave_delete(self.pulses[port])
-        pulse = []
-        pulse.append(self.PulseGen(1 << self.channels['liquid'][port], 0, int(duration*1000)))
-        pulse.append(self.PulseGen(0, 1 << self.channels['liquid'][port], int(duration)))
-        self.Pulser.wave_add_generic(pulse)  # 500 ms flashes
+        self.Pulser.wave_add_generic([self.PulseGen(1 << self.channels['liquid'][port], 0, int(duration*1000)),
+                                      self.PulseGen(0, 1 << self.channels['liquid'][port], 1)])
         self.pulses[port] = self.Pulser.wave_create()
 
     def _give_pulse(self, port):
@@ -221,24 +219,25 @@ class VRProbe(RPProbe):
                 'lick': {1: 17}}
     pwm = dict()
 
-    def start_odor(self, dutycycle=50, frequency=20):
+    def start_odor(self, channels, dutycycle=50, frequency=20):
         self.frequency = frequency
-        for idx, channel in enumerate(list(self.channels['odor'].values())):
-            self.pwm[idx] = self.GPIO.PWM(channel, self.frequency)
-            self.pwm[idx].ChangeFrequency(self.frequency)
-            self.pwm[idx].start(dutycycle)
+        self.odor_channels = channels
+        for channel in channels:
+            self.pwm[channel] = self.GPIO.PWM(self.channels['odor'][channel], self.frequency)
+            self.pwm[channel].ChangeFrequency(self.frequency)
+            self.pwm[channel].start(dutycycle)
 
     def update_odor(self, dutycycles):  # for 2D olfactory setup
-        for idx, dutycycle in enumerate(dutycycles):
-            self.pwm[idx].ChangeDutyCycle(dutycycle)
+        for channel, dutycycle in zip(self.odor_channels, dutycycles):
+            self.pwm[channel].ChangeDutyCycle(dutycycle)
 
     def stop_odor(self):
-        for idx, channel in enumerate(list(self.channels['odor'].values())):
-            self.pwm[idx].stop()
+        for channel in self.odor_channels:
+            self.pwm[channel].stop()
 
     def cleanup(self):
-        for idx, channel in enumerate(list(self.channels['odor'].values())):
-            self.pwm[idx].stop()
+        for channel in self.odor_channels:
+            self.pwm[channel].stop()
         super().cleanup()
 
 
@@ -265,7 +264,8 @@ class Ball(Interface):
 
     def readMouse(self):
         while not self.thread_end.is_set():
-            x1, y1, x2, y2, tmst1, tmst2 = 0, 0, 0, 0, time.time(), time.time()
+            t = self.logger.logger_timer.elapsed_time()
+            x1, y1, x2, y2, tmst1, tmst2 = 0, 0, 0, 0, t, t
             while not self.mouse1.queue.empty():
                 data1 = self.mouse1.queue.get()
                 x1 += data1['x']; y1 += data1['y']; tmst1 = data1['timestamp']
