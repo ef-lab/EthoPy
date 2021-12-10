@@ -18,24 +18,21 @@ conditions = []
 print('empty conditions')
 
 # define stimulus conditions
-images = ('img1','img2')
+images = [[1, 2, 3], [4, 5, 6]]
 
 key = {
-    'image_id'             : [1,2],                         # image index
-    'test_image'           : False,
-    'image_duration'       : 5000,
-}
-
-for img in images:
-    conditions += exp.make_conditions(stim_class=Images(), conditions={**key, 'image_name': img})
-    print(conditions)
+    'image_class'          : 'imagenet',
+    'pre_blank_period'     : .2,                        # (s) off duration
+    'presentation_time'    : .5,                        # (s) image duration
+}  
     
-#repeat_n = 20
+repeat_n = 2
 
-#conditions = []
-#for axis in ['horizontal', 'vertical']:
-#    for rep in range(0, repeat_n):
-#        conditions += exp.make_conditions(stim_class=Bar(), conditions={**key, 'axis': axis})
+for irep in range(0, repeat_n):
+    for img in images[irep]:
+        conditions += exp.make_conditions(stim_class=Images(), conditions={**key, 'image_id': img})
+        print(conditions)
+
 
 # run experiment
 exp.push_conditions(conditions)

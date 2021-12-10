@@ -11,18 +11,25 @@ class Images(Stimulus, dj.Manual):
     # images conditions
     -> StimCondition
     ---
-    image_name           : char(8)                      # short image title
-    image_id             : int                          # image index
-    test_image           : smallint                     # 1 for test image, else 0
-    image_duration       : int                          # image presentation duration
+    -> Image
+    pre_blank_period     : float                        # (s) off duration
+    presentation_time    : float                        # (s) image duration
 
     """
+    
+    # instead of Image in line 14, should it be the following?
+    # image_id             : int                          # image index
+    # image_class          : char(8)                      # image class
+        
     print('inside class Images')
-    default_key = dict(image_duration=10, test_image=False)
-    required_fields = ['image_name', 'image_id', 'test_image', 'image_duration']
+    default_key = dict(pre_blank_period=.2, presentation_time=.5)
+    required_fields = ['pre_blank_period', 'presentation_time']
     cond_tables = ['Images']
+    
+    def init(self, exp):
+        super().init(exp)
 
-    def setup(self):
+    #def setup(self):
         # setup parameters
         print(os.path.dirname(os.path.abspath(__file__)))
         self.path = os.path.dirname(os.path.abspath(__file__)) + '/images/'
@@ -41,12 +48,12 @@ class Images(Stimulus, dj.Manual):
         self.curr_cond = curr_cond
         #self.curr_frame = 1
         self.clock = pygame.time.Clock()
-        #clip = self.get_clip_info(self.curr_cond, 'Movie.Clip', 'clip')
-        image_height, image_width = self.get_clip_info(self.curr_cond, 'Image', 'image_height', 'image_width')
         
+        #clip = self.get_clip_info(self.curr_cond, 'Movie.Clip', 'clip')
         #self.vid = imageio.get_reader(io.BytesIO(clip[0].tobytes()), 'mov')
         #self.vfps = self.vid.get_meta_data()['fps']
         
+        image_height, image_width = self.get_image_info(self.curr_cond, 'Image', 'image')
         self.imsize = (image_width, image_height)
         self.upscale = self.size[0] / self.imsize[0]
         self.y_pos = int((self.size[1] - self.imsize[1]*self.upscale)/2)
@@ -55,8 +62,13 @@ class Images(Stimulus, dj.Manual):
         self.timer.start()
 
     def present(self):
-        if self.timer.elapsed_time() < self.curr_cond['image_duration']:
-            py_image = pygame.image.load('.jpg') #correct path
+        if self.curr_cond['pre_blank_period']>0:
+            #blank the screen
+            self.unshow((0, 0, 0))
+            self.clock.tick(self.curr_cond['pre_blank_period'])
+        elif self.timer.elapsed_time() < self.curr_cond['presentation_time']:
+            #show image
+            py_image = pygame.image.load(self.curr_cond, 'Image', 'image') #correct path
             #py_image = pygame.image.frombuffer(self.vid.get_next_data(), self.vsize, "RGB")
             if self.upscale != 1:
                 py_image = pygame.transform.smoothscale(py_image, (self.size[0], int(self.imsize[1]*self.upscale)))
@@ -64,7 +76,7 @@ class Images(Stimulus, dj.Manual):
             self.flip()
             #self.curr_frame += 1
             #self.clock.tick_busy_loop(self.vfps)
-            self.clock.tick(self.curr_cond['image_duration']) #this doesn't look correct.. having both the if and the tick with image duration
+            self.clock.tick(self.curr_cond['presentation_time']) #this doesn't look correct.. having both the if and the tick with image duration
         else:
             self.isrunning = False
             #self.vid.close()
@@ -97,8 +109,9 @@ class Images(Stimulus, dj.Manual):
         pygame.display.quit()
         pygame.quit()
 
-    def get_clip_info(self, key, table, *fields):
-        return self.exp.logger.get(schema='stimulus', table=table, key=key, fields=fields)
+    def get_image_info(self, key, table, *fields):
+        img_info = self.exp.logger.get(schema='stimulus', table=table, key=key, fields=fields)
+        return img_info.shape[0], img_info.shape[1] # image_height, image_width
 
     def encode_photodiode(self):
         """Encodes the flip number n in the flip amplitude.
