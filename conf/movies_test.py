@@ -25,8 +25,8 @@ key = {
     'intertrial_duration': 0,
 }
 
-for object in objects:
-    conditions += exp.make_conditions(stim_class=Movies(), conditions={**key, 'movie_name': object})
+for obj in objects:
+    conditions += exp.make_conditions(stim_class=Movies(), conditions={**key, 'movie_name': obj})
 
 # run experiment
 exp.push_conditions(conditions)
