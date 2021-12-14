@@ -10,6 +10,7 @@ class Experiment:
         self.logger = logger
         self.size = (800, 480)     # window size
         self.screen = TouchInterface()
+        self.sync = False
 
     def run(self):
         """ Lickspout liquid delivery calibration """
