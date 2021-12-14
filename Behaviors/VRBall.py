@@ -51,12 +51,7 @@ class VRBall(Behavior, dj.Manual):
         self.resp_loc_y = None
         self.interface = VRProbe(exp=exp)
         super(VRBall, self).setup(exp)
-        source_path = '/home/eflab/Tracking/'
-        target_path = '/mnt/lab/data/Tracking/'
-        self.vr = Ball(exp.logger, path=source_path, target_path=target_path)
-        self.exp.log_recording(dict(rec_aim='ball', software='PyMouse', version='0.1',
-                                    filename=self.vr.filename, source_path=source_path,
-                                    target_path=target_path, rec_type='behavioral'))
+        self.vr = Ball(exp.logger)
 
     def prepare(self, condition):
         self.vr.setPosition(condition['x_sz'], condition['y_sz'], condition['x0'], condition['y0'], condition['theta0'])

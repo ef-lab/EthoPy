@@ -64,6 +64,7 @@ class Trial(Experiment):
     def exit(self):
         self.stim.stop()
         self.logger.ping()
+        self.stim.unshow()
 
 
 class InterTrial(Experiment):
