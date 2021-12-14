@@ -152,6 +152,7 @@ class RPProbe(Interface):
         if self.exp.sync:
             source_path = '/home/eflab/Sync/'
             target_path = '/mnt/lab/data/Sync/'
+            self.GPIO.setup(list(self.channels['sync'].values()), self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
             for channel in self.channels['sync']:
                 self.GPIO.add_event_detect(self.channels['sync'][channel], self.GPIO.RISING,
                                            callback=self._sync_in, bouncetime=20)
