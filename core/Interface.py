@@ -88,9 +88,6 @@ class Interface:
         self.dataset.createDataset(dataset_name, shape=(len(dataset_type.names),), dtype=dataset_type)
         return self.filename
 
-    def append2Dataset(self, dataset_name):
-        self.dataset.append(dataset_name, [self.loc_x, self.loc_y, self.theta, self.timestamp])
-
     def closeDatasets(self):
         self.dataset.exit()
 
@@ -214,6 +211,9 @@ class RPProbe(Interface):
                  for channel in self.channels['proximity']:
                      self.GPIO.remove_event_detect(self.channels['proximity'][channel])
         self.GPIO.cleanup()
+        if self.exp.sync:
+            self.closeDatasets()
+
         if self.ts:
             self.ts.stop()
 
