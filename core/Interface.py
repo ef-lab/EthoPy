@@ -57,6 +57,9 @@ class Interface:
     def sync_out(self, state=False):
         pass
 
+    def set_running_state(self, running_state):
+        pass
+
     def log_activity(self, table, key):
         self.activity_tmst = self.logger.logger_timer.elapsed_time()
         key.update({'time': self.activity_tmst, **self.logger.trial_key})
@@ -110,7 +113,8 @@ class RPProbe(Interface):
                 'lick': {1: 17, 2: 27},
                 'proximity': {1: 9},
                 'sound': {1: 18},
-                'sync': {1: 21}}
+                'sync': {'in': 21},
+                'running': 20}
 
     def __init__(self, **kwargs):
         super(RPProbe, self).__init__(**kwargs)
@@ -151,11 +155,10 @@ class RPProbe(Interface):
             self.Writer = Writer
             source_path = '/home/eflab/Sync/'
             target_path = '/mnt/lab/data/Sync/'
-            self.GPIO.setup(list(self.channels['sync'].values()), self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-            for channel in self.channels['sync']:
-                self.GPIO.add_event_detect(self.channels['sync'][channel], self.GPIO.RISING,
-                                           callback=self._sync_in, bouncetime=20)
-
+            self.GPIO.setup(self.channels['running'], self.GPIO.OUT, initial=self.GPIO.LOW)
+            self.GPIO.setup(self.channels['sync']['in'], self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+            self.GPIO.add_event_detect(self.channels['sync']['in'], self.GPIO.RISING,
+                                       callback=self._sync_in, bouncetime=20)
             filename = self.createDataset(source_path, target_path, dataset_name='sync_data',
                                           dataset_type=np.dtype([("sync_times", np.double)]))
 
@@ -175,6 +178,9 @@ class RPProbe(Interface):
         except:
             self.ts = False
             print('Cannot create a touch exit!')
+
+    def set_running_state(self, running_state):
+        self.GPIO.output(self.channels['running'], running_state)
 
     def _touch_handler(self, event, touch):
         if event == self.ts_press_event:
