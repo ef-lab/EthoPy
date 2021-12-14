@@ -93,8 +93,8 @@ class Interface:
 
 
 class PCProbe(Interface):
-
-    def __init__(self):
+    def __init__(self, **kwargs):
+        super(PCProbe, self).__init__(**kwargs)
         import serial
         serial_port = 'COM1'
         self.serial = serial.serial_for_url(serial_port)
