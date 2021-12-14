@@ -54,6 +54,9 @@ class Interface:
     def create_pulse(self, port, duration):
         pass
 
+    def sync_out(self, state=False):
+        pass
+
     def log_activity(self, table, key):
         self.activity_tmst = self.logger.logger_timer.elapsed_time()
         key.update({'time': self.activity_tmst, **self.logger.trial_key})
@@ -76,13 +79,41 @@ class Interface:
     def cleanup(self):
         pass
 
+    def createDataset(self, path='', target_path=False, dataset_name='', dataset_type=np.dtype()):
+        self.filename = '%s_%d_%d_%s.h5' % (dataset_name, self.logger.trial_key['animal_id'],
+                                         self.logger.trial_key['session'],
+                                         datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
+        self.datapath = path + self.filename
+        self.dataset = self.Writer(self.datapath, target_path)
+        self.dataset.createDataset(dataset_name, shape=(len(dataset_type.names),), dtype=dataset_type)
+        return self.filename
+
+    def append2Dataset(self, dataset_name):
+        self.dataset.append(dataset_name, [self.loc_x, self.loc_y, self.theta, self.timestamp])
+
+    def closeDatasets(self):
+        self.dataset.exit()
+
+
+class PCProbe(Interface):
+
+    def __init__(self):
+        import serial
+        serial_port = 'COM1'
+        self.serial = serial.serial_for_url(serial_port)
+        self.serial.dtr = False
+
+    def sync_out(self, state=True):
+        self.serial.dtr = state
+
 
 class RPProbe(Interface):
     channels = {'odor': {1: 24, 2: 25},
                 'liquid': {1: 22, 2: 23},
                 'lick': {1: 17, 2: 27},
                 'proximity': {1: 9},
-                'sound': {1: 18}}
+                'sound': {1: 18},
+                'sync': {1: 21}}
 
     def __init__(self, **kwargs):
         super(RPProbe, self).__init__(**kwargs)
@@ -117,6 +148,20 @@ class RPProbe(Interface):
                 for channel in self.channels['proximity']:
                     self.GPIO.add_event_detect(self.channels['proximity'][channel], self.GPIO.BOTH,
                                                callback=self._position_change, bouncetime=50)
+
+        if self.exp.sync:
+            source_path = '/home/eflab/Sync/'
+            target_path = '/mnt/lab/data/Sync/'
+            for channel in self.channels['sync']:
+                self.GPIO.add_event_detect(self.channels['sync'][channel], self.GPIO.RISING,
+                                           callback=self._sync_in, bouncetime=20)
+
+            filename = self.createDataset(source_path, target_path, dataset_name='sync_data',
+                                          dataset_type=np.dtype([("sync_times", np.double)]))
+
+            self.exp.log_recording(dict(rec_aim='sync', software='PyMouse', version='0.1',
+                                           filename=filename, source_path=source_path,
+                                           target_path=target_path))
 
     def setup_touch_exit(self):
         try:
@@ -183,6 +228,9 @@ class RPProbe(Interface):
         self.port = reverse_lookup(self.channels['lick'], channel)
         self.lick_tmst = self.log_activity('Lick', dict(port=self.port))
 
+    def _sync_in(self, channel):
+        self.dataset.append('sync_data', [self.logger.logger_timer.elapsed_time()])
+
     def _position_change(self, channel=0):
         port = reverse_lookup(self.channels['proximity'], channel) if channel else 0
         position = self._get_position()
@@ -242,8 +290,10 @@ class VRProbe(RPProbe):
 
 
 class Ball(Interface):
-    def __init__(self, logger, ball_radius=0.125, path="", target_path=False):
+    def __init__(self, logger, ball_radius=0.125):
         from utils.Writer import Writer
+        source_path = '/home/eflab/Tracking/'
+        target_path = '/mnt/lab/data/Tracking/'
         self.cleanup()
         self.logger = logger
         self.mouse1 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.1:1.0-mouse", logger)
@@ -257,7 +307,17 @@ class Ball(Interface):
         self.phi_y1 = np.pi - 0.13  # angle of y1 axis (mouse1) .6
         self.phi_y2 = self.phi_y1 + np.pi/2  # angle of y2 axis (mouse2)
         self.ball_radius = ball_radius
-        self.createDataset(path, target_path)
+        filename = self.createDataset(source_path, target_path, dataset_name='tracking_data',
+                           dataset_type=np.dtype([("loc_x", np.double),
+                                                  ("loc_y", np.double),
+                                                  ("theta", np.double),
+                                                  ("tmst", np.double)]))
+
+        super().exp.log_recording(dict(rec_aim='ball', software='PyMouse', version='0.1',
+                                    filename=filename, source_path=source_path,
+                                    target_path=target_path, rec_type='behavioral'))
+
+
         self.thread_end = threading.Event()
         self.thread_runner = threading.Thread(target=self.readMouse)
         self.thread_runner.start()
@@ -297,7 +357,7 @@ class Ball(Interface):
             self.loc_y = max(min(loc_y, self.ymx), 0)
             self.timestamp = timestamp
             print(self.loc_x, self.loc_y, self.theta/np.pi*180)
-            self.append2Dataset()
+            self.dataset.append('tracking_data', [self.loc_x, self.loc_y, self.theta, self.timestamp])
             time.sleep(.1)
 
     def setPosition(self, xmx=1, ymx=1, x0=0, y0=0, theta0=0):
@@ -312,25 +372,6 @@ class Ball(Interface):
 
     def getSpeed(self):
         return self.speed
-
-    def createDataset(self, path='', target_path=False):
-        self.filename = '%d_%d_%s.h5' % (self.logger.trial_key['animal_id'],
-                                         self.logger.trial_key['session'],
-                                         datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
-        self.datapath = path + self.filename
-        TIME_SERIES_DOUBLE = np.dtype([("loc_x", np.double),
-                                       ("loc_y", np.double),
-                                       ("theta", np.double),
-                                       ("tmst", np.double)])
-
-        self.dataset = self.Writer(self.datapath, target_path)
-        self.dataset.createDataset('tracking_data', shape=(4,), dtype=TIME_SERIES_DOUBLE)
-
-    def append2Dataset(self):
-        self.dataset.append('tracking_data', [self.loc_x, self.loc_y, self.theta, self.timestamp])
-
-    def closeDatasets(self):
-        self.dataset.exit()
 
     def cleanup(self):
         try:
