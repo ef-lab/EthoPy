@@ -79,7 +79,7 @@ class Interface:
     def cleanup(self):
         pass
 
-    def createDataset(self, path='', target_path=False, dataset_name='', dataset_type=np.dtype()):
+    def createDataset(self, path, target_path, dataset_name, dataset_type):
         self.filename = '%s_%d_%d_%s.h5' % (dataset_name, self.logger.trial_key['animal_id'],
                                          self.logger.trial_key['session'],
                                          datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
