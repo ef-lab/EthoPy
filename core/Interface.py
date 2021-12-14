@@ -150,6 +150,8 @@ class RPProbe(Interface):
                                                callback=self._position_change, bouncetime=50)
 
         if self.exp.sync:
+            from utils.Writer import Writer
+            self.Writer = Writer
             source_path = '/home/eflab/Sync/'
             target_path = '/mnt/lab/data/Sync/'
             self.GPIO.setup(list(self.channels['sync'].values()), self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
