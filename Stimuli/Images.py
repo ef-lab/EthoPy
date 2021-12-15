@@ -3,6 +3,8 @@ from time import sleep
 import pygame
 from pygame.locals import *
 import io, os, imageio
+import numpy as np
+import cv2
 
 
 @stimulus.schema
@@ -12,29 +14,20 @@ class Images(Stimulus, dj.Manual):
     -> StimCondition
     ---
     -> Image
-    pre_blank_period     : float                        # (s) off duration
-    presentation_time    : float                        # (s) image duration
+    pre_blank_period     : int                        # (ms) off duration
+    presentation_time    : int                        # (ms) image duration
 
     """
-    
-    # instead of Image in line 14, should it be the following?
-    # image_id             : int                          # image index
-    # image_class          : char(8)                      # image class
-        
-    print('inside class Images')
-    default_key = dict(pre_blank_period=.2, presentation_time=.5)
+
+    default_key = dict(pre_blank_period=200, presentation_time=1000)
     required_fields = ['pre_blank_period', 'presentation_time']
     cond_tables = ['Images']
-    
-    def init(self, exp):
-        super().init(exp)
 
-    #def setup(self):
+    def setup(self):
         # setup parameters
-        print(os.path.dirname(os.path.abspath(__file__)))
         self.path = os.path.dirname(os.path.abspath(__file__)) + '/images/'
         self.size = (self.monitor['resolution_x'], self.monitor['resolution_y'])     # window size
-        self.color = [127, 127, 127]  # default background color
+        self.color = [50, 50, 50]  # default background color
         self.phd_size = (50, 50)    # default photodiode signal size in pixels
 
         # setup pygame
@@ -46,14 +39,9 @@ class Images(Stimulus, dj.Manual):
 
     def prepare(self, curr_cond, stim_period=''):
         self.curr_cond = curr_cond
-        #self.curr_frame = 1
         self.clock = pygame.time.Clock()
-        
-        #clip = self.get_clip_info(self.curr_cond, 'Movie.Clip', 'clip')
-        #self.vid = imageio.get_reader(io.BytesIO(clip[0].tobytes()), 'mov')
-        #self.vfps = self.vid.get_meta_data()['fps']
-        
-        image_height, image_width = self.get_image_info(self.curr_cond, 'Image', 'image')
+
+        image_height, image_width = self.get_image_info(self.curr_cond, 'ImageClass.Info', 'image_height', 'image_width')
         self.imsize = (image_width, image_height)
         self.upscale = self.size[0] / self.imsize[0]
         self.y_pos = int((self.size[1] - self.imsize[1]*self.upscale)/2)
@@ -62,28 +50,25 @@ class Images(Stimulus, dj.Manual):
         self.timer.start()
 
     def present(self):
-        if self.curr_cond['pre_blank_period']>0:
+        if self.curr_cond['pre_blank_period'] > 0 and self.timer.elapsed_time() < self.curr_cond['pre_blank_period']:
             #blank the screen
             self.unshow((0, 0, 0))
             self.clock.tick(self.curr_cond['pre_blank_period'])
-        elif self.timer.elapsed_time() < self.curr_cond['presentation_time']:
+        elif self.timer.elapsed_time() < (self.curr_cond['pre_blank_period'] + self.curr_cond['presentation_time']):
             #show image
-            py_image = pygame.image.load(self.curr_cond, 'Image', 'image') #correct path
-            #py_image = pygame.image.frombuffer(self.vid.get_next_data(), self.vsize, "RGB")
+            curr_img = self.get_image_info(self.curr_cond, 'Image', 'image')
             if self.upscale != 1:
-                py_image = pygame.transform.smoothscale(py_image, (self.size[0], int(self.imsize[1]*self.upscale)))
-            self.screen.blit(py_image, (0, self.y_pos))
+                curr_img = cv2.resize(curr_img[0], dsize=(self.size), interpolation=cv2.INTER_CUBIC)
+            img_rgb = curr_img[..., None].repeat(3, -1).astype(np.int32)
+            py_image = img_rgb.swapaxes(0, 1)
+            pygame.surfarray.blit_array(self.screen, py_image)
             self.flip()
-            #self.curr_frame += 1
-            #self.clock.tick_busy_loop(self.vfps)
             self.clock.tick(self.curr_cond['presentation_time']) #this doesn't look correct.. having both the if and the tick with image duration
         else:
             self.isrunning = False
-            #self.vid.close()
             self.unshow()
 
     def stop(self):
-        #self.vid.close()
         self.unshow()
         self.log_stop()
         self.isrunning = False
@@ -110,8 +95,7 @@ class Images(Stimulus, dj.Manual):
         pygame.quit()
 
     def get_image_info(self, key, table, *fields):
-        img_info = self.exp.logger.get(schema='stimulus', table=table, key=key, fields=fields)
-        return img_info.shape[0], img_info.shape[1] # image_height, image_width
+        return self.exp.logger.get(schema='stimulus', table=table, key=key, fields=fields)
 
     def encode_photodiode(self):
         """Encodes the flip number n in the flip amplitude.
