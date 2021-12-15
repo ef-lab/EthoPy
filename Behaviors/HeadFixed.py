@@ -10,7 +10,7 @@ class HeadFixed(Behavior, dj.Manual):
     """
 
     def setup(self, exp):
-        #self.interface = PCProbe(exp=exp)
+        self.interface = PCProbe(exp=exp)
         super(HeadFixed, self).setup(exp)
 
     def exit(self):
