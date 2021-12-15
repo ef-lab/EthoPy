@@ -72,9 +72,9 @@ class ExperimentClass:
         for state in self.__class__.__subclasses__():  # Initialize states
             states.update({state().__class__.__name__: state(self)})
         state_control = self.StateMachine(states)
-        self.interface.set_running_state = True
+        self.interface.set_running_state(True)
         state_control.run()
-        self.interface.set_running_state = False
+        self.interface.set_running_state(False)
 
     def is_stopped(self):
         self.quit = self.quit or self.logger.setup_status in ['stop', 'exit']
