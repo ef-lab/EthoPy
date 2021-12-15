@@ -8,7 +8,7 @@ class Condition(dj.Manual):
         # Passive experiment conditions
         -> Condition
         ---
-        trial_selection='fixed' : enum('fixed','random','randperm') 
+        trial_selection='fixed' : enum('fixed','random') 
     
         intertrial_duration     : int
         """

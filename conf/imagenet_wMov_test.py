@@ -19,7 +19,6 @@ exp.setup(logger, Behavior, session_params)
 conditions = []
 image_conditions = []
 movie_conditions = []
-print('empty conditions')
 
 #define params that are same across trials
 rng = np.random.default_rng(seed=0)
@@ -33,10 +32,8 @@ key = {
 }
 
 # define train stimulus conditions
-images = rng.permutation((stim.ImageImagenet() & 'image_id < 20').fetch('image_id'))
-print(images)
+images = (stim.ImageImagenet() & 'image_id < 20').fetch('image_id')
 blanks = min_blank + extra_blank * rng.random(len(images))
-print(blanks)
 
 for img, gap in zip(images, blanks):
     print('inside for loop')
@@ -44,25 +41,19 @@ for img, gap in zip(images, blanks):
     image_conditions += exp.make_conditions(stim_class=Images(), conditions={**key, 'image_id': img, 'pre_blank_period': gap})
 
 # define test oracle stimulus conditions
-images = rng.permutation((stim.ImageImagenet() & 'image_id >= 20 AND image_id < 30').fetch('image_id'))
-print(images)
+images = (stim.ImageImagenet() & 'image_id >= 20 AND image_id < 30').fetch('image_id')
 blanks = min_blank + extra_blank * rng.random(len(images))
-print(blanks)
 
 repeat_n = 2
-
 for irep in range(0, repeat_n):
     print(irep)
     for img, gap in zip(images, blanks):
-        print('inside for loop')
-        print(img, gap)
         image_conditions += exp.make_conditions(stim_class=Images(), conditions={**key, 'image_id': img, 'pre_blank_period': gap})
 
 image_conditions = list(rng.permutation(image_conditions))
 
 # define movies (oracle) conditions
 movies = (stim.Movie() & 'movie_class = "cinema"' & 'movie_name = "MadMax" OR movie_name = "matrix" OR movie_name = "matrixan"').fetch('movie_name')
-print(len(movies))
 key = {
     'clip_number'        : [20],
     'skip_time'          : [0],
@@ -73,17 +64,11 @@ key = {
 
 for mov in movies:
     movie_conditions += exp.make_conditions(stim_class=Movies(), conditions={**key, 'movie_name': mov})
+movie_conditions = list(rng.permutation(movie_conditions))
 
-print(image_conditions)
-print(len(image_conditions))
-print(image_conditions[0:10])
-print(movie_conditions)
-print(len(movie_conditions))
-print(movie_conditions[0])
-
+#combine all conditions
 conditions = image_conditions[0:10] + [movie_conditions[0]] + image_conditions[10:20] + [movie_conditions[1]] + image_conditions[20:30] + [movie_conditions[2]] + image_conditions[30:40]
-print(conditions)
-print(len(conditions))
+
 # run experiment
 exp.push_conditions(conditions)
 exp.start()
