@@ -29,7 +29,7 @@ class State:
 
 class ExperimentClass:
     """  Parent Experiment """
-    curr_state, curr_trial, total_reward, cur_dif, flip_count, states, stim = '', 0, 0, 0, 0, dict(), False
+    curr_state, curr_trial, total_reward, cur_dif, flip_count, states, stim, sync = '', 0, 0, 0, 0, dict(), False, False
     rew_probe, un_choices, difs, iter, curr_cond, dif_h, stims = [], [], [], [], dict(), [], dict()
     required_fields, default_key, conditions, cond_tables, quit, running = [], dict(), [], [], False, False
 
@@ -72,7 +72,9 @@ class ExperimentClass:
         for state in self.__class__.__subclasses__():  # Initialize states
             states.update({state().__class__.__name__: state(self)})
         state_control = self.StateMachine(states)
+        self.interface.set_running_state(True)
         state_control.run()
+        self.interface.set_running_state(False)
 
     def is_stopped(self):
         self.quit = self.quit or self.logger.setup_status in ['stop', 'exit']
