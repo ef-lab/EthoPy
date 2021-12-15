@@ -15,7 +15,7 @@ exp.setup(logger, HeadFixed, session_params)
 conditions = []
 
 # define stimulus conditions
-objects = ('MadMax')
+objects = ['MadMax']
 
 key = {
     'clip_number'        : list(range(10, 40)),
