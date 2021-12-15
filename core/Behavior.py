@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from core.Experiment import *
+from core.Interface import *
 from matplotlib import cm
 import matplotlib.pyplot as plt
 import bisect
@@ -217,6 +218,7 @@ class Behavior:
     default_key = dict()
 
     def setup(self, exp):
+        if not self.interface: self.interface = Interface(exp=exp)
         self.params = exp.params
         self.resp_timer = Timer()
         self.resp_timer.start()
@@ -228,7 +230,7 @@ class Behavior:
         self.reward_history = list()  # History term for performance calculation
         self.licked_probe = 0
         self.reward_amount = dict()
-        if self.interface: self.interface.load_calibration()
+        self.interface.load_calibration()
 
     def is_ready(self, init_duration, since=0):
         return True, 0

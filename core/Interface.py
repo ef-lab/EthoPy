@@ -8,7 +8,7 @@ from datetime import datetime
 
 
 class Interface:
-    port, lick_tmst, ready_dur, activity_tmst, ready_tmst, pulse_rew = 0, 0, 0, 0, 0, dict()
+    port, lick_tmst, ready_dur, activity_tmst, ready_tmst, pulse_rew, ports = 0, 0, 0, 0, 0, dict(), []
     ready, logging, timer_ready, weight_per_pulse, pulse_dur, channels = False, True, Timer(), dict(), dict(), dict()
 
     def __init__(self, exp=[], callbacks=True, logging=True):
@@ -16,8 +16,6 @@ class Interface:
         self.logging = logging
         self.exp = exp
         self.logger = exp.logger
-        ports = self.logger.get(table='SetupConfiguration.Port', fields=['port'], key=self.exp.params)
-        self.ports = list(set(ports) & set(self.channels['liquid'].keys()))
 
     def load_calibration(self):
         for port in list(set(self.ports)):
@@ -96,6 +94,7 @@ class Interface:
 
 
 class PCProbe(Interface):
+
     def __init__(self, **kwargs):
         super(PCProbe, self).__init__(**kwargs)
         import serial
@@ -120,6 +119,9 @@ class RPProbe(Interface):
         super(RPProbe, self).__init__(**kwargs)
         from RPi import GPIO
         import pigpio
+        ports = self.logger.get(table='SetupConfiguration.Port', fields=['port'], key=self.exp.params)
+        self.ports = list(set(ports) & set(self.channels['liquid'].keys()))
+
         self.GPIO = GPIO
         self.GPIO.setmode(self.GPIO.BCM)
         self.thread = ThreadPoolExecutor(max_workers=2)
