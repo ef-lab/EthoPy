@@ -6,7 +6,7 @@ import random
 # define session parameters
 session_params = {
     'setup_conf_idx'     : 2,
-    'trial_selection'    : 'random',
+    'trial_selection'    : 'fixed',
 }
 
 exp = Experiment()
