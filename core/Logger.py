@@ -130,8 +130,8 @@ class Logger:
         self.update_setup_info(key)
         self.logger_timer.start()  # start session time
 
-    def update_setup_info(self, info):
-        self.setup_info = {**(experiment.Control() & dict(setup=self.setup)).fetch1(), **info}
+    def update_setup_info(self, info, key=dict()):
+        self.setup_info = {**(experiment.Control() & {**{'setup': self.setup}, **key}).fetch1(), **info}
         block = True if 'status' in info else False
         self.put(table='Control', tuple=self.setup_info, replace=True, priority=1, block=block, validate=block)
         self.setup_status = self.setup_info['status']
