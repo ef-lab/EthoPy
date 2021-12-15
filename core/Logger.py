@@ -24,9 +24,8 @@ class Logger:
     lock, queue, ping_timer, logger_timer, total_reward, curr_state = False, PriorityQueue(), Timer(), Timer(), 0, ''
 
     def __init__(self, protocol=False):
-        print(os.path.dirname(os.path.abspath(__file__)))
         self.setup = socket.gethostname()
-        self.is_pi = False #os.uname()[4][:3] == 'arm' if os.name == 'posix' else False
+        self.is_pi = os.uname()[4][:3] == 'arm' if os.name == 'posix' else False
         self.setup_status = 'running' if protocol else 'ready'
         fileobject = open(os.path.dirname(os.path.abspath(__file__)) + '/../dj_local_conf.json')
         con_info = json.loads(fileobject.read())
@@ -144,7 +143,6 @@ class Logger:
         return (table() & key).fetch(*fields, **kwargs)
 
     def get_protocol(self, task_idx=None, raw_file=False):
-        print('getting protocol')
         if not task_idx: task_idx = self.get_setup_info('task_idx')
         if not len(experiment.Task() & dict(task_idx=task_idx)) > 0: return False
         protocol = (experiment.Task() & dict(task_idx=task_idx)).fetch1('protocol')

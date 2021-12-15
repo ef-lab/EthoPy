@@ -35,10 +35,7 @@ class Entry(Experiment):
 
 class PreTrial(Experiment):
     def entry(self):
-        print(self)
-        print('pretrial entry')
         self.prepare_trial()
-        print('after prepare trial')
         if not self.is_stopped():
             self.stim.prepare(self.curr_cond)
             super().entry()
@@ -52,7 +49,6 @@ class PreTrial(Experiment):
 
 class Trial(Experiment):
     def entry(self):
-        print('trial entry')
         self.stim.start()
         super().entry()
 
@@ -72,7 +68,6 @@ class Trial(Experiment):
 
 class InterTrial(Experiment):
     def entry(self):
-        print('intertrial entry')
         super().entry()
 
     def next(self):
