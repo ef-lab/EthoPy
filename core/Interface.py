@@ -149,13 +149,15 @@ class RPProbe(Interface):
                 for channel in self.channels['proximity']:
                     self.GPIO.add_event_detect(self.channels['proximity'][channel], self.GPIO.BOTH,
                                                callback=self._position_change, bouncetime=50)
+        if 'running' in self.channels:
+            self.GPIO.setup(self.channels['running'], self.GPIO.OUT, initial=self.GPIO.LOW)
 
         if self.exp.sync:
             from utils.Writer import Writer
             self.Writer = Writer
             source_path = '/home/eflab/Sync/'
             target_path = '/mnt/lab/data/Sync/'
-            self.GPIO.setup(self.channels['running'], self.GPIO.OUT, initial=self.GPIO.LOW)
+
             self.GPIO.setup(self.channels['sync']['in'], self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
             self.GPIO.add_event_detect(self.channels['sync']['in'], self.GPIO.RISING,
                                        callback=self._sync_in, bouncetime=20)
