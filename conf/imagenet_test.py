@@ -3,6 +3,7 @@ import numpy as np
 from Experiments.Passive import *
 from Stimuli.Images import *
 from core.Behavior import *
+#from Behaviors.HeadFixed import *
 stim = dj.create_virtual_module('stimuli.py', 'lab_stimuli')
 
 # define session parameters
@@ -14,6 +15,7 @@ session_params = {
 
 exp = Experiment()
 exp.setup(logger, Behavior, session_params)
+#exp.setup(logger, HeadFixed, session_params)
 
 conditions = []
 

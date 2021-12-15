@@ -4,6 +4,7 @@ from Experiments.Passive import *
 from Stimuli.Images import *
 from Stimuli.Movies import *
 from core.Behavior import *
+#from Behaviors.HeadFixed import *
 stim = dj.create_virtual_module('stimuli.py', 'lab_stimuli')
 
 # define session parameters
@@ -15,6 +16,8 @@ session_params = {
 
 exp = Experiment()
 exp.setup(logger, Behavior, session_params)
+#exp.setup(logger, HeadFixed, session_params)
+
 
 conditions = []
 image_conditions = []
@@ -27,7 +30,7 @@ extra_blank = 200
 
 key = {
     'image_class'          : 'imagenet',
-    'presentation_time'    : 1000,                        # (ms) image duration
+    'presentation_time'    : 500,                        # (ms) image duration
     'intertrial_duration'   : 0,
 }
 
@@ -36,8 +39,6 @@ images = (stim.ImageImagenet() & 'image_id < 20').fetch('image_id')
 blanks = min_blank + extra_blank * rng.random(len(images))
 
 for img, gap in zip(images, blanks):
-    print('inside for loop')
-    print(img, gap)
     image_conditions += exp.make_conditions(stim_class=Images(), conditions={**key, 'image_id': img, 'pre_blank_period': gap})
 
 # define test oracle stimulus conditions
@@ -46,7 +47,6 @@ blanks = min_blank + extra_blank * rng.random(len(images))
 
 repeat_n = 2
 for irep in range(0, repeat_n):
-    print(irep)
     for img, gap in zip(images, blanks):
         image_conditions += exp.make_conditions(stim_class=Images(), conditions={**key, 'image_id': img, 'pre_blank_period': gap})
 
