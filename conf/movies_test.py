@@ -4,7 +4,7 @@ from core.Behavior import *
 
 # define session parameters
 session_params = {
-    'setup_conf_idx'     : 1,
+    'setup_conf_idx'     : 2,
     'trial_selection'    : 'fixed',
 }
 

@@ -124,8 +124,12 @@ class ExperimentClass:
             if diff_flag: self.un_difs = self.difs[un_idx]
 
     def prepare_trial(self):
+        print('inside_prepare_trial')
+        print(self.curr_cond)
         old_cond = self.curr_cond
+        print(self._get_new_cond)
         self._get_new_cond()
+        print(self.curr_cond)
         if not self.curr_cond or self.logger.thread_end.is_set():
             self.quit = True
             return
@@ -186,6 +190,9 @@ class ExperimentClass:
             self.curr_cond = cond
         elif self.params['trial_selection'] == 'random':
             self.curr_cond = np.random.choice(self.conditions)
+        elif self.params['trial_selection'] == 'randperm':
+            if len(self.curr_cond) == 0: self.conditions = list(np.random.permutation(self.conditions))
+            self.curr_cond = [] if len(self.conditions) == 0 else self.conditions.pop()
         elif self.params['trial_selection'] == 'biased':
             idx = [~np.isnan(ch).any() for ch in self.beh.choice_history]
             choice_h = np.asarray(self.beh.choice_history)

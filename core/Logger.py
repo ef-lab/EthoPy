@@ -26,7 +26,7 @@ class Logger:
     def __init__(self, protocol=False):
         print(os.path.dirname(os.path.abspath(__file__)))
         self.setup = socket.gethostname()
-        self.is_pi = os.uname()[4][:3] == 'arm' if os.name == 'posix' else False
+        self.is_pi = False #os.uname()[4][:3] == 'arm' if os.name == 'posix' else False
         self.setup_status = 'running' if protocol else 'ready'
         fileobject = open(os.path.dirname(os.path.abspath(__file__)) + '/../dj_local_conf.json')
         con_info = json.loads(fileobject.read())
