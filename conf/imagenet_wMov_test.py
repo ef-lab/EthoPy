@@ -72,26 +72,27 @@ movie_conditions = list(rng.permutation(movie_conditions))
 #combine all conditions
 #conditions = image_conditions[0:10] + [movie_conditions[0]] + image_conditions[10:20] + [movie_conditions[1]] + image_conditions[20:30] + [movie_conditions[2]] + image_conditions[30:40]
 
-n_oracle_blocks = len(movie_conditions) # 9 how many times to insert Oracle movie blocks
-n_trials = len(image_conditions)
-print(n_trials, n_oracle_blocks)
+def make_block_conditions(image_conditions, movie_conditions, step):
+    # interleave images and oracle movies
+    # Chunked interleave of Lists using loop + extend()
+    conds = []
+    n_oracle_blocks = len(movie_conditions) # 9 how many times to insert Oracle movie blocks
+    n_trials = len(image_conditions)
+    print(n_trials, n_oracle_blocks)
+    assert n_trials % (n_oracle_blocks+1) == 0, 'Number of trials must be divisible by the number of oracle blocks + 1'
+    iters = int(n_trials / step) + 1
+    for idx in range(iters):
+        print(idx)
+        start = step * idx
+        end = step * (idx + 1)
+        print(start, end)
+        conds.extend(image_conditions[start: end])
+        if idx < n_oracle_blocks:
+            conds.append(movie_conditions[idx])
+    return conds
 
-assert n_trials % (n_oracle_blocks+1) == 0, 'Number of trials must be divisible by the number of oracle blocks + 1'
 
-# interleave oracle block into the hashes
-# Chunked interleave of Lists
-# using loop + extend()
-step = 600
-iters = int(n_trials / step) + 1
-for idx in range(iters):
-    print(idx)
-    start = step * idx
-    end = step * (idx + 1)
-    print(start, end)
-    conditions.extend(image_conditions[start: end])
-    if idx < n_oracle_blocks:
-        conditions.append(movie_conditions[idx])
-
+conditions = make_block_conditions(image_conditions, movie_conditions, 600)
 print(len(conditions))
 
 # run experiment
