@@ -18,7 +18,7 @@ class Experiment(State, ExperimentClass):
     cond_tables = ['Passive']
     default_key = {'trial_selection'       : 'fixed',
 
-                   'intertrial_duration'    : 1000}
+                   'intertrial_duration'    : 100}
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
         self.logger.curr_state = self.name()
@@ -68,6 +68,9 @@ class Trial(Experiment):
 
 
 class InterTrial(Experiment):
+    def entry(self):
+        super().entry()
+
     def next(self):
         if self.is_stopped():
             return 'Exit'
@@ -75,7 +78,8 @@ class InterTrial(Experiment):
             return 'PreTrial'
         else:
             return 'InterTrial'
-
+    def exit(self):
+        self.stim.unshow()
 
 class Exit(Experiment):
     def run(self):

@@ -25,8 +25,8 @@ key = {
     'intertrial_duration': 500,
 }
 
-for object in objects:
-    conditions += exp.make_conditions(stim_class=Movies(), conditions={**key, 'movie_name': object})
+for obj in objects:
+    conditions += exp.make_conditions(stim_class=Movies(), conditions={**key, 'movie_name': obj})
 
 random.seed(0)
 random.shuffle(conditions)

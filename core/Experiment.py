@@ -298,24 +298,46 @@ class Trial(dj.Manual):
 
     def getGroups(self):
         mts_flag = (np.unique((Condition & self).fetch('experiment_class')) == ['MatchToSample'])
-        #print(mts_flag)
+        mp_flag = (np.unique((Condition & self).fetch('experiment_class')) == ['MatchPort']) #only olfactory so far
+        print(mts_flag, mp_flag)
 
         if mts_flag:
             conditions = self * ((stimulus.StimCondition.Trial() & 'period = "Cue"').proj('stim_hash', stime = 'start_time') & self) * stimulus.Panda.Object() * ((behavior.BehCondition.Trial().proj(btime = 'time') & self) * behavior.MultiPort.Response())
+            uniq_groups, groups_idx = np.unique(
+                [cond.astype(int) for cond in
+                 conditions.fetch('obj_id', 'response_port', order_by=('trial_idx'))],
+                axis=1, return_inverse=True)
+        elif mp_flag: #only olfactory so far
+            conditions = self * (stimulus.StimCondition.Trial().proj('stim_hash', stime = 'start_time') & self) * stimulus.Olfactory.Channel() * ((behavior.BehCondition.Trial().proj(btime = 'time') & self) * behavior.MultiPort.Response())
+            uniq_groups, groups_idx = np.unique(
+                [cond.astype(int) for cond in
+                 conditions.fetch('odorant_id', 'response_port', order_by=('trial_idx'))],
+                axis=1, return_inverse=True)
         else:
             print('no conditions!')
             return []
 
-        uniq_groups, groups_idx = np.unique(
-            [cond.astype(int) for cond in
-             conditions.fetch('obj_id', 'response_port', order_by = ('trial_idx'))],
-            axis=1, return_inverse=True)
+        #uniq_groups, groups_idx = np.unique(
+            #[cond.astype(int) for cond in
+            # conditions.fetch('obj_id', 'response_port', order_by = ('trial_idx'))],
+            #axis=1, return_inverse=True)
         conditions = conditions.fetch(order_by = 'trial_idx')
         condition_groups = [conditions[groups_idx == group] for group in set(groups_idx)]
         return condition_groups
     
     def plotDifficulty(self, **kwargs):
-        difficulties = (self * experiment.Condition.MatchToSample()).fetch('difficulty')
+        mts_flag = (np.unique((Condition & self).fetch('experiment_class')) == ['MatchToSample'])
+        mp_flag = (np.unique((Condition & self).fetch('experiment_class')) == ['MatchPort']) #only olfactory so far
+
+        if mts_flag:
+            cond_class = experiment.Condition.MatchToSample()
+        elif mp_flag:
+            cond_class = experiment.Condition.MatchPort()
+        else:
+            print('what experiments class?')
+            return []
+
+        difficulties = (self * cond_class).fetch('difficulty')
         min_difficulty = np.min(difficulties)
         
         params = {'probe_colors': [[1, 0, 0], [0, .5, 1]],
@@ -325,7 +347,7 @@ class Trial(dj.Manual):
                   'ylim': (min_difficulty - 0.6,), **kwargs}
 
         def plot_trials(trials, **kwargs):
-            difficulties, trial_idxs = ((self & trials) * experiment.Condition.MatchToSample()).fetch('difficulty', 'trial_idx')
+            difficulties, trial_idxs = ((self & trials) * cond_class).fetch('difficulty', 'trial_idx')
             offset = ((trial_idxs - 1) % params['trial_bins'] - params['trial_bins'] / 2) * params['range'] * 0.1
             plt.scatter(trial_idxs, difficulties + offset, zorder=10, **kwargs)
 
