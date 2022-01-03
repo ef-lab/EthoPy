@@ -210,6 +210,7 @@ class RPProbe(Interface):
         return self.ready, ready_dur, self.ready_tmst
 
     def cleanup(self):
+        self.set_running_state(False)
         self.logging = False
         self.Pulser.wave_clear()
         self.Pulser.stop()
