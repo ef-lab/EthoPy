@@ -44,6 +44,7 @@ class ExperimentClass:
 
         # # # # Main state loop # # # # #
         def run(self):
+            self.interface.set_running_state(True)
             while self.futureState != self.exitState:
                 if self.currentState != self.futureState:
                     self.currentState.exit()
@@ -52,6 +53,7 @@ class ExperimentClass:
                 self.currentState.run()
                 self.futureState = self.states[self.currentState.next()]
             self.currentState.exit()
+            self.interface.set_running_state(False)
             self.exitState.run()
 
     def setup(self, logger, BehaviorClass, session_params):
@@ -72,9 +74,7 @@ class ExperimentClass:
         for state in self.__class__.__subclasses__():  # Initialize states
             states.update({state().__class__.__name__: state(self)})
         state_control = self.StateMachine(states)
-        self.interface.set_running_state(True)
         state_control.run()
-        self.interface.set_running_state(False)
 
     def is_stopped(self):
         self.quit = self.quit or self.logger.setup_status in ['stop', 'exit']
