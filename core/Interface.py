@@ -161,7 +161,7 @@ class RPProbe(Interface):
             target_path = '/mnt/lab/data/Sync/'
 
             self.GPIO.setup(self.channels['sync']['in'], self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-            self.GPIO.add_event_detect(self.channels['sync']['in'], self.GPIO.RISING,
+            self.GPIO.add_event_detect(self.channels['sync']['in'], self.GPIO.BOTH,
                                        callback=self._sync_in, bouncetime=20)
             filename = self.createDataset(source_path, target_path, dataset_name='sync_data',
                                           dataset_type=np.dtype([("sync_times", np.double)]))
