@@ -304,14 +304,15 @@ class VRProbe(RPProbe):
 
 
 class Ball(Interface):
-    def __init__(self, logger, ball_radius=0.125):
+    def __init__(self, exp, ball_radius=0.125):
         from utils.Writer import Writer
         source_path = '/home/eflab/Tracking/'
         target_path = '/mnt/lab/data/Tracking/'
         self.cleanup()
-        self.logger = logger
-        self.mouse1 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.1:1.0-mouse", logger)
-        self.mouse2 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.2:1.0-mouse", logger)
+        self.logger = exp.logger
+        self.exp = exp
+        self.mouse1 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.1:1.0-mouse", exp.logger)
+        self.mouse2 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.2:1.0-mouse", exp.logger)
         self.Writer = Writer
         self.speed = 0
         self.timestamp = 0
@@ -327,7 +328,7 @@ class Ball(Interface):
                                                   ("theta", np.double),
                                                   ("tmst", np.double)]))
 
-        super().exp.log_recording(dict(rec_aim='ball', software='PyMouse', version='0.1',
+        self.exp.log_recording(dict(rec_aim='ball', software='PyMouse', version='0.1',
                                     filename=filename, source_path=source_path,
                                     target_path=target_path, rec_type='behavioral'))
 
