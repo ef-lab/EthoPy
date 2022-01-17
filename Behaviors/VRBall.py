@@ -51,7 +51,7 @@ class VRBall(Behavior, dj.Manual):
         self.resp_loc_y = None
         self.interface = VRProbe(exp=exp)
         super(VRBall, self).setup(exp)
-        self.vr = Ball(exp.logger)
+        self.vr = Ball(exp)
 
     def prepare(self, condition):
         self.vr.setPosition(condition['x_sz'], condition['y_sz'], condition['x0'], condition['y0'], condition['theta0'])
