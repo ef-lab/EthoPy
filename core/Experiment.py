@@ -149,19 +149,20 @@ class ExperimentClass:
             table = rgetattr(eval(schema), ctable)
             fields += list(table().heading.names)
         for cond in conditions:
+            insert_priority = priority
             key = {sel_key: cond[sel_key] for sel_key in fields if sel_key != hsh and sel_key in cond}  # find all dependant fields and generate hash
             cond.update({hsh: make_hash(key)})
             hash_dict[cond[hsh]] = cond[hsh]
             for ctable in condition_tables:  # insert dependant condition tables
                 core = [field for field in rgetattr(eval(schema), ctable).primary_key if field != hsh]
                 fields = [field for field in rgetattr(eval(schema), ctable).heading.names]
-                if not np.all([np.any(np.array(k) == list(cond.keys())) for k in fields]): continue # only insert complete tuples
+                if not np.all([np.any(np.array(k) == list(cond.keys())) for k in fields]): print('skipping'); continue # only insert complete tuples
                 if core and hasattr(cond[core[0]], '__iter__'):
                     for idx, pcond in enumerate(cond[core[0]]):
                         cond_key = {k: cond[k] if type(cond[k]) in [int, float, str] else cond[k][idx] for k in fields}
-                        self.logger.put(table=ctable, tuple=cond_key, schema=schema, priority=priority)
-                else: self.logger.put(table=ctable, tuple=cond.copy(), schema=schema, priority=priority)
-                priority += 1
+                        self.logger.put(table=ctable, tuple=cond_key, schema=schema, priority=insert_priority)
+                else: self.logger.put(table=ctable, tuple=cond.copy(), schema=schema, priority=insert_priority)
+                insert_priority += 1
         return conditions
 
     def log_recording(self, key):

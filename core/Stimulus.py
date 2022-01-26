@@ -78,6 +78,7 @@ class Stimulus:
         """start stimulus"""
         self.isrunning = True
         self.log_start()
+        self.timer.start()
 
     def present(self):
         """stimulus presentation method"""

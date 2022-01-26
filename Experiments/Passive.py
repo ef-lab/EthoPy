@@ -9,7 +9,6 @@ class Condition(dj.Manual):
         -> Condition
         ---
         trial_selection='fixed' : enum('fixed','random') 
-    
         intertrial_duration     : int
         """
 
@@ -17,7 +16,6 @@ class Condition(dj.Manual):
 class Experiment(State, ExperimentClass):
     cond_tables = ['Passive']
     default_key = {'trial_selection'       : 'fixed',
-
                    'intertrial_duration'    : 100}
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
@@ -64,7 +62,6 @@ class Trial(Experiment):
     def exit(self):
         self.stim.stop()
         self.logger.ping()
-        self.stim.unshow()
 
 
 class InterTrial(Experiment):
@@ -78,8 +75,10 @@ class InterTrial(Experiment):
             return 'PreTrial'
         else:
             return 'InterTrial'
+
     def exit(self):
         self.stim.unshow()
+
 
 class Exit(Experiment):
     def run(self):
