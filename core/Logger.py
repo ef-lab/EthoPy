@@ -122,10 +122,10 @@ class Logger:
                  ).fetch(as_dict=True)
         for ball in balls: self.put(table='Configuration.Ball', tuple={**ball, **self.trial_key}, schema='behavior')
 
-        key = {'session': self.trial_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1}
+        key = {'session': self.trial_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1, 'state': ''}
         if 'start_time' in params:
             tdelta = lambda t: datetime.strptime(t, "%H:%M:%S") - datetime.strptime("00:00:00", "%H:%M:%S")
-            key = {**key, 'start_time': str(tdelta(params['start_time'])), 'stop_time': str(tdelta(params['stop_time']))}
+            key = {**key,'start_time': str(tdelta(params['start_time'])), 'stop_time': str(tdelta(params['stop_time']))}
         self.update_setup_info(key)
         self.logger_timer.start()  # start session time
 
