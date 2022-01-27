@@ -19,10 +19,10 @@ exp.setup(logger, Behavior, session_params)
 key = {
     'bg_level'              : [[255, 255, 255]],
     'dot_level'             : [[0, 0, 0]],
-    'dot_x'                 : [-.5, -.4, -.3, -.2, -.1, 0, .1, .2, .3, .4, .5],
-    'dot_y'                 : [-.3, -.2, -.1, .1, .2, .3],
-    'dot_xsize'             : .1,
-    'dot_ysize'             : .1,
+    'dot_x'                 : list(np.array(range(-450, 451, 75))/1000),
+    'dot_y'                 : list(np.array(range(-300, 301, 75))/1000),
+    'dot_xsize'             : .075,
+    'dot_ysize'             : .075,
     'dot_shape'             : 'rect',
     'dot_time'              : .25,
 }
