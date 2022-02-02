@@ -54,7 +54,9 @@ class Trial(Experiment):
         self.stim.present()  # Start Stimulus
 
     def next(self):
-        if not self.stim.isrunning:     # timed out
+        if self.is_stopped():
+            return 'Exit'
+        elif not self.stim.isrunning:     # timed out
             return 'InterTrial'
         else:
             return 'Trial'
