@@ -114,13 +114,16 @@ class Logger:
         self.put(table='Configuration', tuple=self.trial_key, schema='stimulus', priority=2, validate=True, block=True)
         ports = (experiment.SetupConfiguration.Port & {'setup_conf_idx': params['setup_conf_idx']}
                  ).fetch(as_dict=True)
-        for port in ports: self.put(table='Configuration.Port', tuple={**port, **self.trial_key}, schema='behavior')
+        for port in ports:
+            self.put(table='Configuration.Port', tuple={**port, **self.trial_key}, schema='behavior')
         screens = (experiment.SetupConfiguration.Screen & {'setup_conf_idx': params['setup_conf_idx']}
                    ).fetch(as_dict=True)
-        for scr in screens: self.put(table='Configuration.Screen', tuple={**scr, **self.trial_key}, schema='stimulus')
+        for scr in screens:
+            self.put(table='Configuration.Screen', tuple={**scr, **self.trial_key}, schema='stimulus')
         balls = (experiment.SetupConfiguration.Ball & {'setup_conf_idx': params['setup_conf_idx']}
                  ).fetch(as_dict=True)
-        for ball in balls: self.put(table='Configuration.Ball', tuple={**ball, **self.trial_key}, schema='behavior')
+        for ball in balls:
+            self.put(table='Configuration.Ball', tuple={**ball, **self.trial_key}, schema='behavior')
 
         key = {'session': self.trial_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1, 'state': ''}
         if 'start_time' in params:
