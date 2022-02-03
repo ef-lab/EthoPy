@@ -221,13 +221,13 @@ class ExperimentClass:
 class Session(dj.Manual):
     definition = """
     # Session info
-    animal_id            : smallint UNSIGNED            # animal id
-    session              : smallint UNSIGNED            # session number
+    animal_id                        : smallint UNSIGNED            # animal id
+    session                          : smallint UNSIGNED            # session number
     ---
-    user_name            : varchar(16)                  # user performing the experiment
-    setup=null           : varchar(256)                 # computer id
-    experiment_type      : varchar(128)
-    session_tmst         : timestamp                    # session timestamp
+    user_name                        : varchar(16)                  # user performing the experiment
+    setup=null                       : varchar(256)                 # computer id
+    experiment_type                  : varchar(128)
+    session_tmst=CURRENT_TIMESTAMP   : timestamp                    # session timestamp
     """
 
     class Protocol(dj.Part):
@@ -478,7 +478,7 @@ class Task(dj.Lookup):
 class MouseWeight(dj.Manual):
     definition = """
     animal_id                       : int unsigned                 # id number
-    timestamp="current_timestamp()" : timestamp                    # timestamp of weight
+    timestamp=CURRENT_TIMESTAMP     : timestamp                    # timestamp of weight
     ---
     weight                          : double(5,2)                  # weight in grams
     """
