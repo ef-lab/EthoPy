@@ -57,6 +57,7 @@ class ExperimentClass:
     def setup(self, logger, BehaviorClass, session_params):
         self.running = False
         self.conditions, self.quit, self.curr_cond, self.dif_h, self.stims, self.curr_trial = [], False, dict(), [], dict(),0
+        if "setup_conf_idx" not in self.default_key: self.default_key["setup_conf_idx"] = 0
         self.params = {**self.default_key, **session_params}
         self.logger = logger
         self.logger.log_session({**self.default_key, **session_params, 'experiment_type': self.cond_tables[0]},
