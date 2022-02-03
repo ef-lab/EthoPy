@@ -287,7 +287,7 @@ class Behavior:
 
     def get_false_history(self, h=10):
         idx = np.logical_and(np.isnan(self.reward_history), ~np.isnan(self.choice_history))
-        return np.sum(np.cumprod(np.flip(idx[-h:])))
+        return np.sum(np.cumprod(np.flip(idx[-h:], axis=0)))
 
     def is_sleep_time(self):
         now = datetime.now()
