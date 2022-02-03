@@ -183,23 +183,23 @@ class PortCalibration(dj.Manual):
         definition = """
         # Data for volume per pulse duty cycle estimation
         -> PortCalibration
-        pulse_dur                : int                  # duration of pulse in ms
+        pulse_dur                    : int                  # duration of pulse in ms
         ---
-        pulse_num                : int                  # number of pulses
-        weight                   : float                # weight of total liquid released in gr
-        timestamp                : timestamp            # timestamp
-        pressure=0               : float                # air pressure (PSI)
+        pulse_num                    : int                  # number of pulses
+        weight                       : float                # weight of total liquid released in gr
+        timestamp=CURRENT_TIMESTAMP  : timestamp            # timestamp
+        pressure=0                   : float                # air pressure (PSI)
         """
 
     class Test(dj.Part):
         definition = """
         # Lick timestamps
-        setup                 : varchar(256)                 # Setup name
-        port                  : tinyint                      # port id
-        timestamp             : timestamp  
+        setup                        : varchar(256)                 # Setup name
+        port                         : tinyint                      # port id
+        timestamp=CURRENT_TIMESTAMP  : timestamp  
         ___
-        result=null           : enum('Passed','Failed')
-        pulses=null           : int
+        result=null                  : enum('Passed','Failed')
+        pulses=null                  : int
         """
 
     def plot(self):
@@ -287,7 +287,7 @@ class Behavior:
 
     def get_false_history(self, h=10):
         idx = np.logical_and(np.isnan(self.reward_history), ~np.isnan(self.choice_history))
-        return np.sum(np.cumprod(np.flip(idx[-h:])))
+        return np.sum(np.cumprod(np.flip(idx[-h:], axis=0)))
 
     def is_sleep_time(self):
         now = datetime.now()
