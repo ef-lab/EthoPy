@@ -51,40 +51,17 @@ class PyWelcome(Welcome):
 
     def eval_input(self):
         if self.state == 'change_animal':
-            self.cleanup()
-            self.screen.draw('Enter animal ID', 0, 0, 400, 280)
-            self.screen.add_numpad()
-            button = self.screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))
-            exit_button = self.screen.add_button(name='X', x=750, y=0, w=50, h=50, color=(25, 25, 25))
-            exit_flag = False
-            while not button.is_pressed() or self.screen.numpad == '':
-                time.sleep(0.2)
-                if exit_button.is_pressed(): exit_flag = True; break
+            exit_flag = self.setup_numpad_screen('Enter animal ID')
             if self.screen.numpad and not exit_flag:
                 self.logger.update_setup_info({'animal_id': int(self.screen.numpad)})
                 self.setup()
         elif self.state == 'change_task':
-            self.cleanup()
-            self.screen.draw('Enter task idx', 0, 0, 400, 280)
-            self.screen.add_numpad()
-            button = self.screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))
-            exit_button = self.screen.add_button(name='X', x=750, y=0, w=50, h=50, color=(25, 25, 25));exit_flag = False
-            while not button.is_pressed() or self.screen.numpad == '':
-                time.sleep(0.2)
-                if exit_button.is_pressed(): exit_flag = True; break
+            exit_flag = self.setup_numpad_screen('Enter task idx')
             if self.screen.numpad and not exit_flag:
                 self.logger.update_setup_info({'task_idx': int(self.screen.numpad)})
                 self.setup()
         elif self.state == 'weigh_animal':
-            self.cleanup()
-            self.screen.draw('Enter animal weight', 0, 0, 400, 280)
-            self.screen.add_numpad()
-            button = self.screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))
-            exit_button = self.screen.add_button(name='X', x=750, y=0, w=50, h=50, color=(25, 25, 25))
-            exit_flag = False
-            while not button.is_pressed() or self.screen.numpad == '':
-                time.sleep(0.2)
-                if exit_button.is_pressed(): exit_flag = True; break
+            exit_flag = self.setup_numpad_screen('Enter animal weight')
             if self.screen.numpad and not exit_flag:
                 self.logger.put(table='MouseWeight', tuple=dict(animal_id=self.logger.get_setup_info('animal_id'),
                                                                 weight=float(self.screen.numpad)), schema='mice')
@@ -97,6 +74,22 @@ class PyWelcome(Welcome):
             self.close()
         else:
             self.set_setup_info()
+
+    def setup_numpad_screen(self, Text):
+        """
+        Standard screen interface that is used when you need to input a number
+        e.g. change_animal, change_task and weigh_animal tasks
+        """
+        self.cleanup()
+        self.screen.draw(Text, 0, 0, 400, 280)
+        self.screen.add_numpad()
+        button = self.screen.add_button(name='OK', x=150, y=250, w=100, h=100, color=(0, 128, 0))
+        exit_button = self.screen.add_button(name='X', action=self.exit, x=750, y=0, w=50, h=50, color=(25, 25, 25))
+        exit_flag = False
+        while not button.is_pressed() or self.screen.numpad == '':
+            time.sleep(0.2)
+            if exit_button.is_pressed(): exit_flag = True; break
+        return exit_flag
 
     def set_setup_info(self):
         animal = self.logger.get_setup_info('animal_id')
