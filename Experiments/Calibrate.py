@@ -1,6 +1,6 @@
 import numpy
 import time as systime
-from core.Interface import *
+from Interfaces.RPProbe import *
 from utils.TouchInterface import TouchInterface
 
 

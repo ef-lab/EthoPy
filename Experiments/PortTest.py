@@ -1,5 +1,5 @@
 import numpy
-from core.Interface import *
+from Interfaces.RPProbe import *
 from utils.TouchInterface import TouchInterface
 import time as systime
 
