@@ -170,3 +170,4 @@ class RPProbe(Interface):
         self.Pulser.hardware_PWM(channel, 0, 0)
 
     def _get_position(self):
+        return not self.GPIO.input(self.channels['proximity'][1])
