@@ -389,8 +389,9 @@ class Trial(dj.Manual):
 class SetupConfiguration(dj.Lookup):
     definition = """
     # Setup configuration
-    setup_conf_idx           : tinyint                      # configuration version
+    setup_conf_idx           : tinyint                                               # configuration version
     ---
+    interface                : enum('DummyProbe','PRProbe', 'PCProbe', 'VRProbe')    # The Interface class for the setup
     discription              : varchar(256)
     """
 

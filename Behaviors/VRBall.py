@@ -1,6 +1,5 @@
 from core.Behavior import *
-from core.Interface import *
-
+from Interfaces.VRProbe import *
 
 @behavior.schema
 class VRBall(Behavior, dj.Manual):
@@ -49,8 +48,11 @@ class VRBall(Behavior, dj.Manual):
         self.previous_y = 0
         self.resp_loc_x = None
         self.resp_loc_y = None
+        # It should be deleted now that Interface is called in parents setup
+        # make sure that setup_conf_idx is defined in conf file 
         self.interface = VRProbe(exp=exp)
         super(VRBall, self).setup(exp)
+        # Ball should move from Interfaces.VRProbe module
         self.vr = Ball(exp)
 
     def prepare(self, condition):

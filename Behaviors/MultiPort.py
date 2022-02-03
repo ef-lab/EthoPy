@@ -1,5 +1,4 @@
 from core.Behavior import *
-from core.Interface import *
 from utils.Timer import *
 import pygame
 import numpy as np
@@ -32,10 +31,6 @@ class MultiPort(Behavior, dj.Manual):
     cond_tables = ['MultiPort', 'MultiPort.Response', 'MultiPort.Reward']
     required_fields = ['response_port', 'reward_port', 'reward_amount']
     default_key = {'reward_type': 'water'}
-
-    def setup(self, exp):
-        self.interface = RPProbe(exp=exp)
-        super(MultiPort, self).setup(exp)
 
     def is_ready(self, duration, since=False):
         ready, ready_time, tmst = self.interface.in_position()
@@ -74,7 +69,7 @@ class DummyPorts(MultiPort):
         self.ready_timer = Timer()
         self.ready_timer.start()
         self.ready = False
-        self.interface = Interface(exp=exp)
+        # self.interface = Interface(exp=exp)
         pygame.init()
         #self.screen = pygame.display.set_mode((800, 480))
         self.params = exp.params

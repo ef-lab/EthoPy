@@ -218,7 +218,11 @@ class Behavior:
     default_key = dict()
 
     def setup(self, exp):
-        if not self.interface: self.interface = Interface(exp=exp)
+        # This class can be renamed to __init__ and make setup pass in class Behavior
+        interface_module = (experiment.SetupConfiguration & {'setup_conf_idx': exp.params['setup_conf_idx']}
+                            ).fetch('interface')[0]
+        exec (f'from Interfaces.{interface_module} import *')
+        self.interface = eval(interface_module)(exp=exp)
         self.params = exp.params
         self.resp_timer = Timer()
         self.resp_timer.start()
