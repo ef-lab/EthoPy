@@ -2,6 +2,7 @@ from time import sleep
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 
+from core.Interface import *
 from utils.helper_functions import reverse_lookup
 
 class RPProbe(Interface):
