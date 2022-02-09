@@ -392,7 +392,7 @@ class SetupConfiguration(dj.Lookup):
     # Setup configuration
     setup_conf_idx           : tinyint                                               # configuration version
     ---
-    interface                : enum('DummyProbe','RPProbe', 'PCProbe', 'VRProbe')    # The Interface class for the setup
+    interface                : enum('DummyPorts','RPPorts', 'PCPorts', 'RPVR')    # The Interface class for the setup
     discription              : varchar(256)
     """
 

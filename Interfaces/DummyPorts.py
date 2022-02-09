@@ -1,9 +1,9 @@
 import pygame
 from core.Interface import *
 
-class DummyProbe(Interface):
+class DummyPorts(Interface):
     def __init__(self, **kwargs):
-        super(DummyProbe, self).__init__(**kwargs)
+        super(DummyPorts, self).__init__(**kwargs)
         pygame.init()
         self.ports = [1, 2]
         self.dummy_ports = {'left_port'       : [pygame.KEYDOWN, pygame.K_LEFT],

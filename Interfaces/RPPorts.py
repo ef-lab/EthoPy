@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from core.Interface import *
 from utils.helper_functions import reverse_lookup
 
-class RPProbe(Interface):
+class RPPorts(Interface):
     channels = {'odor': {1: 24, 2: 25},
                 'liquid': {1: 22, 2: 23},
                 'lick': {1: 17, 2: 27},
@@ -15,7 +15,7 @@ class RPProbe(Interface):
                 'running': 20}
 
     def __init__(self, **kwargs):
-        super(RPProbe, self).__init__(**kwargs)
+        super(RPPorts, self).__init__(**kwargs)
         from RPi import GPIO
         import pigpio
         ports = self.logger.get(table='SetupConfiguration.Port', fields=['port'], key=self.exp.params)

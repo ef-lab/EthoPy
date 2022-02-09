@@ -1,5 +1,5 @@
 import numpy
-from Interfaces.RPProbe import *
+from Interfaces.RPPorts import *
 from utils.TouchInterface import TouchInterface
 import time as systime
 
@@ -16,7 +16,7 @@ class PortTest:
 
     def run(self):
         """ Lickspout liquid delivery test """
-        self.valve = RPProbe(exp=self, callbacks=True, logging=False)
+        self.valve = RPPorts(exp=self, callbacks=True, logging=False)
         print('Running port test')
         for port in self.params['ports']:
             self.total_pulses = 0
