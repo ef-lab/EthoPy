@@ -87,6 +87,9 @@ class VRBall(Behavior, dj.Manual):
         self.log_reward(self.reward_amount[self.licked_port])
         self.update_history(self.licked_port, self.reward_amount[self.licked_port])
 
+    def punish(self):
+        self.update_history(self.licked_port)
+
     def start_odor(self):
         self.interface.start_odor(0)
 
