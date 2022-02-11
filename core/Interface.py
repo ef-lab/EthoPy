@@ -276,7 +276,7 @@ class RPProbe(Interface):
 
 
 class VRProbe(RPProbe):
-    channels = {'odor': {1: 19, 2: 16, 3: 26, 4: 20},
+    channels = {'odor': {1: 19, 2: 16, 3: 6, 4: 12},
                 'liquid': {1: 22},
                 'lick': {1: 17},
                 'sync': {'in': 21},
