@@ -54,7 +54,12 @@ class VRBall(Behavior, dj.Manual):
         self.vr = Ball(exp)
 
     def prepare(self, condition):
-        self.vr.setPosition(condition['x_sz'], condition['y_sz'], condition['x0'], condition['y0'], condition['theta0'])
+        if condition['x0'] < 0 or condition['y0'] < 0:
+            x0, y0, theta0, time = self.vr.getPosition()
+            self.vr.setPosition(condition['x_sz'], condition['y_sz'], x0, y0, theta0)
+        else:
+            self.vr.setPosition(condition['x_sz'], condition['y_sz'], condition['x0'], condition['y0'],
+                                condition['theta0'])
         super().prepare(condition)
 
     def is_ready(self):
