@@ -45,4 +45,3 @@ class Olfactory(RPScreen, dj.Manual):
         odor_dutycycle = self.curr_cond['dutycycle']
         self.exp.interface.give_odor(delivery_port, odor_id, odor_dur, odor_dutycycle)
         super().start()
-

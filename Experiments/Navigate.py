@@ -94,7 +94,7 @@ class Trial(Experiment):
         elif self.response and self.beh.is_ready() and not self.beh.is_running():  # incorrect response
             return 'Punish'
         elif self.state_timer.elapsed_time() > self.stim.curr_cond['trial_duration']:  # timed out
-            return 'InterTrial'
+            return 'Abort'
         elif self.is_stopped():
             return 'Exit'
         else:

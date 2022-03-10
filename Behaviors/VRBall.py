@@ -52,15 +52,15 @@ class VRBall(Behavior, dj.Manual):
         self.resp_loc_y = None
         self.interface = VRProbe(exp=exp)
         super(VRBall, self).setup(exp)
-        source_path = '/home/eflab/Tracking/'
-        target_path = '/mnt/lab/data/Tracking/'
-        self.vr = Ball(exp.logger, path=source_path, target_path=target_path)
-        self.exp.log_recording(dict(rec_aim='ball', software='PyMouse', version='0.1',
-                                    filename=self.vr.filename, source_path=source_path,
-                                    target_path=target_path, rec_type='behavioral'))
+        self.vr = Ball(exp)
 
     def prepare(self, condition):
-        self.vr.setPosition(condition['x_sz'], condition['y_sz'], condition['x0'], condition['y0'], condition['theta0'])
+        if condition['x0'] < 0 or condition['y0'] < 0:
+            x0, y0, theta0, time = self.vr.getPosition()
+            self.vr.setPosition(condition['x_sz'], condition['y_sz'], x0, y0, theta0)
+        else:
+            self.vr.setPosition(condition['x_sz'], condition['y_sz'], condition['x0'], condition['y0'],
+                                condition['theta0'])
         super().prepare(condition)
 
     def is_ready(self):
@@ -87,8 +87,8 @@ class VRBall(Behavior, dj.Manual):
         self.log_reward(self.reward_amount[self.licked_port])
         self.update_history(self.licked_port, self.reward_amount[self.licked_port])
 
-    def start_odor(self):
-        self.interface.start_odor(0)
+    def punish(self):
+        self.update_history(self.licked_port)
 
     def exit(self):
         self.vr.cleanup()

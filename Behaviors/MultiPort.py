@@ -74,7 +74,7 @@ class DummyPorts(MultiPort):
         self.ready_timer = Timer()
         self.ready_timer.start()
         self.ready = False
-        self.interface = 0
+        self.interface = Interface(exp=exp)
         pygame.init()
         #self.screen = pygame.display.set_mode((800, 480))
         self.params = exp.params

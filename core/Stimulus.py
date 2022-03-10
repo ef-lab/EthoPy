@@ -78,9 +78,14 @@ class Stimulus:
         """start stimulus"""
         self.isrunning = True
         self.log_start()
+        self.timer.start()
 
     def present(self):
         """stimulus presentation method"""
+        pass
+
+    def unshow(self, color=False):
+        """stimulus hidding method"""
         pass
 
     def stop(self):
@@ -107,13 +112,14 @@ class Stimulus:
     def log_start(self):
         """Start time logging"""
         self.start_time = self.logger.logger_timer.elapsed_time()
+        self.exp.interface.sync_out(True)
 
     def log_stop(self):
         """Log stimulus condition start & stop time"""
         stop_time = self.logger.logger_timer.elapsed_time()
+        self.exp.interface.sync_out(False)
         self.logger.log('StimCondition.Trial', dict(period=self.period, stim_hash=self.curr_cond['stim_hash'],
-                                                    start_time=self.start_time, end_time=stop_time),
-                        schema='stimulus')
+                                                    start_time=self.start_time, end_time=stop_time), schema='stimulus')
 
     def make_conditions(self, conditions=[]):
         """generate and store stimulus condition hashes"""

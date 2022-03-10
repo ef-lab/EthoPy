@@ -4,7 +4,7 @@ from Experiments.FreeWater import *
 
 # define session parameters
 session_params = {
-    'trial_selection'       : 'bias',
+    'trial_selection'       : 'biased',
     'start_time'            : '00:00:00',
     'stop_time'             : '23:50:00',
     'max_reward'            : 5000,
