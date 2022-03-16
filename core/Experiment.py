@@ -58,6 +58,7 @@ class ExperimentClass:
         self.running = False
         self.conditions, self.quit, self.curr_cond, self.dif_h, self.stims, self.curr_trial = [], False, dict(), [], dict(),0
         self.params = {**self.default_key, **session_params}
+        print('def_key is:',self.default_key, 'sess_params are:', session_params)
         self.logger = logger
         self.logger.log_session({**self.default_key, **session_params, 'experiment_type': self.cond_tables[0]},
                                 log_protocol=True)
