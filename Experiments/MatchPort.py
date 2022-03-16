@@ -159,7 +159,7 @@ class Punish(Experiment):
         self.stim.unshow()
 
 
-class InterTrial(Experiment):
+class InterTrial(Experiment):        
     def run(self):
         if self.beh.get_response(self.start_time) & self.params.get('noresponse_intertrial'):
             self.state_timer.start()
@@ -175,6 +175,9 @@ class InterTrial(Experiment):
             return 'PreTrial'
         else:
             return 'InterTrial'
+        
+    def exit(self):
+        self.stim.unshow()
 
 
 class Hydrate(Experiment):

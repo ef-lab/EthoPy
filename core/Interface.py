@@ -8,7 +8,7 @@ from datetime import datetime
 
 
 class Interface:
-    port, lick_tmst, ready_dur, activity_tmst, ready_tmst, pulse_rew = 0, 0, 0, 0, 0, dict()
+    port, lick_tmst, ready_dur, activity_tmst, ready_tmst, pulse_rew, ports = 0, 0, 0, 0, 0, dict(), []
     ready, logging, timer_ready, weight_per_pulse, pulse_dur, channels = False, True, Timer(), dict(), dict(), dict()
 
     def __init__(self, exp=[], callbacks=True, logging=True):
@@ -16,8 +16,6 @@ class Interface:
         self.logging = logging
         self.exp = exp
         self.logger = exp.logger
-        ports = self.logger.get(table='SetupConfiguration.Port', fields=['port'], key=self.exp.params)
-        self.ports = list(set(ports) & set(self.channels['liquid'].keys()))
 
     def load_calibration(self):
         for port in list(set(self.ports)):
@@ -54,6 +52,12 @@ class Interface:
     def create_pulse(self, port, duration):
         pass
 
+    def sync_out(self, state=False):
+        pass
+
+    def set_running_state(self, running_state):
+        pass
+
     def log_activity(self, table, key):
         self.activity_tmst = self.logger.logger_timer.elapsed_time()
         key.update({'time': self.activity_tmst, **self.logger.trial_key})
@@ -76,18 +80,48 @@ class Interface:
     def cleanup(self):
         pass
 
+    def createDataset(self, path, target_path, dataset_name, dataset_type):
+        self.filename = '%s_%d_%d_%s.h5' % (dataset_name, self.logger.trial_key['animal_id'],
+                                         self.logger.trial_key['session'],
+                                         datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
+        self.datapath = path + self.filename
+        self.dataset = self.Writer(self.datapath, target_path)
+        self.dataset.createDataset(dataset_name, shape=(len(dataset_type.names),), dtype=dataset_type)
+        return self.filename
+
+    def closeDatasets(self):
+        self.dataset.exit()
+
+
+class PCProbe(Interface):
+
+    def __init__(self, **kwargs):
+        super(PCProbe, self).__init__(**kwargs)
+        import serial
+        serial_port = 'COM1'
+        self.serial = serial.serial_for_url(serial_port)
+        self.serial.dtr = False
+
+    def sync_out(self, state=True):
+        self.serial.dtr = state
+
 
 class RPProbe(Interface):
     channels = {'odor': {1: 24, 2: 25},
                 'liquid': {1: 22, 2: 23},
                 'lick': {1: 17, 2: 27},
                 'proximity': {1: 9},
-                'sound': {1: 18}}
+                'sound': {1: 18},
+                'sync': {'in': 21},
+                'running': 20}
 
     def __init__(self, **kwargs):
         super(RPProbe, self).__init__(**kwargs)
         from RPi import GPIO
         import pigpio
+        ports = self.logger.get(table='SetupConfiguration.Port', fields=['port'], key=self.exp.params)
+        self.ports = list(set(ports) & set(self.channels['liquid'].keys()))
+
         self.GPIO = GPIO
         self.GPIO.setmode(self.GPIO.BCM)
         self.thread = ThreadPoolExecutor(max_workers=2)
@@ -117,6 +151,24 @@ class RPProbe(Interface):
                 for channel in self.channels['proximity']:
                     self.GPIO.add_event_detect(self.channels['proximity'][channel], self.GPIO.BOTH,
                                                callback=self._position_change, bouncetime=50)
+        if 'running' in self.channels:
+            self.GPIO.setup(self.channels['running'], self.GPIO.OUT, initial=self.GPIO.LOW)
+
+        if self.exp.sync:
+            from utils.Writer import Writer
+            self.Writer = Writer
+            source_path = '/home/eflab/Sync/'
+            target_path = '/mnt/lab/data/Sync/'
+
+            self.GPIO.setup(self.channels['sync']['in'], self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+            self.GPIO.add_event_detect(self.channels['sync']['in'], self.GPIO.BOTH,
+                                       callback=self._sync_in, bouncetime=20)
+            filename = self.createDataset(source_path, target_path, dataset_name='sync_data',
+                                          dataset_type=np.dtype([("sync_times", np.double)]))
+
+            self.exp.log_recording(dict(rec_aim='sync', software='PyMouse', version='0.1',
+                                           filename=filename, source_path=source_path,
+                                           target_path=target_path))
 
     def setup_touch_exit(self):
         try:
@@ -130,6 +182,9 @@ class RPProbe(Interface):
         except:
             self.ts = False
             print('Cannot create a touch exit!')
+
+    def set_running_state(self, running_state):
+        self.GPIO.output(self.channels['running'], running_state)
 
     def _touch_handler(self, event, touch):
         if event == self.ts_press_event:
@@ -155,6 +210,7 @@ class RPProbe(Interface):
         return self.ready, ready_dur, self.ready_tmst
 
     def cleanup(self):
+        self.set_running_state(False)
         self.logging = False
         self.Pulser.wave_clear()
         self.Pulser.stop()
@@ -166,6 +222,9 @@ class RPProbe(Interface):
                  for channel in self.channels['proximity']:
                      self.GPIO.remove_event_detect(self.channels['proximity'][channel])
         self.GPIO.cleanup()
+        if self.exp.sync:
+            self.closeDatasets()
+
         if self.ts:
             self.ts.stop()
 
@@ -182,6 +241,9 @@ class RPProbe(Interface):
     def _port_licked(self, channel):
         self.port = reverse_lookup(self.channels['lick'], channel)
         self.lick_tmst = self.log_activity('Lick', dict(port=self.port))
+
+    def _sync_in(self, channel):
+        self.dataset.append('sync_data', [self.logger.logger_timer.elapsed_time()])
 
     def _position_change(self, channel=0):
         port = reverse_lookup(self.channels['proximity'], channel) if channel else 0
@@ -214,39 +276,45 @@ class RPProbe(Interface):
 
 
 class VRProbe(RPProbe):
-    channels = {'odor': {1: 19, 2: 16, 3: 26, 4: 20},
+    channels = {'odor': {1: 19, 2: 16, 3: 6, 4: 12},
                 'liquid': {1: 22},
-                'lick': {1: 17}}
+                'lick': {1: 17},
+                'sync': {'in': 21},
+                'running': 20}
     pwm = dict()
 
-    def start_odor(self, dutycycle=50, frequency=20):
+    def start_odor(self, channels, dutycycle=50, frequency=20):
         self.frequency = frequency
-        for idx, channel in enumerate(list(self.channels['odor'].values())):
-            self.pwm[idx] = self.GPIO.PWM(channel, self.frequency)
-            self.pwm[idx].ChangeFrequency(self.frequency)
-            self.pwm[idx].start(dutycycle)
+        self.odor_channels = channels
+        for channel in channels:
+            self.pwm[channel] = self.GPIO.PWM(self.channels['odor'][channel], self.frequency)
+            self.pwm[channel].ChangeFrequency(self.frequency)
+            self.pwm[channel].start(dutycycle)
 
     def update_odor(self, dutycycles):  # for 2D olfactory setup
-        for idx, dutycycle in enumerate(dutycycles):
-            self.pwm[idx].ChangeDutyCycle(dutycycle)
+        for channel, dutycycle in zip(self.odor_channels, dutycycles):
+            self.pwm[channel].ChangeDutyCycle(dutycycle)
 
     def stop_odor(self):
-        for idx, channel in enumerate(list(self.channels['odor'].values())):
-            self.pwm[idx].stop()
+        for channel in self.odor_channels:
+            self.pwm[channel].stop()
 
     def cleanup(self):
-        for idx, channel in enumerate(list(self.channels['odor'].values())):
-            self.pwm[idx].stop()
+        for channel in self.odor_channels:
+            self.pwm[channel].stop()
         super().cleanup()
 
 
 class Ball(Interface):
-    def __init__(self, logger, ball_radius=0.125, path="", target_path=False):
+    def __init__(self, exp, ball_radius=0.125):
         from utils.Writer import Writer
+        source_path = '/home/eflab/Tracking/'
+        target_path = '/mnt/lab/data/Tracking/'
         self.cleanup()
-        self.logger = logger
-        self.mouse1 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.1:1.0-mouse", logger)
-        self.mouse2 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.2:1.0-mouse", logger)
+        self.logger = exp.logger
+        self.exp = exp
+        self.mouse1 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.1:1.0-mouse", exp.logger)
+        self.mouse2 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.2:1.0-mouse", exp.logger)
         self.Writer = Writer
         self.speed = 0
         self.timestamp = 0
@@ -256,14 +324,25 @@ class Ball(Interface):
         self.phi_y1 = np.pi - 0.13  # angle of y1 axis (mouse1) .6
         self.phi_y2 = self.phi_y1 + np.pi/2  # angle of y2 axis (mouse2)
         self.ball_radius = ball_radius
-        self.createDataset(path, target_path)
+        filename = self.createDataset(source_path, target_path, dataset_name='tracking_data',
+                           dataset_type=np.dtype([("loc_x", np.double),
+                                                  ("loc_y", np.double),
+                                                  ("theta", np.double),
+                                                  ("tmst", np.double)]))
+
+        self.exp.log_recording(dict(rec_aim='ball', software='PyMouse', version='0.1',
+                                    filename=filename, source_path=source_path,
+                                    target_path=target_path, rec_type='behavioral'))
+
+
         self.thread_end = threading.Event()
         self.thread_runner = threading.Thread(target=self.readMouse)
         self.thread_runner.start()
 
     def readMouse(self):
         while not self.thread_end.is_set():
-            x1, y1, x2, y2, tmst1, tmst2 = 0, 0, 0, 0, time.time(), time.time()
+            t = self.logger.logger_timer.elapsed_time()
+            x1, y1, x2, y2, tmst1, tmst2 = 0, 0, 0, 0, t, t
             while not self.mouse1.queue.empty():
                 data1 = self.mouse1.queue.get()
                 x1 += data1['x']; y1 += data1['y']; tmst1 = data1['timestamp']
@@ -295,7 +374,7 @@ class Ball(Interface):
             self.loc_y = max(min(loc_y, self.ymx), 0)
             self.timestamp = timestamp
             print(self.loc_x, self.loc_y, self.theta/np.pi*180)
-            self.append2Dataset()
+            self.dataset.append('tracking_data', [self.loc_x, self.loc_y, self.theta, self.timestamp])
             time.sleep(.1)
 
     def setPosition(self, xmx=1, ymx=1, x0=0, y0=0, theta0=0):
@@ -310,25 +389,6 @@ class Ball(Interface):
 
     def getSpeed(self):
         return self.speed
-
-    def createDataset(self, path='', target_path=False):
-        self.filename = '%d_%d_%s.h5' % (self.logger.trial_key['animal_id'],
-                                         self.logger.trial_key['session'],
-                                         datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
-        self.datapath = path + self.filename
-        TIME_SERIES_DOUBLE = np.dtype([("loc_x", np.double),
-                                       ("loc_y", np.double),
-                                       ("theta", np.double),
-                                       ("tmst", np.double)])
-
-        self.dataset = self.Writer(self.datapath, target_path)
-        self.dataset.createDataset('tracking_data', shape=(4,), dtype=TIME_SERIES_DOUBLE)
-
-    def append2Dataset(self):
-        self.dataset.append('tracking_data', [self.loc_x, self.loc_y, self.theta, self.timestamp])
-
-    def closeDatasets(self):
-        self.dataset.exit()
 
     def cleanup(self):
         try:

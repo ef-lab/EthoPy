@@ -114,23 +114,26 @@ class Logger:
         self.put(table='Configuration', tuple=self.trial_key, schema='stimulus', priority=2, validate=True, block=True)
         ports = (experiment.SetupConfiguration.Port & {'setup_conf_idx': params['setup_conf_idx']}
                  ).fetch(as_dict=True)
-        for port in ports: self.put(table='Configuration.Port', tuple={**port, **self.trial_key}, schema='behavior')
+        for port in ports:
+            self.put(table='Configuration.Port', tuple={**port, **self.trial_key}, schema='behavior')
         screens = (experiment.SetupConfiguration.Screen & {'setup_conf_idx': params['setup_conf_idx']}
                    ).fetch(as_dict=True)
-        for scr in screens: self.put(table='Configuration.Screen', tuple={**scr, **self.trial_key}, schema='stimulus')
+        for scr in screens:
+            self.put(table='Configuration.Screen', tuple={**scr, **self.trial_key}, schema='stimulus')
         balls = (experiment.SetupConfiguration.Ball & {'setup_conf_idx': params['setup_conf_idx']}
                  ).fetch(as_dict=True)
-        for ball in balls: self.put(table='Configuration.Ball', tuple={**ball, **self.trial_key}, schema='behavior')
+        for ball in balls:
+            self.put(table='Configuration.Ball', tuple={**ball, **self.trial_key}, schema='behavior')
 
-        key = {'session': self.trial_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1}
+        key = {'session': self.trial_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1, 'state': ''}
         if 'start_time' in params:
             tdelta = lambda t: datetime.strptime(t, "%H:%M:%S") - datetime.strptime("00:00:00", "%H:%M:%S")
-            key = {**key, 'start_time': str(tdelta(params['start_time'])), 'stop_time': str(tdelta(params['stop_time']))}
+            key = {**key,'start_time': str(tdelta(params['start_time'])), 'stop_time': str(tdelta(params['stop_time']))}
         self.update_setup_info(key)
         self.logger_timer.start()  # start session time
 
-    def update_setup_info(self, info):
-        self.setup_info = {**(experiment.Control() & dict(setup=self.setup)).fetch1(), **info}
+    def update_setup_info(self, info, key=dict()):
+        self.setup_info = {**(experiment.Control() & {**{'setup': self.setup}, **key}).fetch1(), **info}
         block = True if 'status' in info else False
         self.put(table='Control', tuple=self.setup_info, replace=True, priority=1, block=block, validate=block)
         self.setup_status = self.setup_info['status']

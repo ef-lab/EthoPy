@@ -29,7 +29,7 @@ class State:
 
 class ExperimentClass:
     """  Parent Experiment """
-    curr_state, curr_trial, total_reward, cur_dif, flip_count, states, stim = '', 0, 0, 0, 0, dict(), False
+    curr_state, curr_trial, total_reward, cur_dif, flip_count, states, stim, sync = '', 0, 0, 0, 0, dict(), False, False
     rew_probe, un_choices, difs, iter, curr_cond, dif_h, stims = [], [], [], [], dict(), [], dict()
     required_fields, default_key, conditions, cond_tables, quit, running = [], dict(), [], [], False, False
 
@@ -72,6 +72,7 @@ class ExperimentClass:
         for state in self.__class__.__subclasses__():  # Initialize states
             states.update({state().__class__.__name__: state(self)})
         state_control = self.StateMachine(states)
+        self.interface.set_running_state(True)
         state_control.run()
 
     def is_stopped(self):
@@ -101,7 +102,7 @@ class ExperimentClass:
         conditions = self.log_conditions(**self.beh.make_conditions(conditions))
         for cond in conditions:
             assert np.all([field in cond for field in self.required_fields])
-            cond.update({**self.default_key, **cond, 'experiment_class': self.cond_tables[0]})
+            cond.update({**self.default_key, **self.params, **cond, 'experiment_class': self.cond_tables[0]})
         cond_tables = ['Condition.' + table for table in self.cond_tables]
         conditions = self.log_conditions(conditions, condition_tables=['Condition'] + cond_tables)
         return conditions
@@ -148,19 +149,20 @@ class ExperimentClass:
             table = rgetattr(eval(schema), ctable)
             fields += list(table().heading.names)
         for cond in conditions:
+            insert_priority = priority
             key = {sel_key: cond[sel_key] for sel_key in fields if sel_key != hsh and sel_key in cond}  # find all dependant fields and generate hash
             cond.update({hsh: make_hash(key)})
             hash_dict[cond[hsh]] = cond[hsh]
             for ctable in condition_tables:  # insert dependant condition tables
                 core = [field for field in rgetattr(eval(schema), ctable).primary_key if field != hsh]
                 fields = [field for field in rgetattr(eval(schema), ctable).heading.names]
-                if not np.all([np.any(np.array(k) == list(cond.keys())) for k in fields]): continue # only insert complete tuples
+                if not np.all([np.any(np.array(k) == list(cond.keys())) for k in fields]): print('skipping'); continue # only insert complete tuples
                 if core and hasattr(cond[core[0]], '__iter__'):
                     for idx, pcond in enumerate(cond[core[0]]):
                         cond_key = {k: cond[k] if type(cond[k]) in [int, float, str] else cond[k][idx] for k in fields}
-                        self.logger.put(table=ctable, tuple=cond_key, schema=schema, priority=priority)
-                else: self.logger.put(table=ctable, tuple=cond.copy(), schema=schema, priority=priority)
-                priority += 1
+                        self.logger.put(table=ctable, tuple=cond_key, schema=schema, priority=insert_priority)
+                else: self.logger.put(table=ctable, tuple=cond.copy(), schema=schema, priority=insert_priority)
+                insert_priority += 1
         return conditions
 
     def log_recording(self, key):
@@ -186,7 +188,7 @@ class ExperimentClass:
             self.curr_cond = cond
         elif self.params['trial_selection'] == 'random':
             self.curr_cond = np.random.choice(self.conditions)
-        elif self.params['trial_selection'] == 'bias':
+        elif self.params['trial_selection'] == 'biased':
             idx = [~np.isnan(ch).any() for ch in self.beh.choice_history]
             choice_h = np.asarray(self.beh.choice_history)
             anti_bias = self._anti_bias(choice_h[idx], self.un_choices)
@@ -218,13 +220,13 @@ class ExperimentClass:
 class Session(dj.Manual):
     definition = """
     # Session info
-    animal_id            : smallint UNSIGNED            # animal id
-    session              : smallint UNSIGNED            # session number
+    animal_id                        : smallint UNSIGNED            # animal id
+    session                          : smallint UNSIGNED            # session number
     ---
-    user_name            : varchar(16)                  # user performing the experiment
-    setup=null           : varchar(256)                 # computer id
-    experiment_type      : varchar(128)
-    session_tmst         : timestamp                    # session timestamp
+    user_name                        : varchar(16)                  # user performing the experiment
+    setup=null                       : varchar(256)                 # computer id
+    experiment_type                  : varchar(128)
+    session_tmst=CURRENT_TIMESTAMP   : timestamp                    # session timestamp
     """
 
     class Protocol(dj.Part):
@@ -296,24 +298,46 @@ class Trial(dj.Manual):
 
     def getGroups(self):
         mts_flag = (np.unique((Condition & self).fetch('experiment_class')) == ['MatchToSample'])
-        #print(mts_flag)
+        mp_flag = (np.unique((Condition & self).fetch('experiment_class')) == ['MatchPort']) #only olfactory so far
+        print(mts_flag, mp_flag)
 
         if mts_flag:
             conditions = self * ((stimulus.StimCondition.Trial() & 'period = "Cue"').proj('stim_hash', stime = 'start_time') & self) * stimulus.Panda.Object() * ((behavior.BehCondition.Trial().proj(btime = 'time') & self) * behavior.MultiPort.Response())
+            uniq_groups, groups_idx = np.unique(
+                [cond.astype(int) for cond in
+                 conditions.fetch('obj_id', 'response_port', order_by=('trial_idx'))],
+                axis=1, return_inverse=True)
+        elif mp_flag: #only olfactory so far
+            conditions = self * (stimulus.StimCondition.Trial().proj('stim_hash', stime = 'start_time') & self) * stimulus.Olfactory.Channel() * ((behavior.BehCondition.Trial().proj(btime = 'time') & self) * behavior.MultiPort.Response())
+            uniq_groups, groups_idx = np.unique(
+                [cond.astype(int) for cond in
+                 conditions.fetch('odorant_id', 'response_port', order_by=('trial_idx'))],
+                axis=1, return_inverse=True)
         else:
             print('no conditions!')
             return []
 
-        uniq_groups, groups_idx = np.unique(
-            [cond.astype(int) for cond in
-             conditions.fetch('obj_id', 'response_port', order_by = ('trial_idx'))],
-            axis=1, return_inverse=True)
+        #uniq_groups, groups_idx = np.unique(
+            #[cond.astype(int) for cond in
+            # conditions.fetch('obj_id', 'response_port', order_by = ('trial_idx'))],
+            #axis=1, return_inverse=True)
         conditions = conditions.fetch(order_by = 'trial_idx')
         condition_groups = [conditions[groups_idx == group] for group in set(groups_idx)]
         return condition_groups
     
     def plotDifficulty(self, **kwargs):
-        difficulties = (self * experiment.Condition.MatchToSample()).fetch('difficulty')
+        mts_flag = (np.unique((Condition & self).fetch('experiment_class')) == ['MatchToSample'])
+        mp_flag = (np.unique((Condition & self).fetch('experiment_class')) == ['MatchPort']) #only olfactory so far
+
+        if mts_flag:
+            cond_class = experiment.Condition.MatchToSample()
+        elif mp_flag:
+            cond_class = experiment.Condition.MatchPort()
+        else:
+            print('what experiments class?')
+            return []
+
+        difficulties = (self * cond_class).fetch('difficulty')
         min_difficulty = np.min(difficulties)
         
         params = {'probe_colors': [[1, 0, 0], [0, .5, 1]],
@@ -323,7 +347,7 @@ class Trial(dj.Manual):
                   'ylim': (min_difficulty - 0.6,), **kwargs}
 
         def plot_trials(trials, **kwargs):
-            difficulties, trial_idxs = ((self & trials) * experiment.Condition.MatchToSample()).fetch('difficulty', 'trial_idx')
+            difficulties, trial_idxs = ((self & trials) * cond_class).fetch('difficulty', 'trial_idx')
             offset = ((trial_idxs - 1) % params['trial_bins'] - params['trial_bins'] / 2) * params['range'] * 0.1
             plt.scatter(trial_idxs, difficulties + offset, zorder=10, **kwargs)
 
@@ -452,7 +476,7 @@ class Task(dj.Lookup):
 class MouseWeight(dj.Manual):
     definition = """
     animal_id                       : int unsigned                 # id number
-    timestamp="current_timestamp()" : timestamp                    # timestamp of weight
+    timestamp=CURRENT_TIMESTAMP     : timestamp                    # timestamp of weight
     ---
     weight                          : double(5,2)                  # weight in grams
     """

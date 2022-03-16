@@ -18,7 +18,7 @@ class Condition(dj.Manual):
 
 class Experiment(State, ExperimentClass):
     cond_tables = ['FreeWater']
-    default_key = {'trial_selection'       : 'bias',
+    default_key = {'trial_selection'       : 'biased',
                    'max_reward'            : 6000,
                    'bias_window'           : 5,
                    'noresponse_intertrial' : True,
@@ -90,6 +90,9 @@ class InterTrial(Experiment):
             return 'Trial'
         else:
             return 'InterTrial'
+
+    def exit(self):
+        self.stim.ready_stim()
 
 
 class Offtime(Experiment):

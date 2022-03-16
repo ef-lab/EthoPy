@@ -191,7 +191,7 @@ class GratingRP(Grating):
         self.screen = pygame.display.set_mode(self.size)
         self.unshow()
         pygame.mouse.set_visible(0)
-        pygame.display.toggle_fullscreen()
+        pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 
         # setup movies
         from omxplayer import OMXPlayer

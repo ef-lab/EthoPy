@@ -2,17 +2,17 @@
 
 from Experiments.Passive import *
 from Stimuli.Bar import *
-from core.Behavior import *
+from Behaviors.HeadFixed import *
 
 # define session parameters
 session_params = {
     'trial_selection'       : 'fixed',
-    'setup_conf_idx'        : 1,
+    'setup_conf_idx'        : 2,
     'max_res'               : 1000,
 }
 
 exp = Experiment()
-exp.setup(logger, Behavior, session_params)
+exp.setup(logger, HeadFixed, session_params)
 
 # define stimulus conditions
 key = {
@@ -20,7 +20,7 @@ key = {
     'center_y'              : 0,
     'max_res'               : 1000,
     'bar_width'             : 4,  # degrees
-    'bar_speed'             : 12,  # degrees/sec
+    'bar_speed'             : 5,  # degrees/sec
     'flash_speed'           : 6,
     'grat_width'            : 3,  # degrees
     'grat_freq'             : 3,
@@ -32,7 +32,7 @@ key = {
     'intertrial_duration'   : 0,
 }
 
-repeat_n = 20
+repeat_n = 10
 
 conditions = []
 for axis in ['horizontal', 'vertical']:

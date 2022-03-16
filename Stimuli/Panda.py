@@ -98,12 +98,25 @@ class Panda(Stimulus, dj.Manual):
         super().init(exp)
         cls = self.__class__
         self.__class__ = cls.__class__(cls.__name__ + "ShowBase", (cls, ShowBase), {})
-        ShowBase.__init__(self, fStartDirect=True, windowType=None)
+        if self.logger.is_pi:
+            self.fStartDirect = True
+            self.windowType = None
+            self.Fullscreen = True
+            self.path = os.path.dirname(os.path.abspath(__file__)) + '/objects/'  # default path to copy local stimuli
+            self.movie_path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
+        else:
+            self.fStartDirect = False
+            self.windowType = 'onscreen'
+            self.Fullscreen = False
+            self.path = '\\Stimuli\\objects\\'  # default path to copy local stimuli
+            self.movie_path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
+        ShowBase.__init__(self, fStartDirect=self.fStartDirect, windowType=self.windowType)
+
 
     def setup(self):
         self.props = core.WindowProperties()
         self.props.setSize(self.pipe.getDisplayWidth(), self.pipe.getDisplayHeight())
-        self.props.setFullscreen(True)
+        self.props.setFullscreen(self.Fullscreen)
         self.props.setCursorHidden(True)
         self.props.setUndecorated(True)
         self.win.requestProperties(self.props)
@@ -224,10 +237,6 @@ class Panda(Stimulus, dj.Manual):
 
     def make_conditions(self, conditions):
         conditions = super().make_conditions(conditions)
-
-        # setup parameters
-        self.path = os.path.dirname(os.path.abspath(__file__)) + '/objects/'     # default path to copy local stimuli
-        self.movie_path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
 
         # store local copy of files
         if not os.path.isdir(self.path):  # create path if necessary

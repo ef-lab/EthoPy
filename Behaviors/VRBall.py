@@ -33,7 +33,6 @@ class VRBall(Behavior, dj.Manual):
         ---
         reward_loc_x              : float
         reward_loc_y              : float
-        radius                    : float
         reward_port               : tinyint          # reward port id
         reward_amount=0           : float            # reward amount
         reward_type               : varchar(16)      # reward type
@@ -86,9 +85,6 @@ class VRBall(Behavior, dj.Manual):
         self.interface.give_liquid(self.licked_port)
         self.log_reward(self.reward_amount[self.licked_port])
         self.update_history(self.licked_port, self.reward_amount[self.licked_port])
-
-    def punish(self):
-        self.update_history(self.licked_port)
 
     def start_odor(self):
         self.interface.start_odor(0)
