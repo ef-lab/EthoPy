@@ -31,7 +31,7 @@ class Experiment(State, ExperimentClass):
     required_fields = []
     default_key = {'trial_selection'       : 'staircase',
                    'bias_window'           : 5,
-                   'staircase_window'      : 20,
+                   'staircase_window'      : 10,
                    'stair_up'              : 0.7,
                    'stair_down'            : 0.55,
                    'noresponse_intertrial' : True,
