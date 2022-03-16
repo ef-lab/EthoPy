@@ -9,13 +9,13 @@ class Condition(dj.Manual):
         -> Condition
         ---
         trial_selection='staircase' : enum('fixed','random','staircase','biased') 
-        bias_window                 : smallint
-        staircase_window            : smallint
-        stair_up                    : float
-        stair_down                  : float
-        noresponse_intertrial       : tinyint(1)
-        norun_response              : tinyint(1)
-        incremental_punishment      : tinyint(1)
+        bias_window=5               : smallint
+        staircase_window=20         : smallint
+        stair_up=0.7                : float
+        stair_down=0.55             : float
+        noresponse_intertrial=1     : tinyint(1)
+        norun_response=1            : tinyint(1)
+        incremental_punishment=1    : tinyint(1)
     
         difficulty                  : int   
         trial_ready                 : int
