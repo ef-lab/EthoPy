@@ -41,7 +41,7 @@ class VRBall(Behavior, dj.Manual):
         """
 
     cond_tables = ['VRBall', 'VRBall.Response', 'VRBall.Reward']
-    required_fields = ['x0', 'y0', 'x_t', 'y_t','radius', 'response_loc_y', 'response_loc_x',
+    required_fields = ['x0', 'y0', 'x_t', 'y_t', 'radius', 'response_loc_y', 'response_loc_x',
                        'reward_loc_x', 'reward_loc_y', 'reward_amount']
     default_key = {'reward_type': 'water', 'speed_thr': 0.025,
                    'response_port': 1, 'reward_port': 1, 'theta0': 0}
