@@ -52,6 +52,7 @@ class VRBall(Behavior, dj.Manual):
         self.interface = VRProbe(exp=exp)
         super(VRBall, self).setup(exp)
         self.vr = Ball(exp)
+        self.flag = True
 
     def prepare(self, condition):
         if condition['x0'] < 0 or condition['y0'] < 0:
@@ -76,6 +77,31 @@ class VRBall(Behavior, dj.Manual):
         x, y, theta, tmst = self.get_position()
         cor_loc = np.array([self.curr_cond['reward_loc_x'], self.curr_cond['reward_loc_y']])
         in_position = np.sum((cor_loc - [x, y]) ** 2) ** .5 < self.curr_cond['radius']
+        return in_position
+
+    def new_correct(self):
+        x, y, theta, tmst = self.get_position()
+        if self.flag == True:
+            print('first time')
+            for c_x, c_y in zip(self.curr_cond['response_loc_x'], self.curr_cond['response_loc_y']):
+                in_position = np.sum((np.array([c_x, c_y]) - [x, y]) ** 2) ** .5 < self.curr_cond['radius']
+                if in_position:
+                    self.prev_loc_x = x
+                    self.prev_loc_y = y
+                    print(self.prev_loc_x, self.prev_loc_y)
+                    break
+            self.flag=False
+        elif not self.flag:
+            print('another time')
+            for c_x, c_y in zip(self.curr_cond['response_loc_x'], self.curr_cond['response_loc_y']):
+                prev_position = np.sum((np.array([c_x, c_y]) - [self.prev_loc_x, self.prev_loc_y]) ** 2) ** .5 < self.curr_cond['radius']
+                temp_in_position = np.sum((np.array([c_x, c_y]) - [x, y]) ** 2) ** .5 < self.curr_cond['radius']
+                print(x, self.prev_loc_x,y, self.prev_loc_y)
+                if temp_in_position and not prev_position:
+                    in_position = True
+                    self.prev_loc_x = x
+                    self.prev_loc_y = y
+                    break
         return in_position
 
     def get_position(self):
