@@ -11,9 +11,7 @@ class VRBalltest(Behavior, dj.Manual):
     x_sz                 : float
     y_sz                 : float
     x0                   : float
-    y0                   : float  
-    x_t                  : float
-    y_t                  : float          
+    y0                   : float            
     theta0               : float
     radius               : float
     speed_thr            : float # in m/sec
@@ -41,7 +39,7 @@ class VRBalltest(Behavior, dj.Manual):
         """
 
     cond_tables = ['VRBalltest', 'VRBalltest.Response', 'VRBalltest.Reward']
-    required_fields = ['x0', 'y0', 'x_t', 'y_t', 'radius', 'response_loc_y', 'response_loc_x',
+    required_fields = ['x0', 'y0', 'radius', 'response_loc_y', 'response_loc_x',
                        'reward_loc_x', 'reward_loc_y', 'reward_amount']
     default_key = {'reward_type': 'water', 'speed_thr': 0.025,
                    'response_port': 1, 'reward_port': 1, 'theta0': 0}
@@ -55,13 +53,11 @@ class VRBalltest(Behavior, dj.Manual):
         super(VRBalltest, self).setup(exp)
         self.vr = Ball(exp)
         self.flag = True
-        print('sth')
 
     def prepare(self, condition):
-        if condition['x_t'] < 0 or condition['y_t'] < 0:
-            x_t, y_t, theta0, time = self.vr.getPosition()
-            self.vr.setPosition(condition['x_sz'], condition['y_sz'], condition[x_t], condition[y_t], theta0)
-            print('x_t')
+        if condition['x0'] < 0 or condition['y0'] < 0:
+            x0, y0, theta0, time = self.vr.getPosition()
+            self.vr.setPosition(condition['x_sz'], condition['y_sz'], x0, y0, theta0)
         else:
             self.vr.setPosition(condition['x_sz'], condition['y_sz'], condition['x0'], condition['y0'],
                                 condition['theta0'])
