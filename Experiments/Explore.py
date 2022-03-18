@@ -88,12 +88,14 @@ class Trial(Experiment):
     def next(self):
         if self.response and self.beh.new_correct() and not self.beh.is_running():  # correct response
             return 'Reward'
+            print('trial is rewarded')
         elif self.state_timer.elapsed_time() > self.stim.curr_cond['trial_duration']:  # timed out
             return 'Abort'
         elif self.is_stopped():
             return 'Exit'
         else:
             return 'Trial'
+            print('return to trial')
 
     def exit(self):
         self.stim.stop()
