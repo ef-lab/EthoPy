@@ -33,8 +33,8 @@ class VRBall(Behavior, dj.Manual):
         # reward port conditions
         -> VRBall
         ---
-        reward_loc_x              : float
-        reward_loc_y              : float
+        prev_loc_x                : float
+        prev_loc_y                : float
         reward_port               : tinyint          # reward port id
         reward_amount=0           : float            # reward amount
         reward_type               : varchar(16)      # reward type
