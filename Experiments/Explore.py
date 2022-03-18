@@ -86,16 +86,15 @@ class Trial(Experiment):
         time.sleep(.1)
 
     def next(self):
+        print('return to trial')
         if self.response and self.beh.new_correct() and not self.beh.is_running():  # correct response
             return 'Reward'
-            print('trial is rewarded')
         elif self.state_timer.elapsed_time() > self.stim.curr_cond['trial_duration']:  # timed out
             return 'Abort'
         elif self.is_stopped():
             return 'Exit'
         else:
             return 'Trial'
-            print('return to trial')
 
     def exit(self):
         self.stim.stop()
@@ -117,6 +116,7 @@ class Abort(Experiment):
 class Reward(Experiment):
     def run(self):
         self.beh.reward()
+        print('trial is rewarded')
 
     def next(self):
         return 'InterTrial'
