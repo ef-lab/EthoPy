@@ -10,7 +10,7 @@ class Condition(dj.Manual):
         ---
         trial_selection='staircase' : enum('fixed','random','staircase','biased') 
         bias_window=5               : smallint
-        staircase_window=20         : smallint
+        staircase_window=10         : smallint
         stair_up=0.7                : float
         stair_down=0.55             : float
         noresponse_intertrial=1     : tinyint(1)
@@ -86,7 +86,7 @@ class Trial(Experiment):
         time.sleep(.1)
 
     def next(self):
-        if self.response and self.beh.is_correct() and not self.beh.is_running():  # correct response
+        if self.response and self.beh.new_correct() and not self.beh.is_running():  # correct response
             return 'Reward'
         elif self.state_timer.elapsed_time() > self.stim.curr_cond['trial_duration']:  # timed out
             return 'Abort'
