@@ -61,6 +61,7 @@ class VRBalltest(Behavior, dj.Manual):
         if condition['x_t'] < 0 or condition['y_t'] < 0:
             x_t, y_t, theta0, time = self.vr.getPosition()
             self.vr.setPosition(condition['x_sz'], condition['y_sz'], condition[x_t], condition[y_t], theta0)
+            print('x_t')
         else:
             self.vr.setPosition(condition['x_sz'], condition['y_sz'], condition['x0'], condition['y0'],
                                 condition['theta0'])
