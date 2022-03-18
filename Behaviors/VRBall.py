@@ -99,8 +99,8 @@ class VRBall(Behavior, dj.Manual):
                 print(x, self.prev_loc_x,y, self.prev_loc_y)
                 if temp_in_position and not prev_position:
                     in_position = True
-                    self.prev_loc_x = x
-                    self.prev_loc_y = y
+                    self.reward_loc_x = x
+                    self.reward_loc_y = y
                     break
         return in_position
 
