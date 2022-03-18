@@ -79,6 +79,7 @@ class Trial(Experiment):
     def entry(self):
         super().entry()
         self.stim.start()
+        print('return to trial')
 
     def run(self):
         self.stim.present()
@@ -86,7 +87,6 @@ class Trial(Experiment):
         time.sleep(.1)
 
     def next(self):
-        print('return to trial')
         if self.response and self.beh.new_correct() and not self.beh.is_running():  # correct response
             return 'Reward'
         elif self.state_timer.elapsed_time() > self.stim.curr_cond['trial_duration']:  # timed out
