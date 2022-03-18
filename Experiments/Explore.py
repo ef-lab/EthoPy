@@ -10,9 +10,6 @@ class Condition(dj.Manual):
         ---
         trial_selection='fixed' : enum('fixed','random','staircase','biased') 
         bias_window=5               : smallint
-        staircase_window=20         : smallint
-        stair_up=0.7                : float
-        stair_down=0.55             : float
         noresponse_intertrial=1     : tinyint(1)
         norun_response=1            : tinyint(1)
         incremental_punishment=1    : tinyint(1)
@@ -27,7 +24,7 @@ class Condition(dj.Manual):
 
 
 class Experiment(State, ExperimentClass):
-    cond_tables = ['Navigate']
+    cond_tables = ['Explore']
     required_fields = []
     default_key = {'trial_selection'       : 'fixed',
                    'bias_window'           : 5,
