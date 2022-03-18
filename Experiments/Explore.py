@@ -8,12 +8,11 @@ class Condition(dj.Manual):
         # Navigation experiment conditions
         -> Condition
         ---
-        trial_selection='fixed' : enum('fixed','random','staircase','biased') 
+        trial_selection='fixed'     : enum('fixed','random','staircase','biased') 
         bias_window=5               : smallint
         noresponse_intertrial=1     : tinyint(1)
         norun_response=1            : tinyint(1)
         incremental_punishment=1    : tinyint(1)
-    
         difficulty                  : int   
         trial_ready                 : int
         trial_duration              : int
@@ -22,7 +21,7 @@ class Condition(dj.Manual):
         punish_duration             : int
         """
 
-
+    print('definition is :', definition)
 class Experiment(State, ExperimentClass):
     cond_tables = ['Explore']
     required_fields = []
@@ -37,6 +36,7 @@ class Experiment(State, ExperimentClass):
                    'trial_duration'         : 1000,
                    'reward_duration'        : 2000,
                    'punish_duration'        : 1000}
+    print('geiasou')
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
         self.logger.curr_state = self.name()
