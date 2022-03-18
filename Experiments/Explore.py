@@ -3,7 +3,7 @@ from core.Experiment import *
 
 @experiment.schema
 class Condition(dj.Manual):
-    class Navigate(dj.Part):
+    class Explore(dj.Part):
         definition = """
         # Navigation experiment conditions
         -> Condition
