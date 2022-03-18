@@ -8,12 +8,15 @@ class Condition(dj.Manual):
         # Navigation experiment conditions
         -> Condition
         ---
-        trial_selection='fixed'     : enum('fixed','random','staircase','biased')
-        staircase_window=10            : smallint 
+        trial_selection='staircase' : enum('fixed','random','staircase','biased') 
         bias_window=5               : smallint
+        staircase_window=20         : smallint
+        stair_up=0.7                : float
+        stair_down=0.55             : float
         noresponse_intertrial=1     : tinyint(1)
         norun_response=1            : tinyint(1)
         incremental_punishment=1    : tinyint(1)
+    
         difficulty                  : int   
         trial_ready                 : int
         trial_duration              : int
@@ -25,8 +28,11 @@ class Condition(dj.Manual):
 class Experiment(State, ExperimentClass):
     cond_tables = ['Explore']
     required_fields = []
-    default_key = {'trial_selection'       : 'fixed',
+    default_key = {'trial_selection'       : 'staircase',
                    'bias_window'           : 5,
+                   'staircase_window'      : 10,
+                   'stair_up'              : 0.7,
+                   'stair_down'            : 0.55,
                    'noresponse_intertrial' : True,
                    'norun_response'        : True,
                    'incremental_punishment': True,
