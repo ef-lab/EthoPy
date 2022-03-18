@@ -3,7 +3,7 @@ from core.Interface import *
 
 
 @behavior.schema
-class VRBall(Behavior, dj.Manual):
+class VRBalltest(Behavior, dj.Manual):
     definition = """
     # This class handles the behavior variables for RP
     ->BehCondition
