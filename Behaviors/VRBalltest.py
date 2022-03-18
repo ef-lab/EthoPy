@@ -55,6 +55,7 @@ class VRBalltest(Behavior, dj.Manual):
         super(VRBalltest, self).setup(exp)
         self.vr = Ball(exp)
         self.flag = True
+        print('sth')
 
     def prepare(self, condition):
         if condition['x_t'] < 0 or condition['y_t'] < 0:
