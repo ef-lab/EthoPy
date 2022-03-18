@@ -22,7 +22,7 @@ class VRBall(Behavior, dj.Manual):
     class Response(dj.Part):
         definition = """
         # Lick response condition
-        -> VRBall
+        -> VRBalltest
         response_loc_y            : float            # response y location
         response_loc_x            : float            # response x location
         response_port             : tinyint          # response port id
@@ -31,7 +31,7 @@ class VRBall(Behavior, dj.Manual):
     class Reward(dj.Part):
         definition = """
         # reward port conditions
-        -> VRBall
+        -> VRBalltest
         ---
         prev_loc_x                : float
         prev_loc_y                : float
