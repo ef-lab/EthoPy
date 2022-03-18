@@ -21,7 +21,8 @@ class Condition(dj.Manual):
         punish_duration             : int
         """
 
-    print('definition is :', definition)
+    print('definition is')
+
 class Experiment(State, ExperimentClass):
     cond_tables = ['Explore']
     required_fields = []
