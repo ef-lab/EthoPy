@@ -21,8 +21,6 @@ class Condition(dj.Manual):
         punish_duration             : int
         """
 
-    print('definition is')
-
 class Experiment(State, ExperimentClass):
     cond_tables = ['Explore']
     required_fields = []
@@ -37,13 +35,13 @@ class Experiment(State, ExperimentClass):
                    'trial_duration'         : 1000,
                    'reward_duration'        : 2000,
                    'punish_duration'        : 1000}
-    print('geiasou')
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
         self.logger.curr_state = self.name()
         self.start_time = self.logger.log('Trial.StateOnset', {'state': self.name()})
         self.resp_ready = False
         self.state_timer.start()
+        print('hello')
 
 
 class Entry(Experiment):
