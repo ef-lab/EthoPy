@@ -8,7 +8,8 @@ class Condition(dj.Manual):
         # Navigation experiment conditions
         -> Condition
         ---
-        trial_selection='fixed'     : enum('fixed','random','staircase','biased') 
+        trial_selection='fixed'     : enum('fixed','random','staircase','biased')
+        staircase_window=10            : smallint 
         bias_window=5               : smallint
         noresponse_intertrial=1     : tinyint(1)
         norun_response=1            : tinyint(1)
