@@ -52,7 +52,7 @@ class VRBall(Behavior, dj.Manual):
         self.resp_loc_x = None
         self.resp_loc_y = None
         self.interface = VRProbe(exp=exp)
-        super(VRBall, self).setup(exp)
+        super(VRBalltest, self).setup(exp)
         self.vr = Ball(exp)
         self.flag = True
 
