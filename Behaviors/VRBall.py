@@ -81,6 +81,7 @@ class VRBall(Behavior, dj.Manual):
 
     def new_correct(self):
         x, y, theta, tmst = self.get_position()
+        in_position=False
         if self.flag == True:
             print('first time')
             for c_x, c_y in zip(self.curr_cond['response_loc_x'], self.curr_cond['response_loc_y']):
