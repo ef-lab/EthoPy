@@ -219,7 +219,6 @@ class Behavior:
     default_key = dict()
 
     def setup(self, exp):
-        # This class can be renamed to __init__ and make setup pass in class Behavior
         interface_module = (experiment.SetupConfiguration & {'setup_conf_idx': exp.params['setup_conf_idx']}
                             ).fetch('interface')[0]
         interface = getattr(import_module(f'Interfaces.{interface_module}'), interface_module)
@@ -322,8 +321,3 @@ class Behavior:
 
     def get_response(self, since=0):
         return self.is_licking(since) > 0
-
-
-
-
-
