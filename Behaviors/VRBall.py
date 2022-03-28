@@ -1,6 +1,5 @@
 from core.Behavior import *
-from core.Interface import *
-
+from Interfaces.Ball import *
 
 @behavior.schema
 class VRBall(Behavior, dj.Manual):
@@ -49,8 +48,8 @@ class VRBall(Behavior, dj.Manual):
         self.previous_y = 0
         self.resp_loc_x = None
         self.resp_loc_y = None
-        self.interface = VRProbe(exp=exp)
         super(VRBall, self).setup(exp)
+        # Ball should move from here
         self.vr = Ball(exp)
 
     def prepare(self, condition):

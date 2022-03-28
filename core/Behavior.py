@@ -4,6 +4,7 @@ from core.Interface import *
 from matplotlib import cm
 import matplotlib.pyplot as plt
 import bisect
+from importlib import import_module
 
 
 @behavior.schema
@@ -218,7 +219,10 @@ class Behavior:
     default_key = dict()
 
     def setup(self, exp):
-        if not self.interface: self.interface = Interface(exp=exp)
+        interface_module = (experiment.SetupConfiguration & {'setup_conf_idx': exp.params['setup_conf_idx']}
+                            ).fetch('interface')[0]
+        interface = getattr(import_module(f'Interfaces.{interface_module}'), interface_module)
+        self.interface = interface(exp=exp)
         self.params = exp.params
         self.resp_timer = Timer()
         self.resp_timer.start()
@@ -317,8 +321,3 @@ class Behavior:
 
     def get_response(self, since=0):
         return self.is_licking(since) > 0
-
-
-
-
-

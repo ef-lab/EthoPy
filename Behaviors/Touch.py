@@ -1,5 +1,4 @@
 from core.Behavior import *
-from core.Interface import *
 import numpy as np
 
 
@@ -34,7 +33,6 @@ class Touch(Behavior, dj.Manual):
 
     def setup(self, exp):
         import ft5406 as TS
-        self.interface = RPProbe(exp=exp)
         super(Touch, self).setup(exp)
         self.screen_sz = np.array([800, 480])
         self.touch_area = 50  # +/- area in pixels that a touch can occur
