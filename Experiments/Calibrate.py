@@ -1,6 +1,6 @@
 import numpy
 import time as systime
-from core.Interface import *
+from Interfaces.RPPorts import *
 from utils.TouchInterface import TouchInterface
 
 
@@ -14,7 +14,7 @@ class Experiment:
 
     def run(self):
         """ Lickspout liquid delivery calibration """
-        self.valve = RPProbe(exp=self, callbacks=False)
+        self.valve = RPPorts(exp=self, callbacks=False)
         print('Running calibration')
         if self.params['save']:
             pressure, exit_flag = self.button_input('Enter air pressure (PSI)')
