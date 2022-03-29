@@ -4,7 +4,7 @@ import threading, multiprocessing, struct, time
 from core.Interface import *
 
 class Ball(Interface):
-    speed, timestamp, update_location = 0, 0, True
+    speed, timestamp, update_location, prev_loc_x, prev_loc_y, loc_x, loc_y, theta, xmx, ymx = 0, 0, True, 0, 0, 0, 0, 0, 1, 1
 
     def __init__(self, exp, ball_radius=0.125):
         from utils.Writer import Writer
