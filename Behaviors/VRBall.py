@@ -72,7 +72,7 @@ class VRBall(Behavior, dj.Manual):
         x, y, theta, tmst = self.get_position()
         if self.curr_cond['reward_loc_x'] < 0 or self.curr_cond['reward_loc_y'] < 0: # cor location is any other
             resp_locs = np.array([self.curr_cond['response_loc_x'], self.curr_cond['response_loc_y']]).T
-            cor_locs = resp_locs[[np.all(loc != self.previous_loc) for loc in resp_locs]]
+            cor_locs = resp_locs[[np.any(loc != self.previous_loc) for loc in resp_locs]]
         else:
             cor_locs = np.array([self.curr_cond['reward_loc_x'], self.curr_cond['reward_loc_y']])
         dist_to_loc = [np.sum((loc - np.array([x, y])) ** 2) ** .5 for loc in cor_locs]
