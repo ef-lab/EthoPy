@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from core.Interface import *
 from utils.helper_functions import reverse_lookup
 
+
 class RPPorts(Interface):
     channels = {'odor': {1: 24, 2: 25},
                 'liquid': {1: 22, 2: 23},

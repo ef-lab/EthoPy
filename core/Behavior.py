@@ -126,6 +126,16 @@ class Activity(dj.Manual):
         time	     	    : int           	# time from session start (ms)
         """
 
+    class Position(dj.Part):
+        definition = """
+        # 2D possition timestamps
+        -> Activity
+        loc_x               : float               # x 2d location
+        loc_y               : float               # y 2d location
+        theta               : float               # direction in space
+        time	     	    : int           	# time from session start (ms)
+        """
+
 
 @behavior.schema
 class Configuration(dj.Manual):
@@ -255,7 +265,7 @@ class Behavior:
         pass
 
     def log_activity(self, table, key):
-        key.update({'time': self.logger.logger_timer.elapsed_time(), **self.logger.trial_key})
+        key = {'time': self.logger.logger_timer.elapsed_time(), **self.logger.trial_key, **key}
         self.logger.log('Activity', key, schema='behavior', priority=5)
         self.logger.log('Activity.' + table, key, schema='behavior')
 

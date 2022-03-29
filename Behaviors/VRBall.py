@@ -44,10 +44,7 @@ class VRBall(Behavior, dj.Manual):
                    'response_port': 1, 'reward_port': 1, 'theta0': 0}
 
     def setup(self, exp):
-        self.previous_x = 0
-        self.previous_y = 0
-        self.resp_loc_x = None
-        self.resp_loc_y = None
+        self.previous_loc = [0, 0]
         super(VRBall, self).setup(exp)
         # Ball should move from here
         self.vr = Ball(exp)
@@ -73,8 +70,15 @@ class VRBall(Behavior, dj.Manual):
 
     def is_correct(self):
         x, y, theta, tmst = self.get_position()
-        cor_loc = np.array([self.curr_cond['reward_loc_x'], self.curr_cond['reward_loc_y']])
-        in_position = np.sum((cor_loc - [x, y]) ** 2) ** .5 < self.curr_cond['radius']
+        if self.curr_cond['reward_loc_x'] < 0 or self.curr_cond['reward_loc_y'] < 0: # cor location is any other
+            resp_locs = np.array([self.curr_cond['response_loc_x'], self.curr_cond['response_loc_y']]).T
+            cor_locs = resp_locs[[np.all(loc != self.previous_loc) for loc in resp_locs]]
+        else:
+            cor_locs = np.array([self.curr_cond['reward_loc_x'], self.curr_cond['reward_loc_y']])
+        dist_to_loc = [np.sum((loc - np.array([x, y])) ** 2) ** .5 for loc in cor_locs]
+        is_cor_loc = np.array(dist_to_loc) < self.curr_cond['radius']
+        in_position = np.any(is_cor_loc)
+        if in_position: self.previous_loc = cor_locs[np.argmin(dist_to_loc)]
         return in_position
 
     def get_position(self):

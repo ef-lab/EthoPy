@@ -1,6 +1,7 @@
 import pygame
 from core.Interface import *
 
+
 class DummyPorts(Interface):
     def __init__(self, **kwargs):
         super(DummyPorts, self).__init__(**kwargs)

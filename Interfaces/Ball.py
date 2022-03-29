@@ -4,6 +4,8 @@ import threading, multiprocessing, struct, time
 from core.Interface import *
 
 class Ball(Interface):
+    speed, timestamp, update_location = 0, 0, True
+
     def __init__(self, exp, ball_radius=0.125):
         from utils.Writer import Writer
         source_path = '/home/eflab/Tracking/'
@@ -14,8 +16,6 @@ class Ball(Interface):
         self.mouse1 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.1:1.0-mouse", exp.logger)
         self.mouse2 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.2:1.0-mouse", exp.logger)
         self.Writer = Writer
-        self.speed = 0
-        self.timestamp = 0
         self.setPosition()
         self.phi_z1 = 1  # angle of z axis (rotation)
         self.phi_z2 = self.phi_z1
@@ -57,22 +57,25 @@ class Ball(Interface):
 
             xm = y2 * np.cos(self.phi_y1) - y1 * np.sin(self.phi_y1)
             ym = y2 * np.sin(self.phi_y1) + y1 * np.cos(self.phi_y1)
-
-            self.theta += (theta_step2 + theta_step1)/2
-            self.theta = np.mod(self.theta, 2*np.pi)
+            theta = self.theta + (theta_step2 + theta_step1)/2
+            theta = np.mod(theta, 2*np.pi)
 
             x = -xm*np.sin(self.theta) - ym*np.cos(self.theta)
             y = -xm*np.cos(self.theta) + ym*np.sin(self.theta)
 
-            loc_x = self.loc_x + np.double(x)
-            loc_y = self.loc_y + np.double(y)
+            loc_x = self.prev_loc_x + np.double(x)
+            loc_y = self.prev_loc_y + np.double(y)
             timestamp = max(tmst1, tmst2)
-            self.speed = np.sqrt((loc_x - self.loc_x)**2 + (loc_y - self.loc_y)**2)/(timestamp - self.timestamp)
-            self.loc_x = max(min(loc_x, self.xmx), 0)
-            self.loc_y = max(min(loc_y, self.ymx), 0)
+            self.prev_loc_x = max(min(loc_x, self.xmx), 0)
+            self.prev_loc_y = max(min(loc_y, self.ymx), 0)
             self.timestamp = timestamp
-            print(self.loc_x, self.loc_y, self.theta/np.pi*180)
-            self.dataset.append('tracking_data', [self.loc_x, self.loc_y, self.theta, self.timestamp])
+            self.speed = np.sqrt((loc_x - self.prev_loc_x)**2 + (loc_y - self.prev_loc_y)**2)/(timestamp - self.timestamp)
+            if self.update_location:
+                self.theta = theta
+                self.loc_x = self.prev_loc_x
+                self.loc_y = self.prev_loc_y
+                print(self.loc_x, self.loc_y, self.theta/np.pi*180)
+                self.dataset.append('tracking_data', [self.loc_x, self.loc_y, self.theta, self.timestamp])
             time.sleep(.1)
 
     def setPosition(self, xmx=1, ymx=1, x0=0, y0=0, theta0=0):
