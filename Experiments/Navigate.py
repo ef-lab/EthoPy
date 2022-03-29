@@ -80,6 +80,7 @@ class Trial(Experiment):
     def entry(self):
         super().entry()
         self.stim.start()
+        self.beh.vr.update_location = True
 
     def run(self):
         self.stim.present()
@@ -102,6 +103,7 @@ class Trial(Experiment):
 
     def exit(self):
         self.stim.stop()
+        self.beh.vr.update_location = False
         self.logger.ping()
 
 
