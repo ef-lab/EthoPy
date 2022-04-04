@@ -27,6 +27,7 @@ class RPVR(RPPorts):
             self.pwm[channel].stop()
 
     def _port_licked(self, channel):
+        if not self.exp.running: return
         tmst = self.logger.logger_timer.elapsed_time()
         self.port = reverse_lookup(self.channels['lick'], channel)
         self.lick_tmst = self.log_activity('Lick', dict(port=self.port, time=tmst))
