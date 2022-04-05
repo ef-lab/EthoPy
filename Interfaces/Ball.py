@@ -66,14 +66,15 @@ class Ball(Interface):
             loc_x = self.prev_loc_x + np.double(x)
             loc_y = self.prev_loc_y + np.double(y)
             timestamp = max(tmst1, tmst2)
+            self.speed = np.sqrt((loc_x - self.prev_loc_x)**2 + (loc_y - self.prev_loc_y)**2)/(timestamp - self.timestamp)
             self.prev_loc_x = max(min(loc_x, self.xmx), 0)
             self.prev_loc_y = max(min(loc_y, self.ymx), 0)
             self.timestamp = timestamp
-            self.speed = np.sqrt((loc_x - self.prev_loc_x)**2 + (loc_y - self.prev_loc_y)**2)/(timestamp - self.timestamp)
+
             if self.update_location:
                 self.theta = theta
-                self.loc_x = self.prev_loc_x
-                self.loc_y = self.prev_loc_y
+                self.loc_x = max(min(self.loc_x + np.double(x), self.xmx), 0)
+                self.loc_x = max(min(self.loc_x + np.double(y), self.ymx), 0)
                 print(self.loc_x, self.loc_y, self.theta/np.pi*180)
                 self.dataset.append('tracking_data', [self.loc_x, self.loc_y, self.theta, self.timestamp])
             time.sleep(.1)
