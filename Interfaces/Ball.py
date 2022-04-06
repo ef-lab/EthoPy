@@ -74,7 +74,7 @@ class Ball(Interface):
             if self.update_location:
                 self.theta = theta
                 self.loc_x = max(min(self.loc_x + np.double(x), self.xmx), 0)
-                self.loc_x = max(min(self.loc_x + np.double(y), self.ymx), 0)
+                self.loc_y = max(min(self.loc_y + np.double(y), self.ymx), 0)
                 print(self.loc_x, self.loc_y, self.theta/np.pi*180)
                 self.dataset.append('tracking_data', [self.loc_x, self.loc_y, self.theta, self.timestamp])
             time.sleep(.1)
