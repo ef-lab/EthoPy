@@ -127,7 +127,9 @@ class Cue(Experiment):
 
 class Delay(Experiment):
     def entry(self):
-        self.stim.prepare(self.curr_cond, 'Response')
+        if 'Delay' in self.curr_cond:
+            self.stim.prepare(self.curr_cond, 'Delay')
+            self.stim.start()
         super().entry()
 
     def run(self):
@@ -144,10 +146,13 @@ class Delay(Experiment):
             return 'Exit'
         else:
             return 'Delay'
-
+            
+    def exit(self):
+        self.stim.stop()
 
 class Response(Experiment):
     def entry(self):
+        self.stim.prepare(self.curr_cond, 'Response')
         self.stim.start()
         super().entry()
 

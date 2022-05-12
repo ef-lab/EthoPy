@@ -92,12 +92,13 @@ class ExperimentClass:
         if not stim_periods:
             conditions = self.stims[stim_name].make_conditions(factorize(conditions))
         else:
-            cond = {stim_periods[0]: self.stims[stim_name].make_conditions(conditions=factorize(conditions[stim_periods[0]])),
-                    stim_periods[1]: self.stims[stim_name].make_conditions(conditions=factorize(conditions[stim_periods[1]]))}
-            conditions[stim_periods[0]], conditions[stim_periods[1]] = [], []
-            for comb in list(itertools.product(cond[stim_periods[0]], cond[stim_periods[1]])):
-                conditions[stim_periods[0]].append(comb[0])
-                conditions[stim_periods[1]].append(comb[1])
+            cond = {}
+            for i in range(len(stim_periods)):
+                cond[stim_periods[i]] = self.stims[stim_name].make_conditions(conditions=factorize(conditions[stim_periods[i]]))
+                conditions[stim_periods[i]] = []
+            all_cond = [cond[stim_periods[i]] for i in range(len(stim_periods))]
+            for comb in list(itertools.product(*all_cond)):
+                for i in range(len(stim_periods)): conditions[stim_periods[i]].append(comb[i])
             conditions = factorize(conditions)
 
         conditions = self.log_conditions(**self.beh.make_conditions(conditions))
