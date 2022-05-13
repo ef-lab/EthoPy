@@ -137,11 +137,19 @@ class Panda(Stimulus, dj.Manual):
         self.render.setLight(self.ambientLightNP)
 
     def prepare(self, curr_cond, stim_period=''):
-        self.curr_cond = curr_cond if stim_period == '' else curr_cond[stim_period]
+        self.curr_cond = curr_cond if stim_period == '' or stim_period not in curr_cond else curr_cond[stim_period]
         self.period = stim_period
 
         if not self.curr_cond:
             self.isrunning = False
+
+        if stim_period in curr_cond:
+            if not all(key in curr_cond[stim_period] for key in Panda.required_fields):
+                print(f'required_fields: {Panda.required_fields} has not been declared')
+                return
+        else:
+            return
+
         self.background_color = self.curr_cond['background_color']
 
         # set background color
@@ -184,11 +192,12 @@ class Panda(Stimulus, dj.Manual):
             self.isrunning = True
 
     def start(self):
-        self.log_start()
-        if self.movie: self.mov_texture.play()
-        for idx, obj in enumerate(iterable(self.curr_cond['obj_id'])):
-            self.objects[idx].run()
-        self.flip(2)
+        if 'obj_id' in self.curr_cond:
+            self.log_start()
+            if self.movie: self.mov_texture.play()
+            for idx, obj in enumerate(iterable(self.curr_cond['obj_id'])):
+                self.objects[idx].run()
+            self.flip(2)
 
     def present(self):
         self.flip()
@@ -211,7 +220,7 @@ class Panda(Stimulus, dj.Manual):
         self.render.clearLight
 
         self.flip(2) # clear double buffer
-        self.log_stop()
+        if self.period in self.curr_cond: self.log_stop()
         self.isrunning = False
 
     def punish_stim(self):
