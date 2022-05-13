@@ -137,19 +137,15 @@ class Panda(Stimulus, dj.Manual):
         self.render.setLight(self.ambientLightNP)
 
     def prepare(self, curr_cond, stim_period=''):
-        self.curr_cond = curr_cond if stim_period == '' or stim_period not in curr_cond else curr_cond[stim_period]
-        self.period = stim_period
-
-        if not self.curr_cond:
-            self.isrunning = False
-
-        if stim_period in curr_cond:
-            if not all(key in curr_cond[stim_period] for key in Panda.required_fields):
-                print(f'required_fields: {Panda.required_fields} has not been declared')
-                return
-        else:
+        self.flag_no_stim = stim_period not in curr_cond
+        if stim_period == '':
+            self.curr_cond = curr_cond
+        elif self.flag_no_stim :
             return
-
+        else: 
+            self.curr_cond = curr_cond[stim_period]
+        
+        self.period = stim_period
         self.background_color = self.curr_cond['background_color']
 
         # set background color
@@ -192,7 +188,7 @@ class Panda(Stimulus, dj.Manual):
             self.isrunning = True
 
     def start(self):
-        if 'obj_id' in self.curr_cond:
+        if not self.flag_no_stim:
             self.log_start()
             if self.movie: self.mov_texture.play()
             for idx, obj in enumerate(iterable(self.curr_cond['obj_id'])):
@@ -209,19 +205,20 @@ class Panda(Stimulus, dj.Manual):
             self.taskMgr.step()
 
     def stop(self):
-        for idx, obj in self.objects.items():
-            obj.remove(obj.task)
-        for idx, light in self.lights.items():
-            self.render.clearLight(self.lightsNP[idx])
-        if self.movie:
-            self.mov_texture.stop()
-            self.movie_node.removeNode()
-            self.movie = False
-        self.render.clearLight
+        if not self.flag_no_stim:
+            for idx, obj in self.objects.items():
+                obj.remove(obj.task)
+            for idx, light in self.lights.items():
+                self.render.clearLight(self.lightsNP[idx])
+            if self.movie:
+                self.mov_texture.stop()
+                self.movie_node.removeNode()
+                self.movie = False
+            self.render.clearLight
 
-        self.flip(2) # clear double buffer
-        if self.period in self.curr_cond: self.log_stop()
-        self.isrunning = False
+            self.flip(2) # clear double buffer
+            self.log_stop()
+            self.isrunning = False
 
     def punish_stim(self):
         self.unshow((0, 0, 0))
