@@ -127,12 +127,12 @@ class Cue(Experiment):
 
 class Delay(Experiment):
     def entry(self):
-        if 'Delay' in self.curr_cond:
-            self.stim.prepare(self.curr_cond, 'Delay')
-            self.stim.start()
+        self.stim.prepare(self.curr_cond, 'Delay')
+        self.stim.start()
         super().entry()
 
     def run(self):
+        self.stim.present()
         self.response = self.beh.get_response(self.start_time)
         if self.beh.is_ready(self.curr_cond['delay_ready'], self.start_time):
             self.resp_ready = True
