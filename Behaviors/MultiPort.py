@@ -32,11 +32,11 @@ class MultiPort(Behavior, dj.Manual):
     default_key = {'reward_type': 'water'}
 
     def is_ready(self, duration, since=False):
-        ready, ready_time, tmst = self.interface.in_position()
+        position, ready_time, tmst = self.interface.in_position()
         if duration == 0:
             return True
         elif not since:
-            return ready and ready_time > duration # in position for specified duration
+            return position.ready and ready_time > duration # in position for specified duration
         elif tmst >= since:
             return ready_time > duration  # has been in position for specified duration since timepoint
         else:
@@ -47,10 +47,13 @@ class MultiPort(Behavior, dj.Manual):
                np.any(np.equal(self.licked_port, self.curr_cond['response_port']))
 
     def reward(self):
-        self.interface.give_liquid(self.licked_port)
-        self.log_reward(self.reward_amount[self.licked_port])
-        self.update_history(self.licked_port, self.reward_amount[self.licked_port])
-        return True
+        licked_port = self.is_licking(reward=True)
+        if np.any(np.equal(licked_port, self.curr_cond['probe'])):
+            self.interface.give_liquid(licked_port)
+            self.log_reward(self.reward_amount[self.licked_port])
+            self.update_history(self.licked_port, self.reward_amount[self.licked_port])
+            return True
+        return False
 
     def exit(self):
         self.interface.cleanup()

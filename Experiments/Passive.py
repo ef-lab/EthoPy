@@ -84,6 +84,4 @@ class InterTrial(Experiment):
 
 class Exit(Experiment):
     def run(self):
-        self.beh.exit()
-        self.stim.exit()
-        self.logger.ping(0)
+        self.stop()

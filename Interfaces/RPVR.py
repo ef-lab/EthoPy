@@ -1,4 +1,3 @@
-from core.Interface import *
 from Interfaces.RPPorts import *
 
 
@@ -7,7 +6,8 @@ class RPVR(RPPorts):
                 'liquid': {1: 22},
                 'lick': {1: 17},
                 'sync': {'in': 21},
-                'running': 20}
+                'running': 20,
+                'sound': {1: 19}}
     pwm = dict()
 
     def start_odor(self, channels, dutycycle=50, frequency=20):
@@ -26,13 +26,10 @@ class RPVR(RPPorts):
         for channel in self.odor_channels:
             self.pwm[channel].stop()
 
-    def _port_licked(self, channel):
-        if not self.exp.running: return
-        tmst = self.logger.logger_timer.elapsed_time()
-        self.port = reverse_lookup(self.channels['lick'], channel)
-        self.lick_tmst = self.log_activity('Lick', dict(port=self.port, time=tmst))
+    def _lick_port_activated(self, channel):
+        tmst = super()._lick_port_activated(channel)
         pos = self.exp.beh.get_position()
-        self.log_activity('Position', dict(loc_x=pos[0], loc_y=pos[1], theta=pos[2], time=tmst))
+        self.beh.log_activity(type='Position', loc_x=pos[0], loc_y=pos[1], theta=pos[2], time=tmst)
 
     def cleanup(self):
         for channel in self.odor_channels:

@@ -30,7 +30,7 @@ class State:
 class ExperimentClass:
     """  Parent Experiment """
     curr_state, curr_trial, total_reward, cur_dif, flip_count, states, stim, sync = '', 0, 0, 0, 0, dict(), False, False
-    rew_probe, un_choices, difs, iter, curr_cond, dif_h, stims = [], [], [], [], dict(), [], dict()
+    un_choices, difs, iter, curr_cond, dif_h, stims = [], [], [], dict(), [], dict()
     required_fields, default_key, conditions, cond_tables, quit, running = [], dict(), [], [], False, False
 
     # move from State to State using a template method.
@@ -75,6 +75,14 @@ class ExperimentClass:
         state_control = self.StateMachine(states)
         self.interface.set_running_state(True)
         state_control.run()
+
+    def stop(self):
+        self.stim.exit()
+        self.beh.exit()
+        self.logger.ping(0)
+        self.logger.closeDatasets()
+        self.running = False
+        self.logger.update_setup_info({'status': 'stop'})
 
     def is_stopped(self):
         self.quit = self.quit or self.logger.setup_status in ['stop', 'exit']
@@ -303,13 +311,15 @@ class Trial(dj.Manual):
         print(mts_flag, mp_flag)
 
         if mts_flag:
-            conditions = self * ((stimulus.StimCondition.Trial() & 'period = "Cue"').proj('stim_hash', stime = 'start_time') & self) * stimulus.Panda.Object() * ((behavior.BehCondition.Trial().proj(btime = 'time') & self) * behavior.MultiPort.Response())
+            conditions = self * ((stimulus.StimCondition.Trial() & 'period = "Cue"').proj('stim_hash', stime = 'start_time') & self) *\
+                         stimulus.Panda.Object() * ((behavior.BehCondition.Trial().proj(btime = 'time') & self) * behavior.MultiPort.Response())
             uniq_groups, groups_idx = np.unique(
                 [cond.astype(int) for cond in
                  conditions.fetch('obj_id', 'response_port', order_by=('trial_idx'))],
                 axis=1, return_inverse=True)
         elif mp_flag: #only olfactory so far
-            conditions = self * (stimulus.StimCondition.Trial().proj('stim_hash', stime = 'start_time') & self) * stimulus.Olfactory.Channel() * ((behavior.BehCondition.Trial().proj(btime = 'time') & self) * behavior.MultiPort.Response())
+            conditions = self * (stimulus.StimCondition.Trial().proj('stim_hash', stime = 'start_time') & self) *\
+                         stimulus.Olfactory.Channel() * ((behavior.BehCondition.Trial().proj(btime = 'time') & self) * behavior.MultiPort.Response())
             uniq_groups, groups_idx = np.unique(
                 [cond.astype(int) for cond in
                  conditions.fetch('odorant_id', 'response_port', order_by=('trial_idx'))],
@@ -318,10 +328,6 @@ class Trial(dj.Manual):
             print('no conditions!')
             return []
 
-        #uniq_groups, groups_idx = np.unique(
-            #[cond.astype(int) for cond in
-            # conditions.fetch('obj_id', 'response_port', order_by = ('trial_idx'))],
-            #axis=1, return_inverse=True)
         conditions = conditions.fetch(order_by = 'trial_idx')
         condition_groups = [conditions[groups_idx == group] for group in set(groups_idx)]
         return condition_groups
@@ -400,8 +406,12 @@ class SetupConfiguration(dj.Lookup):
         definition = """
         # Probe identity
         port                     : tinyint                      # port id
+        type="lick"              : enum('lick','proximity')     # port id
         -> SetupConfiguration
         ---
+        ready=0                  : tinyint                      # port id
+        response=0               : tinyint                      # port id
+        reward=0                 : tinyint                      # port id
         discription              : varchar(256)
         """
 

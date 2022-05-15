@@ -84,7 +84,7 @@ class Trial(Experiment):
 
     def run(self):
         self.stim.present()
-        self.response = self.beh.is_licking(self.start_time)
+        self.response = self.beh.get_response(self.start_time)
         time.sleep(.1)
 
     def next(self):
@@ -166,6 +166,4 @@ class InterTrial(Experiment):
 
 class Exit(Experiment):
     def run(self):
-        self.beh.exit()
-        self.stim.exit()
-        self.logger.ping(0)
+        self.stop()

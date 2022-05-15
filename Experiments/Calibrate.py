@@ -14,7 +14,7 @@ class Experiment:
 
     def run(self):
         """ Lickspout liquid delivery calibration """
-        self.valve = RPPorts(exp=self, callbacks=False)
+        self.interface = RPPorts(exp=self, callbacks=False)
         print('Running calibration')
         if self.params['save']:
             pressure, exit_flag = self.button_input('Enter air pressure (PSI)')
@@ -42,7 +42,7 @@ class Experiment:
                 print('\r' + msg, end='')
                 for port in self.params['ports']:
                     try:
-                        self.valve.give_liquid(port, self.params['duration'][cal_idx])
+                        self.interface.give_liquid(port, self.params['duration'][cal_idx])
                     except Exception as e:
                         self.screen.draw('ERROR:', str(e))
                         time.sleep(1)
@@ -63,7 +63,7 @@ class Experiment:
     def exit(self):
         self.screen.cleanup()
         self.screen.draw('Done calibrating')
-        self.valve.cleanup()
+        self.interface.cleanup()
         self.logger.update_setup_info({'status': 'ready'})
         time.sleep(2)
         self.screen.exit()

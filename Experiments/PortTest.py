@@ -16,7 +16,7 @@ class PortTest:
 
     def run(self):
         """ Lickspout liquid delivery test """
-        self.valve = RPPorts(exp=self, callbacks=True, logging=False)
+        self.interface = RPPorts(exp=self, callbacks=True)
         print('Running port test')
         for port in self.params['ports']:
             self.total_pulses = 0
@@ -30,7 +30,7 @@ class PortTest:
                     msg = 'Pulse %d/%d' % (pulse + 1, self.params['pulsenum'][cal_idx])
                     self.screen.draw(msg)
                     print(msg)
-                    self.valve.give_liquid(port, self.params['duration'][cal_idx])
+                    self.interface.give_liquid(port, self.params['duration'][cal_idx])
                     time.sleep(self.params['duration'][cal_idx] / 1000 + self.params['pulse_interval'][cal_idx] / 1000)
                     pulse += 1  # update trial
                     self.total_pulses += 1
@@ -42,13 +42,13 @@ class PortTest:
                 self.log_test(port, self.total_pulses, 'Failed')
         self.screen.cleanup()
         self.screen.draw('Done testing!')
-        self.valve.cleanup()
+        self.interface.cleanup()
         self.logger.update_setup_info({'status': 'ready'})
         time.sleep(1)
         self.screen.exit()
 
     def get_response(self, since=0, port=0):
-        licked_port, tmst = self.valve.get_last_lick()
+        licked_port, tmst = self.interface.get_last_response()
         return tmst >= since and licked_port == port
 
     def log_test(self, port=0, pulses=0, result='Passed'):

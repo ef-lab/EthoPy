@@ -1,13 +1,12 @@
 import numpy as np
 import threading, multiprocessing, struct, time
-
 from core.Interface import *
+
 
 class Ball(Interface):
     speed, timestamp, update_location, prev_loc_x, prev_loc_y, loc_x, loc_y, theta, xmx, ymx = 0, 0, True, 0, 0, 0, 0, 0, 1, 1
 
     def __init__(self, exp, ball_radius=0.125):
-        from utils.Writer import Writer
         source_path = '/home/eflab/Tracking/'
         target_path = '/mnt/lab/data/Tracking/'
         self.cleanup()
@@ -15,18 +14,17 @@ class Ball(Interface):
         self.exp = exp
         self.mouse1 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.1:1.0-mouse", exp.logger)
         self.mouse2 = MouseReader("/dev/input/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.2:1.0-mouse", exp.logger)
-        self.Writer = Writer
         self.setPosition()
         self.phi_z1 = 1  # angle of z axis (rotation)
         self.phi_z2 = self.phi_z1
         self.phi_y1 = np.pi - 0.13  # angle of y1 axis (mouse1) .6
         self.phi_y2 = self.phi_y1 + np.pi/2  # angle of y2 axis (mouse2)
         self.ball_radius = ball_radius
-        filename = self.createDataset(source_path, target_path, dataset_name='tracking_data',
-                           dataset_type=np.dtype([("loc_x", np.double),
-                                                  ("loc_y", np.double),
-                                                  ("theta", np.double),
-                                                  ("tmst", np.double)]))
+        filename, self.dataset = self.logger.createDataset(source_path, target_path, dataset_name='tracking_data',
+                                             dataset_type=np.dtype([("loc_x", np.double),
+                                                                    ("loc_y", np.double),
+                                                                    ("theta", np.double),
+                                                                    ("tmst", np.double)]))
 
         self.exp.log_recording(dict(rec_aim='ball', software='PyMouse', version='0.1',
                                     filename=filename, source_path=source_path,
@@ -95,7 +93,6 @@ class Ball(Interface):
     def cleanup(self):
         try:
             self.thread_end.set()
-            self.closeDatasets()
             self.mouse1.close()
             self.mouse2.close()
         except:
