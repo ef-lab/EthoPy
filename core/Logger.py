@@ -178,7 +178,7 @@ class Logger:
                                          datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
         self.datasets[dataset_name] = self.Writer(path + filename, target_path)
         self.datasets[dataset_name].createDataset(dataset_name, shape=(len(dataset_type.names),), dtype=dataset_type)
-        return self.filename, self.datasets[dataset_name]
+        return filename, self.datasets[dataset_name]
 
     def closeDatasets(self):
         for dataset in self.datasets:

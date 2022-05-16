@@ -27,7 +27,7 @@ class RPPorts(Interface):
         self.pulses = dict()
 
         matched_ports = set(self.rew_ports) & set(self.channels['Liquid'].keys())
-        assert matched_ports == self.rew_ports, 'All reward ports must have assigned a liquid delivery port!'
+        assert matched_ports == set(self.rew_ports), 'All reward ports must have assigned a liquid delivery port!'
 
         if 'Lick' in self.channels:
             self.GPIO.setup(list(self.channels['Lick'].values()), self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
