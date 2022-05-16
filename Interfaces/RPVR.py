@@ -29,7 +29,7 @@ class RPVR(RPPorts):
     def _lick_port_activated(self, channel):
         port, tmst = super()._lick_port_activated(channel)
         pos = self.exp.beh.get_position()
-        self.beh.log_activity(type='Position', loc_x=pos[0], loc_y=pos[1], theta=pos[2], time=tmst)
+        self.beh.log_activity(dict(type='Position', loc_x=pos[0], loc_y=pos[1], theta=pos[2], time=tmst))
 
     def cleanup(self):
         for channel in self.odor_channels:
