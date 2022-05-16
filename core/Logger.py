@@ -7,6 +7,8 @@ from typing import Any
 import datajoint as dj
 from utils.helper_functions import *
 from utils.Timer import Timer
+from utils.Writer import Writer
+
 dj.config["enable_python_native_blobs"] = True
 
 schemata = {'experiment': 'lab_experiments',
@@ -39,6 +41,7 @@ class Logger:
         self.log_setup(protocol)
         self.getter_thread.start()
         self.logger_timer.start()
+        self.Writer = Writer
 
     def setup_schema(self, extra_schema):
         for schema, value in extra_schema.items():

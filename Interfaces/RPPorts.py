@@ -53,8 +53,6 @@ class RPPorts(Interface):
             self.GPIO.setup(self.channels['Running'], self.GPIO.OUT, initial=self.GPIO.LOW)
 
         if self.exp.sync:
-            from utils.Writer import Writer
-            self.Writer = Writer
             source_path = '/home/eflab/Sync/'
             target_path = '/mnt/lab/data/Sync/'
             self.GPIO.setup(self.channels['sync']['in'], self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
