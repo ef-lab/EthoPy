@@ -132,12 +132,10 @@ class RPPorts(Interface):
         if in_position: self.timer_ready.start()
         if in_position and not self.position.port:
             self.position_tmst = self.beh.log_activity({**port.__dict__, 'in_position': 1})
-            print('in position ', port)
             self.position = port
         elif not in_position and self.position.port:
             tmst = self.beh.log_activity({**port.__dict__, 'in_position': 0})
             self.position_dur = tmst - self.position_tmst
-            print('off position ', port)
             self.position = Port()
 
     def _create_pulse(self, port, duration):

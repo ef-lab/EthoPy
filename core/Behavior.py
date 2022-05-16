@@ -257,7 +257,6 @@ class Behavior:
             self.last_response = Activity()
             self.licked_port = 0
         if response.time and response.time >= since and response.port:
-            print('Response recorded for tmst: ', since, ', ', response)
             self.response = response
             return True
         return False
@@ -287,9 +286,7 @@ class Behavior:
         if self.exp.running and self.logging:
             self.logger.log('Activity', key, schema='behavior', priority=10)
             self.logger.log('Activity.' + activity.type, key, schema='behavior')
-        if activity.response:
-            print('storing response! ', activity)
-            self.last_response = activity
+        if activity.response: self.last_response = activity
         if activity.type == 'Lick': self.last_lick = activity; self.licked_port = activity.port
         return key['time']
 
