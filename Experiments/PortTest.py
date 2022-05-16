@@ -48,8 +48,7 @@ class PortTest:
         self.screen.exit()
 
     def get_response(self, since=0, port=0):
-        licked_port, tmst = self.interface.get_last_response()
-        return tmst >= since and licked_port == port
+        return self.interface.resp_tmst >= since and self.interface.response.port == port
 
     def log_test(self, port=0, pulses=0, result='Passed'):
         self.screen.cleanup()

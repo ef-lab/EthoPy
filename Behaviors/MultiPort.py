@@ -31,6 +31,10 @@ class MultiPort(Behavior, dj.Manual):
     required_fields = ['response_port', 'reward_port', 'reward_amount']
     default_key = {'reward_type': 'water'}
 
+    def setup(self, exp):
+        self.logging = True
+        super(MultiPort, self).setup(exp)
+
     def is_ready(self, duration, since=False):
         position, ready_time, tmst = self.interface.in_position()
         if duration == 0:
@@ -56,6 +60,7 @@ class MultiPort(Behavior, dj.Manual):
         return False
 
     def exit(self):
+        super().exit()
         self.interface.cleanup()
 
     def punish(self):

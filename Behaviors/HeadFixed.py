@@ -8,6 +8,11 @@ class HeadFixed(Behavior, dj.Manual):
     ->BehCondition
     """
 
+    def setup(self, exp):
+        self.logging = True
+        super(HeadFixed, self).setup(exp)
+
     def exit(self):
+        super().exit()
         self.interface.cleanup()
 

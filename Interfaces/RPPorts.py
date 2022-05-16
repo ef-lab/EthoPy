@@ -94,7 +94,6 @@ class RPPorts(Interface):
 
     def cleanup(self):
         self.set_running_state(False)
-        self.logging = False
         self.Pulser.wave_clear()
         self.Pulser.stop()
         if self.callbacks:
@@ -147,8 +146,10 @@ class RPPorts(Interface):
         self.Pulser.wave_send_once(self.pulses[port])
 
     def _lick_port_activated(self, channel):
-        self.resp_tmst = self.beh.log_activity({**self._channel2port(channel, 'Lick').__dict__})
-        return self.resp_tmst
+        self.resp_tmst = self.logger.logger_timer.elapsed_time()
+        self.response = self._channel2port(channel, 'Lick')
+        self.beh.log_activity({**self.response.__dict__, 'time': self.resp_tmst})
+        return self.response, self.resp_tmst
 
     def _sync_in(self, channel):
         self.dataset.append('sync_data', [self.logger.logger_timer.elapsed_time()])

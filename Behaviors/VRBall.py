@@ -44,6 +44,7 @@ class VRBall(Behavior, dj.Manual):
                    'response_port': 1, 'reward_port': 1, 'theta0': 0}
 
     def setup(self, exp):
+        self.logging = True
         self.previous_loc = [0, 0]
         super(VRBall, self).setup(exp)
         # Ball should move from here
@@ -93,6 +94,7 @@ class VRBall(Behavior, dj.Manual):
         self.update_history(self.licked_port)
 
     def exit(self):
+        super().exit()
         self.vr.cleanup()
         self.interface.cleanup()
 

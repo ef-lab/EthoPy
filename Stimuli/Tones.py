@@ -1,5 +1,4 @@
 from Stimuli.RPScreen import *
-import pygame
 
 
 @stimulus.schema

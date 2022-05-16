@@ -227,7 +227,7 @@ class PortCalibration(dj.Manual):
 
 class Behavior:
     """ This class handles the behavior variables """
-    cond_tables, interface, required_fields, curr_cond, response, licked_port = [], [], [], [], [], 0
+    cond_tables, interface, required_fields, curr_cond, response, licked_port, logging = [], [], [], [], [], 0, False
     default_key, reward_amount, choice_history, reward_history = dict(), dict(), list(), list()
 
     def setup(self, exp):
@@ -244,6 +244,7 @@ class Behavior:
         self.reward_amount = dict()
         self.interface.load_calibration()
         self.response = Activity()
+        self.logging = True
 
     def is_ready(self, init_duration, since=0):
         return True, 0
@@ -270,14 +271,14 @@ class Behavior:
         pass
 
     def exit(self):
-        pass
+        self.logging = False
 
     def log_activity(self, activity_key):
         activity = Activity(**activity_key)
         lg_tmst = self.logger.logger_timer.elapsed_time()
         if not activity.time: activity.time = lg_tmst
         key = {**self.logger.trial_key, **activity.__dict__}
-        if self.exp.running:
+        if self.exp.running and self.logging:
             self.logger.log('Activity', key, schema='behavior', priority=10)
             self.logger.log('Activity.' + activity.type, key, schema='behavior')
         if activity.response:

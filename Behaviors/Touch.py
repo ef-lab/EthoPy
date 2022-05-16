@@ -38,6 +38,7 @@ class Touch(Behavior, dj.Manual):
         self.touch_area = 50  # +/- area in pixels that a touch can occur
         self.since = 0
         self.has_touched = False
+        self.logging = True
         self.buttons = list()
         self.loc2px = lambda x: self.screen_sz/2 + np.array(x)*self.screen_sz[0]
         self.px2loc = lambda x: np.array(x)/self.screen_sz[0] - self.screen_sz/2
@@ -99,6 +100,7 @@ class Touch(Behavior, dj.Manual):
         self.update_history(touched_loc)
 
     def exit(self):
+        super().exit()
         self.interface.cleanup()
         self.ts.stop()
 

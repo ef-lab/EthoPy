@@ -76,6 +76,5 @@ class DummyPorts(Interface):
 
     def cleanup(self):
         self.set_running_state(False)
-        self.logging = False
         if self.exp.sync:
             self.closeDatasets()
