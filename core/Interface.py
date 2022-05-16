@@ -18,6 +18,8 @@ class Interface:
         self.beh = beh
         self.exp = exp
         self.logger = exp.logger
+        self.position = Port()
+        self.position_tmst = 0
 
         # get port information
         for port in self.logger.get(table='SetupConfiguration.Port', key=self.exp.params, as_dict=True):
@@ -75,7 +77,7 @@ class Interface:
             actual_rew[port] = self.pulse_rew[port][reward_amount]
         return actual_rew
 
-    def _channel2port(self, channel, category='proximity'):
+    def _channel2port(self, channel, category='Proximity'):
         port = reverse_lookup(self.channels[category], channel) if channel else 0
         if port: port = self.ports[Port(type=category, port=port) == self.ports][0]
         return port

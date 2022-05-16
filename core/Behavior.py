@@ -228,7 +228,7 @@ class PortCalibration(dj.Manual):
 class Behavior:
     """ This class handles the behavior variables """
     cond_tables, interface, required_fields, curr_cond, response, licked_port, logging = [], [], [], [], [], 0, False
-    default_key, reward_amount, choice_history, reward_history = dict(), dict(), list(), list()
+    default_key, reward_amount, choice_history, reward_history, last_response = dict(), dict(), list(), list(), []
 
     def setup(self, exp):
         interface_module = (experiment.SetupConfiguration & {'setup_conf_idx': exp.params['setup_conf_idx']}
@@ -244,22 +244,28 @@ class Behavior:
         self.reward_amount = dict()
         self.interface.load_calibration()
         self.response = Activity()
+        self.last_response = Activity()
         self.logging = True
 
     def is_ready(self, init_duration, since=0):
         return True, 0
 
     def get_response(self, since=0, clear=True):
-        if self.response.time:
-            if self.response.time >= since and self.response.port: return True
-            if clear: self.response = Activity()
+        response = self.last_response
+        if clear:
+            self.response = Activity()
+            self.last_response = Activity()
+            self.licked_port = 0
+        if response.time and response.time >= since and response.port:
+            print('Response recorded for tmst: ', since, ', ', response)
+            self.response = response
+            return True
         return False
 
     def is_licking(self, since=0, reward=False):
         if self.last_lick.time >= since and self.last_lick.port:
             if not reward or (reward and self.last_lick.reward):
                 self.licked_port = self.last_lick.port
-                self.resp_timer.start()
         else:
             self.licked_port = 0
         return self.licked_port
@@ -282,8 +288,9 @@ class Behavior:
             self.logger.log('Activity', key, schema='behavior', priority=10)
             self.logger.log('Activity.' + activity.type, key, schema='behavior')
         if activity.response:
-            self.response = activity
-        if activity.type == 'Lick': self.last_lick = activity
+            print('storing response! ', activity)
+            self.last_response = activity
+        if activity.type == 'Lick': self.last_lick = activity; self.licked_port = activity.port
         return key['time']
 
     def log_reward(self, reward_amount):

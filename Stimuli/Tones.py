@@ -9,11 +9,11 @@ class Tones(RPScreen, dj.Manual):
     ---
     tone_duration             : int                     # tone duration (ms)
     tone_frequency            : int                     # tone frequency (hz)
-    tone_volume               : int                     # tone volume (%)
+    tone_volume               : int                     # tone volume (percent)
     """
 
     cond_tables = ['Tones']
-    required_fields = ['tone_duration', 'tone_frequency', 'tone_volume']
+    required_fields = ['tone_duration', 'tone_frequency']
     default_key = {'dutycycle': 50}
 
     def start(self):
@@ -21,4 +21,5 @@ class Tones(RPScreen, dj.Manual):
         tone_frequency = self.curr_cond['tone_frequency']
         tone_volume = self.curr_cond['tone_volume']
         self.exp.interface.give_sound(tone_frequency, tone_duration, tone_volume)
+        print('Sound volume: ', tone_volume)
         super().start()

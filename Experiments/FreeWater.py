@@ -51,7 +51,7 @@ class Trial(Experiment):
         time.sleep(.01)
         self.logger.ping()
         self.stim.present()  # Start Stimulus
-        self.response = self.beh.get_response(self.trial_start)
+        self.response = self.beh.get_response(self.start_time)
 
     def next(self):
         if self.is_stopped():  # if wake up then update session

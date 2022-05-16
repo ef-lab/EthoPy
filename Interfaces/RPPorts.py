@@ -5,13 +5,13 @@ from core.Interface import *
 
 
 class RPPorts(Interface):
-    channels = {'odor': {1: 24, 2: 25},
-                'liquid': {1: 22, 2: 23},
-                'lick': {1: 17, 2: 27},
-                'proximity': {1: 9},
-                'sound': {1: 19},
-                'sync': {'in': 21},
-                'running': 20}
+    channels = {'Odor': {1: 24, 2: 25},
+                'Liquid': {1: 22, 2: 23},
+                'Lick': {1: 17, 2: 27},
+                'Proximity': {1: 9},
+                'Sound': {1: 19},
+                'Sync': {'in': 21},
+                'Running': 20}
 
     def __init__(self, **kwargs):
         super(RPPorts, self).__init__(**kwargs)
@@ -26,31 +26,31 @@ class RPPorts(Interface):
         self.ts = False
         self.pulses = dict()
 
-        matched_ports = self.rew_ports & set(self.channels['liquid'].keys())
+        matched_ports = set(self.rew_ports) & set(self.channels['Liquid'].keys())
         assert(matched_ports == self.rew_ports, 'All reward ports must have assigned a liquid delivery port!')
 
-        if 'lick' in self.channels:
-            self.GPIO.setup(list(self.channels['lick'].values()), self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        if 'Lick' in self.channels:
+            self.GPIO.setup(list(self.channels['Lick'].values()), self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
             if not self.callbacks: return
-            for channel in self.channels['lick']:
-                self.GPIO.add_event_detect(self.channels['lick'][channel], self.GPIO.RISING,
+            for channel in self.channels['Lick']:
+                self.GPIO.add_event_detect(self.channels['Lick'][channel], self.GPIO.RISING,
                                            callback=self._lick_port_activated, bouncetime=100)
-        if 'proximity' in self.channels:
-            self.GPIO.setup(list(self.channels['proximity'].values()), self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        if 'Proximity' in self.channels:
+            self.GPIO.setup(list(self.channels['Proximity'].values()), self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
             if not self.callbacks: return
-            for channel in self.channels['proximity']:
-                self.GPIO.add_event_detect(self.channels['proximity'][channel], self.GPIO.BOTH,
+            for channel in self.channels['Proximity']:
+                self.GPIO.add_event_detect(self.channels['Proximity'][channel], self.GPIO.BOTH,
                                            callback=self._position_change, bouncetime=50)
-        if 'odor' in self.channels:
-            self.GPIO.setup(list(self.channels['odor'].values()), self.GPIO.OUT, initial=self.GPIO.LOW)
-        if 'liquid' in self.channels:
-            for channel in self.channels['liquid']:
-                self.Pulser.set_mode(self.channels['liquid'][channel], pigpio.OUTPUT)
-        if 'sound' in self.channels:
-            for channel in self.channels['sound']:
-                self.Pulser.set_mode(self.channels['sound'][channel], pigpio.OUTPUT)
-        if 'running' in self.channels:
-            self.GPIO.setup(self.channels['running'], self.GPIO.OUT, initial=self.GPIO.LOW)
+        if 'Odor' in self.channels:
+            self.GPIO.setup(list(self.channels['Odor'].values()), self.GPIO.OUT, initial=self.GPIO.LOW)
+        if 'Liquid' in self.channels:
+            for channel in self.channels['Liquid']:
+                self.Pulser.set_mode(self.channels['Liquid'][channel], pigpio.OUTPUT)
+        if 'Sound' in self.channels:
+            for channel in self.channels['Sound']:
+                self.Pulser.set_mode(self.channels['Sound'][channel], pigpio.OUTPUT)
+        if 'Running' in self.channels:
+            self.GPIO.setup(self.channels['Running'], self.GPIO.OUT, initial=self.GPIO.LOW)
 
         if self.exp.sync:
             from utils.Writer import Writer
@@ -71,10 +71,10 @@ class RPPorts(Interface):
 
     def give_odor(self, delivery_port, odor_id, odor_duration, dutycycle):
         for i, idx in enumerate(odor_id):
-            self.thread.submit(self.__pwd_out, self.channels['odor'][delivery_port[i]], odor_duration, dutycycle[i])
+            self.thread.submit(self.__pwd_out, self.channels['Odor'][delivery_port[i]], odor_duration, dutycycle[i])
 
     def give_sound(self, sound_freq=40500, duration=500, volume=100):
-        self.thread.submit(self.__pwm_out, self.channels['sound'][1], sound_freq, duration, volume)
+        self.thread.submit(self.__pwm_out, self.channels['Sound'][1], sound_freq, duration, volume)
 
     def setup_touch_exit(self):
         try:
@@ -90,56 +90,61 @@ class RPPorts(Interface):
             print('Cannot create a touch exit!')
 
     def set_running_state(self, running_state):
-        self.GPIO.output(self.channels['running'], running_state)
+        self.GPIO.output(self.channels['Running'], running_state)
 
     def cleanup(self):
         self.set_running_state(False)
         self.Pulser.wave_clear()
         self.Pulser.stop()
         if self.callbacks:
-            if 'lick' in self.channels:
-                 for channel in self.channels['lick']:
-                     self.GPIO.remove_event_detect(self.channels['lick'][channel])
-            if 'proximity' in self.channels:
-                 for channel in self.channels['proximity']:
-                     self.GPIO.remove_event_detect(self.channels['proximity'][channel])
+            if 'Lick' in self.channels:
+                 for channel in self.channels['Lick']:
+                     self.GPIO.remove_event_detect(self.channels['Lick'][channel])
+            if 'Proximity' in self.channels:
+                 for channel in self.channels['Proximity']:
+                     self.GPIO.remove_event_detect(self.channels['Proximity'][channel])
         self.GPIO.cleanup()
         if self.ts:
             self.ts.stop()
 
-    def in_position(self, port):
-        port = Port(type='proximity', port=self._get_position(port))  # handle missed events
-        if self.position != port: self._position_change(self.channels['proximity'][port.port])
+    def in_position(self, port=0):
+        position = self.position
+        port = self._get_position(port)
+        if not position.port and not port: return 0, 0, 0
+        if position != Port(type='Proximity', port=port):
+            self._position_change(self.channels['Proximity'][max(port, position.port)])
         position_dur = self.timer_ready.elapsed_time() if self.position else self.position_dur
         return self.position, position_dur, self.position_tmst
 
     def _get_position(self, ports=0):
-        if not ports: ports = self.channels['proximity']
-        else: ports = [ports.port]
+        if not ports: ports = self.channels['Proximity']
+        elif not type(ports) is list: ports = [ports]
         for port in ports:
-            in_position = self.GPIO.input(self.channels['proximity'][port])
+            in_position = self.GPIO.input(self.channels['Proximity'][port])
             if self.ports[Port(type='Proximity', port=port) == self.ports][0].invert:
                 in_position = not in_position
             if in_position: return port
         return 0
 
     def _position_change(self, channel=0):
-        port = self._get_position(self._channel2port(channel, 'Proximity'))
-        if port: self.timer_ready.start()
-        if port and not self.position:
+        port = self._channel2port(channel, 'Proximity')
+        in_position = self._get_position(port.port)
+        if in_position: self.timer_ready.start()
+        if in_position and not self.position.port:
             self.position_tmst = self.beh.log_activity({**port.__dict__, 'in_position': 1})
             print('in position ', port)
-        elif not port and self.position:
+            self.position = port
+        elif not in_position and self.position.port:
             tmst = self.beh.log_activity({**port.__dict__, 'in_position': 0})
             self.position_dur = tmst - self.position_tmst
             print('off position ', port)
-        self.position = port
+            self.position = Port()
 
     def _create_pulse(self, port, duration):
         if port in self.pulses:
             self.Pulser.wave_delete(self.pulses[port])
-        self.Pulser.wave_add_generic([self.PulseGen(1 << self.channels['liquid'][port], 0, int(duration*1000)),
-                                      self.PulseGen(0, 1 << self.channels['liquid'][port], 1)])
+        self.Pulser.wave_add_generic([self.PulseGen(1 << self.channels['Liquid'][port], 0, int(duration*1000)),
+                                      self.PulseGen(0, 1 << self.channels['Liquid'][port], 1)])
         self.pulses[port] = self.Pulser.wave_create()
 
     def _give_pulse(self, port):

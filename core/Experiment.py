@@ -30,7 +30,7 @@ class State:
 class ExperimentClass:
     """  Parent Experiment """
     curr_state, curr_trial, total_reward, cur_dif, flip_count, states, stim, sync = '', 0, 0, 0, 0, dict(), False, False
-    un_choices, difs, iter, curr_cond, dif_h, stims = [], [], [], dict(), [], dict()
+    un_choices, difs, iter, curr_cond, dif_h, stims, response, resp_ready = [], [], [], dict(), [], dict(), [], False
     required_fields, default_key, conditions, cond_tables, quit, running = [], dict(), [], [], False, False
 
     # move from State to State using a template method.
@@ -165,7 +165,8 @@ class ExperimentClass:
             for ctable in condition_tables:  # insert dependant condition tables
                 core = [field for field in rgetattr(eval(schema), ctable).primary_key if field != hsh]
                 fields = [field for field in rgetattr(eval(schema), ctable).heading.names]
-                if not np.all([np.any(np.array(k) == list(cond.keys())) for k in fields]): print('skipping'); continue # only insert complete tuples
+                if not np.all([np.any(np.array(k) == list(cond.keys())) for k in fields]):
+                    print('skipping ', ctable); continue # only insert complete tuples
                 if core and hasattr(cond[core[0]], '__iter__'):
                     for idx, pcond in enumerate(cond[core[0]]):
                         cond_key = {k: cond[k] if type(cond[k]) in [int, float, str] else cond[k][idx] for k in fields}
@@ -406,12 +407,13 @@ class SetupConfiguration(dj.Lookup):
         definition = """
         # Probe identity
         port                     : tinyint                      # port id
-        type="lick"              : enum('lick','proximity')     # port id
+        type="Lick"              : enum('Lick','Proximity')     # port type
         -> SetupConfiguration
         ---
-        ready=0                  : tinyint                      # port id
-        response=0               : tinyint                      # port id
-        reward=0                 : tinyint                      # port id
+        ready=0                  : tinyint                      # ready flag
+        response=0               : tinyint                      # response flag
+        reward=0                 : tinyint                      # reward flag
+        invert=0                 : tinyint                      # invert flag
         discription              : varchar(256)
         """
 

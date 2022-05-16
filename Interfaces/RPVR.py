@@ -2,19 +2,19 @@ from Interfaces.RPPorts import *
 
 
 class RPVR(RPPorts):
-    channels = {'odor': {1: 19, 2: 16, 3: 6, 4: 12},
-                'liquid': {1: 22},
-                'lick': {1: 17},
-                'sync': {'in': 21},
-                'running': 20,
-                'sound': {1: 19}}
+    channels = {'Odor': {1: 19, 2: 16, 3: 6, 4: 12},
+                'Liquid': {1: 22},
+                'Lick': {1: 17},
+                'Sync': {'in': 21},
+                'Running': 20,
+                'Sound': {1: 19}}
     pwm = dict()
 
     def start_odor(self, channels, dutycycle=50, frequency=20):
         self.frequency = frequency
         self.odor_channels = channels
         for channel in channels:
-            self.pwm[channel] = self.GPIO.PWM(self.channels['odor'][channel], self.frequency)
+            self.pwm[channel] = self.GPIO.PWM(self.channels['Odor'][channel], self.frequency)
             self.pwm[channel].ChangeFrequency(self.frequency)
             self.pwm[channel].start(dutycycle)
 

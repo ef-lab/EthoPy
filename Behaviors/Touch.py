@@ -62,7 +62,7 @@ class Touch(Behavior, dj.Manual):
             if group == 'choice':
                 locs = [b.loc if b.group == group else 0 for b in self.buttons]
                 self.touch = locs[mx_idx]
-        if tmst >= since: self.resp_timer.start()
+        #if tmst >= since: self.resp_timer.start()
         self.has_touched = tmst >= since
         return self.has_touched
 
