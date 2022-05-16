@@ -22,7 +22,7 @@ for schema, value in schemata.items():  # separate connection for internal commi
 
 
 class Logger:
-    trial_key, setup_info, _schemata, datasets = dict(animal_id=0, session=1, trial_idx=0), dict(), dict(), []
+    trial_key, setup_info, _schemata, datasets = dict(animal_id=0, session=1, trial_idx=0), dict(), dict(), dict()
     lock, queue, ping_timer, logger_timer, total_reward, curr_state = False, PriorityQueue(), Timer(), Timer(), 0, ''
 
     def __init__(self, protocol=False):
