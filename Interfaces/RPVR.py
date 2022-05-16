@@ -7,7 +7,7 @@ class RPVR(RPPorts):
                 'Lick': {1: 17},
                 'Sync': {'in': 21},
                 'Running': 20,
-                'Sound': {1: 19}}
+                'Sound': {1: 13}}
     pwm = dict()
 
     def start_odor(self, channels, dutycycle=50, frequency=20):

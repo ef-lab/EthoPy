@@ -182,7 +182,7 @@ class Logger:
 
     def closeDatasets(self):
         for dataset in self.datasets:
-            dataset.exit()
+            self.datasets[dataset].exit()
 
     @staticmethod
     def get_ip():

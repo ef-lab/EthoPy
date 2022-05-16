@@ -9,7 +9,7 @@ class RPPorts(Interface):
                 'Liquid': {1: 22, 2: 23},
                 'Lick': {1: 17, 2: 27},
                 'Proximity': {1: 9},
-                'Sound': {1: 19},
+                'Sound': {1: 13},
                 'Sync': {'in': 21},
                 'Running': 20}
 
@@ -165,9 +165,7 @@ class RPPorts(Interface):
         pwm = self.GPIO.PWM(channel, self.frequency)
         pwm.ChangeFrequency(self.frequency)
         pwm.start(dutycycle)
-        self.pi.hardware_clock(channel, 40500)
         sleep(duration/1000)    # to add a  delay in seconds
-        self.pi.hardware_clock(channel, 0)
         pwm.stop()
 
     def __pwm_out(self, channel, freq, duration, dutycycle=50):
