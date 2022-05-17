@@ -46,8 +46,8 @@ class MultiPort(Behavior, dj.Manual):
             return (ready_time + tmst - since) > duration  # has been in position for specified duration since timepoint
 
     def is_correct(self):
-        return self.curr_cond['reward_port'] == -1 or \
-               np.any(np.equal(self.response.port, self.curr_cond['reward_port']))
+        return self.curr_cond['response_port'] == -1 or \
+               np.any(np.equal(self.response.port, self.curr_cond['response_port']))
 
     def reward(self):
         licked_port = self.is_licking(reward=True)
