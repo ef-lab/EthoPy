@@ -85,10 +85,11 @@ class Trial(Experiment):
     def run(self):
         self.stim.present()
         self.response = self.beh.get_response(self.start_time)
+        self.is_correct = self.beh.is_correct()
         time.sleep(.1)
 
     def next(self):
-        if self.response and self.beh.is_correct() and not self.beh.is_running():  # correct response
+        if self.response and self.is_correct and not self.beh.is_running():  # correct response
             return 'Reward'
         elif not self.beh.is_ready() and self.response:
             return 'Abort'

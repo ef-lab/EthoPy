@@ -32,7 +32,6 @@ class MultiPort(Behavior, dj.Manual):
     default_key = {'reward_type': 'water'}
 
     def setup(self, exp):
-        self.logging = True
         super(MultiPort, self).setup(exp)
 
     def is_ready(self, duration, since=False):
