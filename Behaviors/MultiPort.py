@@ -49,12 +49,12 @@ class MultiPort(Behavior, dj.Manual):
         return self.curr_cond['response_port'] == -1 or \
                np.any(np.equal(self.response.port, self.curr_cond['response_port']))
 
-    def reward(self):
-        licked_port = self.is_licking(reward=True)
+    def reward(self, tmst):
+        licked_port = self.is_licking(since=tmst, reward=True)
         if licked_port:
             self.interface.give_liquid(licked_port)
             self.log_reward(self.reward_amount[self.licked_port])
-            self.update_history(self.licked_port, self.reward_amount[self.licked_port])
+            self.update_history(self.response.port, self.reward_amount[self.licked_port])
             return True
         return False
 
@@ -63,6 +63,6 @@ class MultiPort(Behavior, dj.Manual):
         self.interface.cleanup()
 
     def punish(self):
-        port = self.licked_port if self.licked_port > 0 else np.nan
+        port = self.response.port if self.response.port > 0 else np.nan
         self.update_history(port)
 

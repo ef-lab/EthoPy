@@ -243,8 +243,7 @@ class Behavior:
         self.reward_history = list()  # History term for performance calculation
         self.reward_amount = dict()
         self.interface.load_calibration()
-        self.response = Activity()
-        self.last_response = Activity()
+        self.response, self.last_response, self.last_lick = Activity(), Activity(), Activity()
         self.logging = True
 
     def is_ready(self, init_duration, since=0):
@@ -316,6 +315,7 @@ class Behavior:
                         schema='behavior')
 
     def update_history(self, choice=np.nan, reward=np.nan):
+        if np.isnan(choice) and self.response.time > 0: choice = self.response.port
         self.choice_history.append(choice)
         self.reward_history.append(reward)
         self.logger.total_reward = np.nansum(self.reward_history)
