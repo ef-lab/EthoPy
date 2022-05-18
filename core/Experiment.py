@@ -30,7 +30,7 @@ class State:
 class ExperimentClass:
     """  Parent Experiment """
     curr_state, curr_trial, total_reward, cur_dif, flip_count, states, stim, sync = '', 0, 0, 0, 0, dict(), False, False
-    rew_probe, un_choices, difs, iter, curr_cond, dif_h, stims = [], [], [], [], dict(), [], dict()
+    un_choices, difs, iter, curr_cond, dif_h, stims, response, resp_ready = [], [], [], dict(), [], dict(), [], False
     required_fields, default_key, conditions, cond_tables, quit, running = [], dict(), [], [], False, False
 
     # move from State to State using a template method.
@@ -75,6 +75,14 @@ class ExperimentClass:
         state_control = self.StateMachine(states)
         self.interface.set_running_state(True)
         state_control.run()
+
+    def stop(self):
+        self.stim.exit()
+        self.beh.exit()
+        self.logger.ping(0)
+        self.logger.closeDatasets()
+        self.running = False
+        self.logger.update_setup_info({'status': 'stop'})
 
     def is_stopped(self):
         self.quit = self.quit or self.logger.setup_status in ['stop', 'exit']
@@ -157,7 +165,8 @@ class ExperimentClass:
             for ctable in condition_tables:  # insert dependant condition tables
                 core = [field for field in rgetattr(eval(schema), ctable).primary_key if field != hsh]
                 fields = [field for field in rgetattr(eval(schema), ctable).heading.names]
-                if not np.all([np.any(np.array(k) == list(cond.keys())) for k in fields]): print('skipping'); continue # only insert complete tuples
+                if not np.all([np.any(np.array(k) == list(cond.keys())) for k in fields]):
+                    print('skipping ', ctable); continue # only insert complete tuples
                 if core and hasattr(cond[core[0]], '__iter__'):
                     for idx, pcond in enumerate(cond[core[0]]):
                         cond_key = {k: cond[k] if type(cond[k]) in [int, float, str] else cond[k][idx] for k in fields}
@@ -303,13 +312,15 @@ class Trial(dj.Manual):
         print(mts_flag, mp_flag)
 
         if mts_flag:
-            conditions = self * ((stimulus.StimCondition.Trial() & 'period = "Cue"').proj('stim_hash', stime = 'start_time') & self) * stimulus.Panda.Object() * ((behavior.BehCondition.Trial().proj(btime = 'time') & self) * behavior.MultiPort.Response())
+            conditions = self * ((stimulus.StimCondition.Trial() & 'period = "Cue"').proj('stim_hash', stime = 'start_time') & self) *\
+                         stimulus.Panda.Object() * ((behavior.BehCondition.Trial().proj(btime = 'time') & self) * behavior.MultiPort.Response())
             uniq_groups, groups_idx = np.unique(
                 [cond.astype(int) for cond in
                  conditions.fetch('obj_id', 'response_port', order_by=('trial_idx'))],
                 axis=1, return_inverse=True)
         elif mp_flag: #only olfactory so far
-            conditions = self * (stimulus.StimCondition.Trial().proj('stim_hash', stime = 'start_time') & self) * stimulus.Olfactory.Channel() * ((behavior.BehCondition.Trial().proj(btime = 'time') & self) * behavior.MultiPort.Response())
+            conditions = self * (stimulus.StimCondition.Trial().proj('stim_hash', stime = 'start_time') & self) *\
+                         stimulus.Olfactory.Channel() * ((behavior.BehCondition.Trial().proj(btime = 'time') & self) * behavior.MultiPort.Response())
             uniq_groups, groups_idx = np.unique(
                 [cond.astype(int) for cond in
                  conditions.fetch('odorant_id', 'response_port', order_by=('trial_idx'))],
@@ -318,10 +329,6 @@ class Trial(dj.Manual):
             print('no conditions!')
             return []
 
-        #uniq_groups, groups_idx = np.unique(
-            #[cond.astype(int) for cond in
-            # conditions.fetch('obj_id', 'response_port', order_by = ('trial_idx'))],
-            #axis=1, return_inverse=True)
         conditions = conditions.fetch(order_by = 'trial_idx')
         condition_groups = [conditions[groups_idx == group] for group in set(groups_idx)]
         return condition_groups
@@ -400,8 +407,13 @@ class SetupConfiguration(dj.Lookup):
         definition = """
         # Probe identity
         port                     : tinyint                      # port id
+        type="Lick"              : enum('Lick','Proximity')     # port type
         -> SetupConfiguration
         ---
+        ready=0                  : tinyint                      # ready flag
+        response=0               : tinyint                      # response flag
+        reward=0                 : tinyint                      # reward flag
+        invert=0                 : tinyint                      # invert flag
         discription              : varchar(256)
         """
 

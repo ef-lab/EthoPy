@@ -198,10 +198,13 @@ class Reward(Experiment):
         self.stim.reward_stim()
 
     def run(self):
-        self.rewarded = self.beh.reward()
+        self.rewarded = self.beh.reward(self.start_time)
 
     def next(self):
-        if self.rewarded or self.state_timer.elapsed_time() >= self.curr_cond['reward_duration']:
+        if self.rewarded:
+            return 'InterTrial'
+        elif self.state_timer.elapsed_time() >= self.curr_cond['reward_duration']:
+            self.beh.update_history()
             return 'InterTrial'
         elif self.is_stopped():
             return 'Exit'
@@ -299,6 +302,4 @@ class Offtime(Experiment):
 
 class Exit(Experiment):
     def run(self):
-        self.beh.exit()
-        self.stim.exit()
-        self.logger.ping(0)
+        self.stop()

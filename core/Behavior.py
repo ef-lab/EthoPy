@@ -5,6 +5,8 @@ from matplotlib import cm
 import matplotlib.pyplot as plt
 import bisect
 from importlib import import_module
+from dataclasses import dataclass, fields
+from dataclasses import field as datafield
 
 
 @behavior.schema
@@ -225,35 +227,46 @@ class PortCalibration(dj.Manual):
 
 class Behavior:
     """ This class handles the behavior variables """
-    cond_tables, interface, required_fields, curr_cond = [], [], [], []
-    default_key = dict()
+    cond_tables, interface, required_fields, curr_cond, response, licked_port, logging = [], [], [], [], [], 0, False
+    default_key, reward_amount, choice_history, reward_history, last_response = dict(), dict(), list(), list(), []
 
     def setup(self, exp):
         interface_module = (experiment.SetupConfiguration & {'setup_conf_idx': exp.params['setup_conf_idx']}
                             ).fetch('interface')[0]
         interface = getattr(import_module(f'Interfaces.{interface_module}'), interface_module)
-        self.interface = interface(exp=exp)
+        self.interface = interface(exp=exp, beh=self)
         self.params = exp.params
-        self.resp_timer = Timer()
-        self.resp_timer.start()
         self.exp = exp
         self.logger = exp.logger
-        self.rew_probe = 0
         self.choices = np.array(np.empty(0))
         self.choice_history = list()  # History term for bias calculation
         self.reward_history = list()  # History term for performance calculation
-        self.licked_probe = 0
         self.reward_amount = dict()
         self.interface.load_calibration()
+        self.response, self.last_response, self.last_lick = Activity(), Activity(), Activity()
+        self.logging = True
 
     def is_ready(self, init_duration, since=0):
         return True, 0
 
-    def get_response(self, since=0):
+    def get_response(self, since=0, clear=True):
+        response = self.last_response
+        if clear:
+            self.response = Activity()
+            self.last_response = Activity()
+            self.licked_port = 0
+        if response.time and response.time >= since and response.port:
+            self.response = response
+            return True
         return False
 
-    def get_cond_tables(self):
-        return []
+    def is_licking(self, since=0, reward=False):
+        if self.last_lick.time >= since and self.last_lick.port:
+            if not reward or (reward and self.last_lick.reward):
+                self.licked_port = self.last_lick.port
+        else:
+            self.licked_port = 0
+        return self.licked_port
 
     def reward(self):
         return True
@@ -262,17 +275,24 @@ class Behavior:
         pass
 
     def exit(self):
-        pass
+        self.logging = False
 
-    def log_activity(self, table, key):
-        key = {'time': self.logger.logger_timer.elapsed_time(), **self.logger.trial_key, **key}
-        self.logger.log('Activity', key, schema='behavior', priority=5)
-        self.logger.log('Activity.' + table, key, schema='behavior')
+    def log_activity(self, activity_key):
+        activity = Activity(**activity_key)
+        lg_tmst = self.logger.logger_timer.elapsed_time()
+        if not activity.time: activity.time = lg_tmst
+        key = {**self.logger.trial_key, **activity.__dict__}
+        if self.exp.running and self.logging:
+            self.logger.log('Activity', key, schema='behavior', priority=10)
+            self.logger.log('Activity.' + activity.type, key, schema='behavior')
+        if activity.response: self.last_response = activity
+        if activity.type == 'Lick': self.last_lick = activity; self.licked_port = activity.port
+        return key['time']
 
     def log_reward(self, reward_amount):
         if isinstance(self.curr_cond['reward_port'], list):
-            self.curr_cond['reward_port'] = [self.licked_probe]
-            self.curr_cond['response_port'] = [self.licked_probe]
+            self.curr_cond['reward_port'] = [self.licked_port]
+            self.curr_cond['response_port'] = [self.licked_port]
         self.logger.log('Rewards', {**self.curr_cond, 'reward_amount': reward_amount}, schema='behavior')
 
     def make_conditions(self, conditions):
@@ -295,6 +315,7 @@ class Behavior:
                         schema='behavior')
 
     def update_history(self, choice=np.nan, reward=np.nan):
+        if np.isnan(choice) and self.response.time > 0: choice = self.response.port
         self.choice_history.append(choice)
         self.reward_history.append(reward)
         self.logger.total_reward = np.nansum(self.reward_history)
@@ -320,14 +341,21 @@ class Behavior:
         else:
             return False
 
-    def is_licking(self, since=0):
-        licked_port, tmst = self.interface.get_last_lick()
-        if tmst >= since and licked_port:
-            self.licked_port = licked_port
-            self.resp_timer.start()
-        else:
-            self.licked_port = 0
-        return self.licked_port
 
-    def get_response(self, since=0):
-        return self.is_licking(since) > 0
+@dataclass
+class Activity:
+    port: int = datafield(compare=True, default=0, hash=True)
+    type: str = datafield(compare=True, default='', hash=True)
+    time: int = datafield(compare=False, default=0)
+    in_position: int = datafield(compare=False, default=0)
+    loc_x: int = datafield(compare=False, default=0)
+    loc_y: int = datafield(compare=False, default=0)
+    theta: int = datafield(compare=False, default=0)
+    ready: bool = datafield(compare=False, default=False)
+    reward: bool = datafield(compare=False, default=False)
+    response: bool = datafield(compare=False, default=False)
+
+    def __init__(self, **kwargs):
+        names = set([f.name for f in fields(self)])
+        for k, v in kwargs.items():
+            if k in names: setattr(self, k, v)

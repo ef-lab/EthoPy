@@ -38,6 +38,7 @@ class Touch(Behavior, dj.Manual):
         self.touch_area = 50  # +/- area in pixels that a touch can occur
         self.since = 0
         self.has_touched = False
+        self.logging = True
         self.buttons = list()
         self.loc2px = lambda x: self.screen_sz/2 + np.array(x)*self.screen_sz[0]
         self.px2loc = lambda x: np.array(x)/self.screen_sz[0] - self.screen_sz/2
@@ -50,15 +51,6 @@ class Touch(Behavior, dj.Manual):
             touch.on_release = self._touch_handler
         self.ts.run()
 
-    def is_licking(self, since=0):
-        licked_probe, tmst = self.interface.get_last_lick()
-        if tmst >= since and licked_probe:
-            self.licked_probe = licked_probe
-            self.resp_timer.start()
-        else:
-            self.licked_probe = 0
-        return self.licked_probe
-
     def is_touching(self, since=0, group='choice'):
         if group == 'target':
             tmst = np.max([b.tmst if b.is_target else 0 for b in self.buttons])
@@ -70,7 +62,7 @@ class Touch(Behavior, dj.Manual):
             if group == 'choice':
                 locs = [b.loc if b.group == group else 0 for b in self.buttons]
                 self.touch = locs[mx_idx]
-        if tmst >= since: self.resp_timer.start()
+        #if tmst >= since: self.resp_timer.start()
         self.has_touched = tmst >= since
         return self.has_touched
 
@@ -95,12 +87,11 @@ class Touch(Behavior, dj.Manual):
         return self.is_touching(self.since, 'target')
 
     def reward(self):
-        licked_probe = self.is_licking()
-        if np.any(np.equal(licked_probe, self.curr_cond['probe'])):
-            self.interface.give_liquid(licked_probe)
-            self.update_history(self.target_loc, self.reward_amount[licked_probe])
-            self.logger.log('LiquidDelivery', dict(probe=self.licked_probe,
-                                                   reward_amount=self.reward_amount[self.licked_probe]))
+        licked_port = self.is_licking(reward=True)
+        if np.any(np.equal(licked_port, self.curr_cond['probe'])):
+            self.interface.give_liquid(licked_port)
+            self.log_reward(self.reward_amount[self.licked_port])
+            self.update_history(self.licked_port, self.reward_amount[self.licked_port])
             return True
         return False
 
@@ -109,6 +100,7 @@ class Touch(Behavior, dj.Manual):
         self.update_history(touched_loc)
 
     def exit(self):
+        super().exit()
         self.interface.cleanup()
         self.ts.stop()
 
@@ -121,7 +113,7 @@ class Touch(Behavior, dj.Manual):
         for i, loc in enumerate(zip(condition['obj_pos_x'], condition['obj_pos_y'])):
             is_target = True if (condition['correct_loc'] == np.array(loc)).all() else False
             touch_area = condition['touch_area'][i] if 'touch_area' in condition else (100, 300)
-            buttons.append(self.Button(self.loc2px(loc), 'choice',self.screen_sz, is_target, touch_area))
+            buttons.append(self.Button(self.loc2px(loc), 'choice', self.screen_sz, is_target, touch_area))
         self.buttons = np.asarray(buttons, dtype=object)
 
     def _touch_handler(self, event, touch):

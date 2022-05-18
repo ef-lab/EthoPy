@@ -1,20 +1,20 @@
-from core.Interface import *
 from Interfaces.RPPorts import *
 
 
 class RPVR(RPPorts):
-    channels = {'odor': {1: 19, 2: 16, 3: 6, 4: 12},
-                'liquid': {1: 22},
-                'lick': {1: 17},
-                'sync': {'in': 21},
-                'running': 20}
+    channels = {'Odor': {1: 19, 2: 16, 3: 6, 4: 12},
+                'Liquid': {1: 22},
+                'Lick': {1: 17},
+                'Sync': {'in': 21},
+                'Running': 20,
+                'Sound': {1: 13}}
     pwm = dict()
 
     def start_odor(self, channels, dutycycle=50, frequency=20):
         self.frequency = frequency
         self.odor_channels = channels
         for channel in channels:
-            self.pwm[channel] = self.GPIO.PWM(self.channels['odor'][channel], self.frequency)
+            self.pwm[channel] = self.GPIO.PWM(self.channels['Odor'][channel], self.frequency)
             self.pwm[channel].ChangeFrequency(self.frequency)
             self.pwm[channel].start(dutycycle)
 
@@ -26,13 +26,10 @@ class RPVR(RPPorts):
         for channel in self.odor_channels:
             self.pwm[channel].stop()
 
-    def _port_licked(self, channel):
-        if not self.exp.running: return
-        tmst = self.logger.logger_timer.elapsed_time()
-        self.port = reverse_lookup(self.channels['lick'], channel)
-        self.lick_tmst = self.log_activity('Lick', dict(port=self.port, time=tmst))
+    def _lick_port_activated(self, channel):
+        port, tmst = super()._lick_port_activated(channel)
         pos = self.exp.beh.get_position()
-        self.log_activity('Position', dict(loc_x=pos[0], loc_y=pos[1], theta=pos[2], time=tmst))
+        self.beh.log_activity(dict(type='Position', loc_x=pos[0], loc_y=pos[1], theta=pos[2], time=tmst))
 
     def cleanup(self):
         for channel in self.odor_channels:

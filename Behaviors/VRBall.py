@@ -1,6 +1,7 @@
 from core.Behavior import *
 from Interfaces.Ball import *
 
+
 @behavior.schema
 class VRBall(Behavior, dj.Manual):
     definition = """
@@ -46,10 +47,10 @@ class VRBall(Behavior, dj.Manual):
     def setup(self, exp):
         self.previous_loc = [0, 0]
         super(VRBall, self).setup(exp)
-        # Ball should move from here
         self.vr = Ball(exp)
 
     def prepare(self, condition):
+        self.in_position_flag = False
         if condition['x0'] < 0 or condition['y0'] < 0:
             x0, y0, theta0, time = self.vr.getPosition()
             self.vr.setPosition(condition['x_sz'], condition['y_sz'], x0, y0, theta0)
@@ -79,21 +80,23 @@ class VRBall(Behavior, dj.Manual):
         is_cor_loc = np.array(dist_to_loc) < self.curr_cond['radius']
         in_position = np.any(is_cor_loc)
         if in_position: self.previous_loc = cor_locs[np.argmin(dist_to_loc)]
+        if in_position and not self.in_position_flag:
+            self.interface.give_sound(sound_freq=4000, duration=500, volume=50)
+        self.in_position_flag = in_position
         return in_position
 
     def get_position(self):
         return self.vr.getPosition()
 
     def reward(self):
-        self.interface.give_liquid(self.licked_port)
-        self.log_reward(self.reward_amount[self.licked_port])
-        self.update_history(self.licked_port, self.reward_amount[self.licked_port])
+        self.interface.give_liquid(self.response.port)
+        self.log_reward(self.reward_amount[self.response.port])
+        self.update_history(self.response.port, self.reward_amount[self.response.port])
 
     def punish(self):
-        self.update_history(self.licked_port)
+        self.update_history(self.response.port)
 
     def exit(self):
+        super().exit()
         self.vr.cleanup()
         self.interface.cleanup()
-
-

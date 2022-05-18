@@ -96,8 +96,8 @@ class Trial(Experiment):
     def run(self):
         self.stim.present()  # Start Stimulus
         self.logger.ping()
-        self.response = self.beh.get_response(self.trial_start)
-        if self.beh.is_ready(self.stim.curr_cond['trial_ready'], self.trial_start):
+        self.response = self.beh.get_response(self.start_time)
+        if self.beh.is_ready(self.stim.curr_cond['trial_ready'], self.start_time):
             self.resp_ready = True
             self.stim.ready_stim()
 
@@ -226,6 +226,4 @@ class Offtime(Experiment):
 
 class Exit(Experiment):
     def run(self):
-        self.beh.exit()
-        self.stim.exit()
-        self.logger.ping(0)
+        self.stop()

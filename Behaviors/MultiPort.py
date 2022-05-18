@@ -31,12 +31,15 @@ class MultiPort(Behavior, dj.Manual):
     required_fields = ['response_port', 'reward_port', 'reward_amount']
     default_key = {'reward_type': 'water'}
 
+    def setup(self, exp):
+        super(MultiPort, self).setup(exp)
+
     def is_ready(self, duration, since=False):
-        ready, ready_time, tmst = self.interface.in_position()
+        position, ready_time, tmst = self.interface.in_position()
         if duration == 0:
             return True
         elif not since:
-            return ready and ready_time > duration # in position for specified duration
+            return position.ready and ready_time > duration # in position for specified duration
         elif tmst >= since:
             return ready_time > duration  # has been in position for specified duration since timepoint
         else:
@@ -44,18 +47,22 @@ class MultiPort(Behavior, dj.Manual):
 
     def is_correct(self):
         return self.curr_cond['response_port'] == -1 or \
-               np.any(np.equal(self.licked_port, self.curr_cond['response_port']))
+               np.any(np.equal(self.response.port, self.curr_cond['response_port']))
 
-    def reward(self):
-        self.interface.give_liquid(self.licked_port)
-        self.log_reward(self.reward_amount[self.licked_port])
-        self.update_history(self.licked_port, self.reward_amount[self.licked_port])
-        return True
+    def reward(self, tmst):
+        licked_port = self.is_licking(since=tmst, reward=True)
+        if licked_port:
+            self.interface.give_liquid(licked_port)
+            self.log_reward(self.reward_amount[self.licked_port])
+            self.update_history(self.response.port, self.reward_amount[self.licked_port])
+            return True
+        return False
 
     def exit(self):
+        super().exit()
         self.interface.cleanup()
 
     def punish(self):
-        port = self.licked_port if self.licked_port > 0 else np.nan
+        port = self.response.port if self.response.port > 0 else np.nan
         self.update_history(port)
 
