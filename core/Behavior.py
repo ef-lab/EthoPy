@@ -151,7 +151,11 @@ class Configuration(dj.Manual):
         # Probe identity
         -> Configuration
         port                     : tinyint                      # port id
+        type="Lick"              : varchar                      # port type
         ---
+        ready=0                  : tinyint                      # ready flag
+        response=0               : tinyint                      # response flag
+        reward=0                 : tinyint                      # reward flag
         discription              : varchar(256)
         """
 
