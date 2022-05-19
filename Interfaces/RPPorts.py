@@ -115,7 +115,7 @@ class RPPorts(Interface):
         return self.position, position_dur, self.position_tmst
 
     def _get_position(self, ports=0):
-        if not ports: ports = self.channels['Proximity']
+        if not ports: ports = self.proximity_ports
         elif not type(ports) is list: ports = [ports]
         for port in ports:
             in_position = self.GPIO.input(self.channels['Proximity'][port])

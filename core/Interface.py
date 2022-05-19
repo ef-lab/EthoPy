@@ -25,6 +25,7 @@ class Interface:
         for port in self.logger.get(table='SetupConfiguration.Port', key=self.exp.params, as_dict=True):
             self.ports.append(Port(**port))
         self.ports = np.array(self.ports)
+        self.proximity_ports = np.array([p.port for p in self.ports if p.type == 'Proximity'])
         self.rew_ports = np.array([p.port for p in self.ports if p.reward])
 
     def give_liquid(self, port, duration=False, log=True):
