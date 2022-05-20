@@ -46,6 +46,7 @@ class VRBall(Behavior, dj.Manual):
 
     def setup(self, exp):
         self.previous_loc = [0, 0]
+        self.curr_loc = [0, 0]
         super(VRBall, self).setup(exp)
         self.vr = Ball(exp)
 
@@ -79,7 +80,7 @@ class VRBall(Behavior, dj.Manual):
         dist_to_loc = [np.sum((loc - np.array([x, y])) ** 2) ** .5 for loc in cor_locs]
         is_cor_loc = np.array(dist_to_loc) < self.curr_cond['radius']
         in_position = np.any(is_cor_loc)
-        if in_position: self.previous_loc = cor_locs[np.argmin(dist_to_loc)]
+        self.curr_loc = cor_locs[np.argmin(dist_to_loc)]
         if in_position and not self.in_position_flag:
             self.interface.give_sound(sound_freq=4000, duration=500, volume=50)
         self.in_position_flag = in_position
@@ -92,6 +93,7 @@ class VRBall(Behavior, dj.Manual):
         self.interface.give_liquid(self.response.port)
         self.log_reward(self.reward_amount[self.response.port])
         self.update_history(self.response.port, self.reward_amount[self.response.port])
+        self.previous_loc = self.curr_loc
 
     def punish(self):
         self.update_history(self.response.port)
