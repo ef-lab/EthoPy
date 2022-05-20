@@ -28,19 +28,18 @@ class RPPorts(Interface):
 
         matched_ports = set(self.rew_ports) & set(self.channels['Liquid'].keys())
         assert matched_ports == set(self.rew_ports), 'All reward ports must have assigned a liquid delivery port!'
-
         if 'Lick' in self.channels:
             self.GPIO.setup(list(self.channels['Lick'].values()), self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-            if not self.callbacks: return
-            for channel in self.channels['Lick']:
-                self.GPIO.add_event_detect(self.channels['Lick'][channel], self.GPIO.RISING,
-                                           callback=self._lick_port_activated, bouncetime=100)
+            if self.callbacks:
+                for channel in self.channels['Lick']:
+                    self.GPIO.add_event_detect(self.channels['Lick'][channel], self.GPIO.RISING,
+                                               callback=self._lick_port_activated, bouncetime=100)
         if 'Proximity' in self.channels:
             self.GPIO.setup(list(self.channels['Proximity'].values()), self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-            if not self.callbacks: return
-            for channel in self.channels['Proximity']:
-                self.GPIO.add_event_detect(self.channels['Proximity'][channel], self.GPIO.BOTH,
-                                           callback=self._position_change, bouncetime=50)
+            if self.callbacks:
+                for channel in self.channels['Proximity']:
+                    self.GPIO.add_event_detect(self.channels['Proximity'][channel], self.GPIO.BOTH,
+                                               callback=self._position_change, bouncetime=50)
         if 'Odor' in self.channels:
             self.GPIO.setup(list(self.channels['Odor'].values()), self.GPIO.OUT, initial=self.GPIO.LOW)
         if 'Liquid' in self.channels:
