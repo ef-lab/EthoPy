@@ -133,6 +133,7 @@ class Delay(Experiment):
 
     def run(self):
         self.stim.present()
+        self.logger.ping()
         self.response = self.beh.get_response(self.start_time)
         if self.beh.is_ready(self.curr_cond['delay_ready'], self.start_time):
             self.resp_ready = True
