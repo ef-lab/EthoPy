@@ -127,10 +127,13 @@ class Cue(Experiment):
 
 class Delay(Experiment):
     def entry(self):
-        self.stim.prepare(self.curr_cond, 'Response')
+        self.stim.prepare(self.curr_cond, 'Delay')
+        self.stim.start()
         super().entry()
 
     def run(self):
+        self.stim.present()
+        self.logger.ping()
         self.response = self.beh.get_response(self.start_time)
         if self.beh.is_ready(self.curr_cond['delay_ready'], self.start_time):
             self.resp_ready = True
@@ -144,10 +147,13 @@ class Delay(Experiment):
             return 'Exit'
         else:
             return 'Delay'
-
+            
+    def exit(self):
+        self.stim.stop()
 
 class Response(Experiment):
     def entry(self):
+        self.stim.prepare(self.curr_cond, 'Response')
         self.stim.start()
         super().entry()
 
