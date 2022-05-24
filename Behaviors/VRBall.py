@@ -82,7 +82,7 @@ class VRBall(Behavior, dj.Manual):
         in_position = np.any(is_cor_loc)
         self.curr_loc = cor_locs[np.argmin(dist_to_loc)]
         if in_position and not self.in_position_flag:
-            self.interface.give_sound(sound_freq=4000, duration=500, volume=50)
+            self.interface.give_sound(sound_freq=10000, duration=500, volume=50)
         self.in_position_flag = in_position
         return in_position
 
