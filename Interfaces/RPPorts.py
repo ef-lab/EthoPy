@@ -2,6 +2,7 @@ from time import sleep
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 from core.Interface import *
+from utils.CameraInterface import Runner
 
 
 class RPPorts(Interface):
@@ -62,6 +63,20 @@ class RPPorts(Interface):
             self.exp.log_recording(dict(rec_aim='sync', software='PyMouse', version='0.1',
                                            filename=filename, source_path=source_path, target_path=target_path))
 
+        if self.exp.cam_rec:
+            source_path = '/mnt/lab/data/behavior_video_rp/'
+            target_path = '/mnt/lab/data/behavior_video_rp/mp4/'
+            filename = '%s_%d_%d_%s' % ('video_rec', self.logger.trial_key['animal_id'],
+                                    self.logger.trial_key['session'],
+                                    datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
+
+            self.exp.log_recording(dict(rec_aim='video_rec', software='PyMouse', version='0.1',
+                                   filename=filename, source_path=source_path, target_path=target_path))
+            # Init Runner that is responsible for the video recording
+            self.rec = Runner(source_path=source_path, target_path=target_path, filename=filename)
+            # Start Video Recording 
+            self.rec.start(logger = self.logger, resolution = (1080, 960), framerate = 30)
+
     def give_liquid(self, port, duration=False):
         if duration: self._create_pulse(port, duration)
         self.thread.submit(self._give_pulse, port)
@@ -103,6 +118,8 @@ class RPPorts(Interface):
         self.GPIO.cleanup()
         if self.ts:
             self.ts.stop()
+        if self.exp.cam_rec: # Stop Video recording
+            self.rec.stop()
 
     def in_position(self, port=0):
         position = self.position
