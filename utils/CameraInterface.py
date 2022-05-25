@@ -44,6 +44,7 @@ class Runner():
         self.framerate = framerate
         print("Start Video Recording")
         self.event = multiprocessing.Event()
+        # Start a process that is responsible for the video recording
         self.p = multiprocessing.Process(target=self.start_recording, args=(
                                          logger, resolution, framerate,
                                          self.source_path, self.filename+'.'+self.filetype,
