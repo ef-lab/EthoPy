@@ -235,10 +235,6 @@ class Behavior:
     default_key, reward_amount, choice_history, reward_history, last_response = dict(), dict(), list(), list(), []
 
     def setup(self, exp):
-        interface_module = (experiment.SetupConfiguration & {'setup_conf_idx': exp.params['setup_conf_idx']}
-                            ).fetch('interface')[0]
-        interface = getattr(import_module(f'Interfaces.{interface_module}'), interface_module)
-        self.interface = interface(exp=exp, beh=self)
         self.params = exp.params
         self.exp = exp
         self.logger = exp.logger
@@ -246,9 +242,13 @@ class Behavior:
         self.choice_history = list()  # History term for bias calculation
         self.reward_history = list()  # History term for performance calculation
         self.reward_amount = dict()
-        self.interface.load_calibration()
         self.response, self.last_response, self.last_lick = Activity(), Activity(), Activity()
         self.logging = True
+        interface_module = (experiment.SetupConfiguration & {'setup_conf_idx': exp.params['setup_conf_idx']}
+                            ).fetch('interface')[0]
+        interface = getattr(import_module(f'Interfaces.{interface_module}'), interface_module)
+        self.interface = interface(exp=exp, beh=self)
+        self.interface.load_calibration()
 
     def is_ready(self, init_duration, since=0):
         return True, 0
