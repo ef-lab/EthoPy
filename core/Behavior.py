@@ -264,12 +264,13 @@ class Behavior:
             return True
         return False
 
-    def is_licking(self, since=0, reward=False):
+    def is_licking(self, since=0, reward=False, clear=True):
         if self.last_lick.time >= since and self.last_lick.port:
             if not reward or (reward and self.last_lick.reward):
                 self.licked_port = self.last_lick.port
-        else:
-            self.licked_port = 0
+            else: self.licked_port = 0
+        else: self.licked_port = 0
+        if clear: self.last_lick = Activity() # by default if it licked since the last time this function was called
         return self.licked_port
 
     def reward(self):

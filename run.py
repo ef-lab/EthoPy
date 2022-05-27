@@ -16,7 +16,7 @@ while not logger.setup_status == 'exit':
         except Exception as e:
             error = e
             logger.update_setup_info({'state': 'ERROR!', 'notes': str(e), 'status': 'exit'})
-        if protocol:  logger.update_setup_info({'status': 'exit'}); break
+        if logger.manual_run:  logger.update_setup_info({'status': 'exit'}); break
         elif logger.setup_status not in ['exit', 'running']:  # restart if session ended
             logger.update_setup_info({'status': 'ready'})  # restart
     time.sleep(.1)

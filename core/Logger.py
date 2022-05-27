@@ -28,7 +28,8 @@ class Logger:
     def __init__(self, protocol=False):
         self.setup = socket.gethostname()
         self.is_pi = os.uname()[4][:3] == 'arm' if os.name == 'posix' else False
-        self.setup_status = 'running' if protocol else 'ready'
+        self.manual_run = True if protocol else False
+        self.setup_status = 'running' if self.manual_run else 'ready'
         fileobject = open(os.path.dirname(os.path.abspath(__file__)) + '/../dj_local_conf.json')
         con_info = json.loads(fileobject.read())
         self.private_conn = dj.Connection(con_info['database.host'], con_info['database.user'], con_info['database.password'])
@@ -88,6 +89,7 @@ class Logger:
     def log(self, table, data=dict(), **kwargs):
         tmst = self.logger_timer.elapsed_time()
         self.put(table=table, tuple={**self.trial_key, 'time': tmst, **data}, **kwargs)
+        if self.manual_run and table == 'Trial.StateOnset': print('State: ', data['state'])
         return tmst
 
     def log_setup(self, task_idx=False):
@@ -107,6 +109,7 @@ class Logger:
                               trial_idx=0, session=self.get_last_session() + 1)
         session_key = {**self.trial_key, **params, 'setup': self.setup,
                        'user_name': params['user'] if 'user_name' in params else 'bot'}
+        if self.manual_run: print('Logging Session: ', session_key)
         self.put(table='Session', tuple=session_key, priority=1, validate=True, block=True)
         if log_protocol:
             pr_name, pr_file = self.get_protocol(raw_file=True)
