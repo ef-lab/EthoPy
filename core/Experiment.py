@@ -167,7 +167,8 @@ class ExperimentClass:
                 core = [field for field in rgetattr(eval(schema), ctable).primary_key if field != hsh]
                 fields = [field for field in rgetattr(eval(schema), ctable).heading.names]
                 if not np.all([np.any(np.array(k) == list(cond.keys())) for k in fields]):
-                    print('skipping ', ctable); continue # only insert complete tuples
+                    if self.logger.manual_run: print('skipping ', ctable)
+                    continue # only insert complete tuples
                 if core and hasattr(cond[core[0]], '__iter__'):
                     for idx, pcond in enumerate(cond[core[0]]):
                         cond_key = {k: cond[k] if type(cond[k]) in [int, float, str] else cond[k][idx] for k in fields}
