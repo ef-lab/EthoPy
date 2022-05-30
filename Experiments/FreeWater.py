@@ -69,11 +69,22 @@ class Trial(Experiment):
 
 class Reward(Experiment):
     def entry(self):
+        super().entry()
         self.stim.reward_stim()
-        self.beh.reward()
+
+    def run(self):
+        self.rewarded = self.beh.reward(self.start_time)
 
     def next(self):
-        return 'InterTrial'
+        if self.rewarded:
+            return 'InterTrial'
+        elif self.state_timer.elapsed_time() >= self.curr_cond['reward_duration']:
+            self.beh.update_history()
+            return 'InterTrial'
+        elif self.is_stopped():
+            return 'Exit'
+        else:
+            return 'Reward'
 
 
 class InterTrial(Experiment):
