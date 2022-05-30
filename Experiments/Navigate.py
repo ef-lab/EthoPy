@@ -122,18 +122,10 @@ class Abort(Experiment):
 
 class Reward(Experiment):
     def run(self):
-        self.rewarded = self.beh.reward(self.start_time)
+        self.beh.reward()
 
     def next(self):
-        if self.rewarded:
-            return 'InterTrial'
-        elif self.state_timer.elapsed_time() >= self.curr_cond['reward_duration']:
-            self.beh.update_history()
-            return 'InterTrial'
-        elif self.is_stopped():
-            return 'Exit'
-        else:
-            return 'Reward'
+        return 'InterTrial'
 
 
 class Punish(Experiment):
