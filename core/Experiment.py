@@ -154,13 +154,13 @@ class ExperimentClass:
     def name(self): return type(self).__name__
 
     def log_conditions(self, conditions, condition_tables=['Condition'], schema='experiment', hsh='cond_hash', priority=2):
-        fields, hash_dict = list(), dict()
+        fields_hash, hash_dict = list(), dict()
         for ctable in condition_tables:
             table = rgetattr(eval(schema), ctable)
-            fields += list(table().heading.names)
+            fields_hash += list(table().heading.names)
         for cond in conditions:
             insert_priority = priority
-            key = {sel_key: cond[sel_key] for sel_key in fields if sel_key != hsh and sel_key in cond}  # find all dependant fields and generate hash
+            key = {sel_key: cond[sel_key] for sel_key in fields_hash if sel_key != hsh and sel_key in cond}  # find all dependant fields and generate hash
             cond.update({hsh: make_hash(key)})
             hash_dict[cond[hsh]] = cond[hsh]
             for ctable in condition_tables:  # insert dependant condition tables
