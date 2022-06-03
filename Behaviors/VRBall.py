@@ -96,7 +96,7 @@ class VRBall(Behavior, dj.Manual):
         self.previous_loc = self.curr_loc
 
     def punish(self):
-        self.update_history(self.response.port)
+        self.update_history(self.response.port, punish=True)
 
     def exit(self):
         super().exit()

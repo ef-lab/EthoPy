@@ -65,5 +65,5 @@ class MultiPort(Behavior, dj.Manual):
 
     def punish(self):
         port = self.response.port if self.response.port > 0 else np.nan
-        self.update_history(port)
+        self.update_history(port, punish=True)
 
