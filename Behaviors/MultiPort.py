@@ -50,6 +50,7 @@ class MultiPort(Behavior, dj.Manual):
                np.any(np.equal(self.response.port, self.curr_cond['response_port']))
 
     def reward(self, tmst=0):
+        if self.response.reward: tmst=0 # if response and reward ports are the same no need of tmst 
         licked_port = self.is_licking(since=tmst, reward=True)
         if licked_port:
             self.interface.give_liquid(licked_port)
