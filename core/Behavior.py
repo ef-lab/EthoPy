@@ -241,6 +241,7 @@ class Behavior:
         self.choices = np.array(np.empty(0))
         self.choice_history = list()  # History term for bias calculation
         self.reward_history = list()  # History term for performance calculation
+        self.punish_history = list()
         self.reward_amount = dict()
         self.response, self.last_response, self.last_lick = Activity(), Activity(), Activity()
         self.logging = True
@@ -319,15 +320,16 @@ class Behavior:
         self.logger.log('BehCondition.Trial', dict(beh_hash=self.curr_cond['beh_hash']),
                         schema='behavior')
 
-    def update_history(self, choice=np.nan, reward=np.nan):
-        if np.isnan(choice) and self.response.time > 0: choice = self.response.port
+    def update_history(self, choice=np.nan, reward=np.nan, punish=np.nan):
+        if np.isnan(choice) and (~np.isnan(reward) or ~np.isnan(punish)) and self.response.time > 0: choice = self.response.port
         self.choice_history.append(choice)
         self.reward_history.append(reward)
+        self.punish_history.append(punish)
         self.logger.total_reward = np.nansum(self.reward_history)
 
     def get_false_history(self, h=10):
-        idx = np.logical_and(np.isnan(self.reward_history), ~np.isnan(self.choice_history))
-        return np.sum(np.cumprod(np.flip(idx[-h:], axis=0)))
+        idx = np.nan_to_num(self.punish_history)
+        return np.nansum(np.cumprod(np.flip(idx[-h:], axis=0)))
 
     def is_sleep_time(self):
         now = datetime.now()

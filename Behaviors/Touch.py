@@ -97,7 +97,7 @@ class Touch(Behavior, dj.Manual):
 
     def punish(self):
         touched_loc = self.touch if self.has_touched else np.nan
-        self.update_history(touched_loc)
+        self.update_history(touched_loc, punish=True)
 
     def exit(self):
         super().exit()
