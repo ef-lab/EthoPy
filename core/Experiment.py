@@ -207,7 +207,7 @@ class ExperimentClass:
             selected_conditions = [i for (i, v) in zip(self.conditions, self.choices == anti_bias) if v]
             self.curr_cond = np.random.choice(selected_conditions)
         elif self.params['trial_selection'] == 'staircase':
-            idx = [~np.isnan(ch).any() for ch in self.beh.choice_history]
+            idx = np.logical_or(~np.isnan(self.beh.reward_history), ~np.isnan(self.beh.punish_history))
             rew_h = np.asarray(self.beh.reward_history); rew_h = rew_h[idx]
             choice_h = np.int64(np.asarray(self.beh.choice_history)[idx])
             choice_h = [[c, d] for c, d in zip(choice_h, np.asarray(self.dif_h)[idx])]
