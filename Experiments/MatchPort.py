@@ -142,7 +142,7 @@ class Reward(Experiment):
         if self.rewarded:
             return 'InterTrial'
         elif self.state_timer.elapsed_time() >= self.curr_cond['reward_duration']:
-            self.beh.update_history(self.beh.response.port, 0)
+            self.beh.update_history(reward=0)
             return 'InterTrial'
         elif self.is_stopped():
             return 'Exit'
