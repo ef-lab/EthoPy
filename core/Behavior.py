@@ -321,7 +321,7 @@ class Behavior:
                         schema='behavior')
 
     def update_history(self, choice=np.nan, reward=np.nan, punish=np.nan):
-        if np.isnan(choice) and self.response.time > 0: choice = self.response.port
+        if np.isnan(choice) and (~np.isnan(reward) or ~np.isnan(punish)) and self.response.time > 0: choice = self.response.port
         self.choice_history.append(choice)
         self.reward_history.append(reward)
         self.punish_history.append(punish)
