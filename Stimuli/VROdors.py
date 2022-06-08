@@ -52,7 +52,9 @@ class VROdors(Stimulus, dj.Manual):
         self.exp.interface.update_odor(odor_dutycycles)
 
     def ready_stim(self):
-        self.exp.interface.give_sound(**self.speaker_properties)
+        self.exp.interface.give_sound(sound_freq=self.speaker_properties['sound_freq'],
+                                      duration=self.speaker_properties['duration'],
+                                      volume=self.speaker_properties['volume'])
 
     def stop(self):
         self.exp.interface.stop_odor()
