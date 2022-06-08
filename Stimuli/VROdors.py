@@ -28,7 +28,7 @@ class VROdors(Stimulus, dj.Manual):
 
     def init(self, exp):
         super().init(exp)
-        self.speaker_properties = self.logger.get(table='SetupConfiguration.Speaker', key=self.exp.params, as_dict=True)
+        self.speaker_properties = self.logger.get(table='SetupConfiguration.Speaker', key=self.exp.params, as_dict=True)[0]
 
     def start(self):
         self.exp.interface.start_odor(self.curr_cond['delivery_port'],
