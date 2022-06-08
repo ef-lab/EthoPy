@@ -448,6 +448,18 @@ class SetupConfiguration(dj.Lookup):
         discription              : varchar(256)
         """
 
+    class Speaker(dj.Part):
+        definition = """
+        # Speaker information
+        speaker_idx             : tinyint
+        -> SetupConfiguration
+        ---
+        sound_freq=10000        : int           # in Hz
+        duration=500            : int           # in ms
+        volume=50               : tinyint       # 0-100% 
+        discription             : varchar(256)
+        """
+
 
 @experiment.schema
 class Control(dj.Lookup):

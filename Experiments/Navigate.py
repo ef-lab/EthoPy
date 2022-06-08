@@ -79,17 +79,21 @@ class PreTrial(Experiment):
 class Trial(Experiment):
     def entry(self):
         super().entry()
+        self.is_in_correct_loc = False
         self.stim.start()
         self.beh.vr.update_location = True
 
     def run(self):
         self.stim.present()
         self.response = self.beh.get_response(self.start_time)
-        self.is_correct = self.beh.is_correct()
+        is_in_correct_loc = self.beh.is_in_correct_loc()
+        if is_in_correct_loc and not self.is_in_correct_loc:
+            self.stim.ready_stim()
+        self.is_in_correct_loc = is_in_correct_loc
         time.sleep(.1)
 
     def next(self):
-        if self.response and self.is_correct and not self.beh.is_running():  # correct response
+        if self.response and self.is_in_correct_loc and not self.beh.is_running():  # correct response
             return 'Reward'
         elif not self.beh.is_ready() and self.response:
             return 'Abort'

@@ -26,6 +26,10 @@ class VROdors(Stimulus, dj.Manual):
     required_fields = ['odorant_id', 'delivery_port', 'odor_x', 'odor_y']
     default_key = {'extiction_factor': 1, 'frequency': 10}
 
+    def __init__(self, exp):
+        super().__init__(exp)
+        self.speaker_properties = self.logger.get(table='SetupConfiguration.Speaker', key=self.exp.params, as_dict=True)
+
     def start(self):
         self.exp.interface.start_odor(self.curr_cond['delivery_port'],
                                       dutycycle=0, frequency=self.curr_cond['frequency'])
@@ -46,6 +50,9 @@ class VROdors(Stimulus, dj.Manual):
         x, y, theta, tmst = self.exp.beh.get_position()
         odor_dutycycles = self.loc2odor(x, y)
         self.exp.interface.update_odor(odor_dutycycles)
+
+    def ready_stim(self):
+        self.interface.give_sound(**self.speaker_properties)
 
     def stop(self):
         self.exp.interface.stop_odor()
