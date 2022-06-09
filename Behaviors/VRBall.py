@@ -70,7 +70,7 @@ class VRBall(Behavior, dj.Manual):
     def is_running(self):
         return self.vr.getSpeed() > self.curr_cond['speed_thr']
 
-    def is_correct(self):
+    def is_in_correct_loc(self):
         x, y, theta, tmst = self.get_position()
         if self.curr_cond['reward_loc_x'] < 0 or self.curr_cond['reward_loc_y'] < 0: # cor location is any other
             resp_locs = np.array([self.curr_cond['response_loc_x'], self.curr_cond['response_loc_y']]).T
@@ -81,9 +81,6 @@ class VRBall(Behavior, dj.Manual):
         is_cor_loc = np.array(dist_to_loc) < self.curr_cond['radius']
         in_position = np.any(is_cor_loc)
         self.curr_loc = cor_locs[np.argmin(dist_to_loc)]
-        if in_position and not self.in_position_flag:
-            self.interface.give_sound(sound_freq=10000, duration=500, volume=50)
-        self.in_position_flag = in_position
         return in_position
 
     def get_position(self):

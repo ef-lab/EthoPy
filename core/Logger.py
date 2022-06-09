@@ -130,6 +130,10 @@ class Logger:
                  ).fetch(as_dict=True)
         for ball in balls:
             self.put(table='Configuration.Ball', tuple={**ball, **self.trial_key}, schema='behavior')
+        speakers = (experiment.SetupConfiguration.Speaker & {'setup_conf_idx': params['setup_conf_idx']}
+                 ).fetch(as_dict=True)
+        for spk in speakers:
+            self.put(table='Configuration.Speaker', tuple={**spk, **self.trial_key}, schema='stimulus')
 
         key = {'session': self.trial_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1, 'state': ''}
         if 'start_time' in params:

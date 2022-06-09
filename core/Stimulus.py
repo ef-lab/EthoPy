@@ -27,6 +27,18 @@ class Configuration(dj.Manual):
         discription              : varchar(256)
         """
 
+    class Speaker(dj.Part):
+        definition = """
+        # Speaker information
+        speaker_idx             : tinyint
+        -> Configuration
+        ---
+        sound_freq=10000        : int           # in Hz
+        duration=500            : int           # in ms
+        volume=50               : tinyint       # 0-100 percentage
+        discription             : varchar(256)
+        """
+
 
 @stimulus.schema
 class StimCondition(dj.Manual):
