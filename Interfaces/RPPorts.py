@@ -48,6 +48,7 @@ class RPPorts(Interface):
         if 'Sound' in self.channels:
             for channel in self.channels['Sound']:
                 self.Pulser.set_mode(self.channels['Sound'][channel], pigpio.OUTPUT)
+                self.Pulser.hardware_PWM(self.channels['Sound'][channel], 0, 0)
         if 'Running' in self.channels:
             self.GPIO.setup(self.channels['Running'], self.GPIO.OUT, initial=self.GPIO.LOW)
 
@@ -168,6 +169,8 @@ class RPPorts(Interface):
         pwm.stop()
 
     def __pwm_out(self, channel, freq, duration, dutycycle=50):
-        self.Pulser.hardware_PWM(channel, freq, dutycycle*5000)
+        self.Pulser.set_PWM_frequency(channel, freq)
+        self.Pulser.set_PWM_dutycycle(channel, dutycycle*5000)
+        print('freq: ', freq, 'act_freq: ', self.Pulser.get_PWM_frequency(channel), 'duty: ', dutycycle*5000, 'act_duty: ', self.Pulser.get_PWM_dutycycle(channel))
         sleep(duration/1000)    # to add a  delay in seconds
-        self.Pulser.hardware_PWM(channel, 0, 0)
+        self.Pulser.set_PWM_dutycycle(channel, 0)
