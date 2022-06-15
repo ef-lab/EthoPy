@@ -82,7 +82,6 @@ class ExperimentClass:
         self.logger.ping(0)
         self.logger.closeDatasets()
         self.running = False
-        self.logger.update_setup_info({'status': 'stop'})
 
     def is_stopped(self):
         self.quit = self.quit or self.logger.setup_status in ['stop', 'exit']
