@@ -49,6 +49,9 @@ class MultiPort(Behavior, dj.Manual):
         return self.curr_cond['response_port'] == -1 or \
                np.any(np.equal(self.response.port, self.curr_cond['response_port']))
 
+    def is_off_proximity(self):
+        return self.interface.off_proximity()
+
     def reward(self, tmst=0):
         if self.response.reward: tmst=0 # if response and reward ports are the same no need of tmst 
         licked_port = self.is_licking(since=tmst, reward=True)
