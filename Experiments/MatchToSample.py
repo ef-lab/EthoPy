@@ -253,7 +253,7 @@ class InterTrial(Experiment):
             return 'Hydrate'
         elif self.beh.is_sleep_time() or self.beh.is_hydrated():
             return 'Offtime'
-        elif self.state_timer.elapsed_time() >= self.curr_cond['intertrial_duration']:
+        elif self.state_timer.elapsed_time() >= self.curr_cond['intertrial_duration'] and self.beh.is_off_proximity():
             return 'PreTrial'
         else:
             return 'InterTrial'

@@ -113,6 +113,9 @@ class RPPorts(Interface):
         position_dur = self.timer_ready.elapsed_time() if self.position else self.position_dur
         return self.position, position_dur, self.position_tmst
 
+    def off_proximity(self):
+        return self.position.type != 'Proximity'
+
     def _get_position(self, ports=0):
         if not ports: ports = self.proximity_ports
         elif not type(ports) is list: ports = [ports]
