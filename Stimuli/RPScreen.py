@@ -15,7 +15,9 @@ class RPScreen(Stimulus):
         self.unshow()
         pygame.mouse.set_visible(0)
         pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-
+        self.screen.fill(self.color)
+        self.flip()
+        
     def ready_stim(self):
         self.unshow([64, 64, 64])
 
