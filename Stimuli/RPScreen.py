@@ -22,7 +22,7 @@ class RPScreen(Stimulus):
         self.unshow([64, 64, 64])
 
     def reward_stim(self):
-        self.unshow([255, 255, 255])
+        self.unshow([128, 128, 128])
 
     def stop(self):
         self.screen.fill([0, 0, 0])
