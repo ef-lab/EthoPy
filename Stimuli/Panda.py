@@ -226,6 +226,9 @@ class Panda(Stimulus, dj.Manual):
     def reward_stim(self):
         self.unshow((0.5, 0.5, 0.5))
 
+    def ready_stim(self):
+        self.unshow([0.25, 0.25, 0.25])
+
     def unshow(self, color=None):
         if not color: color = self.background_color
         self.set_background_color(*color)
