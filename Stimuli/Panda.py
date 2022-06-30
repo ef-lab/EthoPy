@@ -137,10 +137,11 @@ class Panda(Stimulus, dj.Manual):
         self.render.setLight(self.ambientLightNP)
 
     def prepare(self, curr_cond, stim_period=''):
-        self.flag_no_stim = stim_period not in curr_cond
+        self.flag_no_stim = False
         if stim_period == '':
             self.curr_cond = curr_cond
-        elif self.flag_no_stim :
+        elif stim_period not in curr_cond :
+            self.flag_no_stim = True
             return
         else: 
             self.curr_cond = curr_cond[stim_period]
