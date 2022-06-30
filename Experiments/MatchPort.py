@@ -168,9 +168,6 @@ class Punish(Experiment):
         else:
             return 'Punish'
 
-    def exit(self):
-        self.stim.unshow()
-
 
 class InterTrial(Experiment):        
     def run(self):
