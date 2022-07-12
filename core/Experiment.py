@@ -303,7 +303,6 @@ class Trial(dj.Manual):
         # Trial state timestamps
         -> Trial
         time			    : int 	            # time from session start (ms)
-        ---
         state               : varchar(64)
         """
 
