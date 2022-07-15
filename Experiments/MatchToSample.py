@@ -89,7 +89,7 @@ class PreTrial(Experiment):
         if self.is_stopped():
             return 'Exit'
         elif self.beh.is_sleep_time():
-            return 'InterTrial'
+            return 'Offtime'
         elif self.resp_ready:
             return 'Cue'
         else:
