@@ -71,9 +71,9 @@ class PreTrial(Experiment):
         self.stim.prepare(self.curr_cond)
         self.beh.prepare(self.curr_cond)
         super().entry()
+        self.stim.unshow() # show the background color
 
     def run(self):
-        self.stim.unshow() # show the background color
         if not self.is_stopped() and self.beh.is_ready(self.curr_cond['init_ready'], self.start_time):
             self.resp_ready = True
 
