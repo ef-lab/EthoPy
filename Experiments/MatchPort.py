@@ -153,14 +153,12 @@ class Reward(Experiment):
 
 class Punish(Experiment):
     def entry(self):
+        self.stim.punish_stim()
         self.beh.punish()
         super().entry()
         self.punish_period = self.stim.curr_cond['punish_duration']
         if self.params.get('incremental_punishment'):
             self.punish_period *= self.beh.get_false_history()
-
-    def run(self):
-        self.stim.punish_stim()
 
     def next(self):
         if self.state_timer.elapsed_time() >= self.punish_period:
