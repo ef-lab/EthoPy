@@ -191,12 +191,12 @@ class Panda(Stimulus, dj.Manual):
             self.isrunning = True
 
     def start(self):
-        if not self.flag_no_stim:
-            self.log_start()
-            if self.movie: self.mov_texture.play()
-            for idx, obj in enumerate(iterable(self.curr_cond['obj_id'])):
-                self.objects[idx].run()
-            self.flip(2)
+        if self.flag_no_stim: return
+        self.log_start()
+        if self.movie: self.mov_texture.play()
+        for idx, obj in enumerate(iterable(self.curr_cond['obj_id'])):
+            self.objects[idx].run()
+        self.flip(2)
 
     def present(self):
         self.flip()
@@ -208,20 +208,20 @@ class Panda(Stimulus, dj.Manual):
             self.taskMgr.step()
 
     def stop(self):
-        if not self.flag_no_stim:
-            for idx, obj in self.objects.items():
-                obj.remove(obj.task)
-            for idx, light in self.lights.items():
-                self.render.clearLight(self.lightsNP[idx])
-            if self.movie:
-                self.mov_texture.stop()
-                self.movie_node.removeNode()
-                self.movie = False
-            self.render.clearLight
+        if self.flag_no_stim: return
+        for idx, obj in self.objects.items():
+            obj.remove(obj.task)
+        for idx, light in self.lights.items():
+            self.render.clearLight(self.lightsNP[idx])
+        if self.movie:
+            self.mov_texture.stop()
+            self.movie_node.removeNode()
+            self.movie = False
+        self.render.clearLight
 
-            self.flip(2) # clear double buffer
-            self.log_stop()
-            self.isrunning = False
+        self.flip(2) # clear double buffer
+        self.log_stop()
+        self.isrunning = False
 
     def punish_stim(self):
         self.unshow((0, 0, 0))
