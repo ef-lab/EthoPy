@@ -12,9 +12,14 @@ class Tones(RPScreen, dj.Manual):
     tone_volume               : int                     # tone volume (percent)
     """
 
-    cond_tables = ['Tones']
+    cond_tables = ['Tones','RPScreen']
     required_fields = ['tone_duration', 'tone_frequency']
-    default_key = {'dutycycle': 50}
+    default_key = {'dutycycle'         : 50,
+                    'reward_color'     : [128, 128, 128],
+                    'punish_color'     : [0, 0, 0],
+                    'ready_color'      : [64, 64, 64],
+                    'background_color' : [32, 32, 32]
+                    } 
 
     def start(self):
         tone_duration = self.curr_cond['tone_duration']

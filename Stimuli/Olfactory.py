@@ -34,9 +34,14 @@ class Olfactory(RPScreen, dj.Manual):
         dutycycle            : int                      # odor dutycycle
         """
 
-    cond_tables = ['Olfactory', 'Olfactory.Channel']
+    cond_tables = ['Olfactory', 'Olfactory.Channel','RPScreen']
     required_fields = ['odor_duration', 'odorant_id', 'delivery_port']
-    default_key = {'dutycycle': 50}
+    default_key = {'dutycycle'          : 50,
+                    'reward_color'      : [128, 128, 128],
+                    'punish_color'      : [0, 0, 0],
+                    'ready_color'       : [64, 64, 64],
+                    'background_color'  : [32, 32, 32]
+                }
 
     def start(self):
         delivery_port = self.curr_cond['delivery_port']

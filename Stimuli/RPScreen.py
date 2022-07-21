@@ -3,10 +3,26 @@ import pygame
 from pygame.locals import *
 
 
-class RPScreen(Stimulus):
+@stimulus.schema
+class RPScreen(Stimulus, dj.Manual):
+    definition = """
+    # This class handles the presentation of Odors
+    -> StimCondition
+    ---
+    reward_color            : tinyblob
+    punish_color            : tinyblob
+    ready_color             : tinyblob
+    background_color        : tinyblob
+    """
+    cond_tables = ['RPScreen']
+    default_key = {'reward_color'      : [255, 255, 255],
+                    'punish_color'     : [0, 0, 0],
+                    'ready_color'      : [64, 64, 64],
+                    'background_color' : [32, 32, 32]
+                    } 
 
     def setup(self):
-        self.color = [32, 32, 32]  # default background color
+        self.color = self.curr_cond['background_color']  # default background color
 
         # setup pygame
         if not pygame.get_init():
@@ -19,13 +35,13 @@ class RPScreen(Stimulus):
         self.flip()
         
     def ready_stim(self):
-        self.unshow([64, 64, 64])
+        self.unshow(self.curr_cond['ready_color'])
 
     def reward_stim(self):
-        self.unshow([255, 255, 255])
+        self.unshow(self.curr_cond['reward_color'])
 
     def stop(self):
-        self.screen.fill([0, 0, 0])
+        self.screen.fill(self.curr_cond['punish_color'])
         self.flip()
         self.log_stop()
         self.isrunning = False
