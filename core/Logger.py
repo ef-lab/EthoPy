@@ -88,7 +88,13 @@ class Logger:
 
     def log(self, table, data=dict(), **kwargs):
         tmst = self.logger_timer.elapsed_time()
-        self.put(table=table, tuple={**self.trial_key, 'time': tmst, **data}, **kwargs)
+        if table == 'Trial.StateOnset':
+            # if trials are 0 cannot add 'Offtime' to trial_state_onset in DB
+            # due to Integrity Constraint Violation from table trial 
+            if data['state'] == 'Offtime' and len(self.get_trials()) == 0: return
+            self.put(table=table, tuple={**self.trial_key, 'time': tmst, **data}, **kwargs)
+        else:
+            self.put(table=table, tuple={**self.trial_key, 'time': tmst, **data}, **kwargs)
         if self.manual_run and table == 'Trial.StateOnset': print('State: ', data['state'])
         return tmst
 
@@ -102,6 +108,9 @@ class Logger:
     def get_last_session(self):
         last_sessions = (experiment.Session() & dict(animal_id=self.get_setup_info('animal_id'))).fetch('session')
         return 0 if numpy.size(last_sessions) == 0 else numpy.max(last_sessions)
+
+    def get_trials(self):
+        return experiment.Trial() & dict(animal_id=self.get_setup_info('animal_id'), session=self.get_last_session())
 
     def log_session(self, params, log_protocol=False):
         self.total_reward = 0
