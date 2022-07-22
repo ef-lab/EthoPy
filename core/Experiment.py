@@ -133,7 +133,7 @@ class ExperimentClass:
             self.un_choices, un_idx = np.unique(self.choices, axis=0, return_index=True)
             if diff_flag: self.un_difs = self.difs[un_idx]
 
-    def prepare_trial(self):
+    def prepare_stim(self):
         old_cond = self.curr_cond
         self._get_new_cond()
         if not self.curr_cond or self.logger.thread_end.is_set():
@@ -143,6 +143,10 @@ class ExperimentClass:
             if 'stimulus_class' in old_cond: self.stim.exit()
             self.stim = self.stims[self.curr_cond['stimulus_class']]
             self.stim.setup()
+
+    def prepare_trial(self):
+        self.prepare_stim()
+
         self.curr_trial += 1
         self.logger.update_trial_idx(self.curr_trial)
         self.trial_start = self.logger.logger_timer.elapsed_time()

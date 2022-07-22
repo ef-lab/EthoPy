@@ -70,7 +70,12 @@ class Entry(Experiment):
         pass
 
     def next(self):
-        return 'PreTrial'
+        if self.beh.is_sleep_time():
+            # prepare stim because at Offtime we use stim.unshow([0,0,0])
+            self.prepare_stim()
+            return 'Offtime'
+        else:
+            return 'PreTrial'
 
 
 class PreTrial(Experiment):
