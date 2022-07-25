@@ -151,6 +151,7 @@ class Delay(Experiment):
     def exit(self):
         self.stim.stop()
 
+
 class Response(Experiment):
     def entry(self):
         self.stim.prepare(self.curr_cond, 'Response')

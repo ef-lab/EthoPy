@@ -303,7 +303,6 @@ class Trial(dj.Manual):
         # Trial state timestamps
         -> Trial
         time			    : int 	            # time from session start (ms)
-        ---
         state               : varchar(64)
         """
 
@@ -445,6 +444,18 @@ class SetupConfiguration(dj.Lookup):
         material="styrofoam"     : varchar(64)             # ball material
         coupling="bearings"      : enum('bearings','air')  # mechanical coupling
         discription              : varchar(256)
+        """
+
+    class Speaker(dj.Part):
+        definition = """
+        # Speaker information
+        speaker_idx             : tinyint
+        -> SetupConfiguration
+        ---
+        sound_freq=10000        : int           # in Hz
+        duration=500            : int           # in ms
+        volume=50               : tinyint       # 0-100 percentage
+        discription             : varchar(256)
         """
 
 
