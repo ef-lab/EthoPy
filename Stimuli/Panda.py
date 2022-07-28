@@ -141,7 +141,7 @@ class Panda(Stimulus, dj.Manual):
         if stim_period == '':
             self.curr_cond = curr_cond
         elif stim_period not in curr_cond:
-            self.flag_no_stim True
+            self.flag_no_stim = True
             return
         else: 
             self.curr_cond = curr_cond[stim_period]
@@ -206,20 +206,20 @@ class Panda(Stimulus, dj.Manual):
             self.taskMgr.step()
 
     def stop(self):
-    if self.flag_no_stim: return
-    for idx, obj in self.objects.items():
-        obj.remove(obj.task)
-    for idx, light in self.lights.items():
-        self.render.clearLight(self.lightsNP[idx])
-    if self.movie:
-        self.mov_texture.stop()
-        self.movie_node.removeNode()
-        self.movie = False
-    self.render.clearLight
+        if self.flag_no_stim: return
+        for idx, obj in self.objects.items():
+            obj.remove(obj.task)
+        for idx, light in self.lights.items():
+            self.render.clearLight(self.lightsNP[idx])
+        if self.movie:
+            self.mov_texture.stop()
+            self.movie_node.removeNode()
+            self.movie = False
+        self.render.clearLight
 
-    self.flip(2) # clear double buffer
-    self.log_stop()
-    self.isrunning = False
+        self.flip(2) # clear double buffer
+        self.log_stop()
+        self.isrunning = False
 
     def punish_stim(self):
         self.unshow((0, 0, 0))
