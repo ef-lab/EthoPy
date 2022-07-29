@@ -24,6 +24,9 @@ class RPScreen(Stimulus):
     def reward_stim(self):
         self.unshow([128, 128, 128])
 
+    def start_stim(self):
+        self.unshow([32,32,32])
+
     def stop(self):
         self.screen.fill([0, 0, 0])
         self.flip()
