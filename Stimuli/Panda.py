@@ -1,5 +1,6 @@
 from core.Stimulus import *
 import os
+import time
 import numpy as np
 from direct.showbase.ShowBase import ShowBase
 from direct.showbase.Loader import Loader
@@ -135,6 +136,7 @@ class Panda(Stimulus, dj.Manual):
         self.ambientLight = core.AmbientLight('ambientLight')
         self.ambientLightNP = self.render.attachNewNode(self.ambientLight)
         self.render.setLight(self.ambientLightNP)
+        self.set_taskMgr()
 
     def prepare(self, curr_cond, stim_period=''):
         self.flag_no_stim = False
@@ -226,6 +228,12 @@ class Panda(Stimulus, dj.Manual):
 
     def reward_stim(self):
         self.unshow((0.5, 0.5, 0.5))
+    
+    def ready_stim(self):
+        self.unshow((0.25, 0.25, 0.25))
+
+    def start_stim(self):
+        self.unshow((0.125, 0.125, 0.125))
 
     def unshow(self, color=None):
         if not color: color = self.background_color
@@ -267,6 +275,15 @@ class Panda(Stimulus, dj.Manual):
     def get_clip_info(self, key, *fields):
         return self.logger.get(schema='stimulus', table='Movie.Clip', key=key, fields=fields)
 
+    def set_taskMgr(self):
+        """
+        Use this at the setup of pandas because for some reason the taskMgr the first time it 
+        doesn't work properly. It needs time sleep between steps or to run many steps
+        """
+        self.set_background_color((0,0,0))
+        for i in range(0, 2):
+            time.sleep(0.1)
+            self.taskMgr.step()
 
 class Agent(Panda):
     def __init__(self, env, cond):
