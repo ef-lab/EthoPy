@@ -186,12 +186,13 @@ class Panda(Stimulus, dj.Manual):
             self.movie_node.setScale(48)
             self.movie_node.reparentTo(self.render)
 
+    def start(self):
+        if self.flag_no_stim: return
+
         if not self.isrunning:
             self.timer.start()
             self.isrunning = True
 
-    def start(self):
-        if self.flag_no_stim: return
         self.log_start()
         if self.movie: self.mov_texture.play()
         for idx, obj in enumerate(iterable(self.curr_cond['obj_id'])):
@@ -224,19 +225,19 @@ class Panda(Stimulus, dj.Manual):
         self.isrunning = False
 
     def punish_stim(self):
-        self.unshow((0, 0, 0))
+        self.unshow(self.monitor['punish_color'])
 
     def reward_stim(self):
-        self.unshow((0.5, 0.5, 0.5))
+        self.unshow(self.monitor['reward_color'])
     
     def ready_stim(self):
-        self.unshow((0.25, 0.25, 0.25))
+        self.unshow(self.monitor['ready_color'])
 
     def start_stim(self):
-        self.unshow((0.125, 0.125, 0.125))
+        self.unshow(self.monitor["start_color"])
 
     def unshow(self, color=None):
-        if not color: color = self.background_color
+        if not color: color = self.monitor['background_color']
         self.set_background_color(*color)
         self.flip(2)
 
@@ -304,6 +305,7 @@ class Agent(Panda):
         self.name = "Obj%s-Task" % cond['id']
 
     def run(self):
+        self.timer.start()
         self.model = self.env.loader.loadModel(self.env.object_files[self.cond['id']])
         self.model.reparentTo(self.env.render)
         self.task = self.env.taskMgr.doMethodLater(self.cond['delay']/1000, self.objTask, self.name)
