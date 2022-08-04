@@ -103,7 +103,7 @@ class Trial(Experiment):
             self.stim.ready_stim()
 
     def next(self):
-        if not self.resp_ready and self.beh.interface.in_position()==(0,0,0):  # did not wait & 
+        if not self.resp_ready and self.beh.interface.in_position()==(0,0,0):  # did not wait
             return 'Abort'
         elif self.response and not self.beh.is_correct():  # response to incorrect probe
             return 'Punish'
