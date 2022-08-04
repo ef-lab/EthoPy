@@ -122,6 +122,9 @@ class Trial(Experiment):
 
 
 class Abort(Experiment):
+    def entry(self):
+        self.stim.unshow()
+
     def run(self):
         self.beh.update_history()
         self.logger.log('Trial.Aborted')
