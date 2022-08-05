@@ -433,6 +433,11 @@ class SetupConfiguration(dj.Lookup):
         resolution_x             : smallint
         resolution_y             : smallint
         discription              : varchar(256)
+        reward_color             : tinyblob
+        punish_color             : tinyblob
+        ready_color              : tinyblob
+        background_color         : tinyblob
+        start_color              : tinyblob
         """
 
     class Ball(dj.Part):

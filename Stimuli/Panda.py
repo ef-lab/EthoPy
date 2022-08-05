@@ -1,5 +1,6 @@
 from core.Stimulus import *
 import os
+import time
 import numpy as np
 from direct.showbase.ShowBase import ShowBase
 from direct.showbase.Loader import Loader
@@ -135,6 +136,7 @@ class Panda(Stimulus, dj.Manual):
         self.ambientLight = core.AmbientLight('ambientLight')
         self.ambientLightNP = self.render.attachNewNode(self.ambientLight)
         self.render.setLight(self.ambientLightNP)
+        self.set_taskMgr()
 
     def prepare(self, curr_cond, stim_period=''):
         self.flag_no_stim = False
@@ -184,12 +186,13 @@ class Panda(Stimulus, dj.Manual):
             self.movie_node.setScale(48)
             self.movie_node.reparentTo(self.render)
 
+    def start(self):
+        if self.flag_no_stim: return
+
         if not self.isrunning:
             self.timer.start()
             self.isrunning = True
 
-    def start(self):
-        if self.flag_no_stim: return
         self.log_start()
         if self.movie: self.mov_texture.play()
         for idx, obj in enumerate(iterable(self.curr_cond['obj_id'])):
@@ -222,13 +225,19 @@ class Panda(Stimulus, dj.Manual):
         self.isrunning = False
 
     def punish_stim(self):
-        self.unshow((0, 0, 0))
+        self.unshow(self.monitor['punish_color'])
 
     def reward_stim(self):
-        self.unshow((0.5, 0.5, 0.5))
+        self.unshow(self.monitor['reward_color'])
+    
+    def ready_stim(self):
+        self.unshow(self.monitor['ready_color'])
+
+    def start_stim(self):
+        self.unshow(self.monitor["start_color"])
 
     def unshow(self, color=None):
-        if not color: color = self.background_color
+        if not color: color = self.monitor['background_color']
         self.set_background_color(*color)
         self.flip(2)
 
@@ -267,6 +276,15 @@ class Panda(Stimulus, dj.Manual):
     def get_clip_info(self, key, *fields):
         return self.logger.get(schema='stimulus', table='Movie.Clip', key=key, fields=fields)
 
+    def set_taskMgr(self):
+        """
+        Use this at the setup of pandas because for some reason the taskMgr the first time it 
+        doesn't work properly. It needs time sleep between steps or to run many steps
+        """
+        self.set_background_color((0,0,0))
+        for i in range(0, 2):
+            time.sleep(0.1)
+            self.taskMgr.step()
 
 class Agent(Panda):
     def __init__(self, env, cond):
@@ -287,6 +305,7 @@ class Agent(Panda):
         self.name = "Obj%s-Task" % cond['id']
 
     def run(self):
+        self.timer.start()
         self.model = self.env.loader.loadModel(self.env.object_files[self.cond['id']])
         self.model.reparentTo(self.env.render)
         self.task = self.env.taskMgr.doMethodLater(self.cond['delay']/1000, self.objTask, self.name)
