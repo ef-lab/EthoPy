@@ -123,6 +123,7 @@ class Trial(Experiment):
 
 class Abort(Experiment):
     def entry(self):
+        super().entry()
         self.stim.unshow()
 
     def run(self):
