@@ -179,5 +179,5 @@ class RPPorts(Interface):
         while time_stimulus.elapsed_time()<duration:
             self.Pulser.hardware_PWM(channel, freq, volume*5000)
             sleep(.5/pulse_freq)    # to add a  delay in seconds, sleep takes seconds. This is for a 50% dutycycle
-            self.Pulser.hardware_PWM(channel, 0, 0,0)
+            self.Pulser.hardware_PWM(channel, 0, 0)
             if pulse_freq!=500/duration: sleep(.5/pulse_freq)
