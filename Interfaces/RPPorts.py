@@ -70,8 +70,8 @@ class RPPorts(Interface):
         for i, idx in enumerate(odor_id):
             self.thread.submit(self.__pwd_out, self.channels['Odor'][delivery_port[i]], odor_duration, dutycycle[i])
 
-    def give_sound(self, sound_freq=40500, duration=500, volume=100):
-        self.thread.submit(self.__pwm_out, self.channels['Sound'][1], sound_freq, duration, volume)
+    def give_sound(self, sound_freq=40500, duration=500, volume=100, pulse_freq=0):
+        self.thread.submit(self.__pwm_out, self.channels['Sound'][1], sound_freq, duration, volume,pulse_freq)
 
     def setup_touch_exit(self):
         try:
@@ -170,7 +170,14 @@ class RPPorts(Interface):
         sleep(duration/1000)    # to add a  delay in seconds
         pwm.stop()
 
-    def __pwm_out(self, channel, freq, duration, dutycycle=50):
-        self.Pulser.hardware_PWM(channel, freq, dutycycle*5000)
-        sleep(duration/1000)    # to add a  delay in seconds
-        self.Pulser.hardware_PWM(channel, 0, 0)
+    def __pwm_out(self, channel, freq, duration, volume=50, pulse_freq=0):
+        if pulse_freq==0: pulse_freq=0.0001 
+        if (1/pulse_freq)>duration/500: #handle cases that pulse duration (defined by pulse_freq) is not less than stimulus duration
+            pulse_freq=500/duration
+
+        time_stimulus=Timer()
+        while time_stimulus.elapsed_time()<duration:
+            self.Pulser.hardware_PWM(channel, freq, volume*5000)
+            sleep(.5/pulse_freq)    # to add a  delay in seconds, sleep takes seconds. This is for a 50% dutycycle
+            self.Pulser.hardware_PWM(channel, 0, 0)
+            if pulse_freq!=500/duration: sleep(.5/pulse_freq)
