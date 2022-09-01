@@ -18,6 +18,7 @@ class Tones(RPScreen, dj.Manual):
     default_key = {'tone_volume': 50, 'tone_pulse_freq': 0}
 
     def stop(self):
+        super(RPScreen, self).stop()
         self.exp.interface.event.set()
         
     def start(self):
