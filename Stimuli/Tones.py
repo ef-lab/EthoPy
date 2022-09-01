@@ -17,6 +17,10 @@ class Tones(RPScreen, dj.Manual):
     required_fields = ['tone_duration', 'tone_frequency']
     default_key = {'tone_volume': 50, 'tone_pulse_freq': 0}
 
+    def stop(self):
+        super(RPScreen, self).stop()
+        self.exp.interface.event.set()
+        
     def start(self):
         tone_duration = self.curr_cond['tone_duration']
         tone_frequency = self.curr_cond['tone_frequency']
