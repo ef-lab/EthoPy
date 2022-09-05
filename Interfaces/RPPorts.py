@@ -110,7 +110,7 @@ class RPPorts(Interface):
         if not position.port and not port: return 0, 0, 0
         if position != Port(type='Proximity', port=port):
             self._position_change(self.channels['Proximity'][max(port, position.port)])
-        position_dur = self.timer_ready.elapsed_time() if self.position else self.position_dur
+        position_dur = self.timer_ready.elapsed_time() if self.position.port else self.position_dur
         return self.position, position_dur, self.position_tmst
 
     def off_proximity(self):
