@@ -19,7 +19,7 @@ class Tones(RPScreen, dj.Manual):
 
     def stop(self):
         super(RPScreen, self).stop()
-        self.exp.interface.event.set()
+        self.exp.interface.stop_sound()
         
     def start(self):
         tone_duration = self.curr_cond['tone_duration']

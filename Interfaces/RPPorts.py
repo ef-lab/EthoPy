@@ -23,7 +23,7 @@ class RPPorts(Interface):
         self.Pulser = pigpio.pi()
         self.PulseGen = pigpio.pulse
         self.thread = ThreadPoolExecutor(max_workers=2)
-        self.event = Event()
+        self.pwm_stop_event = Event()
         self.frequency = 20
         self.ts = False
         self.pulses = dict()
@@ -74,6 +74,9 @@ class RPPorts(Interface):
 
     def give_sound(self, sound_freq=40500, duration=500, volume=100, pulse_freq=0):
         self.thread.submit(self.__pwm_out, self.channels['Sound'][1], sound_freq, duration, volume,pulse_freq, self.event)
+
+    def stop_sound(self):
+        self.pwm_stop_event.set()
 
     def setup_touch_exit(self):
         try:
@@ -172,17 +175,14 @@ class RPPorts(Interface):
         sleep(duration/1000)    # to add a  delay in seconds
         pwm.stop()
 
-    def __pwm_out(self, channel, freq, duration, volume=50, pulse_freq=0, event=0):
-        event.clear()
-        if pulse_freq==0: pulse_freq=0.0001 
-        if (1/pulse_freq)>duration/500: #handle cases that pulse duration (defined by pulse_freq) is not less than stimulus duration
-            pulse_freq=500/duration
+    def __pwm_out(self, channel, freq, duration, volume=50, pulse_freq=0):
+        self.pwm_stop_event.clear()
+        if pulse_freq == 0 or (1/pulse_freq) > duration/500: #handle cases that pulse duration (defined by pulse_freq) is not less than stimulus duration
+            pulse_freq = 500/duration
 
-        time_stimulus=Timer()
-        while time_stimulus.elapsed_time()<duration:
-            if event.is_set():
-                return
+        time_stimulus = Timer()
+        while time_stimulus.elapsed_time() < duration and not self.pwm_stop_event.is_set():
             self.Pulser.hardware_PWM(channel, freq, volume*5000)
             sleep(.5/pulse_freq)    # to add a  delay in seconds, sleep takes seconds. This is for a 50% dutycycle
             self.Pulser.hardware_PWM(channel, 0, 0)
-            if pulse_freq!=500/duration: sleep(.5/pulse_freq)
+            if pulse_freq != 500/duration: sleep(.5/pulse_freq)
