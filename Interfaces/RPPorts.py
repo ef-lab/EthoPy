@@ -73,7 +73,7 @@ class RPPorts(Interface):
             self.thread.submit(self.__pwd_out, self.channels['Odor'][delivery_port[i]], odor_duration, dutycycle[i])
 
     def give_sound(self, sound_freq=40500, duration=500, volume=100, pulse_freq=0):
-        self.thread.submit(self.__pwm_out, self.channels['Sound'][1], sound_freq, duration, volume,pulse_freq, self.event)
+        self.thread.submit(self.__pwm_out, self.channels['Sound'][1], sound_freq, duration, volume, pulse_freq)
 
     def stop_sound(self):
         self.pwm_stop_event.set()
