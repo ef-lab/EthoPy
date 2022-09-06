@@ -6,7 +6,7 @@ from pygame.locals import *
 class RPScreen(Stimulus):
 
     def setup(self):
-        self.color = [32, 32, 32]  # default background color
+        self.color = [i*256 for i in self.monitor['background_color']]  # default background color
 
         # setup pygame
         if not pygame.get_init():
@@ -15,12 +15,20 @@ class RPScreen(Stimulus):
         self.unshow()
         pygame.mouse.set_visible(0)
         pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-
+        self.screen.fill(self.color)
+        self.flip()
+        
     def ready_stim(self):
-        self.unshow([64, 64, 64])
+        self.unshow([i*256 for i in self.monitor['ready_color']])
 
     def reward_stim(self):
-        self.unshow([255, 255, 255])
+        self.unshow([i*256 for i in self.monitor['reward_color']])
+
+    def punish_stim(self):
+        self.unshow([i*256 for i in self.monitor['punish_color']])
+
+    def start_stim(self):
+        self.unshow([i*256 for i in self.monitor['start_color']])
 
     def stop(self):
         self.screen.fill([0, 0, 0])
@@ -30,8 +38,7 @@ class RPScreen(Stimulus):
 
     def unshow(self, color=False):
         """update background color"""
-        if not color:
-            color = self.color
+        if not color: color = self.color
         self.screen.fill(color)
         self.flip()
 

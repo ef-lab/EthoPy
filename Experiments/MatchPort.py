@@ -71,6 +71,7 @@ class PreTrial(Experiment):
         self.stim.prepare(self.curr_cond)
         self.beh.prepare(self.curr_cond)
         super().entry()
+        self.stim.start_stim()
 
     def run(self):
         if not self.is_stopped() and self.beh.is_ready(self.curr_cond['init_ready'], self.start_time):
@@ -102,7 +103,7 @@ class Trial(Experiment):
             self.stim.ready_stim()
 
     def next(self):
-        if not self.resp_ready and self.response:          # did not wait
+        if not self.resp_ready and self.beh.interface.in_position()==(0,0,0):  # did not wait
             return 'Abort'
         elif self.response and not self.beh.is_correct():  # response to incorrect probe
             return 'Punish'
@@ -121,6 +122,10 @@ class Trial(Experiment):
 
 
 class Abort(Experiment):
+    def entry(self):
+        super().entry()
+        self.stim.unshow()
+
     def run(self):
         self.beh.update_history()
         self.logger.log('Trial.Aborted')
@@ -130,7 +135,6 @@ class Abort(Experiment):
 
 
 class Reward(Experiment):
-
     def entry(self):
         super().entry()
         self.stim.reward_stim()
@@ -183,7 +187,7 @@ class InterTrial(Experiment):
             return 'Hydrate'
         elif self.beh.is_sleep_time() or self.beh.is_hydrated():
             return 'Offtime'
-        elif self.state_timer.elapsed_time() >= self.stim.curr_cond['intertrial_duration']:
+        elif self.state_timer.elapsed_time() >= self.stim.curr_cond['intertrial_duration'] and self.beh.is_off_proximity():
             return 'PreTrial'
         else:
             return 'InterTrial'

@@ -1,6 +1,7 @@
 from time import sleep
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
+from threading import Event
 from core.Interface import *
 
 
@@ -22,6 +23,7 @@ class RPPorts(Interface):
         self.Pulser = pigpio.pi()
         self.PulseGen = pigpio.pulse
         self.thread = ThreadPoolExecutor(max_workers=2)
+        self.event = Event()
         self.frequency = 20
         self.ts = False
         self.pulses = dict()
@@ -70,8 +72,8 @@ class RPPorts(Interface):
         for i, idx in enumerate(odor_id):
             self.thread.submit(self.__pwd_out, self.channels['Odor'][delivery_port[i]], odor_duration, dutycycle[i])
 
-    def give_sound(self, sound_freq=40500, duration=500, volume=100):
-        self.thread.submit(self.__pwm_out, self.channels['Sound'][1], sound_freq, duration, volume)
+    def give_sound(self, sound_freq=40500, duration=500, volume=100, pulse_freq=0):
+        self.thread.submit(self.__pwm_out, self.channels['Sound'][1], sound_freq, duration, volume,pulse_freq, self.event)
 
     def setup_touch_exit(self):
         try:
@@ -110,8 +112,11 @@ class RPPorts(Interface):
         if not position.port and not port: return 0, 0, 0
         if position != Port(type='Proximity', port=port):
             self._position_change(self.channels['Proximity'][max(port, position.port)])
-        position_dur = self.timer_ready.elapsed_time() if self.position else self.position_dur
+        position_dur = self.timer_ready.elapsed_time() if self.position.port else self.position_dur
         return self.position, position_dur, self.position_tmst
+
+    def off_proximity(self):
+        return self.position.type != 'Proximity'
 
     def _get_position(self, ports=0):
         if not ports: ports = self.proximity_ports
@@ -167,7 +172,17 @@ class RPPorts(Interface):
         sleep(duration/1000)    # to add a  delay in seconds
         pwm.stop()
 
-    def __pwm_out(self, channel, freq, duration, dutycycle=50):
-        self.Pulser.hardware_PWM(channel, freq, dutycycle*5000)
-        sleep(duration/1000)    # to add a  delay in seconds
-        self.Pulser.hardware_PWM(channel, 0, 0)
+    def __pwm_out(self, channel, freq, duration, volume=50, pulse_freq=0, event=0):
+        event.clear()
+        if pulse_freq==0: pulse_freq=0.0001 
+        if (1/pulse_freq)>duration/500: #handle cases that pulse duration (defined by pulse_freq) is not less than stimulus duration
+            pulse_freq=500/duration
+
+        time_stimulus=Timer()
+        while time_stimulus.elapsed_time()<duration:
+            if event.is_set():
+                return
+            self.Pulser.hardware_PWM(channel, freq, volume*5000)
+            sleep(.5/pulse_freq)    # to add a  delay in seconds, sleep takes seconds. This is for a 50% dutycycle
+            self.Pulser.hardware_PWM(channel, 0, 0)
+            if pulse_freq!=500/duration: sleep(.5/pulse_freq)

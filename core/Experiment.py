@@ -82,7 +82,6 @@ class ExperimentClass:
         self.logger.ping(0)
         self.logger.closeDatasets()
         self.running = False
-        self.logger.update_setup_info({'status': 'stop'})
 
     def is_stopped(self):
         self.quit = self.quit or self.logger.setup_status in ['stop', 'exit']
@@ -304,7 +303,6 @@ class Trial(dj.Manual):
         # Trial state timestamps
         -> Trial
         time			    : int 	            # time from session start (ms)
-        ---
         state               : varchar(64)
         """
 
@@ -435,6 +433,11 @@ class SetupConfiguration(dj.Lookup):
         resolution_x             : smallint
         resolution_y             : smallint
         discription              : varchar(256)
+        reward_color             : tinyblob
+        punish_color             : tinyblob
+        ready_color              : tinyblob
+        background_color         : tinyblob
+        start_color              : tinyblob
         """
 
     class Ball(dj.Part):
