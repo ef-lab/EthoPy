@@ -232,7 +232,7 @@ class PortCalibration(dj.Manual):
 class Behavior:
     """ This class handles the behavior variables """
     cond_tables, interface, required_fields, curr_cond, response, licked_port, logging = [], [], [], [], [], 0, False
-    default_key, reward_amount, choice_history, reward_history, last_response = dict(), dict(), list(), list(), []
+    default_key, reward_amount, choice_history, reward_history = dict(), dict(), list(), list()
 
     def setup(self, exp):
         self.params = exp.params
@@ -243,7 +243,8 @@ class Behavior:
         self.reward_history = list()  # History term for performance calculation
         self.punish_history = list()
         self.reward_amount = dict()
-        self.response, self.last_response, self.last_lick = Activity(), Activity(), Activity()
+        self.response, self.last_lick = Activity(), Activity()
+        self.response_queue = Queue(maxsize = 3)
         self.logging = True
         interface_module = (experiment.SetupConfiguration & {'setup_conf_idx': exp.params['setup_conf_idx']}
                             ).fetch('interface')[0]
@@ -255,10 +256,12 @@ class Behavior:
         return True, 0
 
     def get_response(self, since=0, clear=True):
-        response = self.last_response
+        if not self.response_queue.empty():
+            response = self.response_queue.get()
+        else:
+            response = Activity()
         if clear:
             self.response = Activity()
-            self.last_response = Activity()
             self.licked_port = 0
         if response.time and response.time >= since and response.port:
             self.response = response
@@ -291,7 +294,9 @@ class Behavior:
         if self.exp.running and self.logging:
             self.logger.log('Activity', key, schema='behavior', priority=10)
             self.logger.log('Activity.' + activity.type, key, schema='behavior')
-        if activity.response: self.last_response = activity
+        if activity.response:
+            if self.response_queue.full(): self.response_queue.get()
+            self.response_queue.put(activity)
         if activity.type == 'Lick': self.last_lick = activity; self.licked_port = activity.port
         return key['time']
 
