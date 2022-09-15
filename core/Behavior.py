@@ -7,7 +7,7 @@ import bisect
 from importlib import import_module
 from dataclasses import dataclass, fields
 from dataclasses import field as datafield
-
+from queue import Queue
 
 @behavior.schema
 class Rewards(dj.Manual):
