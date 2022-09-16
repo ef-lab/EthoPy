@@ -98,7 +98,7 @@ class Trial(Experiment):
         self.stim.present()  # Start Stimulus
         self.logger.ping()
         self.response = self.beh.get_response(self.start_time)
-        if self.beh.is_ready(self.stim.curr_cond['trial_ready'], self.start_time):
+        if self.beh.is_ready(self.stim.curr_cond['trial_ready'], self.start_time) and not self.resp_ready:
             self.resp_ready = True
             self.stim.ready_stim()
 
