@@ -49,6 +49,7 @@ class DummyPorts(Interface):
 
     def _proximity_change(self, event,port):
         if self.dummy_ports_true(event, 'proximity_true') and not self.ready:
+            self.timer_ready.start() 
             self.ready = True
             port =3  
             self.position = self.ports[Port(type='Proximity', port=port) == self.ports][0]
