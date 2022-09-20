@@ -13,8 +13,11 @@ class DummyPorts(Interface):
 
     def in_position(self):
         self.__get_events()
-        ready_dur = self.timer_ready.elapsed_time() if self.ready else self.ready_dur
-        return self.ready, ready_dur, self.ready_tmst
+        position_dur = self.timer_ready.elapsed_time() if self.ready else self.position_dur
+        return self.position, position_dur, self.position_tmst
+
+    def off_proximity(self):
+        return self.position.type != 'Proximity'
 
     def __get_events(self):
         port = 0
@@ -23,15 +26,13 @@ class DummyPorts(Interface):
         for event in events:
             # Check if any port is licked
             port = self._port_activated(event, port)
-
             # Check position
-            self._proximity_change(event)
+            port = self._proximity_change(event,port)
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 print(pygame.mouse.get_pos())
             elif event.type == pygame.QUIT:
                 self.logger.update_setup_info({'status': 'stop'})
-        return port
 
     def _port_activated(self, event, port):
         if self.dummy_ports_true(event, 'left_port'):
@@ -41,23 +42,26 @@ class DummyPorts(Interface):
             print('Probe 2 activated!')
             port = 2
         if port:
-            port = self.ports[Port(type='Lick', port=port) == self.ports][0]
-            self.resp_tmst = self.beh.log_activity(port.__dict__)
+            self.position=self.ports[Port(type='Lick', port=port) == self.ports][0]
+            self.resp_tmst = self.logger.logger_timer.elapsed_time()
+            self.beh.log_activity(self.position.__dict__)
         return port
 
-    def _proximity_change(self, event):
+    def _proximity_change(self, event,port):
         if self.dummy_ports_true(event, 'proximity_true') and not self.ready:
             self.ready = True
-            port = self.ports[Port(type='Proximity', port=1) == self.ports][0]
-            self.resp_tmst = self.beh.log_activity({**port.__dict__, 'in_position': self.ready})
+            port =3  
+            self.position = self.ports[Port(type='Proximity', port=port) == self.ports][0]
+            self.position_tmst = self.beh.log_activity({**self.position.__dict__, 'in_position': self.ready})
             print('in position')
         elif self.dummy_ports_true(event, 'proximity_false') and self.ready:
             self.ready = False
-            port = self.ports[Port(type='Proximity', port=1) == self.ports][0]
-            tmst = self.beh.log_activity({**port.__dict__, 'in_position': self.ready})
-            self.ready_dur = tmst - self.ready_tmst
+            port = 0
+            tmst = self.beh.log_activity({**self.position.__dict__, 'in_position': self.ready})
+            self.position_dur = tmst - self.position_tmst
+            self.position = Port()
             print('off position')
-            print(pygame.mouse.get_pos())
+            # print(pygame.mouse.get_pos())
 
     def dummy_ports_true(self, event, name):
         if event.type == self.dummy_ports[name][0]:
