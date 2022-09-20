@@ -83,6 +83,11 @@ class ExperimentClass:
         self.logger.closeDatasets()
         self.running = False
 
+    def release(self):
+        if self.interface.camera:
+            if self.interface.camera.recording.is_set(): self.interface.camera.stop_rec()
+            self.interface.camera_Process.join()
+
     def is_stopped(self):
         self.quit = self.quit or self.logger.setup_status in ['stop', 'exit']
         if self.quit and self.logger.setup_status not in ['stop', 'exit']:
@@ -463,7 +468,20 @@ class SetupConfiguration(dj.Lookup):
         discription             : varchar(256)
         """
 
-
+    class Camera(dj.Part):
+        definition = """
+        # Camera information
+        camera_idx               : tinyint
+        -> SetupConfiguration
+        ---
+        fps                      : tinyint UNSIGNED
+        resolution_x             : smallint
+        resolution_y             : smallint
+        iso                      : smallint
+        file_format              : varchar(256)
+        discription              : varchar(256)
+        """
+        
 @experiment.schema
 class Control(dj.Lookup):
     definition = """
