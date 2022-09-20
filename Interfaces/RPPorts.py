@@ -3,7 +3,8 @@ import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 from threading import Event
 from core.Interface import *
-
+from Interfaces.Camera import PiCamera
+import multiprocessing as mp
 
 class RPPorts(Interface):
     channels = {'Odor': {1: 24, 2: 25},
@@ -64,6 +65,23 @@ class RPPorts(Interface):
             self.exp.log_recording(dict(rec_aim='sync', software='PyMouse', version='0.1',
                                            filename=filename, source_path=source_path, target_path=target_path))
 
+        if self.exp.params['setup_conf_idx'] in self.exp.logger.get(table='SetupConfiguration.Camera',fields=['setup_conf_idx']):            
+            cameras_params= self.exp.logger.get(table='SetupConfiguration.Camera',
+                    key=f"setup_conf_idx={self.exp.params['setup_conf_idx']}", 
+                    as_dict=True)[0]
+            key_animal_id_session = f"animal_id_{self.exp.logger.get_setup_info('animal_id')}_session_{self.exp.logger.get_setup_info('session')}"
+            
+            self.camera = PiCamera(path = None,
+                                filename = f'{key_animal_id_session}',
+                                video_format=cameras_params['video_format'],
+                                fps=cameras_params['fps'],
+                                resolution=(cameras_params['resolution_x'],cameras_params['resolution_y']),
+                                logger_timer=self.logger.logger_timer)
+
+            self.camera_Process = mp.Process(self.camera.start_rec())
+            self.camera_Process.start()
+            self.exp.log_recording(dict(rec_aim = 'video_rec',software='PyMouse', version='0.1',
+                                        filename=self.camera.filename, target_path=self.camera.path))
     def give_liquid(self, port, duration=False):
         if duration: self._create_pulse(port, duration)
         self.thread.submit(self._give_pulse, port)
