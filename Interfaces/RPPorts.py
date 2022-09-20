@@ -73,7 +73,7 @@ class RPPorts(Interface):
             
             self.camera = PiCamera(path = None,
                                 filename = f'{key_animal_id_session}',
-                                video_format=cameras_params['video_format'],
+                                video_format=cameras_params['file_format'],
                                 fps=cameras_params['fps'],
                                 resolution=(cameras_params['resolution_x'],cameras_params['resolution_y']),
                                 logger_timer=self.logger.logger_timer)
