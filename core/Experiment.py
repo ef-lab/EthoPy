@@ -479,9 +479,10 @@ class SetupConfiguration(dj.Lookup):
         resolution_y             : smallint
         iso                      : smallint
         file_format              : varchar(256)
+        video_aim                : enum('eye','body','openfield')
         discription              : varchar(256)
         """
-        
+
 @experiment.schema
 class Control(dj.Lookup):
     definition = """

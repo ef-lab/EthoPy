@@ -53,6 +53,9 @@ class Interface:
     def cleanup(self):
         pass
 
+    def release(self):
+        pass
+    
     def load_calibration(self):
         for port in list(set(self.rew_ports)):
             self.pulse_rew[port] = dict()

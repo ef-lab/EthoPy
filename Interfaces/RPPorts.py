@@ -80,8 +80,9 @@ class RPPorts(Interface):
 
             self.camera_Process = mp.Process(self.camera.start_rec())
             self.camera_Process.start()
-            self.exp.log_recording(dict(rec_aim = 'video_rec',software='PyMouse', version='0.1',
+            self.exp.log_recording(dict(rec_aim = cameras_params['video_aim'],software='PyMouse', version='0.1',
                                         filename=self.camera.filename, target_path=self.camera.path))
+
     def give_liquid(self, port, duration=False):
         if duration: self._create_pulse(port, duration)
         self.thread.submit(self._give_pulse, port)
@@ -126,6 +127,11 @@ class RPPorts(Interface):
         self.GPIO.cleanup()
         if self.ts:
             self.ts.stop()
+
+    def release(self):
+        if self.interface.camera:
+            if self.interface.camera.recording.is_set(): self.interface.camera.stop_rec()
+            self.interface.camera_Process.join()
 
     def in_position(self, port=0):
         position = self.position
