@@ -20,6 +20,7 @@ class Interface:
         self.logger = exp.logger
         self.position = Port()
         self.position_tmst = 0
+        self.camera = None
 
         # get port information
         for port in self.logger.get(table='SetupConfiguration.Port', key=self.exp.params, as_dict=True):
