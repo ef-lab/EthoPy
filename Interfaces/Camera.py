@@ -33,10 +33,10 @@ class Camera:
         self._path = path
         self._filename = filename
         
-        self.duration = duration
+        # self.duration = duration # TODO: use it to record for specific duration only
         self.logger_timer = logger_timer
         
-        self.camera_logger=logging
+        # self.camera_logger=logging # TODO: add logger in Camera
         
         # event for initialization
         self.initialized = threading.Event()
@@ -65,13 +65,12 @@ class Camera:
                 item = frame_queue.get() # tuple with buffer and timestamp
                 if self.stream=='compress':
                     self.video_output.write(item[1])
-                    self.tmst_output.write(f"{item[0]}\n")
                 elif self.stream=='raw':
                     self.video_output.writeFrame(item[1])
-                    self.tmst_output.write(f"{item[0]}\n")
                 else:
                     warnings.warn("Recording is neither raw or stream so the results aren't saved")
                     return
+                self.tmst_output.write(f"{item[0]}\n")
             else:
                 time.sleep(.01)
 
@@ -113,13 +112,6 @@ class Camera:
     @filename.setter
     def filename(self, filename):
         self._filename = filename
-
-    @property
-    def cam(self):
-        if not self._cam:
-            self._cam = self.init_cam()
-        return self._cam
-
 
 class PiCamera(Camera):
     def __init__(self,  
@@ -171,19 +163,18 @@ class PiCamera(Camera):
             return
 
         self.recording_init()
+        self.cam.start_recording(self._picam_writer, self.video_format)
         
     def recording_init(self):
         
         self.stop.clear()
         self.recording.set()
 
+        self.cam = self.init_cam()
         self._picam_writer = self.PiCam_Output(self.cam, resolution=self.resolution, 
                                                 frame_queue=self.frame_queue, 
                                                 video_type = self.video_type,
-                                                logger_timer=self.logger_timer)
-       
-        self.cam.start_recording(self._picam_writer, self.video_format)
-        
+                                                logger_timer=self.logger_timer)        
 
     def init_cam(self) -> 'picamera.PiCamera':
 
@@ -216,7 +207,6 @@ class PiCamera(Camera):
     @sensor_mode.setter
     def sensor_mode(self, sensor_mode: int):
         self._sensor_mode = sensor_mode
-        # cannot change sensor_mode after the recording is started
         if self.initialized.is_set():
             self.cam.sensor_mode = self._sensor_mode
 
@@ -257,13 +247,14 @@ class PiCamera(Camera):
                 '''
                 if self.video_type=='raw':
                     if self.camera.frame.complete and self.camera.frame.timestamp:
+                        # TODO:Use camera timestamps
                         # the first time consider the first timestamp as zero
-                        if self.first_tmst is None:
-                            self.first_tmst = self.camera.frame.timestamp # first timestamp of camera
+                        # if self.first_tmst is None:
+                        #     self.first_tmst = self.camera.frame.timestamp # first timestamp of camera
                         # self.tmst = (self.camera.frame.timestamp-self.first_tmst)+self.logger_timer.elapsed_time()
                         # print("self.logger_timer.elapsed_time() :", self.logger_timer.elapsed_time())
+                        
                         self.tmst = self.logger_timer.elapsed_time()
-
                         self.frame = np.frombuffer(
                                 buf, dtype=np.uint8,
                                 count=self.camera.resolution[0]*self.camera.resolution[1]*3
@@ -272,6 +263,7 @@ class PiCamera(Camera):
                 else:
                     tmst_t = self.camera.frame.timestamp
                     if  tmst_t != None:
+                        # TODO:Fix timestamps in camera is in μs but in timer in ms
                         if self.first_tmst is None:
                             self.first_tmst = tmst_t # first timestamp of camera
                         else:
