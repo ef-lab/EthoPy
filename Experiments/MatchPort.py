@@ -23,9 +23,9 @@ class Condition(dj.Manual):
         trial_ready                 : int
         intertrial_duration         : int
         trial_duration              : int
-        response_duration           : int
         reward_duration             : int
         punish_duration             : int
+        abort_duration              : int 
         """
 
 
@@ -46,9 +46,9 @@ class Experiment(State, ExperimentClass):
                    'trial_ready': 0,
                    'intertrial_duration': 1000,
                    'trial_duration': 1000,
-                   'response_duration': 5000,
                    'reward_duration': 2000,
-                   'punish_duration': 1000}
+                   'punish_duration': 1000,
+                   'abort_duration' : 0}
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
         self.logger.curr_state = self.name()
@@ -124,14 +124,17 @@ class Trial(Experiment):
 class Abort(Experiment):
     def entry(self):
         super().entry()
-        self.stim.unshow()
-
-    def run(self):
         self.beh.update_history()
         self.logger.log('Trial.Aborted')
+        self.stim.unshow()
 
     def next(self):
-        return 'InterTrial'
+        if self.state_timer.elapsed_time() >= self.curr_cond['abort_duration']:
+            return 'InterTrial'
+        elif self.is_stopped():
+            return 'Exit'
+        else:
+            return 'Abort'
 
 
 class Reward(Experiment):

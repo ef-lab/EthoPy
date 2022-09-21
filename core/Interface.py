@@ -11,7 +11,7 @@ from dataclasses import field as datafield
 
 class Interface:
     port, resp_tmst, ready_dur, activity_tmst, ready_tmst, pulse_rew, ports, response = 0, 0, 0, 0, 0, dict(), [], []
-    ready, timer_ready, weight_per_pulse, pulse_dur, channels = False, Timer(), dict(), dict(), dict()
+    ready, timer_ready, weight_per_pulse, pulse_dur, channels, position_dur = False, Timer(), dict(), dict(), dict(),0
 
     def __init__(self, exp=[], beh=[], callbacks=True):
         self.callbacks = callbacks
