@@ -219,6 +219,7 @@ class Offtime(Experiment):
     def entry(self):
         super().entry()
         self.stim.unshow([0, 0, 0])
+        self.release()
 
     def run(self):
         if self.logger.setup_status not in ['sleeping', 'wakeup'] and self.beh.is_sleep_time():
