@@ -6,11 +6,16 @@ import logging
 import io
 import warnings
 
-from skvideo.io import FFmpegWriter
 from datetime import datetime
 from queue import Queue
 import numpy as np
 import multiprocessing as mp
+
+try:
+    from skvideo.io import FFmpegWriter
+    import_skvideo = True
+except:
+    import_skvideo = False
 
 try:
     import picamera
@@ -50,6 +55,9 @@ class Camera:
         self.stop = mp.Event()
         self.stop.clear()
 
+        if not globals()['import_skvideo']:
+            raise ImportError('you need to install the skvideo: sudo pip3 install sk-video')
+
     def setup(self):
         self.frame_queue = Queue()
         self.capture_runner = threading.Thread(target=self.rec)
@@ -66,7 +74,8 @@ class Camera:
                 if self.stream=='compress':
                     self.video_output.write(item[1])
                 elif self.stream=='raw':
-                    self.video_output.writeFrame(item[1])
+                    img = item[1].copy()
+                    self.video_output.writeFrame(img)
                 else:
                     warnings.warn("Recording is neither raw or stream so the results aren't saved")
                     return
