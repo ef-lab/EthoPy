@@ -12,7 +12,7 @@ import numpy as np
 import multiprocessing as mp
 
 try:
-    import skvideo.io from FFmpegWriter
+    from skvideo.io import FFmpegWriter
     import_skvideo = True
 except:
     import_skvideo = False
