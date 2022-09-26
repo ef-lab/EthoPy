@@ -20,7 +20,7 @@ class Tones_Grating(GratingRP, dj.Manual):
         }
 
     def stop(self):
-        super(GratingRP, self).stop()
+        super(Tones_Grating, self).stop()
         self.exp.interface.stop_sound()
         
     def start(self):
