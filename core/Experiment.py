@@ -77,6 +77,7 @@ class ExperimentClass:
         state_control.run()
 
     def stop(self):
+        self.release()
         self.stim.exit()
         self.beh.exit()
         self.logger.ping(0)
