@@ -29,7 +29,7 @@ class State:
 
 class ExperimentClass:
     """  Parent Experiment """
-    curr_state, curr_trial, total_reward, cur_dif, flip_count, states, stim, sync = '', 0, 0, 0, 0, dict(), False, False
+    block_trials, curr_state, curr_trial, total_reward, cur_dif, cur_dif_h, flip_count, states, stim, sync = 0, '', 0, 0, 0, [], 0, dict(), False, False
     un_choices, difs, iter, curr_cond, dif_h, stims, response, resp_ready = [], [], [], dict(), [], dict(), [], False
     required_fields, default_key, conditions, cond_tables, quit, running = [], dict(), [], [], False, False
 
@@ -66,6 +66,9 @@ class ExperimentClass:
         self.beh.setup(self)
         self.interface = self.beh.interface
         self.session_timer = Timer()
+        self.select_window = ExperimentClass.select_cond_window(self)
+        self.select_strategy = ExperimentClass.select_cond_strategy(self)
+        self.select_cond  = ExperimentClass.cond_selection(self)
         np.random.seed(0)   # fix random seed for repeatability, it can be overidden in the conf file
 
     def start(self):
@@ -77,7 +80,6 @@ class ExperimentClass:
         state_control.run()
 
     def stop(self):
-        self.release()
         self.stim.exit()
         self.beh.exit()
         self.logger.ping(0)
@@ -195,43 +197,134 @@ class ExperimentClass:
         return np.random.choice(un_choices, 1, p=fixed_p/sum(fixed_p))
 
     def _get_new_cond(self):
-        """ Get curr condition & create random block of all conditions """
-        if self.params['trial_selection'] == 'fixed':
-            self.curr_cond = [] if len(self.conditions) == 0 else self.conditions.pop()
-        elif self.params['trial_selection'] == 'block':
-            if np.size(self.iter) == 0: self.iter = np.random.permutation(np.size(self.conditions))
-            cond = self.conditions[self.iter[0]]
-            self.iter = self.iter[1:]
-            self.curr_cond = cond
-        elif self.params['trial_selection'] == 'random':
-            self.curr_cond = np.random.choice(self.conditions)
-        elif self.params['trial_selection'] == 'biased':
-            idx = [~np.isnan(ch).any() for ch in self.beh.choice_history]
-            choice_h = np.asarray(self.beh.choice_history)
-            anti_bias = self._anti_bias(choice_h[idx], self.un_choices)
-            selected_conditions = [i for (i, v) in zip(self.conditions, self.choices == anti_bias) if v]
-            self.curr_cond = np.random.choice(selected_conditions)
-        elif self.params['trial_selection'] == 'staircase':
-            idx = np.logical_or(~np.isnan(self.beh.reward_history), ~np.isnan(self.beh.punish_history))
-            rew_h = np.asarray(self.beh.reward_history); rew_h = rew_h[idx]
-            choice_h = np.int64(np.asarray(self.beh.choice_history)[idx])
-            choice_h = [[c, d] for c, d in zip(choice_h, np.asarray(self.dif_h)[idx])]
-            if self.iter == 1 or np.size(self.iter) == 0:
-                if (self.beh.choice_history[-1:][0]>0 if np.size(self.beh.choice_history)!=0 else True):
-                    self.iter = self.params['staircase_window']
-                    perf = np.nanmean(np.greater(rew_h[-self.params['staircase_window']:], 0))
-                    if   perf >= self.params['stair_up']   and self.cur_dif < max(self.difs):  self.cur_dif += 1
-                    elif perf < self.params['stair_down'] and self.cur_dif > 1:  self.cur_dif -= 1
-                    self.logger.update_setup_info({'difficulty': self.cur_dif})
-            elif np.size(self.beh.choice_history) and self.beh.choice_history[-1:][0] > 0: self.iter -= 1
-            anti_bias = self._anti_bias(choice_h, self.un_choices[self.un_difs == self.cur_dif])
-            sel_conds = [i for (i, v) in zip(self.conditions, np.logical_and(self.choices == anti_bias,
-                                                       self.difs == self.cur_dif)) if v]
-            self.curr_cond = np.random.choice(sel_conds)
-            self.dif_h.append(self.cur_dif)
-        else:
-            print('Selection method not implemented!')
-            self.quit = True
+        if self.select_window.select('window'):
+            self.select_strategy.select('staircase','performance')
+            self.logger.update_setup_info({'difficulty': self.cur_dif})
+        self.select_cond.select('random')
+        
+    class select_cond_strategy():
+        def __init__(self, experiment_class):
+            self.exp_cls = experiment_class
+            self.selection_strategy_dict = {"staircase" : self.staircase,
+                                            "circular"  : self.circular}
+            self.difs_size = len(np.unique(self.exp_cls.difs))
+                
+        def select(self, strategy, criterion):
+            criterion_result = self.update_criterion(criterion)
+            selection_strategy_fun = self.selection_strategy_dict.get(strategy, self.NonImplemented)
+            selection_strategy_fun(criterion_result)
+                    
+        def staircase(self, criterion):
+            if   criterion >= self.exp_cls.params['stair_up']   and self.exp_cls.cur_dif < max(self.exp_cls.difs):  self.exp_cls.cur_dif += 1
+            elif criterion < self.exp_cls.params['stair_down'] and self.exp_cls.cur_dif > 1:  self.exp_cls.cur_dif -= 1
+            self.exp_cls.cur_dif_h=[]
+            return self.exp_cls.cur_dif
+        
+        def circular(self, criterion):
+            if criterion>self.params['stair_up']:
+                self.exp_cls.cur_dif = (self.exp_cls.cur_dif+1) % self.difs_size if np.size(self.exp_cls.beh.choice_history)!=0 else min(self.exp_cls.un_difs)
+            self.exp_cls.cur_dif_h=[]
+            return self.exp_cls.cur_dif
+
+        def update_criterion(self, criterion):
+            if criterion == "performance":
+                return np.nanmean(np.greater(self.exp_cls.rew_h[-self.exp_cls.params['staircase_window']:], 0))
+            elif criterion == None:
+                return False
+            else:
+                print('Warning: update_criterion method not implemented!')
+
+        def NonImplemented(self,*args):
+            raise Exception("Select strategy for condition  method is Not Implemented") 
+
+
+    class select_cond_window():
+        def __init__(self, experiement_class):
+            self.trial_selection_types = {"window" : self.window,
+                                        "sliding_window" : self.sliding_window,
+                                        "gauss_window": self.gauss_window,
+                                        "None" : lambda: False}
+            
+            self.exp_cls = experiement_class
+
+        def select(self, selection_type_str):
+            # find only reward or punish trials 
+            idx = np.logical_or(~np.isnan(self.exp_cls.beh.reward_history), ~np.isnan(self.exp_cls.beh.punish_history))
+            self.exp_cls.rew_h = np.asarray(self.exp_cls.beh.reward_history); self.exp_cls.rew_h  = self.exp_cls.rew_h [idx]
+            select_type_fun = self.trial_selection_types.get(selection_type_str, self.NonImplemented)
+            return select_type_fun() 
+
+        def window(self):
+        # if select_type == "window":
+            if self.exp_cls.iter == 1 or np.size(self.exp_cls.iter) == 0:
+                if (self.exp_cls.beh.choice_history[-1:][0]>0 if np.size(self.exp_cls.beh.choice_history)!=0 else True):
+                    self.exp_cls.iter = self.exp_cls.params['staircase_window']
+                    return True
+            elif np.size(self.exp_cls.beh.choice_history) and self.exp_cls.beh.choice_history[-1:][0] > 0: self.exp_cls.iter -= 1
+            return False
+        
+        def sliding_window(self):
+        # elif select_type == "sliding_window":
+            if np.size(self.exp_cls.beh.choice_history) and self.exp_cls.beh.choice_history[-1:][0] > 0: 
+                    self.exp_cls.cur_dif_h.append(self.exp_cls.cur_dif)
+            if np.size(self.exp_cls.cur_dif_h)>=self.exp_cls.params['staircase_window']:
+                return True
+            return False
+
+        def gauss_window(self):       
+        # elif select_type == "gauss_window":
+            if np.size(self.exp_cls.beh.choice_history) and self.exp_cls.beh.choice_history[-1:][0] > 0:
+                self.cur_dif_h.append(self.cur_dif)
+            if self.exp_cls.block_trials == 0 or len(self.exp_cls.cur_dif_h)==self.exp_cls.block_trials:
+                self.exp_cls.block_trials=np.int32(np.random.normal(self.exp_cls.params['mu'], self.exp_cls.params['sigma'], 1)[0])
+                if self.exp_cls.block_trials<=0: 
+                    self.exp_cls.block_trials=1; 
+                    print("Warning: You have picked mu,sigma values that result in negative number of block of trials")         
+                return True
+            return False
+        
+        def NonImplemented(self,*args):
+            raise Exception("Select window method is Not Implemented") 
+    
+
+    class cond_selection():
+        def __init__(self, experiment_class):
+            self.exp_cls = experiment_class
+            self.select_cond_func = {"fix"     : self.fix,
+                                    "random"   : self.random,
+                                    "antibias" : self.antibias,
+                                    "block"    : self.block}
+            
+        def select(self,select_cond_str):
+            select_cond_fun = self.select_cond_func.get(select_cond_str, self.NonImplemented)
+            return select_cond_fun()
+        
+        def fix(self):
+            self.exp_cls.curr_cond = [] if len(self.exp_cls.conditions) == 0 else self.exp_cls.conditions.pop()
+
+        def random(self):
+            sel_conds = [i for (i, v) in zip(self.exp_cls.conditions, self.exp_cls.difs == self.exp_cls.cur_dif) if v]
+            self.exp_cls.curr_cond = np.random.choice(sel_conds)
+            
+        def antibias(self):
+            idx = np.logical_or(~np.isnan(self.exp_cls.beh.reward_history), ~np.isnan(self.exp_cls.beh.punish_history))         
+            choice_h = np.int64(np.asarray(self.exp_cls.beh.choice_history)[idx])
+            choice_h = [[c, d] for c, d in zip(choice_h, np.asarray(self.exp_cls.dif_h)[idx])]
+            anti_bias = self.exp_cls._anti_bias(choice_h, self.exp_cls.un_choices[self.exp_cls.un_difs == self.exp_cls.cur_dif])
+            sel_conds = [i for (i, v) in zip(self.exp_cls.conditions, np.logical_and(self.exp_cls.choices == anti_bias,
+                                                    self.exp_cls.difs == self.exp_cls.cur_dif)) if v]
+            self.exp_cls.curr_cond = np.random.choice(sel_conds)
+            self.exp_cls.dif_h.append(self.exp_cls.cur_dif)
+
+        def block(self):
+            if np.size(self.exp_cls.iter) == 0 or np.size(self.exp_cls.beh.choice_history)==0: 
+                self.exp_cls.iter = np.random.permutation(np.size(self.exp_cls.conditions))
+            cond = self.exp_cls.conditions[self.iter[0]]
+            self.exp_cls.iter = self.exp_cls.iter[1:]
+            self.exp_cls.curr_cond = cond
+        
+        def NonImplemented(self,*args):
+            raise Exception("select_cond method is Not Implemented")   
 
 
 @experiment.schema
