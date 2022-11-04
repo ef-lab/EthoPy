@@ -75,6 +75,7 @@ class RPPorts(Interface):
                                 filename = f'{key_animal_id_session}',
                                 video_format=cameras_params['file_format'],
                                 fps=cameras_params['fps'],
+                                shutter_speed=cameras_params['shutter_speed'],
                                 resolution=(cameras_params['resolution_x'],cameras_params['resolution_y']),
                                 logger_timer=self.logger.logger_timer)
 

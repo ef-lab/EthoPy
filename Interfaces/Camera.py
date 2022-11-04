@@ -127,6 +127,7 @@ class PiCamera(Camera):
                 sensor_mode:int=0,
                 resolution:tuple=(1280,720), 
                 fps:int=15,
+                shutter_speed:int=0,
                 video_format:str='rgb',
                 logger_timer:'Timer'=None,
                 *args, **kwargs):
@@ -143,6 +144,7 @@ class PiCamera(Camera):
         self.fps = fps
         self.logger_timer=logger_timer
         self.video_type = self.check_video_format(video_format)
+        self.shutter_speed=shutter_speed
 
         self.setup()
 
@@ -191,7 +193,7 @@ class PiCamera(Camera):
             resolution=self.resolution,
             framerate=self.fps,
             sensor_mode=self.sensor_mode)
-
+        if self.shutter_speed!=0: cam.shutter_speed = self.shutter_speed
         self.initialized.set()
 
         return cam
