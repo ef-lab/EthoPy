@@ -479,6 +479,7 @@ class SetupConfiguration(dj.Lookup):
         fps                      : tinyint UNSIGNED
         resolution_x             : smallint
         resolution_y             : smallint
+        shutter_speed            : smallint
         iso                      : smallint
         file_format              : varchar(256)
         video_aim                : enum('eye','body','openfield')
