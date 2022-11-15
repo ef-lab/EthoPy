@@ -29,7 +29,7 @@ class State:
 
 class ExperimentClass:
     """  Parent Experiment """
-    block_trials, curr_state, curr_trial, total_reward, cur_dif, cur_dif_h, flip_count, states, stim, sync = 0, '', 0, 0, 0, [], 0, dict(), False, False
+    curr_state, curr_trial, total_reward, cur_dif, flip_count, states, stim, sync, cur_dif_h = '', 0, 0, 0, 0, dict(), False, False, []
     un_choices, difs, iter, curr_cond, dif_h, stims, response, resp_ready = [], [], [], dict(), [], dict(), [], False
     required_fields, default_key, conditions, cond_tables, quit, running = [], dict(), [], [], False, False
 
@@ -66,9 +66,17 @@ class ExperimentClass:
         self.beh.setup(self)
         self.interface = self.beh.interface
         self.session_timer = Timer()
-        self.select_window = ExperimentClass.select_cond_window(self)
-        self.select_strategy = ExperimentClass.select_cond_strategy(self)
-        self.select_cond  = ExperimentClass.cond_selection(self)
+        self.select_window = ExperimentClass.cond_window(experiment_class=self, 
+                                                        window_type='window', 
+                                                        window_size=self.params['staircase_window'],
+                                                        params=self.params)
+        self.select_strategy = ExperimentClass.cond_strategy(experiment_class=self, 
+                                                            strategy='staircase' , 
+                                                            criterion='performance',
+                                                            stair_up =self.params['stair_up'],
+                                                            stair_down = self.params['stair_down'],
+                                                            window_size = self.params['staircase_window'])
+        self.select_cond  = ExperimentClass.cond_selection(experiment_class=self, selection_type='antibias')
         np.random.seed(0)   # fix random seed for repeatability, it can be overidden in the conf file
 
     def start(self):
@@ -197,38 +205,89 @@ class ExperimentClass:
         return np.random.choice(un_choices, 1, p=fixed_p/sum(fixed_p))
 
     def _get_new_cond(self):
-        if self.select_window.select('window'):
-            self.select_strategy.select('staircase','performance')
+        if self.select_window.select(choice_history = self.beh.choice_history, 
+                                    cur_dif =self.cur_dif):
+            self.cur_dif = self.select_strategy.select(self.beh.reward_history, self.cur_dif, self.difs)
             self.logger.update_setup_info({'difficulty': self.cur_dif})
-        self.select_cond.select('random')
+        self.curr_cond = self.select_cond.select()
         
-    class select_cond_strategy():
-        def __init__(self, experiment_class):
+    class cond_window():
+        def __init__(self, experiment_class=None, window_type='window', window_size=20, params=None):
+            self.windows_dict = {"window" : self.window,
+                                "sliding_window" : self.sliding_window,
+                                "gauss_window": self.gauss_window,
+                                "None" : lambda: False}  
             self.exp_cls = experiment_class
-            self.selection_strategy_dict = {"staircase" : self.staircase,
-                                            "circular"  : self.circular}
-            self.difs_size = len(np.unique(self.exp_cls.difs))
-                
-        def select(self, strategy, criterion):
-            criterion_result = self.update_criterion(criterion)
-            selection_strategy_fun = self.selection_strategy_dict.get(strategy, self.NonImplemented)
-            selection_strategy_fun(criterion_result)
-                    
-        def staircase(self, criterion):
-            if   criterion >= self.exp_cls.params['stair_up']   and self.exp_cls.cur_dif < max(self.exp_cls.difs):  self.exp_cls.cur_dif += 1
-            elif criterion < self.exp_cls.params['stair_down'] and self.exp_cls.cur_dif > 1:  self.exp_cls.cur_dif -= 1
-            self.exp_cls.cur_dif_h=[]
-            return self.exp_cls.cur_dif
-        
-        def circular(self, criterion):
-            if criterion>self.params['stair_up']:
-                self.exp_cls.cur_dif = (self.exp_cls.cur_dif+1) % self.difs_size if np.size(self.exp_cls.beh.choice_history)!=0 else min(self.exp_cls.un_difs)
-            self.exp_cls.cur_dif_h=[]
-            return self.exp_cls.cur_dif
+            self.window_size = window_size
+            self.params = params
+            self.window_func = self.windows_dict.get(window_type, self.NonImplemented)
+            self.block_trials = 0
 
-        def update_criterion(self, criterion):
+        def select(self, choice_history, cur_dif):
+            if np.size(choice_history) and choice_history[-1:][0] > 0: 
+                self.exp_cls.cur_dif_h.append(cur_dif)
+            return self.window_func(choice_history) 
+
+        def window(self, choice_history):
+            if self.exp_cls.iter == 1 or np.size(self.exp_cls.iter) == 0:
+                if (choice_history[-1:][0]>0 if np.size(choice_history)!=0 else True):
+                    self.exp_cls.iter = self.window_size
+                    return True
+            elif np.size(choice_history) and choice_history[-1:][0] > 0: self.exp_cls.iter -= 1
+            return False
+        
+        def sliding_window(self,*args):
+            if np.size(self.exp_cls.cur_dif_h)>=self.window_size: 
+                return True
+            return False
+
+        def gauss_window(self,*args):
+            if self.block_trials == 0 or len(self.exp_cls.cur_dif_h)==self.block_trials:
+                self.block_trials=np.int32(np.random.normal(self.params['mu'], self.params['sigma'], 1)[0])
+                if self.block_trials<=0: 
+                    self.block_trials=1; 
+                    print("Warning: You have picked mu,sigma values that result in negative number of block of trials")  
+                return True
+            return False
+        
+        def NonImplemented(self,*args):
+            raise Exception("Select window method is Not Implemented") 
+    
+    class cond_strategy():
+        def __init__(self, experiment_class, strategy, criterion, stair_up, stair_down, window_size):
+            self.exp_cls = experiment_class
+            self.strategy_dict = {"staircase" : self.staircase,
+                                "circular"  : self.circular,
+                                "None" : lambda: None}
+            self.criterion = criterion
+            self.strategy_func = self.strategy_dict.get(strategy, self.NonImplemented)
+            self.window_size = window_size
+            self.stair_up = stair_up
+            self.stair_down = stair_down
+                
+        def select(self, reward_history, cur_dif, difs):
+            self.reward_history = reward_history
+            criterion_result = self.update_criterion(self.criterion, reward_history)
+            return self.strategy_func(criterion_result, cur_dif, difs)
+                    
+        def staircase(self, criterion, cur_dif, difs):
+            if   criterion >= self.stair_up   and cur_dif < max(difs): cur_dif += 1; self.exp_cls.cur_dif_h=[]
+            elif criterion <self.stair_down and cur_dif > 1: cur_dif -= 1; self.exp_cls.cur_dif_h=[]
+            return cur_dif
+        
+        def circular(self, criterion, cur_dif, difs):
+            difs_size = len(np.unique(difs))
+            if criterion>self.stair_up:
+                cur_dif = (cur_dif+1) % difs_size if np.size(self.exp_cls.beh.choice_history)!=0 else min(difs)
+                self.exp_cls.cur_dif_h=[]
+            return cur_dif
+
+        def update_criterion(self, criterion, reward_history):
             if criterion == "performance":
-                return np.nanmean(np.greater(self.exp_cls.rew_h[-self.exp_cls.params['staircase_window']:], 0))
+                # find only reward or punish trials 
+                idx = np.logical_or(~np.isnan(reward_history), ~np.isnan(reward_history))
+                rew_h  = np.asarray(reward_history)[idx]
+                return np.nanmean(np.greater(rew_h[-self.window_size:], 0))
             elif criterion == None:
                 return False
             else:
@@ -238,90 +297,45 @@ class ExperimentClass:
             raise Exception("Select strategy for condition  method is Not Implemented") 
 
 
-    class select_cond_window():
-        def __init__(self, experiement_class):
-            self.trial_selection_types = {"window" : self.window,
-                                        "sliding_window" : self.sliding_window,
-                                        "gauss_window": self.gauss_window,
-                                        "None" : lambda: False}
-            
-            self.exp_cls = experiement_class
-
-        def select(self, selection_type_str):
-            # find only reward or punish trials 
-            idx = np.logical_or(~np.isnan(self.exp_cls.beh.reward_history), ~np.isnan(self.exp_cls.beh.punish_history))
-            self.exp_cls.rew_h = np.asarray(self.exp_cls.beh.reward_history); self.exp_cls.rew_h  = self.exp_cls.rew_h [idx]
-            select_type_fun = self.trial_selection_types.get(selection_type_str, self.NonImplemented)
-            return select_type_fun() 
-
-        def window(self):
-        # if select_type == "window":
-            if self.exp_cls.iter == 1 or np.size(self.exp_cls.iter) == 0:
-                if (self.exp_cls.beh.choice_history[-1:][0]>0 if np.size(self.exp_cls.beh.choice_history)!=0 else True):
-                    self.exp_cls.iter = self.exp_cls.params['staircase_window']
-                    return True
-            elif np.size(self.exp_cls.beh.choice_history) and self.exp_cls.beh.choice_history[-1:][0] > 0: self.exp_cls.iter -= 1
-            return False
-        
-        def sliding_window(self):
-        # elif select_type == "sliding_window":
-            if np.size(self.exp_cls.beh.choice_history) and self.exp_cls.beh.choice_history[-1:][0] > 0: 
-                    self.exp_cls.cur_dif_h.append(self.exp_cls.cur_dif)
-            if np.size(self.exp_cls.cur_dif_h)>=self.exp_cls.params['staircase_window']:
-                return True
-            return False
-
-        def gauss_window(self):       
-        # elif select_type == "gauss_window":
-            if np.size(self.exp_cls.beh.choice_history) and self.exp_cls.beh.choice_history[-1:][0] > 0:
-                self.cur_dif_h.append(self.cur_dif)
-            if self.exp_cls.block_trials == 0 or len(self.exp_cls.cur_dif_h)==self.exp_cls.block_trials:
-                self.exp_cls.block_trials=np.int32(np.random.normal(self.exp_cls.params['mu'], self.exp_cls.params['sigma'], 1)[0])
-                if self.exp_cls.block_trials<=0: 
-                    self.exp_cls.block_trials=1; 
-                    print("Warning: You have picked mu,sigma values that result in negative number of block of trials")         
-                return True
-            return False
-        
-        def NonImplemented(self,*args):
-            raise Exception("Select window method is Not Implemented") 
-    
-
     class cond_selection():
-        def __init__(self, experiment_class):
+        def __init__(self, experiment_class, selection_type):
             self.exp_cls = experiment_class
-            self.select_cond_func = {"fix"     : self.fix,
-                                    "random"   : self.random,
-                                    "antibias" : self.antibias,
-                                    "block"    : self.block}
-            
-        def select(self,select_cond_str):
-            select_cond_fun = self.select_cond_func.get(select_cond_str, self.NonImplemented)
-            return select_cond_fun()
+            self.select_dict = {"fix"     : self.fix,
+                                "random"   : self.random,
+                                "antibias" : self.antibias,
+                                "block"    : self.block}
+            self.select_cond_func = self.select_dict.get(selection_type, self.NonImplemented)
+
+        def select(self):
+            return self.select_cond_func()
         
         def fix(self):
-            self.exp_cls.curr_cond = [] if len(self.exp_cls.conditions) == 0 else self.exp_cls.conditions.pop()
+            return [] if len(self.exp_cls.conditions) == 0 else self.exp_cls.conditions.pop()
 
         def random(self):
             sel_conds = [i for (i, v) in zip(self.exp_cls.conditions, self.exp_cls.difs == self.exp_cls.cur_dif) if v]
-            self.exp_cls.curr_cond = np.random.choice(sel_conds)
+            return np.random.choice(sel_conds)
             
         def antibias(self):
+            # find indexes for reward/punish only trials
             idx = np.logical_or(~np.isnan(self.exp_cls.beh.reward_history), ~np.isnan(self.exp_cls.beh.punish_history))         
             choice_h = np.int64(np.asarray(self.exp_cls.beh.choice_history)[idx])
+            # create a list with choice and difficulty for previous trials
             choice_h = [[c, d] for c, d in zip(choice_h, np.asarray(self.exp_cls.dif_h)[idx])]
+            #use anti_bias to select next condition
             anti_bias = self.exp_cls._anti_bias(choice_h, self.exp_cls.un_choices[self.exp_cls.un_difs == self.exp_cls.cur_dif])
+ 
             sel_conds = [i for (i, v) in zip(self.exp_cls.conditions, np.logical_and(self.exp_cls.choices == anti_bias,
                                                     self.exp_cls.difs == self.exp_cls.cur_dif)) if v]
-            self.exp_cls.curr_cond = np.random.choice(sel_conds)
             self.exp_cls.dif_h.append(self.exp_cls.cur_dif)
+            return np.random.choice(sel_conds)
 
         def block(self):
             if np.size(self.exp_cls.iter) == 0 or np.size(self.exp_cls.beh.choice_history)==0: 
                 self.exp_cls.iter = np.random.permutation(np.size(self.exp_cls.conditions))
             cond = self.exp_cls.conditions[self.iter[0]]
             self.exp_cls.iter = self.exp_cls.iter[1:]
-            self.exp_cls.curr_cond = cond
+            return cond
         
         def NonImplemented(self,*args):
             raise Exception("select_cond method is Not Implemented")   
