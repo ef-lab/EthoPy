@@ -1,7 +1,7 @@
 from core.Logger import *
 import itertools
 import matplotlib.pyplot as plt
-
+import warnings
 
 class State:
     state_timer, __shared_state = Timer(), {}
@@ -57,6 +57,7 @@ class ExperimentClass:
     def setup(self, logger, BehaviorClass, session_params):
         self.running = False
         self.conditions, self.iter, self.quit, self.curr_cond, self.dif_h, self.stims, self.curr_trial = [], [], False, dict(), [], dict(),0
+        self.strategy_counter = 0
         if "setup_conf_idx" not in self.default_key: self.default_key["setup_conf_idx"] = 0
         self.params = {**self.default_key, **session_params}
         self.logger = logger
@@ -66,17 +67,16 @@ class ExperimentClass:
         self.beh.setup(self)
         self.interface = self.beh.interface
         self.session_timer = Timer()
-        self.select_window = ExperimentClass.cond_window(experiment_class=self, 
-                                                        window_type='window', 
+        self.select_window = ExperimentClass.cond_window(window_type='window',
                                                         window_size=self.params['staircase_window'],
                                                         params=self.params)
-        self.select_strategy = ExperimentClass.cond_strategy(experiment_class=self, 
-                                                            strategy='staircase' , 
+        self.select_strategy = ExperimentClass.cond_strategy(strategy='staircase' ,
                                                             criterion='performance',
                                                             stair_up =self.params['stair_up'],
                                                             stair_down = self.params['stair_down'],
                                                             window_size = self.params['staircase_window'])
-        self.select_cond  = ExperimentClass.cond_selection(experiment_class=self, selection_type='antibias')
+
+        self.select_cond  = ExperimentClass.cond_selection(experiment_class=self, selection_type='random')
         np.random.seed(0)   # fix random seed for repeatability, it can be overidden in the conf file
 
     def start(self):
@@ -205,100 +205,247 @@ class ExperimentClass:
         return np.random.choice(un_choices, 1, p=fixed_p/sum(fixed_p))
 
     def _get_new_cond(self):
-        if self.select_window.select(choice_history = self.beh.choice_history, 
-                                    cur_dif =self.cur_dif):
-            self.cur_dif = self.select_strategy.select(self.beh.reward_history, self.cur_dif, self.difs)
+        """_get_new_cond selects the condition for the trial starts 
+        at prepare_trial which is called most commonly on the PreTrial
+
+        _extended_summary_
+        It is consists of 3 main steps:
+        1. check if the window conditions is 
+        2. according to the strategy selects if the difficulty must change
+        3. select the correct condition based on difficulty and the type of selection 
+        """
+        window_bool, self.strategy_counter =  self.select_window.select(choice_history=self.beh.choice_history,
+                                                                    strategy_counter=self.strategy_counter)
+        # if the window has pass checks if the session must move on next difficulty
+        if window_bool:
+            self.cur_dif, self.strategy_counter = self.select_strategy.select(self.beh.reward_history, 
+                                                                            self.beh.punish_history, 
+                                                                            self.cur_dif, self.difs,
+                                                                            self.strategy_counter)
             self.logger.update_setup_info({'difficulty': self.cur_dif})
         self.curr_cond = self.select_cond.select()
         
     class cond_window():
-        def __init__(self, experiment_class=None, window_type='window', window_size=20, params=None):
+        """cond_window is intended to check after how many trials of the session
+        there is need to move on the next difficulty
+
+
+        Methods
+        -------
+        says(sound=None)
+            Prints the animals name and what sound it makes
+        Attributes
+        ----------
+        window_type : str
+            
+        """
+        def __init__(self, window_type='window', window_size=20, params=None):
+            """__init__ assing to window_func the correct function based on the
+            window_type from the windows_dict
+
+            window_counter is used only inside the class window and is used from
+            the functions change the window methods that change the window_size
+            independently
+
+            Args:
+                window_type (str, optional):a string with the window type which is 
+                    defined on the configuration file 
+                window_size (int, optional): after how many trials to check
+                params (_type_, optional): it is mainly for the mu/sigma parameters at
+                    gauss_window
+            """
             self.windows_dict = {"window" : self.window,
                                 "sliding_window" : self.sliding_window,
                                 "gauss_window": self.gauss_window,
                                 "None" : lambda: False}  
-            self.exp_cls = experiment_class
-            self.window_size = window_size
+            self.window_size = window_size if window_size!=None else 0 
             self.params = params
             self.window_func = self.windows_dict.get(window_type, self.NonImplemented)
-            self.block_trials = 0
+            self.window_counter = 1
+            self.strategy_counter = 0 
 
-        def select(self, choice_history, cur_dif):
-            if np.size(choice_history) and choice_history[-1:][0] > 0: 
-                self.exp_cls.cur_dif_h.append(cur_dif)
-            return self.window_func(choice_history) 
+        def select(self, choice_history, strategy_counter):
+            """select run the window_func and increase the strategy_counter
 
-        def window(self, choice_history):
-            if self.exp_cls.iter == 1 or np.size(self.exp_cls.iter) == 0:
-                if (choice_history[-1:][0]>0 if np.size(choice_history)!=0 else True):
-                    self.exp_cls.iter = self.window_size
+            Args:
+                choice_history (list): a list with selected ports only for reward/punish trials 
+                strategy_counter (int): a counter that is shared with the strategy class
+                    and is used in usecases that you need functionalities from the strategy 
+
+            Returns:
+                window_bool(bool): defines if the strategy must run
+                strategy_counter(int):
+            """
+            # check if it's not the first trial and the trial=reward or punish 
+            trial_choice = np.size(choice_history) and choice_history[-1:][0] > 0
+            window_bool = self.window_func(trial_choice, strategy_counter)
+            return window_bool, self.strategy_counter
+
+        def window(self, trial_choice, *args):
+            """window if the size of trials(reward or punish) are equal 
+                to window size return True
+            
+            Args:
+                trial_choice(bool): check if it's not the first trial and the trial=reward or punish 
+            Returns:
+                bool:
+            """
+            if  self.window_counter==self.window_size:
+                if trial_choice:# check if it is abort
+                    self.window_counter=1
                     return True
-            elif np.size(choice_history) and choice_history[-1:][0] > 0: self.exp_cls.iter -= 1
+            elif trial_choice: self.window_counter += 1
             return False
         
-        def sliding_window(self,*args):
-            if np.size(self.exp_cls.cur_dif_h)>=self.window_size: 
+        def sliding_window(self, trial_choice, strategy_counter):
+            """sliding_window a counter that increase the window if trial_choice is True
+            Args:
+                trial_choice (bool): check if it's not the first trial and the trial=reward or punish 
+                strategy_counter (int): a counter that is increased in window but it is been reset from
+                the strategy class
+
+            Returns:
+                bool:
+            """
+            self.strategy_counter=strategy_counter
+            if trial_choice: 
+                self.strategy_counter+=1
+            if np.size(self.strategy_counter)>=self.window_size: 
                 return True
             return False
 
-        def gauss_window(self,*args):
-            if self.block_trials == 0 or len(self.exp_cls.cur_dif_h)==self.block_trials:
-                self.block_trials=np.int32(np.random.normal(self.params['mu'], self.params['sigma'], 1)[0])
-                if self.block_trials<=0: 
-                    self.block_trials=1; 
-                    print("Warning: You have picked mu,sigma values that result in negative number of block of trials")  
+        def gauss_window(self, trial_choice, *args):
+            """gauss_window define a window_size based on a gaussion distribution and
+                if the size of trials(reward or punish) are equal 
+                to window_size return True and set a new window_size
+            Args:
+                trial_choice (bool): check if it's not the first trial and the trial=reward or punish 
+            Returns:
+                bool: _description_
+            """
+            if self.window_size == None  or len(self.window_counter)==self.window_size:
+                self.window_size=np.int32(np.random.normal(self.params['mu'], self.params['sigma'], 1)[0])
+                if self.window_size<=0: 
+                    self.window_size=1; 
+                    warnings.warn("Warning: You have picked mu,sigma values that result in a window_size<=0")
                 return True
+            elif trial_choice: self.window_counter += 1
             return False
         
         def NonImplemented(self,*args):
-            raise Exception("Select window method is Not Implemented") 
+            raise NotImplementedError("Select window method is Not Implemented") 
     
     class cond_strategy():
-        def __init__(self, experiment_class, strategy, criterion, stair_up, stair_down, window_size):
-            self.exp_cls = experiment_class
+        def __init__(self, strategy_type, criterion, stair_up, stair_down, window_size):
+            """__init__ assing to strategy_func the correct method based on the
+            strategy_type from the strategy_dict
+
+            Args:
+                strategy_type (str): a string with the window type which is 
+                    defined on the configuration file 
+                criterion (_type_): _description_
+                stair_up (_type_): _description_
+                stair_down (_type_): _description_
+                window_size (_type_): _description_
+            """
             self.strategy_dict = {"staircase" : self.staircase,
                                 "circular"  : self.circular,
                                 "None" : lambda: None}
             self.criterion = criterion
-            self.strategy_func = self.strategy_dict.get(strategy, self.NonImplemented)
+            self.strategy_func = self.strategy_dict.get(strategy_type, self.NonImplemented)
             self.window_size = window_size
             self.stair_up = stair_up
             self.stair_down = stair_down
                 
-        def select(self, reward_history, cur_dif, difs):
-            self.reward_history = reward_history
-            criterion_result = self.update_criterion(self.criterion, reward_history)
-            return self.strategy_func(criterion_result, cur_dif, difs)
-                    
-        def staircase(self, criterion, cur_dif, difs):
-            if   criterion >= self.stair_up   and cur_dif < max(difs): cur_dif += 1; self.exp_cls.cur_dif_h=[]
-            elif criterion <self.stair_down and cur_dif > 1: cur_dif -= 1; self.exp_cls.cur_dif_h=[]
+        def select(self, reward_history,punish_history, cur_dif, difs, strategy_counter):
+            """select finds the criterion result and exetcute the strategy_func 
+
+            Args:
+                reward_history (list): list with rewards
+                punish_history (list): list with bool if trial is punish else nan
+                cur_dif (int): the current difficulty of the session
+                difs (list): all the difficulties of the conditions
+                strategy_counter (int): a counter of the trials that 
+                    is used on the strategy methods
+
+            Returns:
+                int: the difficulty of the next trial
+                int: the strategy_counter in order to increased at window class later 
+            """
+            diff_temp = cur_dif
+            criterion_result = self.update_criterion(self.criterion, reward_history, punish_history)
+            cur_dif = self.strategy_func(criterion_result, cur_dif, difs)
+            if diff_temp!=cur_dif: strategy_counter=0
+            return cur_dif,strategy_counter
+        
+        def staircase(self, criterion_result, cur_dif, difs):
+            """staircase increase or decrease the difficulty based on criterion until 
+                difficulty is max
+            If difficukty pass 0 it cannot return. Negative values can also be used.
+            Args:
+                criterion_result (float): the result of the criterion 
+                cur_dif (int): current difficulty
+                difs (list): all the difficulties
+
+            Returns:
+                (int): the next difficulty
+            """
+            if   criterion_result >= self.stair_up   and cur_dif < max(difs): cur_dif += 1
+            elif criterion_result <self.stair_down and cur_dif > 1: cur_dif -= 1
             return cur_dif
         
-        def circular(self, criterion, cur_dif, difs):
+        def circular(self, criterion_result, cur_dif, difs):
+            """circular it increase difficulty is stair_up>criterion until
+            it goes to maximum and then goes from the beggining
+            Args:
+                criterion_result (float): the result of the criterion 
+                cur_dif (_type_): current difficulty
+                difs (_type_): all the difficulties
+
+            Returns:
+                (int): the next difficulty
+            """
             difs_size = len(np.unique(difs))
-            if criterion>self.stair_up:
-                cur_dif = (cur_dif+1) % difs_size if np.size(self.exp_cls.beh.choice_history)!=0 else min(difs)
-                self.exp_cls.cur_dif_h=[]
+            if criterion_result>self.stair_up:
+                cur_dif = (cur_dif+1) % difs_size
             return cur_dif
 
-        def update_criterion(self, criterion, reward_history):
+        def update_criterion(self, criterion, reward_history, punish_history):
+            """update_criterion based on criterion return a number  
+
+            Args:
+                criterion (str): 
+                reward_history (list): list with rewards
+                punish_history (list): list with bool if trial is punish else nan
+
+            Raises:
+                NotImplementedError: if criterion is not implemented
+
+            Returns:
+                float:
+            """
             if criterion == "performance":
-                # find only reward or punish trials 
-                idx = np.logical_or(~np.isnan(reward_history), ~np.isnan(reward_history))
+                # check the performace of the last n=window_size trials
+                idx = np.logical_or(~np.isnan(reward_history), ~np.isnan(punish_history))
                 rew_h  = np.asarray(reward_history)[idx]
                 return np.nanmean(np.greater(rew_h[-self.window_size:], 0))
             elif criterion == None:
                 return False
             else:
-                print('Warning: update_criterion method not implemented!')
+                raise NotImplementedError("update_criterion method on experiment class not implemented!") 
 
         def NonImplemented(self,*args):
-            raise Exception("Select strategy for condition  method is Not Implemented") 
+            raise NotImplementedError("Select strategy for condition  method is Not Implemented") 
 
 
     class cond_selection():
         def __init__(self, experiment_class, selection_type):
+            """__init__ 
+
+            Args:
+                experiment_class (object): 
+                selection_type (str): type of selection(fix,random,antibias,block)
+            """
             self.exp_cls = experiment_class
             self.select_dict = {"fix"     : self.fix,
                                 "random"   : self.random,
@@ -310,13 +457,19 @@ class ExperimentClass:
             return self.select_cond_func()
         
         def fix(self):
+            """fix select condiont in fix order based in configuration until they finish
+            """
             return [] if len(self.exp_cls.conditions) == 0 else self.exp_cls.conditions.pop()
 
         def random(self):
+            """random select a condtion randomnly according to the difficulty
+            """
             sel_conds = [i for (i, v) in zip(self.exp_cls.conditions, self.exp_cls.difs == self.exp_cls.cur_dif) if v]
             return np.random.choice(sel_conds)
             
         def antibias(self):
+            """antibias select randomly from the conditions contractive to the bias of the animal
+            """
             # find indexes for reward/punish only trials
             idx = np.logical_or(~np.isnan(self.exp_cls.beh.reward_history), ~np.isnan(self.exp_cls.beh.punish_history))         
             choice_h = np.int64(np.asarray(self.exp_cls.beh.choice_history)[idx])
@@ -331,6 +484,8 @@ class ExperimentClass:
             return np.random.choice(sel_conds)
 
         def block(self):
+            """block select all conditions  randomly one each one and when they finsh repeat
+            """
             if np.size(self.exp_cls.iter) == 0 or np.size(self.exp_cls.beh.choice_history)==0: 
                 self.exp_cls.iter = np.random.permutation(np.size(self.exp_cls.conditions))
             cond = self.exp_cls.conditions[self.iter[0]]
@@ -338,7 +493,7 @@ class ExperimentClass:
             return cond
         
         def NonImplemented(self,*args):
-            raise Exception("select_cond method is Not Implemented")   
+            raise NotImplementedError("select_cond method is Not Implemented")   
 
 
 @experiment.schema
