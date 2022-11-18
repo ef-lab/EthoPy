@@ -67,14 +67,11 @@ class ExperimentClass:
         self.beh.setup(self)
         self.interface = self.beh.interface
         self.session_timer = Timer()
-        self.select_window = ExperimentClass.cond_window(window_type='window',
-                                                        window_size=self.params['staircase_window'],
+        self.select_window = ExperimentClass.cond_window(experiment_class=self, window_type='gauss_window',
                                                         params=self.params)
-        self.select_strategy = ExperimentClass.cond_strategy(strategy='staircase' ,
-                                                            criterion='performance',
-                                                            stair_up =self.params['stair_up'],
-                                                            stair_down = self.params['stair_down'],
-                                                            window_size = self.params['staircase_window'])
+        
+        self.select_strategy = ExperimentClass.cond_strategy(experiment_class=self, strategy_type='circular', criterion_type='performance',
+                                                            params=self.params)
 
         self.select_cond  = ExperimentClass.cond_selection(experiment_class=self, selection_type='random')
         np.random.seed(0)   # fix random seed for repeatability, it can be overidden in the conf file
@@ -214,14 +211,10 @@ class ExperimentClass:
         2. according to the strategy selects if the difficulty must change
         3. select the correct condition based on difficulty and the type of selection 
         """
-        window_bool, self.strategy_counter =  self.select_window.select(choice_history=self.beh.choice_history,
-                                                                    strategy_counter=self.strategy_counter)
         # if the window has pass checks if the session must move on next difficulty
-        if window_bool:
-            self.cur_dif, self.strategy_counter = self.select_strategy.select(self.beh.reward_history, 
-                                                                            self.beh.punish_history, 
-                                                                            self.cur_dif, self.difs,
-                                                                            self.strategy_counter)
+        if self.select_window.select(choice_history=self.beh.choice_history):
+            self.cur_dif = self.select_strategy.select(self.beh.reward_history, self.beh.punish_history, 
+                                                        self.cur_dif, self.difs)
             self.logger.update_setup_info({'difficulty': self.cur_dif})
         self.curr_cond = self.select_cond.select()
         
@@ -239,7 +232,7 @@ class ExperimentClass:
         window_type : str
             
         """
-        def __init__(self, window_type='window', window_size=20, params=None):
+        def __init__(self, experiment_class, window_type='window', window_size=20, params=None):
             """__init__ assing to window_func the correct function based on the
             window_type from the windows_dict
 
@@ -249,7 +242,7 @@ class ExperimentClass:
 
             Args:
                 window_type (str, optional):a string with the window type which is 
-                    defined on the configuration file 
+                    defined on the configuration file (window,sliding_window,gauss_window,None)
                 window_size (int, optional): after how many trials to check
                 params (_type_, optional): it is mainly for the mu/sigma parameters at
                     gauss_window
@@ -257,14 +250,14 @@ class ExperimentClass:
             self.windows_dict = {"window" : self.window,
                                 "sliding_window" : self.sliding_window,
                                 "gauss_window": self.gauss_window,
-                                "None" : lambda: False}  
-            self.window_size = window_size if window_size!=None else 0 
+                                "None" : lambda: False}
+            self.exp_cls = experiment_class
+            self.window_size = params['staircase_window'] if window_size!=None else 0 
             self.params = params
             self.window_func = self.windows_dict.get(window_type, self.NonImplemented)
             self.window_counter = 1
-            self.strategy_counter = 0 
 
-        def select(self, choice_history, strategy_counter):
+        def select(self, choice_history):
             """select run the window_func and increase the strategy_counter
 
             Args:
@@ -278,8 +271,8 @@ class ExperimentClass:
             """
             # check if it's not the first trial and the trial=reward or punish 
             trial_choice = np.size(choice_history) and choice_history[-1:][0] > 0
-            window_bool = self.window_func(trial_choice, strategy_counter)
-            return window_bool, self.strategy_counter
+            window_bool = self.window_func(trial_choice)
+            return window_bool
 
         def window(self, trial_choice, *args):
             """window if the size of trials(reward or punish) are equal 
@@ -297,7 +290,7 @@ class ExperimentClass:
             elif trial_choice: self.window_counter += 1
             return False
         
-        def sliding_window(self, trial_choice, strategy_counter):
+        def sliding_window(self, trial_choice):
             """sliding_window a counter that increase the window if trial_choice is True
             Args:
                 trial_choice (bool): check if it's not the first trial and the trial=reward or punish 
@@ -307,10 +300,9 @@ class ExperimentClass:
             Returns:
                 bool:
             """
-            self.strategy_counter=strategy_counter
             if trial_choice: 
-                self.strategy_counter+=1
-            if np.size(self.strategy_counter)>=self.window_size: 
+                self.exp_cls.strategy_counter+=1
+            if np.size(self.exp_cls.strategy_counter)>=self.window_size: 
                 return True
             return False
 
@@ -323,7 +315,7 @@ class ExperimentClass:
             Returns:
                 bool: _description_
             """
-            if self.window_size == None  or len(self.window_counter)==self.window_size:
+            if self.window_size == None  or self.window_counter==self.window_size:
                 self.window_size=np.int32(np.random.normal(self.params['mu'], self.params['sigma'], 1)[0])
                 if self.window_size<=0: 
                     self.window_size=1; 
@@ -336,28 +328,29 @@ class ExperimentClass:
             raise NotImplementedError("Select window method is Not Implemented") 
     
     class cond_strategy():
-        def __init__(self, strategy_type, criterion, stair_up, stair_down, window_size):
+        def __init__(self, experiment_class, strategy_type, criterion_type, params):
             """__init__ assing to strategy_func the correct method based on the
             strategy_type from the strategy_dict
 
             Args:
                 strategy_type (str): a string with the window type which is 
-                    defined on the configuration file 
-                criterion (_type_): _description_
-                stair_up (_type_): _description_
-                stair_down (_type_): _description_
-                window_size (_type_): _description_
+                    defined on the configuration file (straircase,circular,None)
+                criterion (_type_): the function that defines the change of difficulty
+                stair_up (_type_): the value that above the difficulty increase
+                stair_down (_type_): the value that above the difficulty decrease
+                window_size (_type_): how many trial to take consider for criterion
             """
             self.strategy_dict = {"staircase" : self.staircase,
                                 "circular"  : self.circular,
                                 "None" : lambda: None}
-            self.criterion = criterion
+            self.exp_cls = experiment_class
+            self.criterion = criterion_type
+            self.window_size = params['staircase_window']
+            self.stair_up = params['stair_up']
+            self.stair_down = params['stair_down']
             self.strategy_func = self.strategy_dict.get(strategy_type, self.NonImplemented)
-            self.window_size = window_size
-            self.stair_up = stair_up
-            self.stair_down = stair_down
-                
-        def select(self, reward_history,punish_history, cur_dif, difs, strategy_counter):
+
+        def select(self, reward_history,punish_history, cur_dif, difs):
             """select finds the criterion result and exetcute the strategy_func 
 
             Args:
@@ -375,8 +368,8 @@ class ExperimentClass:
             diff_temp = cur_dif
             criterion_result = self.update_criterion(self.criterion, reward_history, punish_history)
             cur_dif = self.strategy_func(criterion_result, cur_dif, difs)
-            if diff_temp!=cur_dif: strategy_counter=0
-            return cur_dif,strategy_counter
+            if diff_temp!=cur_dif: self.exp_cls.strategy_counter=0
+            return cur_dif
         
         def staircase(self, criterion_result, cur_dif, difs):
             """staircase increase or decrease the difficulty based on criterion until 
