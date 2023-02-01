@@ -67,13 +67,13 @@ class ExperimentClass:
         self.beh.setup(self)
         self.interface = self.beh.interface
         self.session_timer = Timer()
-        self.select_window = ExperimentClass.cond_window(experiment_class=self, window_type='gauss_window',
+        self.select_window = ExperimentClass.cond_window(experiment_class=self, window_type=self.params['window_type'],
                                                         params=self.params)
         
-        self.select_strategy = ExperimentClass.cond_strategy(experiment_class=self, strategy_type='circular', criterion_type='performance',
+        self.select_strategy = ExperimentClass.cond_strategy(experiment_class=self, strategy_type=self.params['strategy_type'], criterion_type=self.params['criterion_type'],
                                                             params=self.params)
 
-        self.select_cond  = ExperimentClass.cond_selection(experiment_class=self, selection_type='random')
+        self.select_cond  = ExperimentClass.cond_selection(experiment_class=self, selection_type=self.params['selection_type'])
         np.random.seed(0)   # fix random seed for repeatability, it can be overidden in the conf file
 
     def start(self):
@@ -222,15 +222,7 @@ class ExperimentClass:
         """cond_window is intended to check after how many trials of the session
         there is need to move on the next difficulty
 
-
-        Methods
-        -------
-        says(sound=None)
-            Prints the animals name and what sound it makes
-        Attributes
-        ----------
-        window_type : str
-            
+        If any user want to write its custom function overwrite the Custom method
         """
         def __init__(self, experiment_class, window_type='window', window_size=20, params=None):
             """__init__ assing to window_func the correct function based on the
@@ -254,7 +246,7 @@ class ExperimentClass:
             self.exp_cls = experiment_class
             self.window_size = params['staircase_window'] if window_size!=None else 0 
             self.params = params
-            self.window_func = self.windows_dict.get(window_type, self.NonImplemented)
+            self.window_func = self.windows_dict.get(window_type, self.Custom)
             self.window_counter = 1
 
         def select(self, choice_history):
@@ -290,12 +282,12 @@ class ExperimentClass:
             elif trial_choice: self.window_counter += 1
             return False
         
-        def sliding_window(self, trial_choice):
-            """sliding_window a counter that increase the window if trial_choice is True
+        def sliding_window(self, trial_choice, *args):
+            """sliding_window a counter that increase the window if trial_choice
             Args:
                 trial_choice (bool): check if it's not the first trial and the trial=reward or punish 
-                strategy_counter (int): a counter that is increased in window but it is been reset from
-                the strategy class
+                strategy_counter (int): a counter that is increased in window but it can been reset from
+                the strategy class according to the function of the strategy
 
             Returns:
                 bool:
@@ -324,10 +316,22 @@ class ExperimentClass:
             elif trial_choice: self.window_counter += 1
             return False
         
-        def NonImplemented(self,*args):
-            raise NotImplementedError("Select window method is Not Implemented") 
+        def Custom(self,*args)->bool:
+            """by monkey patching user can overwrite the Custom function in the config file
+
+                e.g. def MyCustom(self, trial_choice, *args):
+                        if  self.window_counter==self.window_size:
+                            self.window_counter=1
+                            return True
+                        elif trial_choice: self.window_counter += 1
+                        return False
+
+                ExperimentClass.cond_window.Custom =  MyCustom
+            """
+            raise NotImplementedError("Select window method Custom is Not Implemented") 
     
     class cond_strategy():
+        """If any user want to write its custom function overwrite the Custom method"""
         def __init__(self, experiment_class, strategy_type, criterion_type, params):
             """__init__ assing to strategy_func the correct method based on the
             strategy_type from the strategy_dict
@@ -348,7 +352,7 @@ class ExperimentClass:
             self.window_size = params['staircase_window']
             self.stair_up = params['stair_up']
             self.stair_down = params['stair_down']
-            self.strategy_func = self.strategy_dict.get(strategy_type, self.NonImplemented)
+            self.strategy_func = self.strategy_dict.get(strategy_type, self.Custom)
 
         def select(self, reward_history,punish_history, cur_dif, difs):
             """select finds the criterion result and exetcute the strategy_func 
@@ -383,13 +387,13 @@ class ExperimentClass:
             Returns:
                 (int): the next difficulty
             """
-            if   criterion_result >= self.stair_up   and cur_dif < max(difs): cur_dif += 1
-            elif criterion_result <self.stair_down and cur_dif > 1: cur_dif -= 1
+            if   criterion_result >= self.stair_up   and cur_dif < max(difs): cur_dif = self.upgrade_diff(cur_dif)
+            elif criterion_result <self.stair_down and cur_dif > 1: cur_dif = self.downgrade_diff(cur_dif)
             return cur_dif
         
         def circular(self, criterion_result, cur_dif, difs):
             """circular it increase difficulty is stair_up>criterion until
-            it goes to maximum and then goes from the beggining
+            it goes to maximum and then returns to start
             Args:
                 criterion_result (float): the result of the criterion 
                 cur_dif (_type_): current difficulty
@@ -425,13 +429,30 @@ class ExperimentClass:
             elif criterion == None:
                 return False
             else:
-                raise NotImplementedError("update_criterion method on experiment class not implemented!") 
+                raise NotImplementedError("update_criterion method on experiment class not implemented!")
+            
+        def upgrade_diff(self,cur_dif):
+            """We can use a model to define what the next upgrade will be"""
+            return cur_dif+1
 
-        def NonImplemented(self,*args):
-            raise NotImplementedError("Select strategy for condition  method is Not Implemented") 
+        def downgrade_diff(self,cur_dif):
+            """We can use a model to define what the next downgrade will be"""
+            return cur_dif-1
+
+        def Custom(self,*args)->int:
+            """by monkey patching user can overwrite the Custom function in the config file
+
+                e.g. def MyCustom(self, trial_choice, *args):
+                        if   criterion_result >= self.stair_up   and cur_dif < max(difs): cur_dif += 1
+                        elif criterion_result <self.stair_down and cur_dif > 1: cur_dif -= 1
+                        return cur_dif
+                ExperimentClass.cond_strategy.Custom =  MyCustom
+            """
+            raise NotImplementedError("Select strategy Custom function  method is Not Implemented") 
 
 
     class cond_selection():
+        """If any user want to write its custom selection function overwrite the Custom method"""
         def __init__(self, experiment_class, selection_type):
             """__init__ 
 
@@ -444,13 +465,13 @@ class ExperimentClass:
                                 "random"   : self.random,
                                 "antibias" : self.antibias,
                                 "block"    : self.block}
-            self.select_cond_func = self.select_dict.get(selection_type, self.NonImplemented)
+            self.select_cond_func = self.select_dict.get(selection_type, self.Custom)
 
         def select(self):
             return self.select_cond_func()
         
         def fix(self):
-            """fix select condiont in fix order based in configuration until they finish
+            """fix select conditions in fix order based in configuration until they finish
             """
             return [] if len(self.exp_cls.conditions) == 0 else self.exp_cls.conditions.pop()
 
@@ -485,8 +506,15 @@ class ExperimentClass:
             self.exp_cls.iter = self.exp_cls.iter[1:]
             return cond
         
-        def NonImplemented(self,*args):
-            raise NotImplementedError("select_cond method is Not Implemented")   
+        def Custom(self,*args):
+            """
+                by monkey patching user can overwrite the Custom function in the config file
+
+                    e.g. def MyCustom(self):
+                            return [] if len(self.exp_cls.conditions) == 0 else self.exp_cls.conditions.pop
+                    ExperimentClass.cond_selection.Custom =  MyCustom
+            """
+            raise NotImplementedError("at cond_selection class method Custom is Not Implemented")   
 
 
 @experiment.schema
