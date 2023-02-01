@@ -57,7 +57,7 @@ class ExperimentClass:
     def setup(self, logger, BehaviorClass, session_params):
         self.running = False
         self.conditions, self.iter, self.quit, self.curr_cond, self.dif_h, self.stims, self.curr_trial = [], [], False, dict(), [], dict(),0
-        self.strategy_counter = 0
+        self.forward_counter = 0
         if "setup_conf_idx" not in self.default_key: self.default_key["setup_conf_idx"] = 0
         self.params = {**self.default_key, **session_params}
         self.logger = logger
@@ -67,13 +67,13 @@ class ExperimentClass:
         self.beh.setup(self)
         self.interface = self.beh.interface
         self.session_timer = Timer()
-        self.select_window = ExperimentClass.cond_window(experiment_class=self, window_type=self.params['window_type'],
+        self.window_cond = ExperimentClass.WindowMethods(experiment_class=self, window_type=self.params['window_type'],
                                                         params=self.params)
         
-        self.select_strategy = ExperimentClass.cond_strategy(experiment_class=self, strategy_type=self.params['strategy_type'], criterion_type=self.params['criterion_type'],
+        self.forward_cond = ExperimentClass.ForwardMethods(experiment_class=self, forward_type=self.params['forward_type'], criterion_type=self.params['criterion_type'],
                                                             params=self.params)
 
-        self.select_cond  = ExperimentClass.cond_selection(experiment_class=self, selection_type=self.params['selection_type'])
+        self.select_cond = ExperimentClass.SelectionMethods(experiment_class=self, selection_type=self.params['selection_type'])
         np.random.seed(0)   # fix random seed for repeatability, it can be overidden in the conf file
 
     def start(self):
@@ -208,23 +208,23 @@ class ExperimentClass:
         _extended_summary_
         It is consists of 3 main steps:
         1. check if the window conditions is 
-        2. according to the strategy selects if the difficulty must change
+        2. according to the forward selects if the difficulty must change
         3. select the correct condition based on difficulty and the type of selection 
         """
         # if the window has pass checks if the session must move on next difficulty
-        if self.select_window.select(choice_history=self.beh.choice_history):
-            self.cur_dif = self.select_strategy.select(self.beh.reward_history, self.beh.punish_history, 
+        if self.window_cond.select(choice_history=self.beh.choice_history):
+            self.cur_dif = self.forward_cond.select(self.beh.reward_history, self.beh.punish_history, 
                                                         self.cur_dif, self.difs)
             self.logger.update_setup_info({'difficulty': self.cur_dif})
         self.curr_cond = self.select_cond.select()
         
-    class cond_window():
+    class WindowMethods():
         """cond_window is intended to check after how many trials of the session
         there is need to move on the next difficulty
 
         If any user want to write its custom function overwrite the Custom method
         """
-        def __init__(self, experiment_class, window_type='window', window_size=20, params=None):
+        def __init__(self, experiment_class, window_type='window', params=None):
             """__init__ assing to window_func the correct function based on the
             window_type from the windows_dict
 
@@ -244,26 +244,26 @@ class ExperimentClass:
                                 "gauss_window": self.gauss_window,
                                 "None" : lambda: False}
             self.exp_cls = experiment_class
-            self.window_size = params['staircase_window'] if window_size!=None else 0 
+            self.window_size = params['staircase_window']
             self.params = params
-            self.window_func = self.windows_dict.get(window_type, self.Custom)
+            self.window_method = self.windows_dict.get(window_type, self.Custom)
             self.window_counter = 1
 
         def select(self, choice_history):
-            """select run the window_func and increase the strategy_counter
+            """select run the window_func and increase the forward_counter
 
             Args:
                 choice_history (list): a list with selected ports only for reward/punish trials 
-                strategy_counter (int): a counter that is shared with the strategy class
-                    and is used in usecases that you need functionalities from the strategy 
+                forward_counter (int): a counter that is shared with the forward class
+                    and is used in usecases that you need functionalities from the forward 
 
             Returns:
-                window_bool(bool): defines if the strategy must run
-                strategy_counter(int):
+                window_bool(bool): defines if the forward must run
+                forward_counter(int):
             """
             # check if it's not the first trial and the trial=reward or punish 
             trial_choice = np.size(choice_history) and choice_history[-1:][0] > 0
-            window_bool = self.window_func(trial_choice)
+            window_bool = self.window_method(trial_choice)
             return window_bool
 
         def window(self, trial_choice, *args):
@@ -286,65 +286,49 @@ class ExperimentClass:
             """sliding_window a counter that increase the window if trial_choice
             Args:
                 trial_choice (bool): check if it's not the first trial and the trial=reward or punish 
-                strategy_counter (int): a counter that is increased in window but it can been reset from
-                the strategy class according to the function of the strategy
+                forward_counter (int): a counter that is increased in window but it can been reset from
+                the forward class
 
             Returns:
                 bool:
             """
-            if trial_choice: 
-                self.exp_cls.strategy_counter+=1
-            if np.size(self.exp_cls.strategy_counter)>=self.window_size: 
+            if trial_choice: # check if it is abort
+                self.exp_cls.forward_counter+=1
+            if np.size(self.exp_cls.forward_counter)>=self.window_size: 
                 return True
-            return False
-
-        def gauss_window(self, trial_choice, *args):
-            """gauss_window define a window_size based on a gaussion distribution and
-                if the size of trials(reward or punish) are equal 
-                to window_size return True and set a new window_size
-            Args:
-                trial_choice (bool): check if it's not the first trial and the trial=reward or punish 
-            Returns:
-                bool: _description_
-            """
-            if self.window_size == None  or self.window_counter==self.window_size:
-                self.window_size=np.int32(np.random.normal(self.params['mu'], self.params['sigma'], 1)[0])
-                if self.window_size<=0: 
-                    self.window_size=1; 
-                    warnings.warn("Warning: You have picked mu,sigma values that result in a window_size<=0")
-                return True
-            elif trial_choice: self.window_counter += 1
             return False
         
         def Custom(self,*args)->bool:
             """by monkey patching user can overwrite the Custom function in the config file
 
-                e.g. def MyCustom(self, trial_choice, *args):
-                        if  self.window_counter==self.window_size:
-                            self.window_counter=1
+                e.g.def gauss_window(self, trial_choice, *args):
+                        if self.window_size == None  or self.window_counter==self.window_size:
+                            self.window_size=np.int32(np.random.normal(self.params['mu'], self.params['sigma'], 1)[0])
+                            if self.window_size<=0: 
+                                self.window_size=1; 
+                                warnings.warn("Warning: You have picked mu,sigma values that result in a window_size<=0")
                             return True
                         elif trial_choice: self.window_counter += 1
                         return False
-
-                ExperimentClass.cond_window.Custom =  MyCustom
+                ExperimentClass.WindowMethods.Custom =  gauss_window
             """
             raise NotImplementedError("Select window method Custom is Not Implemented") 
     
-    class cond_strategy():
+    class ForwardMethods():
         """If any user want to write its custom function overwrite the Custom method"""
-        def __init__(self, experiment_class, strategy_type, criterion_type, params):
-            """__init__ assing to strategy_func the correct method based on the
-            strategy_type from the strategy_dict
+        def __init__(self, experiment_class, forward_type, criterion_type, params):
+            """__init__ assing to forward_method the correct method based on the
+            forward_type from the forward_dict
 
             Args:
-                strategy_type (str): a string with the window type which is 
+                forward_type (str): a string with the window type which is 
                     defined on the configuration file (straircase,circular,None)
                 criterion (_type_): the function that defines the change of difficulty
                 stair_up (_type_): the value that above the difficulty increase
                 stair_down (_type_): the value that above the difficulty decrease
                 window_size (_type_): how many trial to take consider for criterion
             """
-            self.strategy_dict = {"staircase" : self.staircase,
+            self.forward_dict = {"staircase" : self.staircase,
                                 "circular"  : self.circular,
                                 "None" : lambda: None}
             self.exp_cls = experiment_class
@@ -352,27 +336,27 @@ class ExperimentClass:
             self.window_size = params['staircase_window']
             self.stair_up = params['stair_up']
             self.stair_down = params['stair_down']
-            self.strategy_func = self.strategy_dict.get(strategy_type, self.Custom)
+            self.forward_method = self.forward_dict.get(forward_type, self.Custom)
 
         def select(self, reward_history,punish_history, cur_dif, difs):
-            """select finds the criterion result and exetcute the strategy_func 
+            """select finds the criterion result and exetcute the forward_method 
 
             Args:
                 reward_history (list): list with rewards
                 punish_history (list): list with bool if trial is punish else nan
                 cur_dif (int): the current difficulty of the session
                 difs (list): all the difficulties of the conditions
-                strategy_counter (int): a counter of the trials that 
-                    is used on the strategy methods
+                forward_counter (int): a counter of the trials that 
+                    is used on the forward methods
 
             Returns:
                 int: the difficulty of the next trial
-                int: the strategy_counter in order to increased at window class later 
+                int: the forward_counter in order to increased at window class later 
             """
             diff_temp = cur_dif
             criterion_result = self.update_criterion(self.criterion, reward_history, punish_history)
-            cur_dif = self.strategy_func(criterion_result, cur_dif, difs)
-            if diff_temp!=cur_dif: self.exp_cls.strategy_counter=0
+            cur_dif = self.forward_method(criterion_result, cur_dif, difs)
+            if diff_temp!=cur_dif: self.exp_cls.forward_counter=0
             return cur_dif
         
         def staircase(self, criterion_result, cur_dif, difs):
@@ -404,7 +388,7 @@ class ExperimentClass:
             """
             difs_size = len(np.unique(difs))
             if criterion_result>self.stair_up:
-                cur_dif = (cur_dif+1) % difs_size
+                cur_dif = (self.upgrade_diff(cur_dif)) % difs_size
             return cur_dif
 
         def update_criterion(self, criterion, reward_history, punish_history):
@@ -446,12 +430,12 @@ class ExperimentClass:
                         if   criterion_result >= self.stair_up   and cur_dif < max(difs): cur_dif += 1
                         elif criterion_result <self.stair_down and cur_dif > 1: cur_dif -= 1
                         return cur_dif
-                ExperimentClass.cond_strategy.Custom =  MyCustom
+                ExperimentClass.ForwardMethods.Custom =  MyCustom
             """
-            raise NotImplementedError("Select strategy Custom function  method is Not Implemented") 
+            raise NotImplementedError("Select forward Custom function  method is Not Implemented") 
 
 
-    class cond_selection():
+    class SelectionMethods():
         """If any user want to write its custom selection function overwrite the Custom method"""
         def __init__(self, experiment_class, selection_type):
             """__init__ 
@@ -465,10 +449,10 @@ class ExperimentClass:
                                 "random"   : self.random,
                                 "antibias" : self.antibias,
                                 "block"    : self.block}
-            self.select_cond_func = self.select_dict.get(selection_type, self.Custom)
+            self.selection_method = self.select_dict.get(selection_type, self.Custom)
 
         def select(self):
-            return self.select_cond_func()
+            return self.selection_method()
         
         def fix(self):
             """fix select conditions in fix order based in configuration until they finish
@@ -512,7 +496,7 @@ class ExperimentClass:
 
                     e.g. def MyCustom(self):
                             return [] if len(self.exp_cls.conditions) == 0 else self.exp_cls.conditions.pop
-                    ExperimentClass.cond_selection.Custom =  MyCustom
+                    ExperimentClass.SelectionMethods.Custom =  MyCustom
             """
             raise NotImplementedError("at cond_selection class method Custom is Not Implemented")   
 
