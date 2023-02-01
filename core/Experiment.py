@@ -234,19 +234,18 @@ class ExperimentClass:
 
             Args:
                 window_type (str, optional):a string with the window type which is 
-                    defined on the configuration file (window,sliding_window,gauss_window,None)
+                    defined on the configuration file (window,sliding_window,None)
                 window_size (int, optional): after how many trials to check
-                params (_type_, optional): it is mainly for the mu/sigma parameters at
-                    gauss_window
+                params (_type_, optional)
             """
             self.windows_dict = {"window" : self.window,
                                 "sliding_window" : self.sliding_window,
-                                "gauss_window": self.gauss_window,
+                                "Custom" : self.Custom,
                                 "None" : lambda: False}
             self.exp_cls = experiment_class
             self.window_size = params['staircase_window']
             self.params = params
-            self.window_method = self.windows_dict.get(window_type, self.Custom)
+            self.window_method = self.windows_dict.get(window_type, self.NonImplemented)
             self.window_counter = 1
 
         def select(self, choice_history):
@@ -312,7 +311,10 @@ class ExperimentClass:
                         return False
                 ExperimentClass.WindowMethods.Custom =  gauss_window
             """
-            raise NotImplementedError("Select window method Custom is Not Implemented") 
+            raise NotImplementedError("Select window method Custom is Not Implemented")
+
+        def NonImplemented(self,*args):
+            raise NotImplementedError("WindowMethods method is Not Implemented")
     
     class ForwardMethods():
         """If any user want to write its custom function overwrite the Custom method"""
@@ -329,14 +331,15 @@ class ExperimentClass:
                 window_size (_type_): how many trial to take consider for criterion
             """
             self.forward_dict = {"staircase" : self.staircase,
-                                "circular"  : self.circular,
-                                "None" : lambda: None}
+                                "circular"   : self.circular,
+                                "Custom"     : self.Custom,
+                                "None"       : lambda: None}
             self.exp_cls = experiment_class
             self.criterion = criterion_type
             self.window_size = params['staircase_window']
             self.stair_up = params['stair_up']
             self.stair_down = params['stair_down']
-            self.forward_method = self.forward_dict.get(forward_type, self.Custom)
+            self.forward_method = self.forward_dict.get(forward_type, self.NonImplemented)
 
         def select(self, reward_history,punish_history, cur_dif, difs):
             """select finds the criterion result and exetcute the forward_method 
@@ -434,7 +437,8 @@ class ExperimentClass:
             """
             raise NotImplementedError("Select forward Custom function  method is Not Implemented") 
 
-
+        def NonImplemented(self,*args):
+            raise NotImplementedError("ForwardMethods method is Not Implemented")
     class SelectionMethods():
         """If any user want to write its custom selection function overwrite the Custom method"""
         def __init__(self, experiment_class, selection_type):
@@ -445,11 +449,12 @@ class ExperimentClass:
                 selection_type (str): type of selection(fix,random,antibias,block)
             """
             self.exp_cls = experiment_class
-            self.select_dict = {"fix"     : self.fix,
+            self.select_dict = {"fix"      : self.fix,
                                 "random"   : self.random,
                                 "antibias" : self.antibias,
-                                "block"    : self.block}
-            self.selection_method = self.select_dict.get(selection_type, self.Custom)
+                                "block"    : self.block,
+                                "Custom"   : self.Custom}
+            self.selection_method = self.select_dict.get(selection_type, self.NonImplemented)
 
         def select(self):
             return self.selection_method()
@@ -498,8 +503,10 @@ class ExperimentClass:
                             return [] if len(self.exp_cls.conditions) == 0 else self.exp_cls.conditions.pop
                     ExperimentClass.SelectionMethods.Custom =  MyCustom
             """
-            raise NotImplementedError("at cond_selection class method Custom is Not Implemented")   
+            raise NotImplementedError("at cond_selection class method Custom is Not Implemented") 
 
+        def NonImplemented(self,*args):
+            raise NotImplementedError("SelectionMethods method is Not Implemented")
 
 @experiment.schema
 class Session(dj.Manual):
