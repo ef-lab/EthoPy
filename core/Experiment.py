@@ -473,7 +473,7 @@ class ExperimentClass:
             choice_h = np.int64(np.asarray(self.exp_cls.beh.choice_history)[idx])
             # create a list with choice and difficulty for previous trials
             choice_h = [[c, d] for c, d in zip(choice_h, np.asarray(self.exp_cls.dif_h)[idx])]
-            #use anti_bias to select next condition
+            # use anti_bias to select next condition
             anti_bias = self.exp_cls._anti_bias(choice_h, self.exp_cls.un_choices[self.exp_cls.un_difs == self.exp_cls.cur_dif])
  
             sel_conds = [i for (i, v) in zip(self.exp_cls.conditions, np.logical_and(self.exp_cls.choices == anti_bias,
@@ -482,12 +482,12 @@ class ExperimentClass:
             return np.random.choice(sel_conds)
 
         def block(self):
-            """block select all conditions  randomly one each one and when they finsh repeat
+            """block select all conditions randomly one by one and when they finsh repeat
             """
             if np.size(self.exp_cls.iter) == 0 or np.size(self.exp_cls.beh.choice_history)==0: 
                 self.exp_cls.iter = np.random.permutation(np.size(self.exp_cls.conditions))
             cond = self.exp_cls.conditions[self.iter[0]]
-            self.exp_cls.iter = self.exp_cls.iter[1:]
+            self.exp_cls.iter = self.exp_cls.iter[1:] # decrease iter size
             return cond
         
         def Custom(self,*args):
