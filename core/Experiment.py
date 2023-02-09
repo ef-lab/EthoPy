@@ -67,7 +67,7 @@ class ExperimentClass:
         self.interface = self.beh.interface
         self.session_timer = Timer()
         self.transition_cond = ExperimentClass.TransitionMethods(transition_method=self.params['transition_method'], 
-                                                                window_method=self.params['window_method'],
+                                                                sliding=self.params['sliding'],
                                                                 criterion_method=self.params['criterion_method'],
                                                                 params=self.params)
 
@@ -218,33 +218,26 @@ class ExperimentClass:
         
     class TransitionMethods():
         def __init__(self, transition_method:str="staircase", 
-                    window_method:str="window", 
+                    sliding:bool=True, 
                     criterion_method:str="performace",
                     params=None):
-
-                # implemented window methods
-                self.windows_dict = {"window" : self.window,
-                                    "custom" : self.custom_window,
-                                    "None" : lambda *var: False}
 
                 # implemented transition methods
                 self.transition_dict = {"staircase" : self.staircase,
                                         "circular"   : self.circular,
                                         "custom"     : self.custom_transition,
                                         "None"       : lambda *var: None}
-        
+                self.sliding = sliding
                 self.params = params
                 self.window_size = params['window_size']
-                self.window_rolling = params['window_rolling']
                 self.block_upgrade = params['block_upgrade']
                 self.block_downgrade = params['block_downgrade']
                 
                 self.criterion_method = criterion_method
                 self.transition_method = self.transition_dict.get(transition_method, self.NonImplemented)
-                if None in (window_method,transition_method) and transition_method!=window_method: 
-                    raise Exception("If at least one of the variable window_method, transition_method equal None \
-                                    both of them must equal to None") 
-                self.window_method = self.windows_dict.get(window_method, self.NonImplemented)
+                if None in (criterion_method,transition_method) and transition_method!=criterion_method: 
+                    raise Exception("If at least one of the variable criterion_method, transition_method equal None \
+                                    both of them must equal to None")
                 
                 self.block_counter = 0 # count the the block size at every trial
 
@@ -253,11 +246,11 @@ class ExperimentClass:
             # check if it's not the first trial and the trial=(reward or punish) 
             trial_choice = np.size(choice_history) and choice_history[-1:][0] > 0
 
-            if self.window_method(trial_choice):
+            if self.window(trial_choice):
                 diff_temp = cur_dif
                 criterion_result = self.check_criterion(self.criterion_method, reward_history, punish_history)
                 cur_dif = self.transition_method(criterion_result, cur_dif, difs)
-                if diff_temp!=cur_dif and self.window_rolling=='sliding': self.block_counter=0 # when change block reset counter
+                if diff_temp!=cur_dif and self.sliding==True: self.block_counter=0 # when change block reset counter
                 print("criterion_result ",criterion_result)
             print("cur_dif ", cur_dif)
             print("self.block_counter ", self.block_counter)
@@ -274,7 +267,7 @@ class ExperimentClass:
             """
             if trial_choice: self.block_counter += 1
             if  self.block_counter>=self.window_size:
-                if self.window_rolling=='fixed':self.block_counter=0
+                if self.sliding==False: self.block_counter=0
                 return True
             return False
         
@@ -341,17 +334,6 @@ class ExperimentClass:
             elif next_type=="Downgrade":
                 return cur_dif-1
 
-        def custom_window(self,*args)->int:
-            """by monkey patching user can overwrite the Custom function in the config file
-
-                e.g. def MyCustom(self, trial_choice, *args):
-                        if   criterion_result >= self.block_upgrade   and cur_dif < max(difs): cur_dif += 1
-                        elif criterion_result <self.block_downgrade and cur_dif > 1: cur_dif -= 1
-                        return cur_dif
-                ExperimentClass.TransitionMethods.custom_window =  MyCustom
-            """
-            raise NotImplementedError("Select forward Custom function  method is Not Implemented") 
-
         def custom_transition(self,*args)->int:
             """by monkey patching user can overwrite the Custom function in the config file
 
@@ -414,7 +396,7 @@ class ExperimentClass:
             return np.random.choice(sel_conds)
 
         def block(self):
-            """block select all conditions  randomly one each one and when they finsh repeat
+            """block select all conditions randomly one by one and when they finish repeat
             """
             if np.size(self.exp_cls.iter) == 0 or np.size(self.exp_cls.beh.choice_history)==0: 
                 self.exp_cls.iter = np.random.permutation(np.size(self.exp_cls.conditions))
