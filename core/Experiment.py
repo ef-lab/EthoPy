@@ -224,8 +224,6 @@ class ExperimentClass:
 
                 # implemented transition methods
                 self.transition_dict = {"staircase" : self.staircase,
-                                        "circular"   : self.circular,
-                                        "custom"     : self.custom_transition,
                                         "None"       : lambda *var: None}
                 self.sliding = sliding
                 self.params = params
@@ -235,20 +233,18 @@ class ExperimentClass:
                 
                 self.criterion_method = criterion_method
                 self.transition_method = self.transition_dict.get(transition_method, self.NonImplemented)
-                if None in (criterion_method,transition_method) and transition_method!=criterion_method: 
-                    raise Exception("If at least one of the variable criterion_method, transition_method equal None \
-                                    both of them must equal to None")
-                
+                if transition_method!="None" and transition_method!=criterion_method: 
+                    raise Exception("if transition_method!=None you must specify a criterion_method")
+                    
                 self.block_counter = 0 # count the the block size at every trial
 
         def select(self, choice_history, reward_history, punish_history, cur_dif, difs):
-
             # check if it's not the first trial and the trial=(reward or punish) 
             trial_choice = np.size(choice_history) and choice_history[-1:][0] > 0
 
             if self.window(trial_choice):
                 diff_temp = cur_dif
-                criterion_result = self.check_criterion(self.criterion_method, reward_history, punish_history)
+                criterion_result = self.criterion_method(self.criterion_method, reward_history, punish_history)
                 cur_dif = self.transition_method(criterion_result, cur_dif, difs)
                 if diff_temp!=cur_dif and self.sliding==True: self.block_counter=0 # when change block reset counter
                 print("criterion_result ",criterion_result)
@@ -266,7 +262,7 @@ class ExperimentClass:
                 bool:
             """
             if trial_choice: self.block_counter += 1
-            if  self.block_counter>=self.window_size:
+            if self.block_counter>=self.window_size:
                 if self.sliding==False: self.block_counter=0
                 return True
             return False
@@ -286,25 +282,9 @@ class ExperimentClass:
             if   criterion_result >= self.block_upgrade   and cur_dif < max(difs): cur_dif = self.succeed_block(cur_dif, "Upgrade")
             elif criterion_result <self.block_downgrade and cur_dif > 1: cur_dif = self.succeed_block(cur_dif, "Downgrade")
             return cur_dif
-        
-        def circular(self, criterion_result, cur_dif, difs):
-            """circular it increase difficulty is block_upgrade<criterion_result until
-            it goes to maximum and then returns to start
-            Args:
-                criterion_result (float): the result of the criterion 
-                cur_dif (_type_): current difficulty
-                difs (_type_): all the difficulties
 
-            Returns:
-                (int): the next difficulty
-            """
-            difs_size = len(np.unique(difs))
-            if criterion_result>self.block_upgrade:
-                cur_dif = (self.succeed_block(cur_dif, "Upgrade")) % difs_size
-            return cur_dif
-
-        def check_criterion(self, criterion_method, reward_history, punish_history)->float:
-            """check_criterion return a float based on criterion_result
+        def criterion_method(self, criterion_method, reward_history, punish_history)->float:
+            """criterion_method return a float based on criterion_result
             Args:
                 criterion (str): 
                 reward_history (list): list with rewards
@@ -322,9 +302,9 @@ class ExperimentClass:
                 rew_h  = np.asarray(reward_history)[idx]
                 return np.nanmean(np.greater(rew_h[-self.window_size:], 0))
             elif criterion_method == "None":
-                return False
+                return True
             else:
-                raise NotImplementedError("check_criterion method on TransitionMethods class is not implemented!")
+                raise NotImplementedError("criterion_method method on TransitionMethods class is not implemented!")
         
         def succeed_block(self,cur_dif, next_type='Upgrade'):
             """this method is responsible for the next_type
@@ -334,23 +314,11 @@ class ExperimentClass:
             elif next_type=="Downgrade":
                 return cur_dif-1
 
-        def custom_transition(self,*args)->int:
-            """by monkey patching user can overwrite the Custom function in the config file
-
-                    e.g. def MyCustom(self, trial_choice, *args):
-                            if   criterion_result >= self.stair_up   and cur_dif < max(difs): cur_dif += 1
-                            elif criterion_result <self.stair_down and cur_dif > 1: cur_dif -= 1
-                            return cur_dif
-                    ExperimentClass.TransitionMethods.custom_transition =  MyCustom
-            """
-            raise NotImplementedError("Select forward Custom function  method is Not Implemented") 
-
         def NonImplemented(self,*args):
             raise NotImplementedError("TransitionMethods method is Not Implemented")
 
 
     class SelectConditions():
-        """If any user want to write its custom selection function overwrite the Custom method"""
         def __init__(self, experiment_class, selection_type):
             """__init__ 
 
@@ -403,17 +371,6 @@ class ExperimentClass:
             cond = self.exp_cls.conditions[self.iter[0]]
             self.exp_cls.iter = self.exp_cls.iter[1:]
             return cond
-        
-        def Custom(self,*args):
-            """
-                by monkey patching user can overwrite the Custom function in the config file
-
-                    e.g. def MyCustom(self):
-                            return [] if len(self.exp_cls.conditions) == 0 else self.exp_cls.conditions.pop
-                    ExperimentClass.SelectConditions.Custom =  MyCustom
-            """
-            raise NotImplementedError("at SelectConditions class method Custom is Not Implemented")   
-
 
 @experiment.schema
 class Session(dj.Manual):
