@@ -246,7 +246,7 @@ class ExperimentClass:
                 diff_temp = cur_dif
                 criterion_result = self.criterion_method(self.criterion_method, reward_history, punish_history)
                 cur_dif = self.transition_method(criterion_result, cur_dif, difs)
-                if diff_temp!=cur_dif and self.sliding==True: self.block_counter=0 # when change block reset counter
+                if diff_temp==cur_dif and self.sliding==True: self.block_counter=0 # when change block reset counter
                 print("criterion_result ",criterion_result)
             print("cur_dif ", cur_dif)
             print("self.block_counter ", self.block_counter)
@@ -331,7 +331,7 @@ class ExperimentClass:
                                 "random"   : self.random,
                                 "antibias" : self.antibias,
                                 "block"    : self.block}
-            self.select_cond_func = self.select_dict.get(selection_type, self.Custom)
+            self.select_cond_func = self.select_dict.get(selection_type, self.NonImplemented)
 
         def select(self):
             return self.select_cond_func()
@@ -372,6 +372,8 @@ class ExperimentClass:
             self.exp_cls.iter = self.exp_cls.iter[1:]
             return cond
 
+        def NonImplemented(self,*args):
+            raise NotImplementedError("SelectConditions method is Not Implemented")
 @experiment.schema
 class Session(dj.Manual):
     definition = """
