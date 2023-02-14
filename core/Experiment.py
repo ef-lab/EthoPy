@@ -68,7 +68,7 @@ class ExperimentClass:
         self.session_timer = Timer()
         self.transition_cond = ExperimentClass.TransitionMethods(transition_method=self.params['transition_method'], 
                                                                 sliding=self.params['sliding'],
-                                                                criterion_method=self.params['criterion_method'],
+                                                                criterion=self.params['criterion_method'],
                                                                 params=self.params)
 
         self.select_cond  = ExperimentClass.SelectConditions(experiment_class=self, selection_type=self.params['selection_type'])
@@ -219,7 +219,7 @@ class ExperimentClass:
     class TransitionMethods():
         def __init__(self, transition_method:str="staircase", 
                     sliding:bool=True, 
-                    criterion_method:str="performace",
+                    criterion:str="performace",
                     params=None):
 
                 # implemented transition methods
@@ -231,9 +231,11 @@ class ExperimentClass:
                 self.block_upgrade = params['block_upgrade']
                 self.block_downgrade = params['block_downgrade']
                 
-                self.criterion_method = criterion_method
+                self.criterion = criterion
                 self.transition_method = self.transition_dict.get(transition_method, self.NonImplemented)
-                if transition_method!="None" and transition_method!=criterion_method: 
+                print("self.transition_method ",transition_method)
+                print("criterion_method", self.criterion)
+                if transition_method=="None" and transition_method!=self.criterion: 
                     raise Exception("if transition_method!=None you must specify a criterion_method")
                     
                 self.block_counter = 0 # count the the block size at every trial
@@ -244,10 +246,10 @@ class ExperimentClass:
 
             if self.window(trial_choice):
                 diff_temp = cur_dif
-                criterion_result = self.criterion_method(self.criterion_method, reward_history, punish_history)
+                criterion_result = self.criterion_method(self.criterion, reward_history, punish_history)
                 cur_dif = self.transition_method(criterion_result, cur_dif, difs)
-                if diff_temp==cur_dif and self.sliding==True: self.block_counter=0 # when change block reset counter
-                print("criterion_result ",criterion_result)
+                if diff_temp!=cur_dif and self.sliding==True: self.block_counter=0 # when change block reset counter
+                print("criterion_result ", criterion_result)
             print("cur_dif ", cur_dif)
             print("self.block_counter ", self.block_counter)
             return cur_dif
@@ -374,6 +376,7 @@ class ExperimentClass:
 
         def NonImplemented(self,*args):
             raise NotImplementedError("SelectConditions method is Not Implemented")
+
 @experiment.schema
 class Session(dj.Manual):
     definition = """
