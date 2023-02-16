@@ -23,7 +23,7 @@ class RPPorts(Interface):
         self.GPIO.setmode(self.GPIO.BCM)
         self.Pulser = pigpio.pi()
         self.PulseGen = pigpio.pulse
-        self.pigpio=pigpio
+        self.WaveProp=pigpio.WAVE_MODE_REPEAT_SYNC
         self.thread = ThreadPoolExecutor(max_workers=2)
         self.pwm_stop_event = Event()
         self.frequency = 20
@@ -220,7 +220,7 @@ class RPPorts(Interface):
             self.sound_pulses.append(self.PulseGen(0, 1<<channel, int((1/(pulse_freq*2)*1e6))))
         self.Pulser.wave_add_generic(self.sound_pulses)
         ff=self.Pulser.wave_create()
-        self.Pulser.wave_send_using_mode(ff, self.pigpio.WAVE_MODE_REPEAT_SYNC)
+        self.Pulser.wave_send_using_mode(ff, self.WaveProp)
         while time_stimulus.elapsed_time()<duration and not self.pwm_stop_event.is_set():
             pass
         self.Pulser.wave_tx_stop()# stop waveform
