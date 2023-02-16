@@ -23,11 +23,13 @@ class RPPorts(Interface):
         self.GPIO.setmode(self.GPIO.BCM)
         self.Pulser = pigpio.pi()
         self.PulseGen = pigpio.pulse
+        self.pigpio=pigpio
         self.thread = ThreadPoolExecutor(max_workers=2)
         self.pwm_stop_event = Event()
         self.frequency = 20
         self.ts = False
         self.pulses = dict()
+        self.sound_pulses=[]
 
         matched_ports = set(self.rew_ports) & set(self.channels['Liquid'].keys())
         assert matched_ports == set(self.rew_ports), 'All reward ports must have assigned a liquid delivery port!'
@@ -200,14 +202,27 @@ class RPPorts(Interface):
         sleep(duration/1000)    # to add a  delay in seconds
         pwm.stop()
 
-    def __pwm_out(self, channel, freq, duration, volume=50, pulse_freq=0):
+    def __pwm_out(self, channel, freq, duration, dutycycle=100, pulse_freq=0):
+        self.sound_pulses=[]
         self.pwm_stop_event.clear()
-        if pulse_freq == 0 or (1/pulse_freq) > duration/500: #handle cases that pulse duration (defined by pulse_freq) is not less than stimulus duration
-            pulse_freq = 500/duration
-
+        self.Pulser.wave_clear()
+    
         time_stimulus = Timer()
-        while time_stimulus.elapsed_time() < duration and not self.pwm_stop_event.is_set():
-            self.Pulser.hardware_PWM(channel, freq, volume*5000)
-            sleep(.5/pulse_freq)    # to add a  delay in seconds, sleep takes seconds. This is for a 50% dutycycle
-            self.Pulser.hardware_PWM(channel, 0, 0)
-            if pulse_freq != 500/duration: sleep(.5/pulse_freq)
+        signal_duration=round(1/freq*1e6)   #microseconds
+        # Speaker has non monotonic response with ~50%dutycycle is maximum response. Thus normalize percentage by /2.
+        if pulse_freq==0:
+            self.sound_pulses.append(self.PulseGen(1<<channel, 0, int(dutycycle*signal_duration/200))) 
+            self.sound_pulses.append(self.PulseGen(0, 1<<channel, signal_duration-int(dutycycle*signal_duration/200)))
+        else: 
+            for i in range(int((1/(pulse_freq*2)*1e6)/signal_duration)):
+                self.sound_pulses.append(self.PulseGen(1<<channel, 0, int(dutycycle*signal_duration/200)))
+                self.sound_pulses.append(self.PulseGen(0, 1<<channel, signal_duration-int(dutycycle*signal_duration/200)))
+            self.sound_pulses.append(self.PulseGen(0, 1<<channel, int((1/(pulse_freq*2)*1e6))))
+        self.Pulser.wave_add_generic(self.sound_pulses)
+        ff=self.Pulser.wave_create()
+        self.Pulser.wave_send_using_mode(ff, self.pigpio.WAVE_MODE_REPEAT_SYNC)
+        while time_stimulus.elapsed_time()<duration and not self.pwm_stop_event.is_set():
+            pass
+        self.Pulser.wave_tx_stop()# stop waveform
+        self.Pulser.write(channel,0)
+        self.Pulser.wave_clear()# clear all waveforms
