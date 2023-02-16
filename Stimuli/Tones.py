@@ -26,7 +26,6 @@ class Tones(RPScreen, dj.Manual):
         tone_frequency = self.curr_cond['tone_frequency']
         tone_volume = self.curr_cond['tone_volume']
         tone_pulse_freq=self.curr_cond['tone_pulse_freq']
-        if 0< self.curr_cond['tone_pulse_freq']<10 :
-            raise ValueError('Tone pulse frequency cannot be between zero and 10Hz (not including)')
         self.exp.interface.give_sound(tone_frequency, tone_duration, tone_volume, tone_pulse_freq)
+        print('Sound volume: ', tone_volume)
         super().start()
