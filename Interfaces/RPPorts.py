@@ -31,6 +31,7 @@ class RPPorts(Interface):
         self.ts = False
         self.pulses = dict()
         self.sound_pulses=[]
+        # One wave can be send at a time, stored at wave_thread. The other threads wait for the one to finish.
         self.wave_thread=[]
 
         matched_ports = set(self.rew_ports) & set(self.channels['Liquid'].keys())
