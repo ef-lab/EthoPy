@@ -89,10 +89,10 @@ class RPPorts(Interface):
                                         filename=self.camera.filename, target_path=self.camera.path))
 
     def give_liquid(self, port, duration=False):
-        if duration: self.duration=duration[port]
+        if not duration: duration=self.duration[port]
         if len(self.wave_thread): 
             wait(self.wave_thread)
-        self.thread.submit(self._give_pulse, port)
+        self.thread.submit(self._give_pulse, port, duration)
 
     def give_odor(self, delivery_port, odor_id, odor_duration, dutycycle):
         for i, idx in enumerate(odor_id):
@@ -174,8 +174,8 @@ class RPPorts(Interface):
             self.position_dur = tmst - self.position_tmst
             self.position = Port()
 
-    def _give_pulse(self, port):
-        self.Pulser.wave_add_generic([self.PulseGen(1 << self.channels['Liquid'][port], 0, int(self.duration[port]*1000)),
+    def _give_pulse(self, port, duration):
+        self.Pulser.wave_add_generic([self.PulseGen(1 << self.channels['Liquid'][port], 0, int(duration*1000)),
                                       self.PulseGen(0, 1 << self.channels['Liquid'][port], 1)])
         pulse = self.Pulser.wave_create()
         self.Pulser.wave_send_once(pulse)
