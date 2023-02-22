@@ -100,6 +100,7 @@ class RPPorts(Interface):
 
     def give_sound(self, sound_freq=40500, duration=500, volume=100, pulse_freq=0):
         self.wave_thread.append(self.thread.submit(self.__pwm_out, self.channels['Sound'][1], sound_freq, duration, volume, pulse_freq))
+        print("gave sound")
 
     def stop_sound(self):
         self.pwm_stop_event.set()
@@ -203,7 +204,7 @@ class RPPorts(Interface):
         sleep(duration/1000)    # to add a  delay in seconds
         pwm.stop()
 
-    def __pwm_out(self, channel, freq, duration, volume=50, pulse_freq=0):
+    def __pwm_out(self, channel, freq, duration, dutycycle=100, pulse_freq=0):
         self.sound_pulses=[]
         self.pwm_stop_event.clear()
         time_stimulus = Timer()
