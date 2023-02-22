@@ -100,7 +100,6 @@ class RPPorts(Interface):
 
     def give_sound(self, sound_freq=40500, duration=500, volume=100, pulse_freq=0):
         self.wave_thread.append(self.thread.submit(self.__pwm_out, self.channels['Sound'][1], sound_freq, duration, volume, pulse_freq))
-        print("gave sound")
 
     def stop_sound(self):
         self.pwm_stop_event.set()
