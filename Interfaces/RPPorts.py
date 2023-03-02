@@ -25,7 +25,6 @@ class RPPorts(Interface):
         self.PulseGen = pigpio.pulse
         self.WaveProp=pigpio.WAVE_MODE_REPEAT_SYNC
         self.thread = ThreadPoolExecutor(max_workers=2)
-        self.pwm_stop_event = Event()
         self.frequency = 20
         self.ts = False
         self.pulses = dict()
@@ -95,7 +94,7 @@ class RPPorts(Interface):
             self.thread.submit(self.__pwd_out, self.channels['Odor'][delivery_port[i]], odor_duration, dutycycle[i])
 
     def give_sound(self, sound_freq=40500, volume=100, pulse_freq=0):
-        self.thread.submit(self.__pwm_out, self.channels['Sound'][1], sound_freq, volume, pulse_freq)
+        self.thread.submit(self.__pulse_out, self.channels['Sound'][1], sound_freq, volume, pulse_freq)
 
     def stop_sound(self):
         self.Pulser.wave_tx_stop()# stop waveform
@@ -201,7 +200,7 @@ class RPPorts(Interface):
         sleep(duration/1000)    # to add a  delay in seconds
         pwm.stop()
 
-    def __pwm_out(self, channel, freq, dutycycle=100, pulse_freq=0):
+    def __pulse_out(self, channel, freq, dutycycle=100, pulse_freq=0):
         self.sound_pulses=[]
         signal_duration=round(1/freq*1e6)   #microseconds
         # Speaker has non monotonic response with ~50%dutycycle is maximum response. Thus normalize percentage by /2.

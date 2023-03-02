@@ -131,8 +131,7 @@ class Grating(Stimulus, dj.Manual):
         self.unshow([i*256 for i in self.monitor['start_color']])
 
     def stop(self):
-        self.screen.fill([0, 0, 0])
-        self.flip()
+        self.unshow([i*256 for i in self.monitor['background_color']])
         self.log_stop()
         self.isrunning = False
 
@@ -248,8 +247,7 @@ class GratingRP(Grating):
         except:
             self._init_player()
             self.vid.quit()
-        self.screen.fill([0, 0, 0])
-        self.flip()
+        self.unshow([i*256 for i in self.monitor['background_color']])
         self.log_stop()
         self.isrunning = False
 

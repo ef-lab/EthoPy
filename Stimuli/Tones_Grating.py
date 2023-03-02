@@ -28,16 +28,19 @@ class Tones_Grating(GratingRP, dj.Manual):
             raise ValueError('Tone pulse frequency cannot be between zero and 10Hz (not including)')
         self.exp.interface.give_sound(tone_frequency, tone_volume, tone_pulse_freq)
         super().start()
-        # super().prepare(self.curr_cond)
     
     def present(self):
         super().present()
         if self.timer.elapsed_time() > self.curr_cond['tone_duration'] and self.isrunning:
             self.isrunning = False
             self.stop()
-            super().ready_stim()
 
     def stop(self):
-        super().stop()
-        self.exp.interface.stop_sound()
+        try:
+            self.vid.quit()
+        except:
+            self._init_player()
+            self.vid.quit()
+        self.log_stop()
         self.isrunning = False
+        self.exp.interface.stop_sound()

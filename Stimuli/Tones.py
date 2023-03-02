@@ -30,9 +30,8 @@ class Tones(RPScreen, dj.Manual):
         if self.timer.elapsed_time() > self.curr_cond['tone_duration'] and self.isrunning:
             self.isrunning = False
             self.stop()
-            super().ready_stim()
 
     def stop(self):
-        super().stop()
-        self.exp.interface.stop_sound()
+        self.log_stop()
         self.isrunning = False
+        self.exp.interface.stop_sound()
