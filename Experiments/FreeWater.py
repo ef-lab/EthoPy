@@ -73,11 +73,13 @@ class Reward(Experiment):
         self.stim.reward_stim()
 
     def run(self):
-        self.beh.reward()
+        self.rewarded = self.beh.reward(self.start_time)
 
     def next(self):
-        return 'InterTrial'
-
+        if self.rewarded:
+            return 'InterTrial'
+        else:
+            return 'Reward'
 
 class InterTrial(Experiment):
     def run(self):
