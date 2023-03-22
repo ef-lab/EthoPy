@@ -38,8 +38,10 @@ class MultiPort(Behavior, dj.Manual):
         position, ready_time, tmst = self.interface.in_position()
         if duration == 0:
             return True
+        elif position==0 or position.ready==0: 
+            return False    
         elif not since:
-            return position.ready and ready_time > duration # in position for specified duration
+            return ready_time > duration # in position for specified duration
         elif tmst >= since:
             return ready_time > duration  # has been in position for specified duration since timepoint
         else:
