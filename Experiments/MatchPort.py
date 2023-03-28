@@ -186,8 +186,6 @@ class InterTrial(Experiment):
     def next(self):
         if self.is_stopped():
             return 'Exit'
-        elif self.beh.is_sleep_time() and not self.beh.is_hydrated(self.params['min_reward']):
-            return 'Hydrate'
         elif self.beh.is_sleep_time() or self.beh.is_hydrated():
             return 'Offtime'
         elif self.state_timer.elapsed_time() >= self.stim.curr_cond['intertrial_duration'] and self.beh.is_off_proximity():
@@ -234,8 +232,8 @@ class Offtime(Experiment):
             return 'PreTrial'
         elif self.logger.setup_status == 'sleeping' and not self.beh.is_sleep_time():  # if wake up then update session
             return 'Exit'
-        elif not self.beh.is_hydrated() and not self.beh.is_sleep_time():
-            return 'Exit'
+        elif self.beh.is_sleep_time() and not self.beh.is_hydrated(self.params['min_reward']) and self.curr_trial>1:
+            return 'Hydrate'
         else:
             return 'Offtime'
 
