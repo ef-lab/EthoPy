@@ -79,6 +79,7 @@ class PreTrial(Experiment):
         self.beh.prepare(self.curr_cond)
         self.stim.prepare(self.curr_cond, 'Cue')
         super().entry()
+        self.stim.start_stim()
 
     def run(self):
         if not self.is_stopped() and self.beh.is_ready(self.curr_cond['init_ready'], self.start_time):
@@ -95,7 +96,9 @@ class PreTrial(Experiment):
         else:
             return 'PreTrial'
 
-
+    def exit(self):
+        self.stim.unshow()
+        
 class Cue(Experiment):
     def entry(self):
         self.stim.start()
