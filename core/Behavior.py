@@ -244,7 +244,7 @@ class Behavior:
         self.punish_history = list()
         self.reward_amount = dict()
         self.response, self.last_lick = Activity(), Activity()
-        self.response_queue = Queue(maxsize = 3)
+        self.response_queue = Queue(maxsize = 5)
         self.logging = True
         interface_module = (experiment.SetupConfiguration & {'setup_conf_idx': exp.params['setup_conf_idx']}
                             ).fetch('interface')[0]
