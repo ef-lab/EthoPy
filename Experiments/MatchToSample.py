@@ -249,6 +249,7 @@ class InterTrial(Experiment):
     def run(self):
         if self.beh.is_licking() and self.params.get('noresponse_intertrial'):
             self.state_timer.start()
+        self.logger.ping()
 
     def next(self):
         if self.is_stopped():
