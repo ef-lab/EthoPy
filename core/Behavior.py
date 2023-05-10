@@ -244,7 +244,7 @@ class Behavior:
         self.punish_history = list()
         self.reward_amount = dict()
         self.response, self.last_lick = Activity(), Activity()
-        self.response_queue = Queue(maxsize = 3)
+        self.response_queue = Queue(maxsize = 4)
         self.logging = True
         interface_module = (experiment.SetupConfiguration & {'setup_conf_idx': exp.params['setup_conf_idx']}
                             ).fetch('interface')[0]
@@ -255,18 +255,38 @@ class Behavior:
     def is_ready(self, init_duration, since=0):
         return True, 0
 
-    def get_response(self, since=0, clear=True):
-        if not self.response_queue.empty():
-            response = self.response_queue.get()
-        else:
-            response = Activity()
-        if clear:
-            self.response = Activity()
-            self.licked_port = 0
-        if response.time and response.time >= since and response.port:
-            self.response = response
-            return True
-        return False
+    def get_response(self, since:int=0, clear:bool=True) -> bool:
+            """
+            Return a boolean indicating whether there is any response since the given time.
+
+            Args:
+                since (int, optional): Time in milliseconds. Defaults to 0.
+                clear (bool, optional): If True, clears any existing response before checking for new responses. 
+                                        Defaults to True.
+
+            Returns:
+                bool: True if there is any valid response since the given time, False otherwise.
+            """
+            
+            # set a flag to indicate whether there is a valid response since the given time
+            _valid_response = False
+            
+            # clear existing response if clear is True
+            if clear:
+                self.response = Activity()
+                self.licked_port = 0
+            
+            # loop through the response queue and check if there is any response since the given time
+            # keeps only the response that is oldest and get the queue clear
+            while not self.response_queue.empty():
+                _response = self.response_queue.get()
+                if not _valid_response and _response.time and _response.time >= since and _response.port:
+                    self.response = _response 
+                    _valid_response = True
+                    
+            # return True if there is any valid response since the given time, False otherwise
+            if _valid_response: return True
+            return False
 
     def is_licking(self, since=0, reward=False, clear=True):
         if self.last_lick.time >= since and self.last_lick.port:
