@@ -277,10 +277,10 @@ class Behavior:
                 self.licked_port = 0
             
             # loop through the response queue and check if there is any response since the given time
-            # keeps only the response that is oldest and get the queue clear
+            # keeps only the response that is oldest and get rest of the queue clear
             while not self.response_queue.empty():
                 _response = self.response_queue.get()
-                if not _valid_response and _response.time and _response.time >= since and _response.port:
+                if not _valid_response and _response.time >= since and _response.port:
                     self.response = _response 
                     _valid_response = True
                     
@@ -293,8 +293,9 @@ class Behavior:
 
         is_licking is used in two ways:
         1. to check if there is any licking since the given time
-        2. in case reward == True, to check if there is any licking since the given time 
-           and if the licked port is a reward port only then return the licked port number else return 0
+        2. in case flag reward == True, to check if there is any licking since the given time 
+           and also if the licked port is a reward port only then return the licked port number 
+           else return 0
 
         Args:
             since (int, optional): Time in milliseconds. Defaults to 0.
