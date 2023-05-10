@@ -288,13 +288,34 @@ class Behavior:
             if _valid_response: return True
             return False
 
-    def is_licking(self, since=0, reward=False, clear=True):
+    def is_licking(self, since:int=0, reward:bool=False, clear:bool=True) -> int:
+        """checks if there is any licking since the given time
+
+        is_licking is used in two ways:
+        1. to check if there is any licking since the given time
+        2. in case reward == True, to check if there is any licking since the given time 
+           and if the licked port is a reward port only then return the licked port number else return 0
+
+        Args:
+            since (int, optional): Time in milliseconds. Defaults to 0.
+            reward (bool, optional): False. Defaults to False.
+            clear (bool, optional): if True reset last_lick to default Activity. Defaults to True.
+
+        Returns:
+            int: licked port number else 0
+        """
+        # check if there is any licking since the given time
         if self.last_lick.time >= since and self.last_lick.port:
+            # if reward == False return the licked port number
+            # if reward == True check if the licked port is alse a reward port
             if not reward or (reward and self.last_lick.reward):
                 self.licked_port = self.last_lick.port
-            else: self.licked_port = 0
-        else: self.licked_port = 0
-        if clear: self.last_lick = Activity() # by default if it licked since the last time this function was called
+            else: 
+                self.licked_port = 0
+        else: 
+            self.licked_port = 0
+        # by default if it licked since the last time this function was called
+        if clear: self.last_lick = Activity() 
         return self.licked_port
 
     def reward(self):
@@ -306,17 +327,29 @@ class Behavior:
     def exit(self):
         self.logging = False
 
-    def log_activity(self, activity_key):
+    def log_activity(self, activity_key:dict):
+        """log the activity of the animal in the database, update the last_lick, licked_port variables, 
+        append to the response queue if the queue is not full and return the time of the activity 
+
+        Args:
+            activity_key (dict): _description_
+
+        Returns:
+            int: Time in milliseconds of the activity
+        """
         activity = Activity(**activity_key)
-        lg_tmst = self.logger.logger_timer.elapsed_time()
-        if not activity.time: activity.time = lg_tmst
+        # if activity.time is not set, set it to the current time
+        if not activity.time: activity.time = self.logger.logger_timer.elapsed_time()
         key = {**self.logger.trial_key, **activity.__dict__}
+        # log the activity in the database
         if self.exp.running and self.logging:
             self.logger.log('Activity', key, schema='behavior', priority=10)
             self.logger.log('Activity.' + activity.type, key, schema='behavior')
+        # if activity.type == 'Response': append to the response queue
         if activity.response:
             if self.response_queue.full(): self.response_queue.get()
             self.response_queue.put(activity)
+        # get the last lick and licked port to use it in is_licking function
         if activity.type == 'Lick': self.last_lick = activity; self.licked_port = activity.port
         return key['time']
 
