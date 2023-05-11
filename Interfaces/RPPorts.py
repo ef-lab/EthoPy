@@ -171,11 +171,23 @@ class RPPorts(Interface):
         """checks if any proximity ports is activated
 
         used to make sure that none of the ports is activated before move on to the next trial
+        if get_position returns 0 but position.type == Proximity means that self.position should be off
+        so call _position_change to reset it to the correct value
 
         Returns:
             bool: True if all proximity ports are not acrtivated
         """
-        return self._get_position()==0
+        port = self._get_position()
+        # port=0 means that no proximity port is activated
+        if port==0:
+            # # self.position.type == 'Proximity' and port=0 means that add_event_detect has lost the off of the proximity
+            pos = self.position
+            if pos.type == 'Proximity':
+                # call position_change to reset the self.position
+                self._position_change(self.channels['Proximity'][pos.port])
+            return True
+        else:
+            return False
 
     def _get_position(self, ports=0):
         """get the position of the proximity ports
