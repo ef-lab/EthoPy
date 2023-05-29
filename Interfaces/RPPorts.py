@@ -138,31 +138,103 @@ class RPPorts(Interface):
             self.interface.camera_Process.join()
 
     def in_position(self, port=0):
+        """Determine if the specified port is in position and return the position data.
+
+        Args:
+            port (int, optional): The port to check the position of. Defaults to 0.
+
+        Returns:
+            tuple: A tuple containing the position data for the specified port in the following format:
+                - position (Port): A Port object representing the position of the specified port.
+                - position_dur (float): The duration in ms that the specified port has been in its current position.
+                - position_tmst (float): The timestamp in ms that the specified port activated.
+
+        If the specified port is not in position, the tuple will be (0, 0, 0).
+
+        """
+        # Get the current position and the position of the specified port.
         position = self.position
         port = self._get_position(port)
+
+        # # If neither position has been set, return (0, 0, 0).
         if not position.port and not port: return 0, 0, 0
+
+        # # If the specified port is not in the correct position, update the position and timestamp.
         if position != Port(type='Proximity', port=port):
             self._position_change(self.channels['Proximity'][max(port, position.port)])
+                    
+        # Calculate the duration and timestamp for the current position.
         position_dur = self.timer_ready.elapsed_time() if self.position.port else self.position_dur
         return self.position, position_dur, self.position_tmst
 
     def off_proximity(self):
-        return self.position.type != 'Proximity'
+        """checks if any proximity ports is activated
+
+        used to make sure that none of the ports is activated before move on to the next trial
+        if get_position returns 0 but position.type == Proximity means that self.position should be off
+        so call _position_change to reset it to the correct value
+
+        Returns:
+            bool: True if all proximity ports are not acrtivated
+        """
+        port = self._get_position()
+        # port=0 means that no proximity port is activated
+        if port==0:
+            # # self.position.type == 'Proximity' and port=0 means that add_event_detect has lost the off of the proximity
+            pos = self.position
+            if pos.type == 'Proximity':
+                # call position_change to reset the self.position
+                self._position_change(self.channels['Proximity'][pos.port])
+            return True
+        else:
+            return False
 
     def _get_position(self, ports=0):
+        """get the position of the proximity ports
+
+        _extended_summary_
+
+        Args:
+            ports (int, optional):  The port to check the position of. Defaults is 0 which means check all the ports.
+
+        Returns:
+            int: the id of the activated port else 0 
+        """
+        # if port is not specified check all proximity ports
         if not ports: ports = self.proximity_ports
         elif not type(ports) is list: ports = [ports]
         for port in ports:
+            # find the position of the port
             in_position = self.GPIO.input(self.channels['Proximity'][port])
+            # if port invert take the opposite
             if self.ports[Port(type='Proximity', port=port) == self.ports][0].invert:
                 in_position = not in_position
+            # return the port id if any port is in position
             if in_position: return port
         return 0
 
     def _position_change(self, channel=0):
+        """Update the position of the animal and log the in_position event.
+        
+        Position_change is called in as callback at event_detect of GPIO.BOTH of the proximity channels.
+        It is also called from function in_position in the case where the callback has not run but the position has changed.
+        We want to log the port change and update the self.position with the activated port or reset it.
+        Also we calculate 
+            - position_dur (float): The duration in ms that the specified port has been in its current position.
+            - position_tmst (float): The timestamp in ms that the specified port activated.
+        Before we log the position we check that it has been changed, because due to the small bouncetime
+        most proximity sensors(switches) will flicker back and forth between the two values before settling down.
+        
+        Args:
+            channel (int, optional): The channel number of the proximity sensor. Defaults to 0.
+        """
+        # Get the port number corresponding to the proximity sensor channel
         port = self._channel2port(channel, 'Proximity')
+        # Check if the animal is in position
         in_position = self._get_position(port.port)
+        # Start the timer if the animal is in position
         if in_position: self.timer_ready.start()
+        # Log the in_position event and update the position if there is a change in position
         if in_position and not self.position.port:
             self.position_tmst = self.beh.log_activity({**port.__dict__, 'in_position': 1})
             self.position = port
