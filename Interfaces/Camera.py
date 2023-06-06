@@ -96,8 +96,8 @@ class Camera:
     @property
     def path(self):
         if self._path is None:
-            self._path='/mnt/lab/data/behavior_video_rp/'
-            self._path=self._path + f"video_rec {datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/"
+            self._path = '/mnt/lab/data/behavior_video_rp/'
+            self._path = self._path + f"{self.filename}_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}/"
 
         if not os.path.exists(self._path) and not self.recording.is_set():
             os.makedirs(self._path)

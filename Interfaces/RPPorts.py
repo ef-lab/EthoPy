@@ -69,7 +69,7 @@ class RPPorts(Interface):
             cameras_params= self.exp.logger.get(table='SetupConfiguration.Camera',
                     key=f"setup_conf_idx={self.exp.params['setup_conf_idx']}", 
                     as_dict=True)[0]
-            key_animal_id_session = f"animal_id_{self.exp.logger.get_setup_info('animal_id')}_session_{self.exp.logger.get_setup_info('session')}"
+            key_animal_id_session = f"animal_id_{self.exp.logger.trial_key['animal_id']}_session_{self.exp.logger.trial_key['session']}"
             
             self.camera = PiCamera(path = None,
                                 filename = f'{key_animal_id_session}',
