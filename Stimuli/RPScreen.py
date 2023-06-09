@@ -31,8 +31,7 @@ class RPScreen(Stimulus):
         self.unshow([i*256 for i in self.monitor['start_color']])
 
     def stop(self):
-        self.screen.fill([0, 0, 0])
-        self.flip()
+        self.unshow([i*256 for i in self.monitor['background_color']])
         self.log_stop()
         self.isrunning = False
 

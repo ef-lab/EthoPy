@@ -8,10 +8,9 @@ from datetime import datetime
 from dataclasses import dataclass, fields, astuple
 from dataclasses import field as datafield
 
-
 class Interface:
-    port, resp_tmst, ready_dur, activity_tmst, ready_tmst, pulse_rew, ports, response = 0, 0, 0, 0, 0, dict(), [], []
-    ready, timer_ready, weight_per_pulse, pulse_dur, channels = False, Timer(), dict(), dict(), dict()
+    port, resp_tmst, ready_dur, activity_tmst, ready_tmst, pulse_rew, ports, response, duration = 0, 0, 0, 0, 0, dict(), [], [], dict()
+    ready, timer_ready, weight_per_pulse, pulse_dur, channels, position_dur = False, Timer(), dict(), dict(), dict(),0
 
     def __init__(self, exp=[], beh=[], callbacks=True):
         self.callbacks = callbacks
@@ -20,6 +19,7 @@ class Interface:
         self.logger = exp.logger
         self.position = Port()
         self.position_tmst = 0
+        self.camera = None
 
         # get port information
         for port in self.logger.get(table='SetupConfiguration.Port', key=self.exp.params, as_dict=True):
@@ -52,6 +52,9 @@ class Interface:
     def cleanup(self):
         pass
 
+    def release(self):
+        pass
+    
     def load_calibration(self):
         for port in list(set(self.rew_ports)):
             self.pulse_rew[port] = dict()
@@ -71,8 +74,7 @@ class Interface:
         actual_rew = dict()
         for port in self.rew_ports:
             if reward_amount not in self.pulse_rew[port]:
-                duration = np.interp(reward_amount/1000, self.weight_per_pulse[port], self.pulse_dur[port])
-                self._create_pulse(port, duration)
+                self.duration[port] = np.interp(reward_amount/1000, self.weight_per_pulse[port], self.pulse_dur[port])
                 self.pulse_rew[port][reward_amount] = np.max((np.min(self.weight_per_pulse[port]),
                                                               reward_amount/1000)) * 1000 # in uL
             actual_rew[port] = self.pulse_rew[port][reward_amount]

@@ -79,6 +79,7 @@ class PreTrial(Experiment):
         self.beh.prepare(self.curr_cond)
         self.stim.prepare(self.curr_cond, 'Cue')
         super().entry()
+        self.stim.start_stim()
 
     def run(self):
         if not self.is_stopped() and self.beh.is_ready(self.curr_cond['init_ready'], self.start_time):
@@ -95,7 +96,9 @@ class PreTrial(Experiment):
         else:
             return 'PreTrial'
 
-
+    def exit(self):
+        self.stim.unshow()
+        
 class Cue(Experiment):
     def entry(self):
         self.stim.start()
@@ -246,6 +249,7 @@ class InterTrial(Experiment):
     def run(self):
         if self.beh.is_licking() and self.params.get('noresponse_intertrial'):
             self.state_timer.start()
+        self.logger.ping()
 
     def next(self):
         if self.is_stopped():
@@ -283,6 +287,7 @@ class Offtime(Experiment):
     def entry(self):
         super().entry()
         self.stim.unshow([0, 0, 0])
+        self.release()
 
     def run(self):
         if self.logger.setup_status not in ['sleeping', 'wakeup'] and self.beh.is_sleep_time():

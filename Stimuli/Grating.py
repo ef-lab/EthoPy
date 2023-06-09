@@ -43,7 +43,7 @@ class Grating(Stimulus, dj.Manual):
     def init(self, exp):
         super().init(exp)
         self.size = (self.monitor['resolution_x'], self.monitor['resolution_y'])    # window size
-        self.color = [0, 0, 0]
+        self.color = [i*256 for i in self.monitor['background_color']]
         self.fps = self.monitor['fps']
 
         # setup pygame
@@ -116,10 +116,22 @@ class Grating(Stimulus, dj.Manual):
         else:
             self.isrunning = False
             self.vid.close()
-            self.unshow()
+            #self.unshow()
+
+    def ready_stim(self):
+        self.unshow([i*256 for i in self.monitor['ready_color']])
+
+    def reward_stim(self):
+        self.unshow([i*256 for i in self.monitor['reward_color']])
+
+    def punish_stim(self):
+        self.unshow([i*256 for i in self.monitor['punish_color']])
+
+    def start_stim(self):
+        self.unshow([i*256 for i in self.monitor['start_color']])
 
     def stop(self):
-        self.unshow()
+        self.unshow([i*256 for i in self.monitor['background_color']])
         self.log_stop()
         self.isrunning = False
 
@@ -176,20 +188,20 @@ class Grating(Stimulus, dj.Manual):
 
 
 class GratingRP(Grating):
-    """ This class handles the presentation of Gratigs with an optimized library for Raspberry pi"""
+    """ This class handles the presentation of Gratings with an optimized library for Raspberry pi"""
 
     def setup(self):
         # setup parameters
         self.path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
         self.size = (self.monitor['resolution_x'], self.monitor['resolution_y'])     # window size
-        self.color = [127, 127, 127]  # default background color
+        self.color = [i*256 for i in self.monitor['background_color']]  # default background color
         self.phd_size = (50, 50)    # default photodiode signal size in pixels
 
         # setup pygame
         if not pygame.get_init():
             pygame.init()
         self.screen = pygame.display.set_mode(self.size)
-        self.unshow()
+        self.unshow() 
         pygame.mouse.set_visible(0)
         pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 
@@ -213,27 +225,30 @@ class GratingRP(Grating):
 
     def prepare(self, curr_cond, stim_period=''):
         self.curr_cond = curr_cond
+        self.unshow([i*256 for i in self.monitor['start_color']])
         self._init_player()
         self.isrunning = True
-        try:
-            self.vid.play()
-        except:
-            self._init_player()
-            self.vid.play()
-        self.timer.start()
+        self.timer.start() 
 
     def present(self):
-        if self.timer.elapsed_time() > self.curr_cond['duration']:
+        if self.timer.elapsed_time() < self.curr_cond['duration']:
+            try:
+                self.vid.play()
+            except:
+                self._init_player()
+                self.vid.play()
+        else: 
             self.isrunning = False
             self.vid.quit()
 
     def stop(self):
         try:
-            self.vid.stop()
+            self.vid.quit()
         except:
             self._init_player()
-            self.vid.stop()
-        self.unshow()
+            self.vid.quit()
+        self.unshow([i*256 for i in self.monitor['background_color']])
+        self.log_stop()
         self.isrunning = False
 
     def _init_player(self):

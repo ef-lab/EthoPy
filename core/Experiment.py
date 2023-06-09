@@ -56,7 +56,7 @@ class ExperimentClass:
 
     def setup(self, logger, BehaviorClass, session_params):
         self.running = False
-        self.conditions, self.quit, self.curr_cond, self.dif_h, self.stims, self.curr_trial = [], False, dict(), [], dict(),0
+        self.conditions, self.iter, self.quit, self.curr_cond, self.dif_h, self.stims, self.curr_trial = [], [], False, dict(), [], dict(),0
         if "setup_conf_idx" not in self.default_key: self.default_key["setup_conf_idx"] = 0
         self.params = {**self.default_key, **session_params}
         self.logger = logger
@@ -77,11 +77,17 @@ class ExperimentClass:
         state_control.run()
 
     def stop(self):
+        self.release()
         self.stim.exit()
         self.beh.exit()
         self.logger.ping(0)
         self.logger.closeDatasets()
         self.running = False
+
+    def release(self):
+        if self.interface.camera:
+            if self.interface.camera.recording.is_set(): self.interface.camera.stop_rec()
+            self.interface.camera_Process.join()
 
     def is_stopped(self):
         self.quit = self.quit or self.logger.setup_status in ['stop', 'exit']
@@ -211,11 +217,12 @@ class ExperimentClass:
             choice_h = np.int64(np.asarray(self.beh.choice_history)[idx])
             choice_h = [[c, d] for c, d in zip(choice_h, np.asarray(self.dif_h)[idx])]
             if self.iter == 1 or np.size(self.iter) == 0:
-                self.iter = self.params['staircase_window']
-                perf = np.nanmean(np.greater(rew_h[-self.params['staircase_window']:], 0))
-                if   perf >= self.params['stair_up']   and self.cur_dif < max(self.difs):  self.cur_dif += 1
-                elif perf < self.params['stair_down'] and self.cur_dif > 1:  self.cur_dif -= 1
-                self.logger.update_setup_info({'difficulty': self.cur_dif})
+                if (self.beh.choice_history[-1:][0]>0 if np.size(self.beh.choice_history)!=0 else True):
+                    self.iter = self.params['staircase_window']
+                    perf = np.nanmean(np.greater(rew_h[-self.params['staircase_window']:], 0))
+                    if   perf >= self.params['stair_up']   and self.cur_dif < max(self.difs):  self.cur_dif += 1
+                    elif perf < self.params['stair_down'] and self.cur_dif > 1:  self.cur_dif -= 1
+                    self.logger.update_setup_info({'difficulty': self.cur_dif})
             elif np.size(self.beh.choice_history) and self.beh.choice_history[-1:][0] > 0: self.iter -= 1
             anti_bias = self._anti_bias(choice_h, self.un_choices[self.un_difs == self.cur_dif])
             sel_conds = [i for (i, v) in zip(self.conditions, np.logical_and(self.choices == anti_bias,
@@ -463,6 +470,21 @@ class SetupConfiguration(dj.Lookup):
         discription             : varchar(256)
         """
 
+    class Camera(dj.Part):
+        definition = """
+        # Camera information
+        camera_idx               : tinyint
+        -> SetupConfiguration
+        ---
+        fps                      : tinyint UNSIGNED
+        resolution_x             : smallint
+        resolution_y             : smallint
+        shutter_speed            : smallint
+        iso                      : smallint
+        file_format              : varchar(256)
+        video_aim                : enum('eye','body','openfield')
+        discription              : varchar(256)
+        """
 
 @experiment.schema
 class Control(dj.Lookup):
