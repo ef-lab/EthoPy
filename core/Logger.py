@@ -157,6 +157,15 @@ class Logger:
         return (table() & key).fetch(*fields, **kwargs)
 
     def get_protocol(self, task_idx=None):
+        """
+        Get the protocol file for a given task index.
+
+        Args:
+            task_idx (int, optional): The task index. If not provided, it is fetched from setup info.
+
+        Returns:
+            str or False: The path to the protocol file if found, False otherwise.
+        """
         if not task_idx: task_idx = self.get_setup_info('task_idx')
         # if cannot find task id update note and reset status to ready
         if len(experiment.Task() & dict(task_idx=task_idx)) > 0: 
