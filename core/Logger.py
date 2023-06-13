@@ -112,7 +112,8 @@ class Logger:
         if self.manual_run: print('Logging Session: ', session_key)
         self.put(table='Session', tuple=session_key, priority=1, validate=True, block=True)
         if log_protocol:
-            pr_name, pr_file = self.get_protocol(raw_file=True)
+            pr_name = self.get_protocol()
+            pr_file = np.fromfile(pr_name)
             git_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
             self.put(table='Session.Protocol', tuple={**self.trial_key, 'protocol_name': pr_name,
                                                       'protocol_file': pr_file, 'git_hash': git_hash})
@@ -155,16 +156,22 @@ class Logger:
         table = rgetattr(eval(schema), table)
         return (table() & key).fetch(*fields, **kwargs)
 
-    def get_protocol(self, task_idx=None, raw_file=False):
+    def get_protocol(self, task_idx=None):
         if not task_idx: task_idx = self.get_setup_info('task_idx')
-        if not len(experiment.Task() & dict(task_idx=task_idx)) > 0: return False
-        protocol = (experiment.Task() & dict(task_idx=task_idx)).fetch1('protocol')
-        path, filename = os.path.split(protocol)
-        if not path: protocol = str(pathlib.Path(__file__).parent.absolute()) + '/../conf/' + filename
-        if raw_file:
-            return protocol, np.fromfile(protocol, dtype=np.int8)
-        else:
-            return protocol
+        # if cannot find task id update note and reset status to ready
+        if len(experiment.Task() & dict(task_idx=task_idx)) > 0: 
+            self.update_setup_info({'status': 'ready','notes': f'There is no task_idx: {task_idx}'})
+            return False
+        self.protocol_file = (experiment.Task() & dict(task_idx=task_idx)).fetch1('protocol')
+        # if no path given check at the local conf folder
+        path, filename = os.path.split(self.protocol_file)
+        if not path: 
+            self.protocol_file = str(pathlib.Path(__file__).parent.absolute()) + '/../conf/' + filename
+        # if cannot find file update note and reset status to ready
+        if not os.path.exists(self.protocol_file):
+            self.update_setup_info({'status': 'ready','notes': f'Cannot find file {self.protocol_file}'})
+            return False
+        return self.protocol_file
 
     def update_trial_idx(self, trial_idx): self.trial_key['trial_idx'] = trial_idx
 
