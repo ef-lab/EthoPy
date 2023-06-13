@@ -168,7 +168,7 @@ class Logger:
         """
         if not task_idx: task_idx = self.get_setup_info('task_idx')
         # if cannot find task id update note and reset status to ready
-        if len(experiment.Task() & dict(task_idx=task_idx)) > 0: 
+        if len(experiment.Task() & dict(task_idx=task_idx)) == 0: 
             self.update_setup_info({'status': 'ready','notes': f'There is no task_idx: {task_idx}'})
             return False
         self.protocol_file = (experiment.Task() & dict(task_idx=task_idx)).fetch1('protocol')
