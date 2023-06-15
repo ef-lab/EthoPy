@@ -58,8 +58,8 @@ class RPPorts(Interface):
         if self.exp.sync:
             source_path = '/home/eflab/Sync/'
             target_path = '/mnt/lab/data/Sync/'
-            self.GPIO.setup(self.channels['sync']['in'], self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-            self.GPIO.add_event_detect(self.channels['sync']['in'], self.GPIO.BOTH,
+            self.GPIO.setup(self.channels['Sync']['in'], self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+            self.GPIO.add_event_detect(self.channels['Sync']['in'], self.GPIO.BOTH,
                                        callback=self._sync_in, bouncetime=20)
             filename, self.dataset = self.logger.createDataset(source_path, target_path, dataset_name='sync_data',
                                           dataset_type=np.dtype([("sync_times", np.double)]))
@@ -129,6 +129,11 @@ class RPPorts(Interface):
                  for channel in self.channels['Proximity']:
                      self.GPIO.remove_event_detect(self.channels['Proximity'][channel])
         self.GPIO.cleanup()
+        if self.exp.sync:
+            if 'Sync' in self.channels:
+                 for channel in self.channels['Sync']:
+                     self.GPIO.remove_event_detect(self.channels['Sync'][channel])
+            self.closeDatasets()
         if self.ts:
             self.ts.stop()
 
