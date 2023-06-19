@@ -12,6 +12,7 @@ class PortTest:
         self.screen = TouchInterface()
         self.result = dict()
         self.total_pulses=0
+        self.sync = False
 
     def run(self):
         """ Lickspout liquid delivery test """
