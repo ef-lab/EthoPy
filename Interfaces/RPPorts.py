@@ -65,24 +65,27 @@ class RPPorts(Interface):
             self.exp.log_recording(dict(rec_aim='sync', software='PyMouse', version='0.1',
                                            filename=filename, source_path=source_path, target_path=target_path))
 
-        if self.exp.params['setup_conf_idx'] in self.exp.logger.get(table='SetupConfiguration.Camera',fields=['setup_conf_idx']):            
-            cameras_params= self.exp.logger.get(table='SetupConfiguration.Camera',
-                    key=f"setup_conf_idx={self.exp.params['setup_conf_idx']}", 
-                    as_dict=True)[0]
-            key_animal_id_session = f"animal_id_{self.exp.logger.trial_key['animal_id']}_session_{self.exp.logger.trial_key['session']}"
+        if self.exp.params['setup_conf_idx'] in self.exp.logger.get(table='SetupConfiguration.Camera',fields=['setup_conf_idx']): 
+            source_path = '/home/eflab/behavior_video_rp/'
+            target_path = '/mnt/lab/data/behavior_video_rp/'
+            camera_params= self.exp.logger.get(table='SetupConfiguration.Camera',
+                                            key=f"setup_conf_idx={self.exp.params['setup_conf_idx']}", 
+                                            as_dict=True)[0]
             
-            self.camera = PiCamera(path = None,
-                                filename = f'{key_animal_id_session}',
-                                video_format=cameras_params['file_format'],
-                                fps=cameras_params['fps'],
-                                shutter_speed=cameras_params['shutter_speed'],
-                                resolution=(cameras_params['resolution_x'],cameras_params['resolution_y']),
-                                logger_timer=self.logger.logger_timer)
+            animal_id_session_str = f"animal_id_{self.exp.logger.trial_key['animal_id']}_session_{self.exp.logger.trial_key['session']}"
+            self.camera = PiCamera (source_path = source_path,
+                                    target_path = target_path,
+                                    filename = animal_id_session_str,
+                                    video_format = camera_params['file_format'],
+                                    fps = camera_params['fps'],
+                                    shutter_speed = camera_params['shutter_speed'],
+                                    resolution = (camera_params['resolution_x'],camera_params['resolution_y']),
+                                    logger_timer = self.logger.logger_timer)
 
             self.camera_Process = mp.Process(self.camera.start_rec())
             self.camera_Process.start()
-            self.exp.log_recording(dict(rec_aim = cameras_params['video_aim'],software='PyMouse', version='0.1',
-                                        filename=self.camera.filename, target_path=self.camera.path))
+            self.exp.log_recording(dict(rec_aim = camera_params['video_aim'],software='PyMouse', version='0.1',
+                                        filename=self.camera.filename, source_path=self.camera.source_path, target_path=self.camera.target_path))
 
     def give_liquid(self, port, duration=False):
         if duration: self._create_pulse(port, duration)
