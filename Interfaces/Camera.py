@@ -233,7 +233,8 @@ class PiCamera(Camera):
             if self.stream=='compress':
                 self.video_output.write(item[1])
             elif self.stream=='raw':
-                self.video_output.writeFrame(item[1])
+                img=item[1].copy()
+                self.video_output.writeFrame(img)
                 self.tmst_output.write(f"{item[0]}\n")
             else:
                 warnings.warn("Recording is neither raw or stream so the results aren't saved")
