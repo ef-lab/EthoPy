@@ -65,14 +65,14 @@ class RPPorts(Interface):
             self.exp.log_recording(dict(rec_aim='sync', software='PyMouse', version='0.1',
                                            filename=filename, source_path=source_path, target_path=target_path))
 
-        if self.exp.params['setup_conf_idx'] in self.exp.logger.get(table='SetupConfiguration.Camera',fields=['setup_conf_idx']): 
+        if self.exp.params['setup_conf_idx'] in self.logger.get(table='SetupConfiguration.Camera',fields=['setup_conf_idx']): 
             source_path = '/home/eflab/behavior_video_rp/'
             target_path = '/mnt/lab/data/behavior_video_rp/'
-            camera_params= self.exp.logger.get(table='SetupConfiguration.Camera',
+            camera_params= self.logger.get(table='SetupConfiguration.Camera',
                                             key=f"setup_conf_idx={self.exp.params['setup_conf_idx']}", 
                                             as_dict=True)[0]
             
-            animal_id_session_str = f"animal_id_{self.exp.logger.trial_key['animal_id']}_session_{self.exp.logger.trial_key['session']}"
+            animal_id_session_str = f"animal_id_{self.logger.trial_key['animal_id']}_session_{self.logger.trial_key['session']}"
             self.camera = PiCamera (source_path = source_path,
                                     target_path = target_path,
                                     filename = animal_id_session_str,
