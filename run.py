@@ -12,7 +12,7 @@ while not logger.setup_status == 'exit':
     if logger.is_pi and logger.setup_status != 'running': PyWelcome(logger)
     if logger.setup_status == 'running':   # run experiment unless stopped
         try:
-            if logger.get_protocol(): exec(open(logger.get_protocol()).read())
+            if logger.get_protocol(): exec(open(logger.protocol_file).read())
         except Exception as e:
             error = e
             logger.update_setup_info({'state': 'ERROR!', 'notes': str(e), 'status': 'exit'})
