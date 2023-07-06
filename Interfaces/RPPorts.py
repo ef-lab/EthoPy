@@ -25,7 +25,7 @@ class RPPorts(Interface):
         self.PulseGen = pigpio.pulse
         self.WaveProp=pigpio.WAVE_MODE_REPEAT_SYNC
         self.thread = ThreadPoolExecutor(max_workers=4)
-        self.frequency = 20
+        self.frequency = 15
         self.ts = False
         self.pulses = dict()
         self.sound_pulses=[]
