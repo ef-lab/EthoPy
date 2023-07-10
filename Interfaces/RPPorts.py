@@ -12,7 +12,7 @@ class RPPorts(Interface):
                 'Lick': {1: 17, 2: 27},
                 'Proximity': {3: 9, 1: 5, 2: 6},
                 'Sound': {1: 13},
-                'Sync': {'in': 21},
+                'Sync': {'in': 21, 'rec': 26},
                 'Running': 20}
 
     def __init__(self, **kwargs):
@@ -58,6 +58,7 @@ class RPPorts(Interface):
         if self.exp.sync:
             source_path = '/home/eflab/Sync/'
             target_path = '/mnt/lab/data/Sync/'
+            self.GPIO.setup(self.channels['Sync']['rec'], self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
             self.GPIO.setup(self.channels['Sync']['in'], self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
             self.GPIO.add_event_detect(self.channels['Sync']['in'], self.GPIO.BOTH,
                                        callback=self._sync_in, bouncetime=20)
@@ -118,7 +119,17 @@ class RPPorts(Interface):
             print('Cannot create a touch exit!')
 
     def set_running_state(self, running_state):
+        if self.exp.sync:
+            if not self.is_recording():
+                print('Waiting for recording to start...')
+                time.sleep(1)
         self.GPIO.output(self.channels['Running'], running_state)
+
+    def is_recording(self):
+        if self.exp.sync:
+            return self.GPIO.input(self.channels['Sync']['rec'])
+        else:
+            return False
 
     def cleanup(self):
         self.set_running_state(False)
