@@ -56,7 +56,7 @@ class ExperimentClass:
 
     def setup(self, logger, BehaviorClass, session_params):
         self.running = False
-        self.conditions, self.iter, self.quit, self.curr_cond, self.dif_h, self.stims, self.curr_trial = [], [], False, dict(), [], dict(),0
+        self.conditions, self.iter, self.quit, self.curr_cond, self.dif_h, self.stims, self.curr_trial = [], 1, False, dict(), [], dict(),0
         if "setup_conf_idx" not in self.default_key: self.default_key["setup_conf_idx"] = 0
         self.params = {**self.default_key, **session_params}
         self.logger = logger
@@ -89,9 +89,7 @@ class ExperimentClass:
         self.running = False
 
     def release(self):
-        if self.interface.camera:
-            if self.interface.camera.recording.is_set(): self.interface.camera.stop_rec()
-            self.interface.camera_Process.join()
+        self.interface.release()
 
     def is_stopped(self):
         self.quit = self.quit or self.logger.setup_status in ['stop', 'exit']
@@ -201,33 +199,57 @@ class ExperimentClass:
     def _get_new_cond(self):
         """ Get curr condition & create random block of all conditions """
         if self.params['trial_selection'] == 'fixed':
+            # select conditions in order until they finish
             self.curr_cond = [] if len(self.conditions) == 0 else self.conditions.pop()
+        
         elif self.params['trial_selection'] == 'block':
-            if np.size(self.iter) == 0: self.iter = np.random.permutation(np.size(self.conditions))
-            cond = self.conditions[self.iter[0]]
-            self.iter = self.iter[1:]
-            self.curr_cond = cond
+            # Run all conditions randomly in blocks when block finish reset it
+            if self.iter == 1:
+                # the first time do random permutation on the conditions
+                self.conditions = np.random.permutation(self.conditions)
+            self.curr_cond =self.conditions[self.iter-1]
+            if self.iter<np.size(self.conditions):
+                self.iter += 1
+            else:
+                # if has run all conditions reset the iter
+                self.iter=1
+
         elif self.params['trial_selection'] == 'random':
+            # select conditions randomly
             self.curr_cond = np.random.choice(self.conditions)
+
         elif self.params['trial_selection'] == 'biased':
+            #use antibias on the condition selection
             idx = [~np.isnan(ch).any() for ch in self.beh.choice_history]
             choice_h = np.asarray(self.beh.choice_history)
             anti_bias = self._anti_bias(choice_h[idx], self.un_choices)
             selected_conditions = [i for (i, v) in zip(self.conditions, self.choices == anti_bias) if v]
             self.curr_cond = np.random.choice(selected_conditions)
+
         elif self.params['trial_selection'] == 'staircase':
+            # get reward and punish choices
             idx = np.logical_or(~np.isnan(self.beh.reward_history), ~np.isnan(self.beh.punish_history))
-            rew_h = np.asarray(self.beh.reward_history); rew_h = rew_h[idx]
             choice_h = np.int64(np.asarray(self.beh.choice_history)[idx])
+            # get for every choice the difficulty that it happend (Nx2 array first column choice second diff and N:number of choices)
             choice_h = [[c, d] for c, d in zip(choice_h, np.asarray(self.dif_h)[idx])]
-            if self.iter == 1 or np.size(self.iter) == 0:
-                if (self.beh.choice_history[-1:][0]>0 if np.size(self.beh.choice_history)!=0 else True):
-                    self.iter = self.params['staircase_window']
+            # get reward choices
+            rew_h = np.asarray(self.beh.reward_history); rew_h = rew_h[idx]
+            # if iter higher than window check if difficulty should change
+            if self.iter >= self.params['staircase_window']:
+                if self.beh.choice_history[-1:][0]>0:
                     perf = np.nanmean(np.greater(rew_h[-self.params['staircase_window']:], 0))
-                    if   perf >= self.params['stair_up']   and self.cur_dif < max(self.difs):  self.cur_dif += 1
-                    elif perf < self.params['stair_down'] and self.cur_dif > 1:  self.cur_dif -= 1
+                    # upgrade until the highest difficulty
+                    if   perf >= self.params['stair_up']   and self.cur_dif < max(self.difs):  
+                        self.cur_dif += 1 
+                        self.iter = 1
+                    # the smallest difficulty that it can drop equals to 1
+                    elif perf < self.params['stair_down'] and self.cur_dif > 1:  
+                        self.cur_dif -= 1
+                        self.iter = 1
                     self.logger.update_setup_info({'difficulty': self.cur_dif})
-            elif np.size(self.beh.choice_history) and self.beh.choice_history[-1:][0] > 0: self.iter -= 1
+            # if there is at least one choice and last choice is not abort increase iter
+            elif np.size(self.beh.choice_history) and self.beh.choice_history[-1:][0] > 0: self.iter += 1
+            # use antibias for the current difficulty
             anti_bias = self._anti_bias(choice_h, self.un_choices[self.un_difs == self.cur_dif])
             sel_conds = [i for (i, v) in zip(self.conditions, np.logical_and(self.choices == anti_bias,
                                                        self.difs == self.cur_dif)) if v]
