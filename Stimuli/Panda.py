@@ -7,6 +7,7 @@ from direct.showbase.Loader import Loader
 from direct.task import Task
 import panda3d.core as core
 from utils.Timer import *
+from utils.helper_functions import check_none
 from panda3d.core import NodePath, CardMaker, TextureStage
 
 
@@ -138,17 +139,10 @@ class Panda(Stimulus, dj.Manual):
         self.render.setLight(self.ambientLightNP)
         self.set_taskMgr()
 
+    @Stimulus.prepare_check
     def prepare(self, curr_cond, stim_period=''):
-        self.flag_no_stim = False
-        if stim_period == '':
-            self.curr_cond = curr_cond
-        elif stim_period not in curr_cond:
-            self.flag_no_stim = True
-            return
-        else: 
-            self.curr_cond = curr_cond[stim_period]
-        
         self.period = stim_period
+        self.curr_cond = curr_cond
         self.background_color = self.curr_cond['background_color']
 
         # set background color
@@ -186,9 +180,8 @@ class Panda(Stimulus, dj.Manual):
             self.movie_node.setScale(48)
             self.movie_node.reparentTo(self.render)
 
+    @check_none('curr_cond')
     def start(self):
-        if self.flag_no_stim: return
-
         if not self.isrunning:
             self.timer.start()
             self.isrunning = True
@@ -199,6 +192,7 @@ class Panda(Stimulus, dj.Manual):
             self.objects[idx].run()
         self.flip(2)
 
+    @check_none('curr_cond')
     def present(self):
         self.flip()
         if 'obj_dur' in self.curr_cond and self.curr_cond['obj_dur'] < self.timer.elapsed_time():
@@ -208,8 +202,8 @@ class Panda(Stimulus, dj.Manual):
         for i in range(0, n):
             self.taskMgr.step()
 
+    @check_none('curr_cond')
     def stop(self):
-        if self.flag_no_stim: return
         for idx, obj in self.objects.items():
             obj.remove(obj.task)
         for idx, light in self.lights.items():

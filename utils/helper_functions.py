@@ -2,7 +2,7 @@ import numpy as np
 from scipy import ndimage
 from itertools import product
 import hashlib, base64, functools
-
+from typing import Callable, Any
 
 def sub2ind(array_shape, rows, cols):
     return rows * array_shape[1] + cols
@@ -100,3 +100,23 @@ def rgetattr(obj, attr, *args):
 
 def iterable(v):
     return np.array([v]) if type(v) not in [np.array, np.ndarray, list, tuple] else v
+
+def check_none(variable_name: str) -> Callable:
+    """
+    Decorator that checks if a specific variable is not None before executing the function.
+
+    Args:
+        variable_name: The name of the variable to check.
+
+    Returns:
+        The decorated function.
+
+    """
+    def decorator(func: Callable) -> Callable:
+        def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
+            if getattr(self, variable_name) is not None:
+                return func(self, *args, **kwargs)
+            else:
+                pass
+        return wrapper
+    return decorator
