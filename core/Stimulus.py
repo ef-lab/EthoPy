@@ -1,5 +1,6 @@
 from core.Experiment import *
 import os
+from typing import Callable, Any
 
 
 @stimulus.schema
@@ -85,6 +86,43 @@ class Stimulus:
         """prepares stuff for presentation before trial starts"""
         self.curr_cond = curr_cond if stim_period == '' else curr_cond[stim_period]
         self.period = stim_period
+
+    def prepare_check(func: Callable[..., Any]) -> Callable[..., Any]:
+        """
+        Decorator that checks if the stim_period has been defined in the stimulus periods
+        before calling the prepare function.
+        """
+
+        def wrapper(self: Any, curr_cond: dict = dict(), stim_period: str = '') -> Any:
+            """
+            Wrapper function that performs the condition check before calling the decorated function.
+            Args:
+                self: The instance of the class where the decorator is applied.
+                curr_cond (dict): Current condition value.
+                stim_period (str): Stimulus period to be checked.
+
+            Returns:
+                The result of the decorated function or sets self.curr_cond to None if the condition is not met.
+            """
+
+            if stim_period == '':
+                # No specific stimulus period provided, use the current condition as it is
+                curr_cond = curr_cond
+            elif stim_period in curr_cond:
+                # Check if the stimulus period exists in the current condition
+                curr_cond = curr_cond[stim_period]
+            else:
+                # Stimulus period is not defined in the current condition
+                curr_cond = None
+
+            if curr_cond:
+                # Call the decorated function with the updated curr_cond
+                return func(self, curr_cond=curr_cond, stim_period=stim_period)
+            else:
+                # Set self.curr_cond to None if the condition is not met
+                self.curr_cond = None
+
+        return wrapper
 
     def start(self):
         """start stimulus"""
