@@ -30,9 +30,8 @@ class Logger:
         self.is_pi = os.uname()[4][:3] == 'arm' if os.name == 'posix' else False
         self.manual_run = True if protocol else False
         self.setup_status = 'running' if self.manual_run else 'ready'
-        fileobject = open(os.path.dirname(os.path.abspath(__file__)) + '/../dj_local_conf.json')
-        con_info = json.loads(fileobject.read())
-        self.private_conn = dj.Connection(con_info['database.host'], con_info['database.user'], con_info['database.password'])
+        con_info = dj.conn.connection.conn_info
+        self.private_conn = dj.Connection(con_info['host'], con_info['user'], con_info['passwd'])
         for schema, value in schemata.items():  # separate connection for internal comminication
             self._schemata.update({schema: dj.create_virtual_module(schema, value, connection=self.private_conn)})
         self.thread_end, self.thread_lock = threading.Event(),  threading.Lock()
