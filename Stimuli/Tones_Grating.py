@@ -1,7 +1,7 @@
 from Stimuli.Grating import *
 
 @stimulus.schema
-class Tones_Grating(GratingRP, dj.Manual):
+class Tones_Grating(Grating, dj.Manual):
     """ This class handles the presentation of Grating and Tone stimuli"""
     
     cond_tables = ['Tones', 'Grating']
@@ -14,7 +14,7 @@ class Tones_Grating(GratingRP, dj.Manual):
         'phase'               : 0,
         'contrast'            : 100,
         'square'              : 0,
-        'temporal_freq'       : 1,
+        'temporal_freq'       : 0,
         'flatness_correction' : 1,
         'duration'            : 3000,
         }

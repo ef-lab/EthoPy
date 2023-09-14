@@ -7,7 +7,7 @@ from pygame.locals import *
 @stimulus.schema
 class Grating(Stimulus, dj.Manual):
     definition = """
-    # This class handles the presentation orientation
+    # This class handles the presentation of static Gratings
     -> StimCondition
     ---
     theta                  : smallint   # in degrees (0-360)
@@ -50,13 +50,121 @@ class Grating(Stimulus, dj.Manual):
         pygame.init()
         self.clock = pygame.time.Clock()
         #self.screen = pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF | NOFRAME, display=self.screen_idx-1) #---> this works but minimizes when clicking (Emina)
-        self.screen = pygame.display.set_mode(self.size)
+        #self.screen = pygame.display.set_mode(self.size)
+        self.screen = pygame.display.set_mode((self.monitor['resolution_x'], self.monitor['resolution_y']), pygame.FULLSCREEN)
         self.unshow()
         pygame.mouse.set_visible(0)
         ymonsize = self.monitor['monitor_size'] * 2.54 / np.sqrt(1 + self.monitor['monitor_aspect'] ** 2)  # cm Y monitor size
         fov = np.arctan(ymonsize / 2 / self.monitor['monitor_distance']) * 2 * 180 / np.pi  # Y FOV degrees
         self.px_per_deg = self.size[1]/fov
 
+    def setup(self):
+        super().setup()
+
+    def prepare(self, curr_cond):
+        self.isrunning = True
+        self.frame_idx = 0
+        self.clock = pygame.time.Clock()
+        curr_cond['lamda'] = int(self.px_per_deg / curr_cond['spatial_freq'])
+        image = self._make_grating(**curr_cond)
+        image = image[:self.monitor['resolution_x'], :self.monitor['resolution_y']]
+        if curr_cond['flatness_correction']:
+            image, transform = flat2curve(image, self.monitor['monitor_distance'],
+                                      self.monitor['monitor_size'], method='index',
+                                      center_x=self.monitor['monitor_center_x'],
+                                      center_y=self.monitor['monitor_center_y'])
+            image = image[:self.monitor['resolution_x'], :self.monitor['resolution_y']]
+        self.grating = pygame.surfarray.make_surface(self._gray2rgb(image, 3))
+        assert curr_cond['temporal_freq'] == 0
+            #print('Not optimized!')
+            #self.frame_step = curr_cond['lamda'] * (self.curr_cond['temporal_freq'] / self.fps)
+            #self.xt = np.cos((self.curr_cond['theta'] / 180) * np.pi)
+            #self.yt = np.sin((self.curr_cond['theta'] / 180) * np.pi)
+        self.curr_cond = curr_cond
+        self.timer.start()
+
+    def present(self):
+        self.screen.blit(self.grating, self._calc_destination())
+        self.clock.tick_busy_loop(self.fps)
+        self.flip()
+        self.frame_idx += 1
+        if self.timer.elapsed_time() > self.curr_cond['duration']:
+            self.isrunning = False
+            self.unshow()
+
+    def ready_stim(self):
+        self.unshow([i*256 for i in self.monitor['ready_color']])
+
+    def reward_stim(self):
+        self.unshow([i*256 for i in self.monitor['reward_color']])
+
+    def punish_stim(self):
+        self.unshow([i*256 for i in self.monitor['punish_color']])
+
+    def start_stim(self):
+        self.unshow([i*256 for i in self.monitor['start_color']])
+
+    def stop(self):
+        self.unshow([i*256 for i in self.monitor['background_color']])
+        self.log_stop()
+        self.isrunning = False
+
+    def flip(self):
+        pygame.display.update()
+        for event in pygame.event.get():
+            if event.type == QUIT: pygame.quit()
+        self.flip_count += 1
+
+    def unshow(self, color=False):
+        if not color:
+            color = self.color
+        self.screen.fill(color)
+        self.flip()
+
+    def exit(self):
+        pygame.mouse.set_visible(1)
+        pygame.display.quit()
+        pygame.quit()
+
+    def _gray2rgb(self, im, c=1):
+        return np.transpose(np.tile(im, [c, 1, 1]), (1, 2, 0))
+
+    def _calc_destination(self):
+        if self.curr_cond['temporal_freq'] == 0:
+            destination = (0, 0)
+        else:
+            displacement = np.mod(self.frame_idx * self.frame_step, self.curr_cond['lamda'])
+            destination = (-self.curr_cond['lamda'] + self.yt * displacement,
+                           -self.curr_cond['lamda'] + self.xt * displacement)
+        return destination
+
+    def _get_filename(self, cond):
+        basename = ''.join([c for c in cond['stim_hash'] if c.isalpha()])
+        pname = '_'.join('{}'.format(p) for p in self.monitor.values())
+        return basename + '-' + pname + '.mov'
+
+    def _make_grating(self, lamda=50, theta=0, phase=0, contrast=100, square=False, **kwargs):
+        """ Makes an oriented grating
+        lamda: wavelength (number of pixels per cycle)
+        theta: grating orientation in degrees
+        phase: phase of the grating
+        """
+        w = np.max(self.size) + 2 * lamda
+        freq = w/lamda  # compute frequency from wavelength
+        # make linear ramp
+        x0 = np.linspace(0, 1, w) - 0.5
+        xm, ym = np.meshgrid(x0, x0)
+        # Change orientation by adding Xm and Ym together in different proportions
+        theta_rad = (theta/180) * np.pi
+        xt = xm * np.cos(theta_rad)
+        yt = ym * np.sin(theta_rad)
+        im = (np.sin(((xt + yt) * freq * 2 * np.pi) + phase)+1)/2
+        if square > 0:
+            im = np.double(im > 0.5)
+        return np.uint8(np.floor((im*contrast/100 + (100-contrast)/200)*255))
+
+
+class GratingMovie(Grating):
     def make_conditions(self, conditions=[]):
         self.path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
         if not os.path.isdir(self.path):  # create path if necessary
@@ -118,77 +226,16 @@ class Grating(Stimulus, dj.Manual):
             self.vid.close()
             #self.unshow()
 
-    def ready_stim(self):
-        self.unshow([i*256 for i in self.monitor['ready_color']])
-
-    def reward_stim(self):
-        self.unshow([i*256 for i in self.monitor['reward_color']])
-
-    def punish_stim(self):
-        self.unshow([i*256 for i in self.monitor['punish_color']])
-
-    def start_stim(self):
-        self.unshow([i*256 for i in self.monitor['start_color']])
-
-    def stop(self):
-        self.unshow([i*256 for i in self.monitor['background_color']])
-        self.log_stop()
-        self.isrunning = False
-
-    def flip(self):
-        pygame.display.update()
-        for event in pygame.event.get():
-            if event.type == QUIT: pygame.quit()
-        self.flip_count += 1
-
-    def unshow(self, color=False):
-        if not color:
-            color = self.color
-        self.screen.fill(color)
-        self.flip()
-
-    def exit(self):
-        pygame.mouse.set_visible(1)
-        pygame.display.quit()
-        pygame.quit()
-
-    def _gray2rgb(self, im, c=1):
-        return np.transpose(np.tile(im, [c, 1, 1]), (1, 2, 0))
-
-    def _get_filename(self, cond):
-        basename = ''.join([c for c in cond['stim_hash'] if c.isalpha()])
-        pname = '_'.join('{}'.format(p) for p in self.monitor.values())
-        return basename + '-' + pname + '.mov'
-
     def _im2mov(self, fn, images):
         w = imageio.get_writer(fn, fps=self.fps)
         for frame in images:
             w.append_data(frame)
         w.close()
 
-    def _make_grating(self, lamda=50, theta=0, phase=0, contrast=100, square=False, **kwargs):
-        """ Makes an oriented grating
-        lamda: wavelength (number of pixels per cycle)
-        theta: grating orientation in degrees
-        phase: phase of the grating
-        """
-        w = np.max(self.size) + 2 * lamda
-        freq = w/lamda  # compute frequency from wavelength
-        # make linear ramp
-        x0 = np.linspace(0, 1, w) - 0.5
-        xm, ym = np.meshgrid(x0, x0)
-        # Change orientation by adding Xm and Ym together in different proportions
-        theta_rad = (theta/180) * np.pi
-        xt = xm * np.cos(theta_rad)
-        yt = ym * np.sin(theta_rad)
-        im = (np.sin(((xt + yt) * freq * 2 * np.pi) + phase)+1)/2
-        if square > 0:
-            im = np.double(im > 0.5)
-        return np.uint8(np.floor((im*contrast/100 + (100-contrast)/200)*255))
 
-
-class GratingRP(Grating):
+class GratingRP(GratingMovie):
     """ This class handles the presentation of Gratings with an optimized library for Raspberry pi"""
+
 
     def setup(self):
         # setup parameters
@@ -264,32 +311,5 @@ class GratingRP(Grating):
         key['file_name'] = self._get_filename(key)
         return self.exp.logger.get(schema='stimulus', table=table, key=key, fields=fields)
 
-
-class GratingOld(Grating):
-    """ This class handles the presentation of Gratigs with shifting surfaces but no flatness correction"""
-    def prepare(self, curr_cond):
-        curr_cond['lamda'] = int(self.px_per_deg / curr_cond['spatial_freq'])
-        self.curr_cond = curr_cond
-        self.isrunning = True
-        self.frame_idx = 0
-        self.clock = pygame.time.Clock()
-        self.grating = pygame.surfarray.make_surface(self._gray2rgb(self._make_grating(**curr_cond),3))
-        self.frame_step = self.curr_cond['lamda'] * (self.curr_cond['temporal_freq'] / self.fps)
-
-        self.xt = np.cos((self.curr_cond['theta'] / 180) * np.pi)
-        self.yt = np.sin((self.curr_cond['theta'] / 180) * np.pi)
-        self.timer.start()
-
-    def present(self):
-        displacement = np.mod(self.frame_idx * self.frame_step, self.curr_cond['lamda'])
-        self.screen.blit(self.grating,
-                         (-self.curr_cond['lamda'] + self.yt * displacement,
-                          -self.curr_cond['lamda'] + self.xt * displacement))
-        self.clock.tick_busy_loop(self.fps)
-        self.flip()
-        self.frame_idx += 1
-        if self.timer.elapsed_time() > self.curr_cond['duration']:
-            self.isrunning = False
-            self.unshow()
 
 
