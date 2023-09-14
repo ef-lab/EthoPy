@@ -63,11 +63,6 @@ class Grating(Stimulus, dj.Manual):
 
     """ This class handles the presentation of Gratings with shifting surfaces"""
     def prepare(self, curr_cond):
-        if curr_cond['temporal_freq']==0:
-            curr_cond['lamda'] = 0
-        else:
-            print('Not optimized!')
-            curr_cond['lamda'] = int(self.px_per_deg / curr_cond['spatial_freq'])
         self.curr_cond = curr_cond
         self.isrunning = True
         self.frame_idx = 0
@@ -89,10 +84,7 @@ class Grating(Stimulus, dj.Manual):
         self.timer.start()
 
     def present(self):
-        displacement = np.mod(self.frame_idx * self.frame_step, self.curr_cond['lamda'])
-        self.screen.blit(self.grating,
-                         (-self.curr_cond['lamda'] + self.yt * displacement,
-                          -self.curr_cond['lamda'] + self.xt * displacement))
+        self.screen.blit(self.grating, self._calc_destination())
         self.clock.tick_busy_loop(self.fps)
         self.flip()
         self.frame_idx += 1
@@ -136,6 +128,15 @@ class Grating(Stimulus, dj.Manual):
 
     def _gray2rgb(self, im, c=1):
         return np.transpose(np.tile(im, [c, 1, 1]), (1, 2, 0))
+
+    def _calc_destination(self):
+        if self.curr_cond['temporal_freq'] == 0:
+            destination = (0,0)
+        else:
+            displacement = np.mod(self.frame_idx * self.frame_step, self.curr_cond['lamda'])
+            destination = (-self.curr_cond['lamda'] + self.yt * displacement,
+                           -self.curr_cond['lamda'] + self.xt * displacement)
+        return destination
 
     def _get_filename(self, cond):
         basename = ''.join([c for c in cond['stim_hash'] if c.isalpha()])
