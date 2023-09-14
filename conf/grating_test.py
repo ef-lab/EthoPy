@@ -22,7 +22,7 @@ key = {
     'contrast'           : 100,
     'spatial_freq'       : .05,   # cycles/deg
     'square'             : 0,     # squarewave or Guassian
-    'temporal_freq'      : 1,     # cycles/sec
+    'temporal_freq'      : 0,     # cycles/sec
     'flatness_correction': 1,     # adjustment of spatiotemporal frequencies based on animal distance
     'duration'           : 5000,
     'difficulty'         : 1,
