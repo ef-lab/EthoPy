@@ -49,13 +49,17 @@ class Grating(Stimulus, dj.Manual):
         # setup pygame
         pygame.init()
         self.clock = pygame.time.Clock()
-        self.screen = pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF | NOFRAME, display=self.screen_idx-1) #---> this works but minimizes when clicking (Emina)
+        #self.screen = pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF | NOFRAME, display=self.screen_idx-1) #---> this works but minimizes when clicking (Emina)
+        self.screen = pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF | NOFRAME)
         #self.screen = pygame.display.set_mode(self.size)
         self.unshow()
         pygame.mouse.set_visible(0)
         ymonsize = self.monitor['monitor_size'] * 2.54 / np.sqrt(1 + self.monitor['monitor_aspect'] ** 2)  # cm Y monitor size
         fov = np.arctan(ymonsize / 2 / self.monitor['monitor_distance']) * 2 * 180 / np.pi  # Y FOV degrees
         self.px_per_deg = self.size[1]/fov
+
+    def setup(self):
+        super().setup()
 
     def prepare(self, curr_cond):
         self.curr_cond = curr_cond
