@@ -40,7 +40,7 @@ conditions = []
 ports = {1: 0,
          2: 90}
 
-Grating_Stimuli = GratingOld() if session_params['setup_conf_idx'] ==0 else GratingOld()
+Grating_Stimuli = Grating() #if session_params['setup_conf_idx'] ==0 else GratingOld()
 for port in ports:
     conditions += exp.make_conditions(stim_class=Grating_Stimuli, conditions={**key,
                                                                               'theta'        : ports[port],
