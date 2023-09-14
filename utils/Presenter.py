@@ -66,7 +66,7 @@ class Presenter():
             if event.type == QUIT: pygame.quit()
         self.flip_count += 1
 
-    def make_surface(self, array)
+    def make_surface(self, array):
         return pygame.surfarray.make_surface(array)
 
     def _surfaceToTexture(self, pygame_surface):
