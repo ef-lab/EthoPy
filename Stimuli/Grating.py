@@ -49,8 +49,8 @@ class Grating(Stimulus, dj.Manual):
         # setup pygame
         pygame.init()
         self.clock = pygame.time.Clock()
-        #self.screen = pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF | NOFRAME, display=self.screen_idx-1) #---> this works but minimizes when clicking (Emina)
-        self.screen = pygame.display.set_mode(self.size)
+        self.screen = pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF | NOFRAME, display=self.screen_idx-1) #---> this works but minimizes when clicking (Emina)
+        #self.screen = pygame.display.set_mode(self.size)
         self.unshow()
         pygame.mouse.set_visible(0)
         ymonsize = self.monitor['monitor_size'] * 2.54 / np.sqrt(1 + self.monitor['monitor_aspect'] ** 2)  # cm Y monitor size
@@ -266,7 +266,7 @@ class GratingRP(Grating):
 
 
 class GratingOld(Grating):
-    """ This class handles the presentation of Gratigs with shifting surfaces but no flatness correction"""
+    """ This class handles the presentation of Gratigs with shifting surfaces"""
     def prepare(self, curr_cond):
         curr_cond['lamda'] = int(self.px_per_deg / curr_cond['spatial_freq'])
         self.curr_cond = curr_cond
@@ -275,11 +275,13 @@ class GratingOld(Grating):
         self.clock = pygame.time.Clock()
 
         image = self._make_grating(**curr_cond)
+        image = image[:self.monitor['resolution_x'], :self.monitor['resolution_y']]
         if curr_cond['flatness_correction']:
-            image = flat2curve(image, self.monitor['monitor_distance'],
+            image, transform = flat2curve(image, self.monitor['monitor_distance'],
                                       self.monitor['monitor_size'], method='index',
                                       center_x=self.monitor['monitor_center_x'],
                                       center_y=self.monitor['monitor_center_y'])
+            image = image[:self.monitor['resolution_x'], :self.monitor['resolution_y']]
         self.grating = pygame.surfarray.make_surface(self._gray2rgb(image, 3))
         self.frame_step = self.curr_cond['lamda'] * (self.curr_cond['temporal_freq'] / self.fps)
 
