@@ -7,7 +7,7 @@ from pygame.locals import *
 @stimulus.schema
 class Grating(Stimulus, dj.Manual):
     definition = """
-    # This class handles the presentation orientation
+    # This class handles the presentation of static Gratings
     -> StimCondition
     ---
     theta                  : smallint   # in degrees (0-360)
@@ -61,7 +61,6 @@ class Grating(Stimulus, dj.Manual):
     def setup(self):
         super().setup()
 
-    """ This class handles the presentation of Gratings with shifting surfaces"""
     def prepare(self, curr_cond):
         self.isrunning = True
         self.frame_idx = 0
