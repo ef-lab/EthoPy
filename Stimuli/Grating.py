@@ -46,7 +46,7 @@ class Grating(Stimulus, dj.Manual):
         self.fps = self.monitor['fps']
 
         # setup pygame
-        self.Presenter = Presenter()
+        self.Presenter = Presenter((self.monitor['resolution_x'], self.monitor['resolution_y']))
         ymonsize = self.monitor['monitor_size'] * 2.54 / np.sqrt(1 + self.monitor['monitor_aspect'] ** 2)  # cm Y monitor size
         fov = np.arctan(ymonsize / 2 / self.monitor['monitor_distance']) * 2 * 180 / np.pi  # Y FOV degrees
         self.px_per_deg = self.size[1]/fov
