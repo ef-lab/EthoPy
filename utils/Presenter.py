@@ -15,6 +15,7 @@ class Presenter():
         pygame.mouse.set_visible(0)
         self.clock = pygame.time.Clock()
         self.color = (0, 0, 0)
+        self.flip_count = 0
         info = pygame.display.Info()
 
         self.offscreen_surface = pygame.Surface((info.current_w, info.current_h))
