@@ -28,9 +28,9 @@ key = {
     'difficulty'         : 1,
     'timeout_duration'   : 4000,
     'trial_duration'     : 5000,
-    'intertrial_duration': 1000,
-    'init_duration'      : 100,
-    'delay_duration'     : 2000,
+    'intertrial_duration': 0,
+    'init_duration'      : 0,
+    'delay_duration'     : 0,
     'reward_amount'      : 8
 }
 
