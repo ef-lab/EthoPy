@@ -76,7 +76,7 @@ class Grating(Stimulus, dj.Manual):
                                       center_y=self.monitor['monitor_center_y'])
             image = image[:self.monitor['resolution_x'], :self.monitor['resolution_y']]
         self.grating = pygame.surfarray.make_surface(self._gray2rgb(image, 3))
-        assert self.curr_cond['temporal_freq'] == 0
+        assert curr_cond['temporal_freq'] == 0
             #print('Not optimized!')
             #curr_cond['lamda'] = int(self.px_per_deg / curr_cond['spatial_freq'])
             #self.frame_step = curr_cond['lamda'] * (self.curr_cond['temporal_freq'] / self.fps)
