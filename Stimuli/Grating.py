@@ -65,7 +65,7 @@ class Grating(Stimulus, dj.Manual):
         self.isrunning = True
         self.frame_idx = 0
         self.clock = pygame.time.Clock()
-
+        curr_cond['lamda'] = int(self.px_per_deg / curr_cond['spatial_freq'])
         image = self._make_grating(**curr_cond)
         image = image[:self.monitor['resolution_x'], :self.monitor['resolution_y']]
         if curr_cond['flatness_correction']:
@@ -77,7 +77,6 @@ class Grating(Stimulus, dj.Manual):
         self.grating = pygame.surfarray.make_surface(self._gray2rgb(image, 3))
         assert curr_cond['temporal_freq'] == 0
             #print('Not optimized!')
-            #curr_cond['lamda'] = int(self.px_per_deg / curr_cond['spatial_freq'])
             #self.frame_step = curr_cond['lamda'] * (self.curr_cond['temporal_freq'] / self.fps)
             #self.xt = np.cos((self.curr_cond['theta'] / 180) * np.pi)
             #self.yt = np.sin((self.curr_cond['theta'] / 180) * np.pi)
