@@ -57,43 +57,6 @@ class Grating(Stimulus, dj.Manual):
         fov = np.arctan(ymonsize / 2 / self.monitor['monitor_distance']) * 2 * 180 / np.pi  # Y FOV degrees
         self.px_per_deg = self.size[1]/fov
 
-    def make_conditions(self, conditions=[]):
-        self.path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
-        if not os.path.isdir(self.path):  # create path if necessary
-            os.makedirs(self.path)
-        super().make_conditions(conditions)
-        for cond in conditions:
-            filename = self._get_filename(cond)
-            tuple = self.exp.logger.get(schema='stimulus', table='Grating.Movie',
-                                        key={**cond, 'file_name': filename}, fields=['stim_hash'])
-            if not tuple:
-                print('Making movie %s', filename)
-                cond['lamda'] = int(self.px_per_deg/cond['spatial_freq'])
-                theta_frame_step = (cond['temporal_freq'] / self.fps) * np.pi * 2
-                image = self._make_grating(**cond)
-                images = image[:self.monitor['resolution_x'], :self.monitor['resolution_y']]
-                if cond['flatness_correction']:
-                    images, transform = flat2curve(images, self.monitor['monitor_distance'],
-                                                self.monitor['monitor_size'], method='index',
-                                                center_x=self.monitor['monitor_center_x'],
-                                                   center_y=self.monitor['monitor_center_y'])
-                    images = self._gray2rgb(images)
-                else:
-                    transform = lambda x: x
-                for iframe in range(0, int(cond['duration']*self.fps/1000 + 10)):
-                    print('\r' + ('frame %d/%d' % (iframe, int(cond['duration']*self.fps/1000 + 10))), end='')
-                    cond['phase'] += theta_frame_step
-                    image = self._make_grating(**cond)
-                    images = np.dstack((images, self._gray2rgb(transform(image[:self.monitor['resolution_x'],
-                                                                               :self.monitor['resolution_y']]))))
-                print('\r' + 'done!')
-                images = np.transpose(images[:, :, :], [2, 1, 0])
-                self._im2mov(self.path + filename, images)
-                self.logger.log('Grating.Movie', {**cond, 'file_name': filename,
-                                                  'clip': np.fromfile(self.path + filename, dtype=np.int8)},
-                                schema='stimulus', priority=2, block=True, validate=True)
-        return conditions
-
     def prepare(self, curr_cond):
         self.curr_cond = curr_cond
         self.curr_frame = 1
@@ -190,6 +153,43 @@ class Grating(Stimulus, dj.Manual):
 class GratingRP(Grating):
     """ This class handles the presentation of Gratings with an optimized library for Raspberry pi"""
 
+    def make_conditions(self, conditions=[]):
+        self.path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
+        if not os.path.isdir(self.path):  # create path if necessary
+            os.makedirs(self.path)
+        super().make_conditions(conditions)
+        for cond in conditions:
+            filename = self._get_filename(cond)
+            tuple = self.exp.logger.get(schema='stimulus', table='Grating.Movie',
+                                        key={**cond, 'file_name': filename}, fields=['stim_hash'])
+            if not tuple:
+                print('Making movie %s', filename)
+                cond['lamda'] = int(self.px_per_deg/cond['spatial_freq'])
+                theta_frame_step = (cond['temporal_freq'] / self.fps) * np.pi * 2
+                image = self._make_grating(**cond)
+                images = image[:self.monitor['resolution_x'], :self.monitor['resolution_y']]
+                if cond['flatness_correction']:
+                    images, transform = flat2curve(images, self.monitor['monitor_distance'],
+                                                self.monitor['monitor_size'], method='index',
+                                                center_x=self.monitor['monitor_center_x'],
+                                                   center_y=self.monitor['monitor_center_y'])
+                    images = self._gray2rgb(images)
+                else:
+                    transform = lambda x: x
+                for iframe in range(0, int(cond['duration']*self.fps/1000 + 10)):
+                    print('\r' + ('frame %d/%d' % (iframe, int(cond['duration']*self.fps/1000 + 10))), end='')
+                    cond['phase'] += theta_frame_step
+                    image = self._make_grating(**cond)
+                    images = np.dstack((images, self._gray2rgb(transform(image[:self.monitor['resolution_x'],
+                                                                               :self.monitor['resolution_y']]))))
+                print('\r' + 'done!')
+                images = np.transpose(images[:, :, :], [2, 1, 0])
+                self._im2mov(self.path + filename, images)
+                self.logger.log('Grating.Movie', {**cond, 'file_name': filename,
+                                                  'clip': np.fromfile(self.path + filename, dtype=np.int8)},
+                                schema='stimulus', priority=2, block=True, validate=True)
+        return conditions
+
     def setup(self):
         # setup parameters
         self.path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
@@ -273,7 +273,14 @@ class GratingOld(Grating):
         self.isrunning = True
         self.frame_idx = 0
         self.clock = pygame.time.Clock()
-        self.grating = pygame.surfarray.make_surface(self._gray2rgb(self._make_grating(**curr_cond),3))
+
+        image = self._make_grating(**curr_cond)
+        if curr_cond['flatness_correction']:
+            image = flat2curve(image, self.monitor['monitor_distance'],
+                                      self.monitor['monitor_size'], method='index',
+                                      center_x=self.monitor['monitor_center_x'],
+                                      center_y=self.monitor['monitor_center_y'])
+        self.grating = pygame.surfarray.make_surface(self._gray2rgb(image, 3))
         self.frame_step = self.curr_cond['lamda'] * (self.curr_cond['temporal_freq'] / self.fps)
 
         self.xt = np.cos((self.curr_cond['theta'] / 180) * np.pi)
