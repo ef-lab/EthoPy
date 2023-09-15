@@ -1,7 +1,5 @@
 from core.Stimulus import *
-import pygame
-from pygame.locals import *
-
+from utils.Presenter import *
 
 class RPScreen(Stimulus):
 
@@ -12,32 +10,13 @@ class RPScreen(Stimulus):
                               'reward': (128, 128, 128),
                               'punish': (0, 0, 0)})
 
-        # setup pygame
-        if not pygame.get_init():
-            pygame.init()
-        self.screen = pygame.display.set_mode((800, 480))
-        self.fill()
-        pygame.mouse.set_visible(0)
-        pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-        self.fill()
+        self.Presenter = Presenter((self.monitor['resolution_x'], self.monitor['resolution_y']))
 
     def fill(self, color=False):
-        """update background color"""
-        if not color: color = self.fill_colors.background
-        if color:
-            self.screen.fill(color)
-            self.flip()
-
-    def flip(self):
-        """ Main flip method"""
-        pygame.display.update()
-        for event in pygame.event.get():
-            if event.type == QUIT:
-                pygame.quit()
+        if not color:
+            color = self.fill_colors.background
+        if self.fill_colors.background: self.Presenter.fill(color)
 
     def exit(self):
-        """Close stuff"""
-        pygame.mouse.set_visible(1)
-        pygame.display.quit()
-        pygame.quit()
+        self.Presenter.quit()
 
