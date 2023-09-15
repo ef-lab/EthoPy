@@ -86,7 +86,7 @@ class Grating(Stimulus, dj.Manual):
             self.isrunning = False
             self.fill()
 
-    def fill(self, color):
+    def fill(self, color=False):
         if not color:
             color = self.fill_colors.background
         if self.fill_colors.background: self.Presenter.fill(color)
