@@ -41,8 +41,13 @@ class Grating(Stimulus, dj.Manual):
 
     def init(self, exp):
         super().init(exp)
+        self.fill_colors.set({'background': (0, 0, 0),
+                              'start': (32, 32, 32),
+                              'ready': (64, 64, 64),
+                              'reward': (128, 128, 128),
+                              'punish': (0, 0, 0)})
+
         self.size = (self.monitor['resolution_x'], self.monitor['resolution_y'])    # window size
-        self.color = [i*256 for i in self.monitor['background_color']]
         self.fps = self.monitor['fps']
 
         # setup pygame
@@ -74,28 +79,17 @@ class Grating(Stimulus, dj.Manual):
         self.timer.start()
 
     def present(self):
-        self.Presenter.render(self.grating)
+        if self.frame_idx == 0:
+            self.Presenter.render(self.grating)
         self.frame_idx += 1
         if self.timer.elapsed_time() > self.curr_cond['duration']:
             self.isrunning = False
-            self.Presenter.unshow()
+            self.fill()
 
-    def ready_stim(self):
-        self.Presenter.unshow([i*256 for i in self.monitor['ready_color']])
-
-    def reward_stim(self):
-        self.Presenter.unshow([i*256 for i in self.monitor['reward_color']])
-
-    def punish_stim(self):
-        self.Presenter.unshow([i*256 for i in self.monitor['punish_color']])
-
-    def start_stim(self):
-        self.Presenter.unshow([i*256 for i in self.monitor['start_color']])
-
-    def stop(self):
-        self.Presenter.unshow([i*256 for i in self.monitor['background_color']])
-        self.log_stop()
-        self.isrunning = False
+    def fill(self, color):
+        if not color:
+            color = self.fill_colors.background
+        if self.fill_colors.background: self.Presenter.fill(color)
 
     def exit(self):
         self.Presenter.quit()
@@ -198,7 +192,7 @@ class GratingMovie(Grating):
         else:
             self.isrunning = False
             self.vid.close()
-            #self.unshow()
+            #self.fill()
 
     def _im2mov(self, fn, images):
         w = imageio.get_writer(fn, fps=self.fps)
@@ -222,7 +216,7 @@ class GratingRP(GratingMovie):
         if not pygame.get_init():
             pygame.init()
         self.screen = pygame.display.set_mode(self.size)
-        self.unshow() 
+        self.fill() 
         pygame.mouse.set_visible(0)
         pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 
@@ -246,7 +240,7 @@ class GratingRP(GratingMovie):
 
     def prepare(self, curr_cond, stim_period=''):
         self.curr_cond = curr_cond
-        self.unshow([i*256 for i in self.monitor['start_color']])
+        self.fill([i*256 for i in self.monitor['start_color']])
         self._init_player()
         self.isrunning = True
         self.timer.start() 
@@ -268,7 +262,7 @@ class GratingRP(GratingMovie):
         except:
             self._init_player()
             self.vid.quit()
-        self.unshow([i*256 for i in self.monitor['background_color']])
+        self.fill([i*256 for i in self.monitor['background_color']])
         self.log_stop()
         self.isrunning = False
 

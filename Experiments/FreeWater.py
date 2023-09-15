@@ -103,7 +103,7 @@ class InterTrial(Experiment):
 class Offtime(Experiment):
     def entry(self):
         super().entry()
-        self.stim.unshow([0, 0, 0])
+        self.stim.fill([0, 0, 0])
 
     def run(self):
         if self.logger.setup_status not in ['sleeping', 'wakeup'] and self.beh.is_sleep_time():

@@ -33,7 +33,7 @@ class Images(Stimulus, dj.Manual):
         # setup pygame
         pygame.init()
         self.screen = pygame.display.set_mode(self.size)
-        self.unshow()
+        self.fill()
         self.timer = Timer()
         pygame.mouse.set_visible(0)
 
@@ -52,7 +52,7 @@ class Images(Stimulus, dj.Manual):
     def present(self):
         if self.curr_cond['pre_blank_period'] > 0 and self.timer.elapsed_time() < self.curr_cond['pre_blank_period']:
             #blank the screen
-            self.unshow((0, 0, 0))
+            self.fill((0, 0, 0))
             self.clock.tick(self.curr_cond['pre_blank_period'])
         elif self.timer.elapsed_time() < (self.curr_cond['pre_blank_period'] + self.curr_cond['presentation_time']):
             #show image
@@ -66,17 +66,17 @@ class Images(Stimulus, dj.Manual):
             self.clock.tick(self.curr_cond['presentation_time']) #this doesn't look correct.. having both the if and the tick with image duration
         else:
             self.isrunning = False
-            self.unshow()
+            self.fill()
 
     def stop(self):
-        self.unshow()
+        self.fill()
         self.log_stop()
         self.isrunning = False
 
     def punish_stim(self):
-        self.unshow((0, 0, 0))
+        self.fill((0, 0, 0))
 
-    def unshow(self, color=False):
+    def fill(self, color=False):
         if not color:
             color = self.color
         self.screen.fill(color)

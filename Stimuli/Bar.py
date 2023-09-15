@@ -47,7 +47,7 @@ class Bar(Stimulus, dj.Manual):
         self.monRes = [self.exp.params['max_res'], int(y_res + np.ceil(y_res % 2))]
         self.FoV = np.arctan(np.array(monSize) / 2 / self.monitor['monitor_distance']) * 2 * 180 / np.pi  # in degrees
         self.FoV[1] = self.FoV[0] / self.monitor['monitor_aspect']
-        self.color = [0, 0, 0]
+        self.color = (0, 0, 0)
         self.fps = self.monitor['fps']
 
         # setup pygame
@@ -55,7 +55,7 @@ class Bar(Stimulus, dj.Manual):
         self.clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF | NOFRAME,
                                               display=self.monitor['screen_idx']-1) #---> this works but minimizes when clicking (Emina)
-        self.unshow()
+        self.fill()
         pygame.mouse.set_visible(0)
 
     def prepare(self, curr_cond):
@@ -117,14 +117,14 @@ class Bar(Stimulus, dj.Manual):
             self.clock.tick_busy_loop(self.fps)
         else:
             self.isrunning = False
-            self.unshow()
+            self.fill()
 
     def stop(self):
-        self.unshow()
+        self.fill()
         self.log_stop()
         self.isrunning = False
 
-    def unshow(self, color=False):
+    def fill(self, color=False):
         if not color:
             color = self.color
         self.screen.fill(color)

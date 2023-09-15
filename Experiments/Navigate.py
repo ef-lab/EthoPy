@@ -147,7 +147,7 @@ class Punish(Experiment):
             return 'Punish'
 
     def exit(self):
-        self.stim.unshow()
+        self.stim.fill()
 
 
 class InterTrial(Experiment):

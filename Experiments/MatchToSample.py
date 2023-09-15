@@ -97,7 +97,7 @@ class PreTrial(Experiment):
             return 'PreTrial'
 
     def exit(self):
-        self.stim.unshow()
+        self.stim.fill()
         
 class Cue(Experiment):
     def entry(self):
@@ -264,7 +264,7 @@ class InterTrial(Experiment):
             return 'InterTrial'
 
     def exit(self):
-        self.stim.unshow()
+        self.stim.fill()
 
 
 class Hydrate(Experiment):
@@ -286,7 +286,7 @@ class Hydrate(Experiment):
 class Offtime(Experiment):
     def entry(self):
         super().entry()
-        self.stim.unshow([0, 0, 0])
+        self.stim.fill([0, 0, 0])
         self.release()
 
     def run(self):

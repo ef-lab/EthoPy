@@ -32,7 +32,7 @@ class Movies(Stimulus, dj.Manual):
         # setup pygame
         pygame.init()
         self.screen = pygame.display.set_mode(self.size)
-        self.unshow()
+        self.fill()
         self.timer = Timer()
         pygame.mouse.set_visible(0)
 
@@ -62,18 +62,18 @@ class Movies(Stimulus, dj.Manual):
         else:
             self.isrunning = False
             self.vid.close()
-            self.unshow()
+            self.fill()
 
     def stop(self):
         self.vid.close()
-        self.unshow()
+        self.fill()
         self.log_stop()
         self.isrunning = False
 
     def punish_stim(self):
-        self.unshow((0, 0, 0))
+        self.fill((0, 0, 0))
 
-    def unshow(self, color=False):
+    def fill(self, color=False):
         if not color:
             color = self.color
         self.screen.fill(color)
@@ -124,7 +124,7 @@ class RPMovies(Movies):
         if not pygame.get_init():
             pygame.init()
         self.screen = pygame.display.set_mode(self.size)
-        self.unshow()
+        self.fill()
         pygame.mouse.set_visible(0)
         pygame.display.toggle_fullscreen()
 
@@ -171,7 +171,7 @@ class RPMovies(Movies):
         except:
             self._init_player()
             self.vid.stop()
-        self.unshow()
+        self.fill()
         self.isrunning = False
 
     def _init_player(self):

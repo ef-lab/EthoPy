@@ -126,7 +126,7 @@ class Abort(Experiment):
         super().entry()
         self.beh.update_history()
         self.logger.log('Trial.Aborted')
-        self.stim.unshow()
+        self.stim.fill()
 
     def next(self):
         if self.state_timer.elapsed_time() >= self.curr_cond['abort_duration']:
@@ -175,7 +175,7 @@ class Punish(Experiment):
             return 'Punish'
 
     def exit(self):
-        self.stim.unshow()
+        self.stim.fill()
 
 
 class InterTrial(Experiment):        
@@ -196,7 +196,7 @@ class InterTrial(Experiment):
             return 'InterTrial'
         
     def exit(self):
-        self.stim.unshow()
+        self.stim.fill()
 
 
 class Hydrate(Experiment):
@@ -218,7 +218,7 @@ class Hydrate(Experiment):
 class Offtime(Experiment):
     def entry(self):
         super().entry()
-        self.stim.unshow([0, 0, 0])
+        self.stim.fill([0, 0, 0])
         self.release()
 
     def run(self):

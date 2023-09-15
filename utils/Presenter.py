@@ -34,7 +34,7 @@ class Presenter():
         glDepthFunc(GL_LEQUAL)
         glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
         glEnable(GL_BLEND)
-        self.unshow()
+        self.fill()
 
     def render(self, surface):
         glClear(GL_COLOR_BUFFER_BIT)
@@ -55,7 +55,7 @@ class Presenter():
         glEnd()
         self.flip()
 
-    def unshow(self, color=False):
+    def fill(self, color=False):
         if not color:
             color = self.color
         self.offscreen_surface.fill(self.color)
