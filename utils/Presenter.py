@@ -7,7 +7,7 @@ texID = glGenTextures(1)
 
 class Presenter():
 
-    def __init__(self, size, pygame_params):
+    def __init__(self, size):
         if not pygame.get_init():
             pygame.init()
         PROPERTIES = pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.FULLSCREEN | pygame.OPENGL
