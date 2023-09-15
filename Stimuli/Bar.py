@@ -50,9 +50,7 @@ class Bar(Stimulus, dj.Manual):
 
         # setup pygame
         self.clock = pygame.time.Clock()
-        #self.screen = pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF | NOFRAME,
-        #                                      display=self.monitor['screen_idx']-1) #---> this works but minimizes when clicking (Emina)
-        self.Presenter = Presenter((self.monitor['resolution_x'], self.monitor['resolution_y']))
+        self.Presenter = Presenter((self.monitor['resolution_x'], self.monitor['resolution_y']), display=self.monitor['screen_idx']-1)
 
     def prepare(self, curr_cond):
         self.curr_cond = curr_cond

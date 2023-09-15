@@ -7,11 +7,11 @@ texID = glGenTextures(1)
 
 class Presenter():
 
-    def __init__(self, size):
+    def __init__(self, size, display=0):
         if not pygame.get_init():
             pygame.init()
         PROPERTIES = pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.FULLSCREEN | pygame.OPENGL
-        self.screen = pygame.display.set_mode(size, PROPERTIES)
+        self.screen = pygame.display.set_mode(size, PROPERTIES, display=display)
         pygame.display.init()
         pygame.mouse.set_visible(0)
         self.clock = pygame.time.Clock()
