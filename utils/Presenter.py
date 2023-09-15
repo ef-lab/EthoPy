@@ -7,7 +7,7 @@ texID = glGenTextures(1)
 
 class Presenter():
 
-    def __init__(self, size):
+    def __init__(self, size, pygame_params):
         if not pygame.get_init():
             pygame.init()
         PROPERTIES = pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.FULLSCREEN | pygame.OPENGL
@@ -88,4 +88,3 @@ class Presenter():
     def quit(self):
         pygame.mouse.set_visible(1)
         pygame.display.quit()
-        pygame.quit()
