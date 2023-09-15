@@ -58,7 +58,7 @@ class Presenter():
     def fill(self, color=False):
         if not color:
             color = self.color
-        self.offscreen_surface.fill(self.color)
+        self.offscreen_surface.fill(color)
         self.render(self.offscreen_surface)
 
     def flip(self):
