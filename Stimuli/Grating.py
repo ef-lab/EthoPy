@@ -39,14 +39,15 @@ class Grating(Stimulus, dj.Manual):
         clip                     : longblob     
         """
 
-    def init(self, exp):
-        super().init(exp)
+    def __init__(self):
         self.fill_colors.set({'background': (0, 0, 0),
                               'start': (32, 32, 32),
                               'ready': (64, 64, 64),
                               'reward': (128, 128, 128),
                               'punish': (0, 0, 0)})
 
+    def init(self, exp):
+        super().init(exp)
         self.size = (self.monitor['resolution_x'], self.monitor['resolution_y'])    # window size
         self.fps = self.monitor['fps']
 
