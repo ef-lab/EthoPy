@@ -27,7 +27,7 @@ class Logger:
 
     def __init__(self, protocol=False):
         self.setup = socket.gethostname()
-        self.is_pi = os.uname()[4][:3] == 'arm' if os.name == 'posix' else False
+        self.is_pi = os.uname()[4][:3] == 'arm' or os.uname()[4]=='aarch64' if os.name == 'posix' else False
         self.manual_run = True if protocol else False
         self.setup_status = 'running' if self.manual_run else 'ready'
         con_info = dj.conn.connection.conn_info
