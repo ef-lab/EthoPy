@@ -1,8 +1,3 @@
-""" 
-Calibration is the Process where it is messured for how muchh water it can be given 
-for specific pulses
-
-"""
 import pygame
 import pygame_menu
 from Interfaces.RPPorts import *
