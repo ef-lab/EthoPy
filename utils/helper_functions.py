@@ -100,3 +100,4 @@ def rgetattr(obj, attr, *args):
 
 def iterable(v):
     return np.array([v]) if type(v) not in [np.array, np.ndarray, list, tuple] else v
+

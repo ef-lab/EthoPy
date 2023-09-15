@@ -37,13 +37,13 @@ class Dot(Stimulus, dj.Manual):
         #self.screen = pygame.display.set_mode(self.size)
         self.screen = pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF | NOFRAME,
                                               display=self.monitor['screen_idx']-1) #---> this works but minimizes when clicking (Emina)
-        self.unshow()
+        self.fill()
         pygame.mouse.set_visible(0)
 
     def prepare(self, curr_cond):
         self.curr_cond = curr_cond
         self.color = self.curr_cond['bg_level']
-        self.unshow()
+        self.fill()
         width = self.monitor['resolution_x']
         height = self.monitor['resolution_y']
         x_pos = self.curr_cond['dot_x'] + 0.5
@@ -63,11 +63,11 @@ class Dot(Stimulus, dj.Manual):
             self.isrunning = False
 
     def stop(self):
-        self.unshow()
+        self.fill()
         self.log_stop()
         self.isrunning = False
 
-    def unshow(self, color=False):
+    def fill(self, color=False):
         if not color:
             color = self.color
         self.screen.fill(color)

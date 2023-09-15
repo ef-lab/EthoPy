@@ -112,7 +112,7 @@ class Panda(Stimulus, dj.Manual):
             self.path = '\\Stimuli\\objects\\'  # default path to copy local stimuli
             self.movie_path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
         ShowBase.__init__(self, fStartDirect=self.fStartDirect, windowType=self.windowType)
-
+        self.fill_colors.background_color = (0, 0, 0)
 
     def setup(self):
         self.props = core.WindowProperties()
@@ -149,7 +149,6 @@ class Panda(Stimulus, dj.Manual):
             self.curr_cond = curr_cond[stim_period]
         
         self.period = stim_period
-        self.background_color = self.curr_cond['background_color']
 
         # set background color
         self.set_background_color(*self.curr_cond['background_color'])
@@ -224,20 +223,8 @@ class Panda(Stimulus, dj.Manual):
         self.log_stop()
         self.isrunning = False
 
-    def punish_stim(self):
-        self.unshow(self.monitor['punish_color'])
-
-    def reward_stim(self):
-        self.unshow(self.monitor['reward_color'])
-    
-    def ready_stim(self):
-        self.unshow(self.monitor['ready_color'])
-
-    def start_stim(self):
-        self.unshow(self.monitor["start_color"])
-
-    def unshow(self, color=None):
-        if not color: color = self.monitor['background_color']
+    def fill(self, color=None):
+        if not color: color = self.curr_cond['background_color']
         self.set_background_color(*color)
         self.flip(2)
 

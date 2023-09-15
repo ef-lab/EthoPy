@@ -47,7 +47,7 @@ class Bar(Stimulus, dj.Manual):
         self.monRes = [self.exp.params['max_res'], int(y_res + np.ceil(y_res % 2))]
         self.FoV = np.arctan(np.array(monSize) / 2 / self.monitor['monitor_distance']) * 2 * 180 / np.pi  # in degrees
         self.FoV[1] = self.FoV[0] / self.monitor['monitor_aspect']
-        self.color = [0, 0, 0]
+        self.color = (0, 0, 0)
         self.fps = self.monitor['fps']
 
         # setup pygame
@@ -55,7 +55,7 @@ class Bar(Stimulus, dj.Manual):
         self.clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF | NOFRAME,
                                               display=self.monitor['screen_idx']-1) #---> this works but minimizes when clicking (Emina)
-        self.unshow()
+        self.fill()
         pygame.mouse.set_visible(0)
 
     def prepare(self, curr_cond):
@@ -92,20 +92,20 @@ class Bar(Stimulus, dj.Manual):
             HG = np.cos(2 * np.pi * Y) > 0  # horizontal grading
             Grid = VG1 * HG + VG2 * (1 - HG)  # combine all
             self.StimOffsetCyclesPerFrame = self.curr_cond['flash_speed'] / self.fps
-            self.fill = lambda x: abs(Grid - (np.cos(2 * np.pi * x) > 0))
+            self.generate = lambda x: abs(Grid - (np.cos(2 * np.pi * x) > 0))
         elif self.curr_cond['style'] == 'grating':
             self.StimOffsetCyclesPerFrame = self.curr_cond['grat_freq'] / self.fps
-            self.fill = lambda x: np.cos(2 * np.pi * (self.cycles[1]*self.curr_cond['bar_width']/self.curr_cond['grat_width'] + x)) > 0  # vertical grading
+            self.generate = lambda x: np.cos(2 * np.pi * (self.cycles[1]*self.curr_cond['bar_width']/self.curr_cond['grat_width'] + x)) > 0  # vertical grading
         elif self.curr_cond['style'] == 'none':
             self.StimOffsetCyclesPerFrame = 1
-            self.fill = lambda x: 1
+            self.generate = lambda x: 1
         self.StimOffset = 0  # intialize offsets
 
     def present(self):
         if self.curr_frame < self.nbFrames:
             offset_cycles = self.cycles[0] + self.BarOffset
             offset_cycles[np.logical_or(offset_cycles < -0.5, offset_cycles > .5)] = 0.5  # threshold grading to create a single bar
-            texture = np.uint8((np.cos(offset_cycles * 2 * np.pi) > -1) * self.fill(self.StimOffset)*254)
+            texture = np.uint8((np.cos(offset_cycles * 2 * np.pi) > -1) * self.generate(self.StimOffset)*254)
             new_surface = pygame.surfarray.make_surface(self.transform(np.tile(texture[:, :, np.newaxis], (1, 3))))
             screen_width = self.screen.get_width()
             screen_height = self.screen.get_height()
@@ -117,14 +117,14 @@ class Bar(Stimulus, dj.Manual):
             self.clock.tick_busy_loop(self.fps)
         else:
             self.isrunning = False
-            self.unshow()
+            self.fill()
 
     def stop(self):
-        self.unshow()
+        self.fill()
         self.log_stop()
         self.isrunning = False
 
-    def unshow(self, color=False):
+    def fill(self, color=False):
         if not color:
             color = self.color
         self.screen.fill(color)

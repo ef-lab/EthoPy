@@ -1,8 +1,7 @@
 from core.Stimulus import *
-import pygame, io, imageio
+import io, imageio
 from utils.helper_functions import flat2curve
-from pygame.locals import *
-
+from utils.Presenter import *
 
 @stimulus.schema
 class Grating(Stimulus, dj.Manual):
@@ -40,26 +39,24 @@ class Grating(Stimulus, dj.Manual):
         clip                     : longblob     
         """
 
+    def __init__(self):
+        super().__init__()
+        self.fill_colors.set({'background': (0, 0, 0),
+                              'start': (32, 32, 32),
+                              'ready': (64, 64, 64),
+                              'reward': (128, 128, 128),
+                              'punish': (0, 0, 0)})
+
     def init(self, exp):
         super().init(exp)
         self.size = (self.monitor['resolution_x'], self.monitor['resolution_y'])    # window size
-        self.color = [i*256 for i in self.monitor['background_color']]
         self.fps = self.monitor['fps']
 
         # setup pygame
-        pygame.init()
-        self.clock = pygame.time.Clock()
-        #self.screen = pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF | NOFRAME, display=self.screen_idx-1) #---> this works but minimizes when clicking (Emina)
-        #self.screen = pygame.display.set_mode(self.size)
-        self.screen = pygame.display.set_mode((self.monitor['resolution_x'], self.monitor['resolution_y']), pygame.FULLSCREEN)
-        self.unshow()
-        pygame.mouse.set_visible(0)
+        self.Presenter = Presenter((self.monitor['resolution_x'], self.monitor['resolution_y']))
         ymonsize = self.monitor['monitor_size'] * 2.54 / np.sqrt(1 + self.monitor['monitor_aspect'] ** 2)  # cm Y monitor size
         fov = np.arctan(ymonsize / 2 / self.monitor['monitor_distance']) * 2 * 180 / np.pi  # Y FOV degrees
         self.px_per_deg = self.size[1]/fov
-
-    def setup(self):
-        super().setup()
 
     def prepare(self, curr_cond):
         self.isrunning = True
@@ -74,7 +71,7 @@ class Grating(Stimulus, dj.Manual):
                                       center_x=self.monitor['monitor_center_x'],
                                       center_y=self.monitor['monitor_center_y'])
             image = image[:self.monitor['resolution_x'], :self.monitor['resolution_y']]
-        self.grating = pygame.surfarray.make_surface(self._gray2rgb(image, 3))
+        self.grating = self.Presenter.make_surface(self._gray2rgb(image, 3))
         assert curr_cond['temporal_freq'] == 0
             #print('Not optimized!')
             #self.frame_step = curr_cond['lamda'] * (self.curr_cond['temporal_freq'] / self.fps)
@@ -84,47 +81,20 @@ class Grating(Stimulus, dj.Manual):
         self.timer.start()
 
     def present(self):
-        self.screen.blit(self.grating, self._calc_destination())
-        self.clock.tick_busy_loop(self.fps)
-        self.flip()
+        if self.frame_idx == 0:
+            self.Presenter.render(self.grating)
         self.frame_idx += 1
         if self.timer.elapsed_time() > self.curr_cond['duration']:
             self.isrunning = False
-            self.unshow()
+            self.fill()
 
-    def ready_stim(self):
-        self.unshow([i*256 for i in self.monitor['ready_color']])
-
-    def reward_stim(self):
-        self.unshow([i*256 for i in self.monitor['reward_color']])
-
-    def punish_stim(self):
-        self.unshow([i*256 for i in self.monitor['punish_color']])
-
-    def start_stim(self):
-        self.unshow([i*256 for i in self.monitor['start_color']])
-
-    def stop(self):
-        self.unshow([i*256 for i in self.monitor['background_color']])
-        self.log_stop()
-        self.isrunning = False
-
-    def flip(self):
-        pygame.display.update()
-        for event in pygame.event.get():
-            if event.type == QUIT: pygame.quit()
-        self.flip_count += 1
-
-    def unshow(self, color=False):
+    def fill(self, color=False):
         if not color:
-            color = self.color
-        self.screen.fill(color)
-        self.flip()
+            color = self.fill_colors.background
+        if self.fill_colors.background: self.Presenter.fill(color)
 
     def exit(self):
-        pygame.mouse.set_visible(1)
-        pygame.display.quit()
-        pygame.quit()
+        self.Presenter.quit()
 
     def _gray2rgb(self, im, c=1):
         return np.transpose(np.tile(im, [c, 1, 1]), (1, 2, 0))
@@ -224,7 +194,7 @@ class GratingMovie(Grating):
         else:
             self.isrunning = False
             self.vid.close()
-            #self.unshow()
+            #self.fill()
 
     def _im2mov(self, fn, images):
         w = imageio.get_writer(fn, fps=self.fps)
@@ -248,7 +218,7 @@ class GratingRP(GratingMovie):
         if not pygame.get_init():
             pygame.init()
         self.screen = pygame.display.set_mode(self.size)
-        self.unshow() 
+        self.fill() 
         pygame.mouse.set_visible(0)
         pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 
@@ -272,7 +242,7 @@ class GratingRP(GratingMovie):
 
     def prepare(self, curr_cond, stim_period=''):
         self.curr_cond = curr_cond
-        self.unshow([i*256 for i in self.monitor['start_color']])
+        self.fill([i*256 for i in self.monitor['start_color']])
         self._init_player()
         self.isrunning = True
         self.timer.start() 
@@ -294,7 +264,7 @@ class GratingRP(GratingMovie):
         except:
             self._init_player()
             self.vid.quit()
-        self.unshow([i*256 for i in self.monitor['background_color']])
+        self.fill([i*256 for i in self.monitor['background_color']])
         self.log_stop()
         self.isrunning = False
 

@@ -65,6 +65,9 @@ class Stimulus:
     cond_tables, required_fields, default_key, curr_cond, conditions, timer = [], [], dict(), dict(), [], Timer()
     period, isrunning, flip_count = 'Trial', False, 0
 
+    def __init__(self):
+        self.fill_colors = FillColors()
+
     def init(self, exp):
         """store parent objects """
         self.logger = exp.logger
@@ -96,12 +99,13 @@ class Stimulus:
         """stimulus presentation method"""
         pass
 
-    def unshow(self, color=False):
+    def fill(self, color=False):
         """stimulus hidding method"""
         pass
 
     def stop(self):
         """stop stimulus"""
+        self.fill()
         self.log_stop()
         self.isrunning = False
 
@@ -111,15 +115,19 @@ class Stimulus:
 
     def ready_stim(self):
         """Stim Cue for ready"""
-        pass
+        if self.fill_colors.ready: self.fill(self.fill_colors.ready)
 
     def reward_stim(self):
         """Stim Cue for reward"""
-        pass
+        if self.fill_colors.reward: self.fill(self.fill_colors.reward)
 
     def punish_stim(self):
         """Stim Cue for punishment"""
-        pass
+        if self.fill_colors.punish: self.fill(self.fill_colors.punish)
+
+    def start_stim(self):
+        """Stim Cue for punishment"""
+        if self.fill_colors.start: self.fill(self.fill_colors.start)
 
     def log_start(self):
         """Start time logging"""
@@ -143,3 +151,9 @@ class Stimulus:
         self.conditions += conditions
         return conditions
 
+
+class FillColors():
+    start, ready, reward, punish, background = [], [], [], [], []
+    def set(self, dictionary):
+        for key, value in dictionary.items():
+            setattr(self, key, value)

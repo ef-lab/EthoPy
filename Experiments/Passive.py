@@ -79,7 +79,7 @@ class InterTrial(Experiment):
             return 'InterTrial'
 
     def exit(self):
-        self.stim.unshow()
+        self.stim.fill()
 
 
 class Exit(Experiment):
