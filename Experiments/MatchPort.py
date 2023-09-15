@@ -164,9 +164,10 @@ class Punish(Experiment):
         self.punish_period = self.stim.curr_cond['punish_duration']
         if self.params.get('incremental_punishment'):
             self.punish_period *= self.beh.get_false_history()
+        self.stim.punish_stim()
 
     def run(self):
-        self.stim.punish_stim()
+        pass
 
     def next(self):
         if self.state_timer.elapsed_time() >= self.punish_period:

@@ -224,7 +224,7 @@ class Panda(Stimulus, dj.Manual):
         self.isrunning = False
 
     def fill(self, color=None):
-        if not color: color = self.fill_colors.background
+        if not color: color = self.curr_cond['background_color']
         self.set_background_color(*color)
         self.flip(2)
 

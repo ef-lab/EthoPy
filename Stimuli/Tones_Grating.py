@@ -36,7 +36,6 @@ class Tones_Grating(Grating, dj.Manual):
             self.stop()
 
     def stop(self):
-        self.fill()
         self.log_stop()
         self.isrunning = False
         self.exp.interface.stop_sound()
