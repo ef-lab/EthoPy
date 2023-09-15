@@ -40,6 +40,7 @@ class Grating(Stimulus, dj.Manual):
         """
 
     def __init__(self):
+        super().__init__()
         self.fill_colors.set({'background': (0, 0, 0),
                               'start': (32, 32, 32),
                               'ready': (64, 64, 64),
