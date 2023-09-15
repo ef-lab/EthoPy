@@ -23,7 +23,7 @@ class RPScreen(Stimulus):
 
     def fill(self, color=False):
         """update background color"""
-        if not color: color = self.fill_colors.background_color
+        if not color: color = self.fill_colors.background
         if color:
             self.screen.fill(color)
             self.flip()
