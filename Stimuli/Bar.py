@@ -1,8 +1,6 @@
 from core.Stimulus import *
 from utils.helper_functions import flat2curve
-import pygame
-from pygame.locals import *
-
+from utils.Presenter import *
 
 @stimulus.schema
 class Bar(Stimulus, dj.Manual):
@@ -51,12 +49,8 @@ class Bar(Stimulus, dj.Manual):
         self.fps = self.monitor['fps']
 
         # setup pygame
-        pygame.init()
         self.clock = pygame.time.Clock()
-        self.screen = pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF | NOFRAME,
-                                              display=self.monitor['screen_idx']-1) #---> this works but minimizes when clicking (Emina)
-        self.fill()
-        pygame.mouse.set_visible(0)
+        self.Presenter = Presenter((self.monitor['resolution_x'], self.monitor['resolution_y']), display=self.monitor['screen_idx']-1)
 
     def prepare(self, curr_cond):
         self.curr_cond = curr_cond
@@ -107,10 +101,7 @@ class Bar(Stimulus, dj.Manual):
             offset_cycles[np.logical_or(offset_cycles < -0.5, offset_cycles > .5)] = 0.5  # threshold grading to create a single bar
             texture = np.uint8((np.cos(offset_cycles * 2 * np.pi) > -1) * self.generate(self.StimOffset)*254)
             new_surface = pygame.surfarray.make_surface(self.transform(np.tile(texture[:, :, np.newaxis], (1, 3))))
-            screen_width = self.screen.get_width()
-            screen_height = self.screen.get_height()
-            pygame.transform.smoothscale(new_surface, (screen_width, screen_height), self.screen)
-            self.flip()
+            self.Presenter.render(new_surface)
             self.curr_frame += 1
             self.StimOffset += self.StimOffsetCyclesPerFrame
             self.BarOffset += self.BarOffsetCyclesPerFrame
@@ -119,27 +110,10 @@ class Bar(Stimulus, dj.Manual):
             self.isrunning = False
             self.fill()
 
-    def stop(self):
-        self.fill()
-        self.log_stop()
-        self.isrunning = False
-
     def fill(self, color=False):
         if not color:
-            color = self.color
-        self.screen.fill(color)
-        self.flip()
-
-    def flip(self):
-        pygame.display.update()
-        for event in pygame.event.get():
-            if event.type == QUIT:
-                pygame.quit()
-        #self.flip_count += 1
+            color = self.fill_colors.background
+        if self.fill_colors.background: self.Presenter.fill(color)
 
     def exit(self):
-        pygame.mouse.set_visible(1)
-        pygame.display.quit()
-        pygame.quit()
-
-
+        self.Presenter.quit()
