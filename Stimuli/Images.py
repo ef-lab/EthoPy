@@ -1,10 +1,9 @@
 from core.Stimulus import *
 from time import sleep
-import pygame
-from pygame.locals import *
 import io, os, imageio
 import numpy as np
 import cv2
+from utils.Presenter import *
 
 
 @stimulus.schema
@@ -22,6 +21,10 @@ class Images(Stimulus, dj.Manual):
     default_key = dict(pre_blank_period=200, presentation_time=1000)
     required_fields = ['pre_blank_period', 'presentation_time']
     cond_tables = ['Images']
+
+    def __init__(self):
+        super().__init__()
+        self.fill_colors.set({'background': (0, 0, 0)})
 
     def setup(self):
         # setup parameters
@@ -52,7 +55,7 @@ class Images(Stimulus, dj.Manual):
     def present(self):
         if self.curr_cond['pre_blank_period'] > 0 and self.timer.elapsed_time() < self.curr_cond['pre_blank_period']:
             #blank the screen
-            self.fill((0, 0, 0))
+            self.fill()
             self.clock.tick(self.curr_cond['pre_blank_period'])
         elif self.timer.elapsed_time() < (self.curr_cond['pre_blank_period'] + self.curr_cond['presentation_time']):
             #show image
@@ -61,8 +64,7 @@ class Images(Stimulus, dj.Manual):
                 curr_img = cv2.resize(curr_img[0], dsize=(self.size), interpolation=cv2.INTER_CUBIC)
             img_rgb = curr_img[..., None].repeat(3, -1).astype(np.int32)
             py_image = img_rgb.swapaxes(0, 1)
-            pygame.surfarray.blit_array(self.screen, py_image)
-            self.flip()
+            self.Presenter.render(py_image)
             self.clock.tick(self.curr_cond['presentation_time']) #this doesn't look correct.. having both the if and the tick with image duration
         else:
             self.isrunning = False
@@ -73,43 +75,16 @@ class Images(Stimulus, dj.Manual):
         self.log_stop()
         self.isrunning = False
 
-    def punish_stim(self):
-        self.fill((0, 0, 0))
-
     def fill(self, color=False):
         if not color:
-            color = self.color
-        self.screen.fill(color)
-        self.flip()
+            color = self.fill_colors.background
+        if self.fill_colors.background: self.Presenter.fill(color)
 
-    def flip(self):
-        pygame.display.update()
-        for event in pygame.event.get():
-            if event.type == QUIT: pygame.quit()
-        self.flip_count += 1
+    def exit(self):
+        self.Presenter.quit()
 
-    @staticmethod
-    def exit():
-        pygame.mouse.set_visible(1)
-        pygame.display.quit()
-        pygame.quit()
-
-    def get_image_info(self, key, table, *fields):
+    def _get_image_info(self, key, table, *fields):
         return self.exp.logger.get(schema='stimulus', table=table, key=key, fields=fields)
 
-    def encode_photodiode(self):
-        """Encodes the flip number n in the flip amplitude.
-        Every 32 sequential flips encode 32 21-bit flip numbers.
-        Thus each n is a 21-bit flip number:
-        FFFFFFFFFFFFFFFFCCCCP
-        P = parity, only P=1 encode bits
-        C = the position within F
-        F = the current block of 32 flips
-        """
-        n = self.flip_count + 1
-        amp = 127 * (n & 1) * (2 - (n & (1 << (((np.int64(np.floor(n / 2)) & 15) + 6) - 1)) != 0))
-        surf = pygame.Surface(self.phd_size)
-        surf.fill((amp, amp, amp))
-        self.screen.blit(surf, (0, 0))
 
 

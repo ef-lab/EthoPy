@@ -103,7 +103,7 @@ class Grating(Stimulus, dj.Manual):
         self.clock = pygame.time.Clock()
         curr_cond['lamda'] = int(self.px_per_deg / curr_cond['spatial_freq'])
         self.curr_cond = curr_cond
-        if curr_cond['temporal_freq'] != 0:
+        if curr_cond['temporal_freq'] == 0:
             image = self._make_grating(**curr_cond)
             image = image[:self.monitor['resolution_x'], :self.monitor['resolution_y']]
             if curr_cond['flatness_correction']:

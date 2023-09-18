@@ -17,6 +17,8 @@ class Presenter():
         self.clock = pygame.time.Clock()
         self.color = (0, 0, 0)
         self.flip_count = 0
+        #self.phd_size = (50, 50)  # default photodiode signal size in pixels
+
         info = pygame.display.Info()
 
         self.offscreen_surface = pygame.Surface((info.current_w, info.current_h))
@@ -84,6 +86,21 @@ class Presenter():
                      rgb_surface)
         glGenerateMipmap(GL_TEXTURE_2D)
         glBindTexture(GL_TEXTURE_2D, 0)
+
+    #def _encode_photodiode(self):
+    #    """Encodes the flip number n in the flip amplitude.
+    #    Every 32 sequential flips encode 32 21-bit flip numbers.
+    #    Thus each n is a 21-bit flip number:
+    #    FFFFFFFFFFFFFFFFCCCCP
+    #    P = parity, only P=1 encode bits
+    #    C = the position within F
+    #    F = the current block of 32 flips
+    #    """
+    #    n = self.flip_count + 1
+    #    amp = 127 * (n & 1) * (2 - (n & (1 << (((np.int64(np.floor(n / 2)) & 15) + 6) - 1)) != 0))
+    #    surf = pygame.Surface(self.phd_size)
+    #    surf.fill((amp, amp, amp))
+    #    self.screen.blit(surf, (0, 0))
 
     def quit(self):
         pygame.mouse.set_visible(1)
