@@ -35,6 +35,7 @@ class Movies(Stimulus, dj.Manual):
 
         # setup screen
         self.Presenter = Presenter((self.monitor['resolution_x'], self.monitor['resolution_y']))
+        self.Presenter.set_background_color(self.fill_colors.background)
         self.timer = Timer()
 
     def prepare(self, curr_cond, stim_period=''):

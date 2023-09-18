@@ -41,7 +41,7 @@ class Presenter():
 
     def set_background_color(self, color):
         self.color = color
-        glClearColor(self.color[0], self.color[1], self.color[2], 0.0)
+        glClearColor(self.color[0]/255, self.color[1]/255, self.color[2]/255, 0.0)
 
     def render(self, surface):
         glClear(GL_COLOR_BUFFER_BIT)
