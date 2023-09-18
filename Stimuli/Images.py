@@ -30,15 +30,10 @@ class Images(Stimulus, dj.Manual):
         # setup parameters
         self.path = os.path.dirname(os.path.abspath(__file__)) + '/images/'
         self.size = (self.monitor['resolution_x'], self.monitor['resolution_y'])     # window size
-        self.color = [50, 50, 50]  # default background color
-        self.phd_size = (50, 50)    # default photodiode signal size in pixels
 
-        # setup pygame
-        pygame.init()
-        self.screen = pygame.display.set_mode(self.size)
-        self.fill()
+        # setup screen
+        self.Presenter = Presenter((self.monitor['resolution_x'], self.monitor['resolution_y']))
         self.timer = Timer()
-        pygame.mouse.set_visible(0)
 
     def prepare(self, curr_cond, stim_period=''):
         self.curr_cond = curr_cond
