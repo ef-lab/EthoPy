@@ -38,13 +38,17 @@ class Images(Stimulus, dj.Manual):
         self.curr_cond = curr_cond
         self.clock = pygame.time.Clock()
         curr_img = self._get_image_info(self.curr_cond, 'Image', 'image')
+        image_height, image_width = self._get_image_info(self.curr_cond, 'ImageClass.Info', 'image_height',
+                                                         'image_width')
+        self.imsize = (image_width, image_height)
         curr_img = curr_img[0]
+        self.upscale = self.size[0] / self.imsize[0]
+        self.y_pos = int((self.size[1] - self.imsize[1]*self.upscale)/2)
         if self.upscale != 1:
             curr_img = cv2.resize(curr_img, dsize=(self.size), interpolation=cv2.INTER_CUBIC)
         img_rgb = curr_img[..., None].repeat(3, -1).astype(np.int32)
         self.curr_img = self.Presenter.make_surface(img_rgb.swapaxes(0, 1))
-        image_height, image_width = self._get_image_info(self.curr_cond, 'ImageClass.Info', 'image_height', 'image_width')
-        self.imsize = (image_width, image_height)
+
         self.isrunning = True
         self.timer.start()
 
