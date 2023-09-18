@@ -73,6 +73,9 @@ class Presenter():
     def make_surface(self, array):
         return pygame.surfarray.make_surface(array)
 
+    def flip_clock(self, fps):
+        self.clock.tick_busy_loop(fps)
+
     def _surfaceToTexture(self, pygame_surface):
         global texID
         rgb_surface = pygame.image.tostring(pygame_surface, 'RGB')

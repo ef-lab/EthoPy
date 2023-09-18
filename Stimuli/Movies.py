@@ -3,6 +3,7 @@ from time import sleep
 import io, os, imageio
 from utils.Presenter import *
 
+
 @stimulus.schema
 class Movies(Stimulus, dj.Manual):
     definition = """
@@ -39,7 +40,6 @@ class Movies(Stimulus, dj.Manual):
     def prepare(self, curr_cond, stim_period=''):
         self.curr_cond = curr_cond
         self.curr_frame = 1
-        self.clock = pygame.time.Clock()
         clip = self.get_clip_info(self.curr_cond, 'Movie.Clip', 'clip')
         frame_height, frame_width = self.get_clip_info(self.curr_cond, 'Movie', 'frame_height', 'frame_width')
         self.vid = imageio.get_reader(io.BytesIO(clip[0].tobytes()), 'mov')
@@ -53,10 +53,8 @@ class Movies(Stimulus, dj.Manual):
     def present(self):
         if self.timer.elapsed_time() < self.curr_cond['movie_duration']:
             surface = pygame.image.frombuffer(self.vid.get_next_data(), self.vsize, "RGB")
-            if self.upscale != 1:
-                surface = pygame.transform.smoothscale(surface, (self.size[0], int(self.vsize[1]*self.upscale)))
             self.Presenter.render(surface)
-            self.clock.tick_busy_loop(self.vfps)
+            self.Presenter.flip_clock(self.vfps)
             self.curr_frame += 1
         else:
             self.isrunning = False

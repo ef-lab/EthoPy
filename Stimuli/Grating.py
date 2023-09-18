@@ -100,7 +100,6 @@ class Grating(Stimulus, dj.Manual):
         self.isrunning = True
         self.movie = False
         self.frame_idx = 0
-        self.clock = pygame.time.Clock()
         curr_cond['lamda'] = int(self.px_per_deg / curr_cond['spatial_freq'])
         self.curr_cond = curr_cond
         if curr_cond['temporal_freq'] == 0:
@@ -129,7 +128,7 @@ class Grating(Stimulus, dj.Manual):
         elif self.movie:
             grating = pygame.image.frombuffer(self.vid.get_next_data(), self.vsize, "RGB")
             self.Presenter.render(grating)
-            self.clock.tick_busy_loop(self.vfps)
+            self.Presenter.flip_clock(self.vfps)
         elif self.frame_idx == 0:
             self.Presenter.render(self.grating)
         self.frame_idx += 1
