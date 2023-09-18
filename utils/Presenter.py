@@ -19,12 +19,12 @@ class Presenter():
         self.flip_count = 0
         #self.phd_size = (50, 50)  # default photodiode signal size in pixels
 
-        info = pygame.display.Info()
+        self.info = pygame.display.Info()
 
-        self.offscreen_surface = pygame.Surface((info.current_w, info.current_h))
+        self.offscreen_surface = pygame.Surface((self.info.current_w, self.info.current_h))
         self.offscreen_surface.fill(self.color)
 
-        glViewport(0, 0, info.current_w, info.current_h)
+        glViewport(0, 0, info.current_w, self.info.current_h)
         glDepthRange(0, 1)
         glMatrixMode(GL_PROJECTION)
         glMatrixMode(GL_MODELVIEW)
@@ -44,17 +44,28 @@ class Presenter():
         glLoadIdentity()
         glDisable(GL_LIGHTING)
         glEnable(GL_TEXTURE_2D)
-        self._surfaceToTexture(surface)
+        surf = self._surfaceToTexture(surface)
+
+        surf_ratio = surf.width/surf.height
+        window_ratio = self.info.current_w/self.info.current_h
+
+        if window_ratio > surf_ratio:
+            x_scale = surf_ratio/window_ratio
+            y_scale = 1
+        else:
+            x_scale = 1
+            y_scale = window_ratio/surf_ratio
+
         glBindTexture(GL_TEXTURE_2D, texID)
         glBegin(GL_QUADS)
-        glTexCoord2f(0, 0);
-        glVertex2f(-1, 1)
-        glTexCoord2f(0, 1);
-        glVertex2f(-1, -1)
-        glTexCoord2f(1, 1);
-        glVertex2f(1, -1)
-        glTexCoord2f(1, 0);
-        glVertex2f(1, 1)
+        glTexCoord2f(0, 0)
+        glVertex2f(-1*x_scale, 1*y_scale)
+        glTexCoord2f(0, 1)
+        glVertex2f(-1*x_scale, -1*y_scale)
+        glTexCoord2f(1, 1)
+        glVertex2f(1*x_scale, -1*y_scale)
+        glTexCoord2f(1, 0)
+        glVertex2f(1*x_scale, 1*y_scale)
         glEnd()
         self.flip()
 
@@ -89,6 +100,7 @@ class Presenter():
                      rgb_surface)
         glGenerateMipmap(GL_TEXTURE_2D)
         glBindTexture(GL_TEXTURE_2D, 0)
+        return surface_rect
 
     #def _encode_photodiode(self):
     #    """Encodes the flip number n in the flip amplitude.
