@@ -154,6 +154,7 @@ class Stimulus:
 
 class FillColors():
     start, ready, reward, punish, background = [], [], [], [], []
+
     def set(self, dictionary):
         for key, value in dictionary.items():
             setattr(self, key, value)
