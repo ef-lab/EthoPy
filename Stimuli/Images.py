@@ -63,6 +63,8 @@ class Images(Stimulus, dj.Manual):
             if self.frame_idx == 0:
                 self.Presenter.render(self.curr_img)
             self.frame_idx += 1
+        else:
+            self.isrunning = False
 
     def fill(self, color=False):
         if not color:
