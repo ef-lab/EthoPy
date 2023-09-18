@@ -35,6 +35,7 @@ class Images(Stimulus, dj.Manual):
         self.timer = Timer()
 
     def prepare(self, curr_cond, stim_period=''):
+        self.frame_idx = 0
         self.curr_cond = curr_cond
         self.clock = pygame.time.Clock()
         curr_img = self._get_image_info(self.curr_cond, 'Image', 'image')
