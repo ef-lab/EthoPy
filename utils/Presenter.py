@@ -30,7 +30,7 @@ class Presenter():
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         glShadeModel(GL_SMOOTH)
-        glClearColor(0.0, 0.0, 0.0, 0.0)
+        glClearColor(self.color[0], self.color[1], self.color[2], 0.0)
         glClearDepth(1.0)
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_LIGHTING)
@@ -38,6 +38,10 @@ class Presenter():
         glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
         glEnable(GL_BLEND)
         self.fill()
+
+    def set_background_color(self, color):
+        self.color = color
+        glClearColor(self.color[0], self.color[1], self.color[2], 0.0)
 
     def render(self, surface):
         glClear(GL_COLOR_BUFFER_BIT)

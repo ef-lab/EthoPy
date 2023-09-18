@@ -1,6 +1,6 @@
 from core.Stimulus import *
 from time import sleep
-import os, imageio, cv2
+import os, imageio
 import numpy as np
 from utils.Presenter import *
 
@@ -23,7 +23,7 @@ class Images(Stimulus, dj.Manual):
 
     def __init__(self):
         super().__init__()
-        self.fill_colors.set({'background': (128, 128, 128)})
+        self.fill_colors.set({'background': (0, 0, 0)})
 
     def setup(self):
         # setup parameters
@@ -32,6 +32,7 @@ class Images(Stimulus, dj.Manual):
 
         # setup screen
         self.Presenter = Presenter((self.monitor['resolution_x'], self.monitor['resolution_y']))
+        self.Presenter.set_background_color(self.fill_colors.background)
         self.timer = Timer()
 
     def prepare(self, curr_cond, stim_period=''):
@@ -43,10 +44,6 @@ class Images(Stimulus, dj.Manual):
                                                          'image_width')
         self.imsize = (image_width, image_height)
         curr_img = curr_img[0]
-        self.upscale = self.size[0] / self.imsize[0]
-        self.y_pos = int((self.size[1] - self.imsize[1]*self.upscale)/2)
-        if self.upscale != 1:
-            curr_img = cv2.resize(curr_img, dsize=(self.size), interpolation=cv2.INTER_CUBIC)
         img_rgb = curr_img[..., None].repeat(3, -1).astype(np.int32)
         self.curr_img = self.Presenter.make_surface(img_rgb.swapaxes(0, 1))
 
