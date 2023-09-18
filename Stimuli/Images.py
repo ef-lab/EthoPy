@@ -24,7 +24,7 @@ class Images(Stimulus, dj.Manual):
 
     def __init__(self):
         super().__init__()
-        self.fill_colors.set({'background': (0, 0, 0)})
+        self.fill_colors.set({'background': (128, 128, 128)})
 
     def setup(self):
         # setup parameters
@@ -38,12 +38,10 @@ class Images(Stimulus, dj.Manual):
     def prepare(self, curr_cond, stim_period=''):
         self.curr_cond = curr_cond
         self.clock = pygame.time.Clock()
-
         image_height, image_width = self._get_image_info(self.curr_cond, 'ImageClass.Info', 'image_height', 'image_width')
         self.imsize = (image_width, image_height)
         self.upscale = self.size[0] / self.imsize[0]
         self.y_pos = int((self.size[1] - self.imsize[1]*self.upscale)/2)
-        
         self.isrunning = True
         self.timer.start()
 
@@ -64,14 +62,6 @@ class Images(Stimulus, dj.Manual):
                 self.Presenter.render(self.Presenter.make_surface(py_image))
                 self.clock.tick(self.curr_cond['presentation_time']) #this doesn't look correct.. having both the if and the tick with image duration
             self.frame_idx += 1
-        else:
-            self.isrunning = False
-            self.fill()
-
-    def stop(self):
-        self.fill()
-        self.log_stop()
-        self.isrunning = False
 
     def fill(self, color=False):
         if not color:

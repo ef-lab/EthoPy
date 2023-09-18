@@ -22,7 +22,7 @@ class Movies(Stimulus, dj.Manual):
 
     def __init__(self):
         super().__init__()
-        self.fill_colors.set({'background': (0, 0, 0),
+        self.fill_colors.set({'background': (128, 128, 128),
                               'start': (32, 32, 32),
                               'ready': (64, 64, 64),
                               'reward': (128, 128, 128),
@@ -31,7 +31,6 @@ class Movies(Stimulus, dj.Manual):
         # setup parameters
         self.path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
         self.size = (self.monitor['resolution_x'], self.monitor['resolution_y'])     # window size
-        self.color = [127, 127, 127]  # default background color
 
         # setup screen
         self.Presenter = Presenter((self.monitor['resolution_x'], self.monitor['resolution_y']))
@@ -61,14 +60,10 @@ class Movies(Stimulus, dj.Manual):
             self.curr_frame += 1
         else:
             self.isrunning = False
-            self.vid.close()
-            self.fill()
 
     def stop(self):
+        super().stop()
         self.vid.close()
-        self.fill()
-        self.log_stop()
-        self.isrunning = False
 
     def fill(self, color=False):
         if not color:

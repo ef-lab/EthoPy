@@ -126,8 +126,6 @@ class Grating(Stimulus, dj.Manual):
     def present(self):
         if self.timer.elapsed_time() > self.curr_cond['duration']:
             self.isrunning = False
-            self.fill()
-            if self.movie: self.vid.close()
         elif self.movie:
             grating = pygame.image.frombuffer(self.vid.get_next_data(), self.vsize, "RGB")
             self.Presenter.render(grating)
@@ -140,6 +138,10 @@ class Grating(Stimulus, dj.Manual):
         if not color:
             color = self.fill_colors.background
         if self.fill_colors.background: self.Presenter.fill(color)
+
+    def stop(self):
+        super().stop()
+        if self.movie: self.vid.close()
 
     def exit(self):
         self.Presenter.quit()
