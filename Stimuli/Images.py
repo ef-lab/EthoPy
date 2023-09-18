@@ -1,8 +1,7 @@
 from core.Stimulus import *
 from time import sleep
-import io, os, imageio
+import os, imageio
 import numpy as np
-import cv2
 from utils.Presenter import *
 
 
@@ -38,6 +37,9 @@ class Images(Stimulus, dj.Manual):
     def prepare(self, curr_cond, stim_period=''):
         self.curr_cond = curr_cond
         self.clock = pygame.time.Clock()
+        curr_img = self._get_image_info(self.curr_cond, 'Image', 'image')
+        img_rgb = curr_img[..., None].repeat(3, -1).astype(np.int32)
+        self.curr_img = self.Presenter.make_surface(img_rgb.swapaxes(0, 1))
         image_height, image_width = self._get_image_info(self.curr_cond, 'ImageClass.Info', 'image_height', 'image_width')
         self.imsize = (image_width, image_height)
         self.isrunning = True
@@ -51,13 +53,7 @@ class Images(Stimulus, dj.Manual):
         elif self.timer.elapsed_time() < (self.curr_cond['pre_blank_period'] + self.curr_cond['presentation_time']):
             #show image
             if self.frame_idx == 0:
-                self.Presenter.render(self.grating)
-                curr_img = self._get_image_info(self.curr_cond, 'Image', 'image')
-                if self.upscale != 1:
-                    curr_img = cv2.resize(curr_img[0], dsize=(self.size), interpolation=cv2.INTER_CUBIC)
-                img_rgb = curr_img[..., None].repeat(3, -1).astype(np.int32)
-                py_image = img_rgb.swapaxes(0, 1)
-                self.Presenter.render(self.Presenter.make_surface(py_image))
+                self.Presenter.render(self.curr_img)
             self.frame_idx += 1
 
     def fill(self, color=False):

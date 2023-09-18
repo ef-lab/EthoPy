@@ -45,8 +45,6 @@ class Movies(Stimulus, dj.Manual):
         self.vid = imageio.get_reader(io.BytesIO(clip[0].tobytes()), 'mov')
         self.vsize = (frame_width[0], frame_height[0])
         self.vfps = self.vid.get_meta_data()['fps']
-        self.upscale = self.size[0] / self.vsize[0]
-        self.y_pos = int((self.size[1] - self.vsize[1]*self.upscale)/2)
         self.isrunning = True
         self.timer.start()
 
