@@ -39,7 +39,7 @@ class Images(Stimulus, dj.Manual):
         self.curr_cond = curr_cond
         self.clock = pygame.time.Clock()
 
-        image_height, image_width = self.get_image_info(self.curr_cond, 'ImageClass.Info', 'image_height', 'image_width')
+        image_height, image_width = self._get_image_info(self.curr_cond, 'ImageClass.Info', 'image_height', 'image_width')
         self.imsize = (image_width, image_height)
         self.upscale = self.size[0] / self.imsize[0]
         self.y_pos = int((self.size[1] - self.imsize[1]*self.upscale)/2)
@@ -54,7 +54,7 @@ class Images(Stimulus, dj.Manual):
             self.clock.tick(self.curr_cond['pre_blank_period'])
         elif self.timer.elapsed_time() < (self.curr_cond['pre_blank_period'] + self.curr_cond['presentation_time']):
             #show image
-            curr_img = self.get_image_info(self.curr_cond, 'Image', 'image')
+            curr_img = self._get_image_info(self.curr_cond, 'Image', 'image')
             if self.upscale != 1:
                 curr_img = cv2.resize(curr_img[0], dsize=(self.size), interpolation=cv2.INTER_CUBIC)
             img_rgb = curr_img[..., None].repeat(3, -1).astype(np.int32)
