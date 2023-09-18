@@ -181,14 +181,13 @@ class GratingMovie(Grating):
         self.vid = imageio.get_reader(io.BytesIO(clip[0].tobytes()), 'mov')
         self.vsize = self.vid.get_meta_data()['size']
         self.vfps = self.vid.get_meta_data()['fps']
-        self.isrunning = Trues
+        self.isrunning = True
         self.timer.start()
 
     def present(self):
         if self.timer.elapsed_time() < self.curr_cond['duration']:
-            py_image = pygame.image.frombuffer(self.vid.get_next_data(),  self.vsize, "RGB")
-            self.Presenter.make_surface(py_image)
-            self.Presenter.render(self.grating)
+            grating = pygame.image.frombuffer(self.vid.get_next_data(),  self.vsize, "RGB")
+            self.Presenter.render(grating)
             self.curr_frame += 1
             self.clock.tick_busy_loop(self.vfps)
         else:
