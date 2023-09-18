@@ -59,7 +59,7 @@ class Images(Stimulus, dj.Manual):
                 curr_img = cv2.resize(curr_img[0], dsize=(self.size), interpolation=cv2.INTER_CUBIC)
             img_rgb = curr_img[..., None].repeat(3, -1).astype(np.int32)
             py_image = img_rgb.swapaxes(0, 1)
-            self.Presenter.render(py_image)
+            self.Presenter.render(self.Presenter.make_surface(py_image))
             self.clock.tick(self.curr_cond['presentation_time']) #this doesn't look correct.. having both the if and the tick with image duration
         else:
             self.isrunning = False
