@@ -24,7 +24,7 @@ class Presenter():
         self.offscreen_surface = pygame.Surface((self.info.current_w, self.info.current_h))
         self.offscreen_surface.fill(self.color)
 
-        glViewport(0, 0, info.current_w, self.info.current_h)
+        glViewport(0, 0, self.info.current_w, self.info.current_h)
         glDepthRange(0, 1)
         glMatrixMode(GL_PROJECTION)
         glMatrixMode(GL_MODELVIEW)
