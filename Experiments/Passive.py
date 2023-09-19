@@ -69,6 +69,8 @@ class Trial(Experiment):
 class InterTrial(Experiment):
     def entry(self):
         super().entry()
+        if self.stim.curr_cond['intertrial_duration'] > 0:
+            self.stim.fill()
 
     def next(self):
         if self.is_stopped():
@@ -77,9 +79,6 @@ class InterTrial(Experiment):
             return 'PreTrial'
         else:
             return 'InterTrial'
-
-    def exit(self):
-        self.stim.fill()
 
 
 class Exit(Experiment):

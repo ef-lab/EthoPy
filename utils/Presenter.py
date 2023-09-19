@@ -75,9 +75,24 @@ class Presenter():
         glEnd()
         self.flip()
 
+    def draw_rect(self, rect, color):
+        glClear(GL_COLOR_BUFFER_BIT)
+        glLoadIdentity()
+        glDisable(GL_LIGHTING)
+        glEnable(GL_TEXTURE_2D)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glClearColor(self.background_color[0] / 255, self.background_color[1] / 255, self.background_color[2] / 255,
+                     0.0)
+        # draw rectangle
+        glDisable(GL_TEXTURE_2D)
+        glColor3fv((color[0]/255, color[1]/255, color[2]/255))
+        glRectf(rect[0], rect[1], rect[2], rect[3])
+        self.flip()
+
     def fill(self, color=False):
         if not color:
             color = self.background_color
+        print('fill color:', color)
         self.offscreen_surface.fill(color)
         self.render(self.offscreen_surface)
 

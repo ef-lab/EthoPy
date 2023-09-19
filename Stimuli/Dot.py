@@ -1,7 +1,5 @@
 from core.Stimulus import *
-import pygame
-from pygame.locals import *
-
+from utils.Presenter import *
 
 @stimulus.schema
 class Dot(Stimulus, dj.Manual):
@@ -26,62 +24,47 @@ class Dot(Stimulus, dj.Manual):
                     'dot_shape'             : 'rect'}
 
     def init(self, exp):
+        self.fill_colors.background = (0, 0, 0)
         super().init(exp)
         self.size = (self.monitor['resolution_x'], self.monitor['resolution_y'])
-        self.color = [0, 0, 0]
         self.fps = self.monitor['fps']
 
         # setup pygame
-        pygame.init()
         self.clock = pygame.time.Clock()
-        #self.screen = pygame.display.set_mode(self.size)
-        self.screen = pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF | NOFRAME,
-                                              display=self.monitor['screen_idx']-1) #---> this works but minimizes when clicking (Emina)
-        self.fill()
-        pygame.mouse.set_visible(0)
+        self.Presenter = Presenter(self.monitor, background_color=self.fill_colors.background)
 
     def prepare(self, curr_cond):
         self.curr_cond = curr_cond
-        self.color = self.curr_cond['bg_level']
-        self.fill()
+        self.fill_colors.background = self.curr_cond['bg_level']
+        self.Presenter.set_background_color(self.curr_cond['bg_level'])
+        #self.fill(self.curr_cond['bg_level'])
         width = self.monitor['resolution_x']
         height = self.monitor['resolution_y']
-        x_pos = self.curr_cond['dot_x'] + 0.5
-        y_pos = self.curr_cond['dot_y'] + 0.5 * height / width
-        self.rect = ((x_pos - self.curr_cond['dot_xsize'] / 2)*width,
-                     (y_pos - self.curr_cond['dot_ysize'] / 2)*width,
-                     self.curr_cond['dot_xsize']*width,
-                     self.curr_cond['dot_ysize']*width)
+        x_start = self.curr_cond['dot_x'] * 2
+        y_start = self.curr_cond['dot_y'] * 2 * width/height
+        self.rect = (x_start - self.curr_cond['dot_xsize'],
+                     y_start - self.curr_cond['dot_ysize']*width/height,
+                     x_start + self.curr_cond['dot_xsize'],
+                     y_start + self.curr_cond['dot_ysize']*width/height)
 
     def start(self):
         super().start()
-        pygame.draw.rect(self.screen, self.curr_cond['dot_level'], self.rect)
-        self.flip()
+        self.Presenter.draw_rect(self.rect, self.curr_cond['dot_level'])
+
+    def stop(self):
+        self.log_stop()
+        self.isrunning = False
 
     def present(self):
         if self.timer.elapsed_time() > self.curr_cond['dot_time']*1000:
             self.isrunning = False
 
-    def stop(self):
-        self.fill()
-        self.log_stop()
-        self.isrunning = False
-
     def fill(self, color=False):
         if not color:
-            color = self.color
-        self.screen.fill(color)
-        self.flip()
-
-    def flip(self):
-        pygame.display.update()
-        for event in pygame.event.get():
-            if event.type == QUIT:
-                pygame.quit()
+            color = self.fill_colors.background
+        if self.fill_colors.background: self.Presenter.fill(color)
 
     def exit(self):
-        pygame.mouse.set_visible(1)
-        pygame.display.quit()
-        pygame.quit()
+        self.Presenter.quit()
 
 
