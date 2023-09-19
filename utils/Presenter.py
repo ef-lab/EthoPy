@@ -88,12 +88,14 @@ class Presenter():
         glColor3fv((color[0]/255, color[1]/255, color[2]/255))
         glRectf(rect[0], rect[1], rect[2], rect[3])
         self.flip()
+        glColor3fv((self.background_color[0] / 255,
+                    self.background_color[1] / 255,
+                    self.background_color[2] / 255))
 
     def fill(self, color=False):
         if not color:
             color = self.background_color
         self.offscreen_surface.fill(color)
-        glColor3fv((color[0] / 255, color[1] / 255, color[2] / 255))
         self.render(self.offscreen_surface)
 
     def flip(self):
