@@ -3,6 +3,7 @@ import io, imageio
 from utils.helper_functions import flat2curve
 from utils.Presenter import *
 
+
 @stimulus.schema
 class Grating(Stimulus, dj.Manual):
     definition = """

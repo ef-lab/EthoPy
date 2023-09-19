@@ -1,5 +1,6 @@
 from core.Experiment import *
 import os
+from utils.Presenter import *
 
 
 @stimulus.schema
@@ -82,7 +83,7 @@ class Stimulus:
 
     def setup(self):
         """setup stimulation for presentation before experiment starts"""
-        pass
+        self.Presenter = Presenter(self.monitor, background_color=self.fill_colors.background)
 
     def prepare(self, curr_cond=False, stim_period=''):
         """prepares stuff for presentation before trial starts"""
@@ -101,7 +102,9 @@ class Stimulus:
 
     def fill(self, color=False):
         """stimulus hidding method"""
-        pass
+        if not color:
+            color = self.fill_colors.background
+        if self.fill_colors.background: self.Presenter.fill(color)
 
     def stop(self):
         """stop stimulus"""
@@ -111,7 +114,7 @@ class Stimulus:
 
     def exit(self):
         """exit stimulus stuff"""
-        pass
+        self.Presenter.quit()
 
     def ready_stim(self):
         """Stim Cue for ready"""
