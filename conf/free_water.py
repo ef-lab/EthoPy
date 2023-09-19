@@ -1,5 +1,5 @@
 from Behaviors.MultiPort import *
-from Stimuli.RPScreen import *
+from core.Stimulus import *
 from Experiments.FreeWater import *
 
 # define session parameters
@@ -16,7 +16,7 @@ session_params = {
 exp = Experiment()
 exp.setup(logger, MultiPort, session_params)
 
-conditions = exp.make_conditions(stim_class=RPScreen(), conditions={
+conditions = exp.make_conditions(stim_class=Stimulus(), conditions={
     'difficulty'         : 1,
     'timeout_duration'   : 0,
     'intertrial_duration': 500,

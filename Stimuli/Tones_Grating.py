@@ -1,5 +1,6 @@
 from Stimuli.Grating import *
 
+
 @stimulus.schema
 class Tones_Grating(Grating, dj.Manual):
     """ This class handles the presentation of Grating and Tone stimuli"""
@@ -18,8 +19,7 @@ class Tones_Grating(Grating, dj.Manual):
         'flatness_correction' : 1,
         'duration'            : 3000,
         }
-  
-        
+
     def start(self):
         tone_frequency = self.curr_cond['tone_frequency']
         tone_volume = self.curr_cond['tone_volume']
