@@ -40,14 +40,6 @@ class Grating(Stimulus, dj.Manual):
         clip                     : longblob     
         """
 
-    def __init__(self):
-        super().__init__()
-        self.fill_colors.set({'background': (0, 0, 0),
-                              'start': (32, 32, 32),
-                              'ready': (64, 64, 64),
-                              'reward': (128, 128, 128),
-                              'punish': (0, 0, 0)})
-
     def make_conditions(self, conditions=[]):
         self.path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
         if not os.path.isdir(self.path):  # create path if necessary
@@ -86,13 +78,10 @@ class Grating(Stimulus, dj.Manual):
                                     schema='stimulus', priority=2, block=True, validate=True)
         return conditions
 
-    def init(self, exp):
-        super().init(exp)
-        self.size = (self.monitor['resolution_x'], self.monitor['resolution_y'])    # window size
-        self.fps = self.monitor['fps']
+    def setup(self):
+        super().setup()
 
-        # setup pygame
-        self.Presenter = Presenter(self.monitor, background_color=self.fill_colors.background)
+        # setup screen
         ymonsize = self.monitor['monitor_size'] * 2.54 / np.sqrt(1 + self.monitor['monitor_aspect'] ** 2)  # cm Y monitor size
         fov = np.arctan(ymonsize / 2 / self.monitor['monitor_distance']) * 2 * 180 / np.pi  # Y FOV degrees
         self.px_per_deg = self.size[1]/fov

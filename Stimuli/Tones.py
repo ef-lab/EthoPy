@@ -17,13 +17,13 @@ class Tones(Stimulus, dj.Manual):
     required_fields = ['tone_duration', 'tone_frequency']
     default_key = {'tone_volume': 50, 'tone_pulse_freq': 0}
 
-    def setup(self):
+    def __init__(self):
+        super().__init__()
         self.fill_colors.set({'background': (0, 0, 0),
                               'start': (32, 32, 32),
                               'ready': (64, 64, 64),
                               'reward': (128, 128, 128),
                               'punish': (0, 0, 0)})
-        super().setup()
 
     def start(self):
         tone_frequency = self.curr_cond['tone_frequency']

@@ -83,6 +83,8 @@ class Stimulus:
 
     def setup(self):
         """setup stimulation for presentation before experiment starts"""
+        self.size = (self.monitor['resolution_x'], self.monitor['resolution_y'])
+        self.fps = self.monitor['fps']
         self.Presenter = Presenter(self.monitor, background_color=self.fill_colors.background)
 
     def prepare(self, curr_cond=False, stim_period=''):

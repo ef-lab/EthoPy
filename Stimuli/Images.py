@@ -21,18 +21,10 @@ class Images(Stimulus, dj.Manual):
     required_fields = ['pre_blank_period', 'presentation_time']
     cond_tables = ['Images']
 
-    def __init__(self):
-        super().__init__()
-        self.fill_colors.set({'background': (0, 0, 0)})
-
     def setup(self):
+        super().setup()
         # setup parameters
         self.path = os.path.dirname(os.path.abspath(__file__)) + '/images/'
-        self.size = (self.monitor['resolution_x'], self.monitor['resolution_y'])     # window size
-
-        # setup screen
-        self.Presenter = Presenter(self.monitor, background_color=self.fill_colors.background)
-        self.timer = Timer()
 
     def prepare(self, curr_cond, stim_period=''):
         self.frame_idx = 0
@@ -62,13 +54,6 @@ class Images(Stimulus, dj.Manual):
         else:
             self.isrunning = False
 
-    def fill(self, color=False):
-        if not color:
-            color = self.fill_colors.background
-        if self.fill_colors.background: self.Presenter.fill(color)
-
-    def exit(self):
-        self.Presenter.quit()
 
     def _get_image_info(self, key, table, *fields):
         return self.exp.logger.get(schema='stimulus', table=table, key=key, fields=fields)

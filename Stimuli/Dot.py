@@ -23,15 +23,9 @@ class Dot(Stimulus, dj.Manual):
                     'dot_level'             : 0,  # degrees
                     'dot_shape'             : 'rect'}
 
-    def init(self, exp):
+    def __init__(self):
+        super().__init__()
         self.fill_colors.background = (255, 255, 255)
-        super().init(exp)
-        self.size = (self.monitor['resolution_x'], self.monitor['resolution_y'])
-        self.fps = self.monitor['fps']
-
-        # setup pygame
-        self.clock = pygame.time.Clock()
-        self.Presenter = Presenter(self.monitor, background_color=self.fill_colors.background)
 
     def prepare(self, curr_cond):
         self.curr_cond = curr_cond
@@ -57,13 +51,5 @@ class Dot(Stimulus, dj.Manual):
     def present(self):
         if self.timer.elapsed_time() > self.curr_cond['dot_time']*1000:
             self.isrunning = False
-
-    def fill(self, color=False):
-        if not color:
-            color = self.fill_colors.background
-        if self.fill_colors.background: self.Presenter.fill(color)
-
-    def exit(self):
-        self.Presenter.quit()
 
 

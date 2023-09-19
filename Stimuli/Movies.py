@@ -21,21 +21,9 @@ class Movies(Stimulus, dj.Manual):
     required_fields = ['movie_name', 'clip_number', 'movie_duration', 'skip_time', 'static_frame']
     cond_tables = ['Movies']
 
-    def __init__(self):
-        super().__init__()
-        self.fill_colors.set({'background': (128, 128, 128),
-                              'start': (32, 32, 32),
-                              'ready': (64, 64, 64),
-                              'reward': (128, 128, 128),
-                              'punish': (0, 0, 0)})
     def setup(self):
-        # setup parameters
+        super().setup()
         self.path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
-        self.size = (self.monitor['resolution_x'], self.monitor['resolution_y'])     # window size
-
-        # setup screen
-        self.Presenter = Presenter(self.monitor, background_color=self.fill_colors.background)
-        self.timer = Timer()
 
     def prepare(self, curr_cond, stim_period=''):
         self.curr_cond = curr_cond
@@ -61,14 +49,6 @@ class Movies(Stimulus, dj.Manual):
     def stop(self):
         super().stop()
         self.vid.close()
-
-    def fill(self, color=False):
-        if not color:
-            color = self.fill_colors.background
-        if self.fill_colors.background: self.Presenter.fill(color)
-
-    def exit(self):
-        self.Presenter.quit()
 
     def get_clip_info(self, key, table, *fields):
         return self.exp.logger.get(schema='stimulus', table=table, key=key, fields=fields)

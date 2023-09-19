@@ -26,8 +26,8 @@ class VROdors(Stimulus, dj.Manual):
     required_fields = ['odorant_id', 'delivery_port', 'odor_x', 'odor_y']
     default_key = {'extiction_factor': 1, 'frequency': 10}
 
-    def init(self, exp):
-        super().init(exp)
+    def setup(self):
+        super().setup()
         self.speaker_properties = self.logger.get(table='SetupConfiguration.Speaker', key=self.exp.params, as_dict=True)[0]
 
     def start(self):
