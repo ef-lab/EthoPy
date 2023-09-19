@@ -92,8 +92,8 @@ class Presenter():
     def fill(self, color=False):
         if not color:
             color = self.background_color
-        print('fill color:', color)
         self.offscreen_surface.fill(color)
+        glColor3fv((color[0] / 255, color[1] / 255, color[2] / 255))
         self.render(self.offscreen_surface)
 
     def flip(self):

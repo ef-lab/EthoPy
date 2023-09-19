@@ -24,7 +24,7 @@ class Dot(Stimulus, dj.Manual):
                     'dot_shape'             : 'rect'}
 
     def init(self, exp):
-        self.fill_colors.background = (0, 0, 0)
+        self.fill_colors.background = (255, 255, 255)
         super().init(exp)
         self.size = (self.monitor['resolution_x'], self.monitor['resolution_y'])
         self.fps = self.monitor['fps']
