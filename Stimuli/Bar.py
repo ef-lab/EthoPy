@@ -50,7 +50,7 @@ class Bar(Stimulus, dj.Manual):
 
         # setup pygame
         self.clock = pygame.time.Clock()
-        self.Presenter = Presenter((self.monitor['resolution_x'], self.monitor['resolution_y']), display=self.monitor['screen_idx']-1)
+        self.Presenter = Presenter(self.monitor)
 
     def prepare(self, curr_cond):
         self.curr_cond = curr_cond
