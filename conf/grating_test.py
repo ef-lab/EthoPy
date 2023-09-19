@@ -11,7 +11,7 @@ session_params = {
     'staircase_window'   : 10,
     'stair_up'           : 0.7,
     'stair_down'         : 0.6,
-    'setup_conf_idx'     : 1,
+    'setup_conf_idx'     : 0,
 }
 
 exp = Experiment()
@@ -22,11 +22,11 @@ key = {
     'contrast'           : 100,
     'spatial_freq'       : .05,   # cycles/deg
     'square'             : 0,     # squarewave or Guassian
-    'temporal_freq'      : 0,     # cycles/sec
+    'temporal_freq'      : 1,     # cycles/sec
     'flatness_correction': 1,     # adjustment of spatiotemporal frequencies based on animal distance
     'duration'           : 5000,
     'difficulty'         : 1,
-    'timeout_duration'   : 4000,
+    'timeout_duration'   : 1000,
     'trial_duration'     : 5000,
     'intertrial_duration': 0,
     'init_duration'      : 0,
@@ -41,6 +41,7 @@ ports = {1: 0,
          2: 90}
 
 Grating_Stimuli = Grating() #if session_params['setup_conf_idx'] ==0 else GratingOld()
+Grating_Stimuli.fill_colors.ready = []
 for port in ports:
     conditions += exp.make_conditions(stim_class=Grating_Stimuli, conditions={**key,
                                                                               'theta'        : ports[port],

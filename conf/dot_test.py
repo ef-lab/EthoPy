@@ -8,7 +8,7 @@ import random
 # define session parameters
 session_params = {
     'trial_selection'       : 'fixed',
-    'setup_conf_idx'        : 2,
+    'setup_conf_idx'        : 0,
     'intertrial_duration'   : 0,
 }
 
@@ -19,10 +19,10 @@ exp.setup(logger, Behavior, session_params)
 key = {
     'bg_level'              : [[255, 255, 255]],
     'dot_level'             : [[0, 0, 0]],
-    'dot_x'                 : list(np.array(range(-450, 451, 75))/1000),
-    'dot_y'                 : list(np.array(range(-300, 301, 75))/1000),
-    'dot_xsize'             : .075,
-    'dot_ysize'             : .075,
+    'dot_x'                 : list(np.linspace(-.45, .45, 10)),
+    'dot_y'                 : list(np.linspace(-.27, .27, 6)),
+    'dot_xsize'             : .1,
+    'dot_ysize'             : .1,
     'dot_shape'             : 'rect',
     'dot_time'              : .25,
 }

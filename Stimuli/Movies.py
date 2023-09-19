@@ -34,18 +34,18 @@ class Movies(Stimulus, dj.Manual):
         self.size = (self.monitor['resolution_x'], self.monitor['resolution_y'])     # window size
 
         # setup screen
-        self.Presenter = Presenter((self.monitor['resolution_x'], self.monitor['resolution_y']))
-        self.Presenter.set_background_color(self.fill_colors.background)
+        self.Presenter = Presenter(self.monitor, background_color=self.fill_colors.background)
         self.timer = Timer()
 
     def prepare(self, curr_cond, stim_period=''):
         self.curr_cond = curr_cond
         self.curr_frame = 1
         clip = self.get_clip_info(self.curr_cond, 'Movie.Clip', 'clip')
-        frame_height, frame_width = self.get_clip_info(self.curr_cond, 'Movie', 'frame_height', 'frame_width')
-        self.vid = imageio.get_reader(io.BytesIO(clip[0].tobytes()), 'mov')
+        frame_rate, frame_height, frame_width = \
+            self.get_clip_info(self.curr_cond, 'Movie', 'frame_rate', 'frame_height', 'frame_width')
+        self.vid = imageio.get_reader(io.BytesIO(clip[0].tobytes()), format='mov')
         self.vsize = (frame_width[0], frame_height[0])
-        self.vfps = self.vid.get_meta_data()['fps']
+        self.vfps = frame_rate
         self.isrunning = True
         self.timer.start()
 

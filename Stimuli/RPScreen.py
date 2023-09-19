@@ -10,8 +10,7 @@ class RPScreen(Stimulus):
                               'reward': (128, 128, 128),
                               'punish': (0, 0, 0)})
 
-        self.Presenter = Presenter((self.monitor['resolution_x'], self.monitor['resolution_y']))
-        self.Presenter.set_background_color(self.fill_colors.background)
+        self.Presenter = Presenter(self.monitor, background_color=self.fill_colors.background)
 
     def fill(self, color=False):
         if not color:

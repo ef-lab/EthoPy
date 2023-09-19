@@ -2,27 +2,29 @@ import pygame
 from pygame.locals import *
 from OpenGL.GL import *
 
-texID = glGenTextures(1)
-
 
 class Presenter():
 
-    def __init__(self, size, display=0):
+    def __init__(self, monitor, background_color=(0, 0, 0)):
         if not pygame.get_init():
             pygame.init()
-        PROPERTIES = pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.FULLSCREEN | pygame.OPENGL
-        self.screen = pygame.display.set_mode(size, PROPERTIES, display=display)
+        if monitor['fullscreen']:
+            PROPERTIES = pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.FULLSCREEN | pygame.OPENGL
+        else:
+            PROPERTIES = pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.OPENGL
+        self.screen = pygame.display.set_mode((monitor['resolution_x'], monitor['resolution_y']),
+                                              PROPERTIES, display=monitor['screen_idx']-1)
         pygame.display.init()
         pygame.mouse.set_visible(0)
         self.clock = pygame.time.Clock()
-        self.color = (0, 0, 0)
+        self.set_background_color(background_color)
         self.flip_count = 0
         #self.phd_size = (50, 50)  # default photodiode signal size in pixels
 
         self.info = pygame.display.Info()
-
+        self.texID = glGenTextures(1)
         self.offscreen_surface = pygame.Surface((self.info.current_w, self.info.current_h))
-        self.offscreen_surface.fill(self.color)
+        self.offscreen_surface.fill(self.background_color)
 
         glViewport(0, 0, self.info.current_w, self.info.current_h)
         glDepthRange(0, 1)
@@ -30,7 +32,7 @@ class Presenter():
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         glShadeModel(GL_SMOOTH)
-        glClearColor(self.color[0], self.color[1], self.color[2], 0.0)
+        glClearColor(self.background_color[0]/255, self.background_color[1]/255, self.background_color[2]/255, 0.0)
         glClearDepth(1.0)
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_LIGHTING)
@@ -40,8 +42,8 @@ class Presenter():
         self.fill()
 
     def set_background_color(self, color):
-        self.color = color
-        glClearColor(self.color[0]/255, self.color[1]/255, self.color[2]/255, 0.0)
+        self.background_color = color
+        glClearColor(color[0]/255, color[1]/255, color[2]/255, 0.0)
 
     def render(self, surface):
         glClear(GL_COLOR_BUFFER_BIT)
@@ -60,7 +62,7 @@ class Presenter():
             x_scale = 1
             y_scale = window_ratio/surf_ratio
 
-        glBindTexture(GL_TEXTURE_2D, texID)
+        glBindTexture(GL_TEXTURE_2D, self.texID)
         glBegin(GL_QUADS)
         glTexCoord2f(0, 0)
         glVertex2f(-1*x_scale, 1*y_scale)
@@ -73,10 +75,25 @@ class Presenter():
         glEnd()
         self.flip()
 
+    def draw_rect(self, rect, color):
+        glClear(GL_COLOR_BUFFER_BIT)
+        glLoadIdentity()
+        glDisable(GL_LIGHTING)
+        glEnable(GL_TEXTURE_2D)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glClearColor(self.background_color[0] / 255, self.background_color[1] / 255, self.background_color[2] / 255,
+                     0.0)
+        # draw rectangle
+        glDisable(GL_TEXTURE_2D)
+        glColor3fv((color[0]/255, color[1]/255, color[2]/255))
+        glRectf(rect[0], rect[1], rect[2], rect[3])
+        self.flip()
+
     def fill(self, color=False):
         if not color:
-            color = self.color
+            color = self.background_color
         self.offscreen_surface.fill(color)
+        glColor3fv((color[0] / 255, color[1] / 255, color[2] / 255))
         self.render(self.offscreen_surface)
 
     def flip(self):
@@ -92,9 +109,8 @@ class Presenter():
         self.clock.tick_busy_loop(fps)
 
     def _surfaceToTexture(self, pygame_surface):
-        global texID
         rgb_surface = pygame.image.tostring(pygame_surface, 'RGB')
-        glBindTexture(GL_TEXTURE_2D, texID)
+        glBindTexture(GL_TEXTURE_2D, self.texID)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP)

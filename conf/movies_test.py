@@ -5,7 +5,7 @@ import random
 
 # define session parameters
 session_params = {
-    'setup_conf_idx'     : 2,
+    'setup_conf_idx'     : 0,
     'trial_selection'    : 'fixed',
 }
 

@@ -9,7 +9,7 @@ stim = dj.create_virtual_module('stimuli.py', 'lab_stimuli')
 # define session parameters
 session_params = {
     'trial_selection'       : 'fixed',
-    'setup_conf_idx'        : 2,
+    'setup_conf_idx'        : 0,
     'max_res'               : 1000,
 }
 

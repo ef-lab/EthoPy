@@ -12,14 +12,15 @@ class DummyPorts(Interface):
                             'proximity_false' : [pygame.KEYUP, pygame.K_SPACE]}
 
     def in_position(self):
-        self.__get_events()
+        self._get_events()
         position_dur = self.timer_ready.elapsed_time() if self.ready else self.position_dur
         return self.position, position_dur, self.position_tmst
 
     def off_proximity(self):
+        self._get_events()
         return self.position.type != 'Proximity'
 
-    def __get_events(self):
+    def _get_events(self):
         port = 0
         events = pygame.event.get() if pygame.get_init() else []
 

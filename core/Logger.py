@@ -28,7 +28,8 @@ class Logger:
     def __init__(self, protocol=False):
         self.setup = socket.gethostname()
         system = os.uname()
-        self.is_pi = system.machine.startswith("arm") or system.machine=='aarch64' if os.name == 'posix' else False
+        self.protocol = protocol if isinstance(protocol, str) and os.path.isfile(protocol) else []
+        self.is_pi = system.machine.startswith("arm") or system.machine=='aarch64' if system.sysname == 'Linux' else False
         self.manual_run = True if protocol else False
         self.setup_status = 'running' if self.manual_run else 'ready'
         con_info = dj.conn.connection.conn_info
@@ -92,10 +93,10 @@ class Logger:
         if self.manual_run and table == 'Trial.StateOnset': print('State: ', data['state'])
         return tmst
 
-    def log_setup(self, task_idx=False):
+    def log_setup(self, task=False):
         rel = experiment.Control() & dict(setup=self.setup)
         key = rel.fetch1() if numpy.size(rel.fetch()) else dict(setup=self.setup)
-        if task_idx: key['task_idx'] = task_idx
+        key['task_idx'] = task if task and isinstance(task, int) else -1
         key = {**key, 'ip': self.get_ip(), 'status': self.setup_status}
         self.put(table='Control', tuple=key, replace=True, priority=1, block=True, validate=True)
 
@@ -156,9 +157,12 @@ class Logger:
         return (table() & key).fetch(*fields, **kwargs)
 
     def get_protocol(self, task_idx=None, raw_file=False):
-        if not task_idx: task_idx = self.get_setup_info('task_idx')
-        if not len(experiment.Task() & dict(task_idx=task_idx)) > 0: return False
-        protocol = (experiment.Task() & dict(task_idx=task_idx)).fetch1('protocol')
+        if not task_idx and not self.protocol:
+            task_idx = self.get_setup_info('task_idx')
+            if not len(experiment.Task() & dict(task_idx=task_idx)) > 0: return False
+            protocol = (experiment.Task() & dict(task_idx=task_idx)).fetch1('protocol')
+        else:
+            protocol = self.protocol
         path, filename = os.path.split(protocol)
         if not path: protocol = str(pathlib.Path(__file__).parent.absolute()) + '/../conf/' + filename
         if raw_file:
