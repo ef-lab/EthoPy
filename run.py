@@ -4,12 +4,12 @@ from utils.Start import *
 error = False
 
 global logger
-protocol = int(sys.argv[1]) if len(sys.argv) > 1 else False
+protocol = sys.argv[1] if len(sys.argv) > 1 else False
 logger = Logger(protocol=protocol)   # setup logger
 
 # # # # Waiting for instructions loop # # # # #
 while not logger.setup_status == 'exit':
-    if logger.is_pi and logger.setup_status != 'running': PyWelcome(logger)
+    if logger.setup_status != 'running': PyWelcome(logger)
     if logger.setup_status == 'running':   # run experiment unless stopped
         try:
             if logger.get_protocol(): exec(open(logger.get_protocol()).read())

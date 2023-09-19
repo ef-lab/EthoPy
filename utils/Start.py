@@ -21,7 +21,7 @@ class PyWelcome():
         if self.logger.is_pi:
             self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.FULLSCREEN)
         else:
-            self.screen = pygame.display.set_mode((800, 480))
+            self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
         
         # Configure self.theme
         self.theme = pygame_menu.themes.THEME_DARK.copy()
