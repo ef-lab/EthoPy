@@ -37,8 +37,8 @@ class Bar(Stimulus, dj.Manual):
                     'flatness_correction'   : 1,
                     'intertrial_duration'   : 0}
 
-    def init(self, exp):
-        super().init(exp)
+    def setup(self):
+        super().setup()
         ymonsize = self.monitor['monitor_size'] * 2.54 / np.sqrt(1 + self.monitor['monitor_aspect'] ** 2)  # cm Y monitor size
         monSize = [ymonsize * self.monitor['monitor_aspect'], ymonsize]
         y_res = int(self.exp.params['max_res'] / self.monitor['monitor_aspect'])
@@ -46,11 +46,9 @@ class Bar(Stimulus, dj.Manual):
         self.FoV = np.arctan(np.array(monSize) / 2 / self.monitor['monitor_distance']) * 2 * 180 / np.pi  # in degrees
         self.FoV[1] = self.FoV[0] / self.monitor['monitor_aspect']
         self.color = (0, 0, 0)
-        self.fps = self.monitor['fps']
 
         # setup pygame
         self.clock = pygame.time.Clock()
-        self.Presenter = Presenter(self.monitor)
 
     def prepare(self, curr_cond):
         self.curr_cond = curr_cond
@@ -110,10 +108,3 @@ class Bar(Stimulus, dj.Manual):
             self.isrunning = False
             self.fill()
 
-    def fill(self, color=False):
-        if not color:
-            color = self.fill_colors.background
-        if self.fill_colors.background: self.Presenter.fill(color)
-
-    def exit(self):
-        self.Presenter.quit()

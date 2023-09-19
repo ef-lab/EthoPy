@@ -111,10 +111,10 @@ class Panda(Stimulus, dj.Manual):
             self.Fullscreen = False
             self.path = '\\Stimuli\\objects\\'  # default path to copy local stimuli
             self.movie_path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
-        ShowBase.__init__(self, fStartDirect=self.fStartDirect, windowType=self.windowType)
         self.fill_colors.background_color = (0, 0, 0)
 
     def setup(self):
+        ShowBase.__init__(self, fStartDirect=self.fStartDirect, windowType=self.windowType)
         self.props = core.WindowProperties()
         if self.monitor['fullscreen']:
             self.props.setSize(self.pipe.getDisplayWidth(), self.pipe.getDisplayHeight())
@@ -129,11 +129,6 @@ class Panda(Stimulus, dj.Manual):
         self.disableMouse()
         self.isrunning = False
         self.movie = False
-
-        #info = self.pipe.getDisplayInformation()
-        #print(info.getTotalDisplayModes())
-        #print(info.getDisplayModeWidth(0), info.getDisplayModeHeight(0))
-        #print(self.pipe.getDisplayWidth(), self.pipe.getDisplayHeight())
 
         # Create Ambient Light
         self.ambientLight = core.AmbientLight('ambientLight')

@@ -13,7 +13,7 @@ interp = lambda x: interpolate.splev(np.linspace(0, len(x), 100),
 
 # define session parameters
 session_params = {
-    'setup_conf_idx'        : 1,
+    'setup_conf_idx'        : 0,
     'trial_selection': 'fixed',
     'max_res': 1000,
 }
@@ -29,7 +29,7 @@ for axis in ['horizontal', 'vertical']:
                       'center_x'            : 0,
                       'center_y'            : -0.17,
                       'bar_width'           : 4,  # degrees
-                      'bar_speed'           : 80,  # degrees/sec
+                      'bar_speed'           : 10,  # degrees/sec
                       'flash_speed'         : 2,
                       'grat_width'          : 10,  # degrees
                       'grat_freq'           : 1,
@@ -49,7 +49,7 @@ for idx, obj_comb in enumerate(obj_combs):
     for irep in range(0, reps):
         pos_x_f = lambda x: interp(np.random.rand(x) - 0.5)
         pos_y_f = lambda x: interp((np.random.rand(x) - 0.5) * 0.5)
-        rot_f = lambda x: interp((np.random.rand(x)-.5) * 250)
+        rot_f = lambda x: interp((np.random.rand(x)-.5) * 25)
         tilt_f = lambda x: interp(np.random.rand(x)*30)
         mag_f = lambda x: interp(np.random.rand(x) * 0.5 + 0.25)
         yaw_f = lambda x: interp(np.random.rand(x)*10)

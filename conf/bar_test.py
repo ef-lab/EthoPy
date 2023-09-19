@@ -21,11 +21,11 @@ key = {
     'max_res'               : 1000,
     'bar_width'             : 4,  # degrees
     'bar_speed'             : 5,  # degrees/sec
-    'flash_speed'           : 6,
+    'flash_speed'           : 2,
     'grat_width'            : 3,  # degrees
     'grat_freq'             : 3,
     'grid_width'            : 15,
-    'grit_freq'             : 3,
+    'grit_freq'             : 1,
     'style'                 : 'checkerboard', # checkerboard, grating
     'direction'             : 1,             # 1 for UD LR, -1 for DU RL
     'flatness_correction'   : 1,

@@ -20,6 +20,14 @@ class Tones_Grating(Grating, dj.Manual):
         'duration'            : 3000,
         }
 
+    def __init__(self):
+        super().__init__()
+        self.fill_colors.set({'background': (0, 0, 0),
+                              'start': (32, 32, 32),
+                              'ready': (64, 64, 64),
+                              'reward': (128, 128, 128),
+                              'punish': (0, 0, 0)})
+
     def start(self):
         tone_frequency = self.curr_cond['tone_frequency']
         tone_volume = self.curr_cond['tone_volume']

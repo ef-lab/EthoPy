@@ -37,14 +37,14 @@ class Olfactory(Stimulus, dj.Manual):
     required_fields = ['odor_duration', 'odorant_id', 'delivery_port']
     default_key = {'dutycycle': 50}
 
-    def setup(self):
+    def __init__(self):
+        super().__init__()
         self.fill_colors.set({'background': (0, 0, 0),
                               'start': (32, 32, 32),
                               'ready': (64, 64, 64),
                               'reward': (128, 128, 128),
                               'punish': (0, 0, 0)})
-        super().setup()
-
+        
     def start(self):
         delivery_port = self.curr_cond['delivery_port']
         odor_id = self.curr_cond['odorant_id']
