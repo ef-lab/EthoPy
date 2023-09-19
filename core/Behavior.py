@@ -267,7 +267,9 @@ class Behavior:
             Returns:
                 bool: True if there is any valid response since the given time, False otherwise.
             """
-            
+
+            if self.interface.__class__.__name__ == 'DummyPorts': self.interface._get_events()
+
             # set a flag to indicate whether there is a valid response since the given time
             _valid_response = False
             
@@ -394,8 +396,17 @@ class Behavior:
 
     def is_sleep_time(self):
         now = datetime.now()
-        start = now.replace(hour=0, minute=0, second=0) + self.logger.setup_info['start_time']
-        stop = now.replace(hour=0, minute=0, second=0) + self.logger.setup_info['stop_time']
+        start_time = self.logger.setup_info['start_time']
+        if isinstance(start_time, str):
+            dt = datetime.strptime(start_time, '%H:%M:%S')
+            start_time = timedelta(seconds=(dt.hour*3600 + dt.minute*60 + dt.second))
+        stop_time = self.logger.setup_info['stop_time']
+        if isinstance(stop_time, str):
+            dt = datetime.strptime(stop_time, '%H:%M:%S')
+            stop_time = timedelta(seconds=(dt.hour * 3600 + dt.minute * 60 + dt.second))
+
+        start = now.replace(hour=0, minute=0, second=0) + start_time
+        stop = now.replace(hour=0, minute=0, second=0) + stop_time
         if stop < start:
             stop = stop + timedelta(days=1)
         time_restriction = now < start or now > stop
