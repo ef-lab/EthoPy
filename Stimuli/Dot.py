@@ -37,7 +37,6 @@ class Dot(Stimulus, dj.Manual):
         self.curr_cond = curr_cond
         self.fill_colors.background = self.curr_cond['bg_level']
         self.Presenter.set_background_color(self.curr_cond['bg_level'])
-        #self.fill(self.curr_cond['bg_level'])
         width = self.monitor['resolution_x']
         height = self.monitor['resolution_y']
         x_start = self.curr_cond['dot_x'] * 2
