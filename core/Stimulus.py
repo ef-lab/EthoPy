@@ -76,7 +76,7 @@ class Stimulus:
         if np.size(screen_properties) > 0:
             self.monitor = screen_properties[0]
             if self.logger.is_pi:
-                cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % self.monitor['intensity']
+                cmd = 'echo %d > /sys/class/backlight/10-0045/brightness' % self.monitor['intensity']
                 os.system(cmd)
                 exp.interface.setup_touch_exit()
 
