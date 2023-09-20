@@ -101,3 +101,13 @@ def rgetattr(obj, attr, *args):
 def iterable(v):
     return np.array([v]) if type(v) not in [np.array, np.ndarray, list, tuple] else v
 
+
+class DictStruct:
+
+    def __init__(self, dictionary):
+        self.__dict__.update(**dictionary)
+
+    def set(self, dictionary):
+        for key, value in dictionary.items():
+            setattr(self, key, value)
+

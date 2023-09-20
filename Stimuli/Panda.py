@@ -117,11 +117,11 @@ class Panda(Stimulus, dj.Manual):
     def setup(self):
         ShowBase.__init__(self, fStartDirect=self.fStartDirect, windowType=self.windowType)
         self.props = core.WindowProperties()
-        if self.monitor['fullscreen']:
+        if self.monitor.fullscreen:
             self.props.setSize(self.pipe.getDisplayWidth(), self.pipe.getDisplayHeight())
             self.props.setFullscreen(self.Fullscreen)
         else:
-            self.props.setSize(self.monitor['resolution_x'], self.monitor['resolution_y'])
+            self.props.setSize(self.monitor.resolution_x, self.monitor.resolution_y)
         self.props.setCursorHidden(True)
         self.props.setUndecorated(True)
         self.win.requestProperties(self.props)

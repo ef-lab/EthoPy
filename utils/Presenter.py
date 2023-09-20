@@ -8,12 +8,12 @@ class Presenter():
     def __init__(self, monitor, background_color=(0, 0, 0)):
         if not pygame.get_init():
             pygame.init()
-        if monitor['fullscreen']:
+        if monitor.fullscreen:
             PROPERTIES = pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.FULLSCREEN | pygame.OPENGL
         else:
             PROPERTIES = pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.OPENGL
-        self.screen = pygame.display.set_mode((monitor['resolution_x'], monitor['resolution_y']),
-                                              PROPERTIES, display=monitor['screen_idx']-1)
+        self.screen = pygame.display.set_mode((monitor.resolution_x, monitor.resolution_y),
+                                              PROPERTIES, display=monitor.screen_idx-1)
         pygame.display.init()
         pygame.mouse.set_visible(0)
         self.clock = pygame.time.Clock()
@@ -106,8 +106,8 @@ class Presenter():
     def make_surface(self, array):
         return pygame.surfarray.make_surface(array)
 
-    def flip_clock(self, fps):
-        self.clock.tick_busy_loop(fps)
+    def tick(self, fps):
+        self.clock.tick(fps)
 
     def _surfaceToTexture(self, pygame_surface):
         rgb_surface = pygame.image.tostring(pygame_surface, 'RGB')

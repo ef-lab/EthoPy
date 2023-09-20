@@ -39,16 +39,12 @@ class Bar(Stimulus, dj.Manual):
 
     def setup(self):
         super().setup()
-        ymonsize = self.monitor['monitor_size'] * 2.54 / np.sqrt(1 + self.monitor['monitor_aspect'] ** 2)  # cm Y monitor size
-        monSize = [ymonsize * self.monitor['monitor_aspect'], ymonsize]
-        y_res = int(self.exp.params['max_res'] / self.monitor['monitor_aspect'])
+        ymonsize = self.monitor.monitor_size * 2.54 / np.sqrt(1 + self.monitor.monitor_aspect ** 2)  # cm Y monitor size
+        monSize = [ymonsize * self.monitor.monitor_aspect, ymonsize]
+        y_res = int(self.exp.params['max_res'] / self.monitor.monitor_aspect)
         self.monRes = [self.exp.params['max_res'], int(y_res + np.ceil(y_res % 2))]
-        self.FoV = np.arctan(np.array(monSize) / 2 / self.monitor['monitor_distance']) * 2 * 180 / np.pi  # in degrees
-        self.FoV[1] = self.FoV[0] / self.monitor['monitor_aspect']
-        self.color = (0, 0, 0)
-
-        # setup pygame
-        self.clock = pygame.time.Clock()
+        self.FoV = np.arctan(np.array(monSize) / 2 / self.monitor.monitor_distance) * 2 * 180 / np.pi  # in degrees
+        self.FoV[1] = self.FoV[0] / self.monitor.monitor_aspect
 
     def prepare(self, curr_cond):
         self.curr_cond = curr_cond
@@ -63,17 +59,17 @@ class Bar(Stimulus, dj.Manual):
         [self.cycles[abs(caxis - 1)], self.cycles[caxis]] = np.meshgrid(-Yspace/2/self.curr_cond['bar_width'],
                                                                         -Xspace/2/self.curr_cond['bar_width'])
         if self.curr_cond['flatness_correction']:
-            I_c, self.transform = flat2curve(self.cycles[0], self.monitor['monitor_distance'],
-                                             self.monitor['monitor_size'], method='index',
-                                             center_x=self.monitor['monitor_center_x'],
-                                             center_y=self.monitor['monitor_center_y'])
+            I_c, self.transform = flat2curve(self.cycles[0], self.monitor.monitor_distance,
+                                             self.monitor.monitor_size, method='index',
+                                             center_x=self.monitor.monitor_center_x,
+                                             center_y=self.monitor.monitor_center_y)
             self.BarOffset = -np.max(I_c) - 0.5
             deg_range = (np.ptp(I_c)+1)*self.curr_cond['bar_width']
         else:
             deg_range = (self.FoV[caxis] + self.curr_cond['bar_width'])   # in degrees
             self.transform = lambda x: x
             self.BarOffset = np.min(self.cycles[0]) - 0.5
-        self.nbFrames = np.ceil( deg_range / self.curr_cond['bar_speed'] * self.fps)
+        self.nbFrames = np.ceil( deg_range / self.curr_cond['bar_speed'] * self.monitor.fps)
         self.BarOffsetCyclesPerFrame = deg_range / self.nbFrames / self.curr_cond['bar_width']
 
         # compute fill parameters
@@ -83,10 +79,10 @@ class Bar(Stimulus, dj.Manual):
             VG2 = np.cos((2 * np.pi * X) - np.pi) > 0  # vertical grading with pi offset
             HG = np.cos(2 * np.pi * Y) > 0  # horizontal grading
             Grid = VG1 * HG + VG2 * (1 - HG)  # combine all
-            self.StimOffsetCyclesPerFrame = self.curr_cond['flash_speed'] / self.fps
+            self.StimOffsetCyclesPerFrame = self.curr_cond['flash_speed'] / self.monitor.fps
             self.generate = lambda x: abs(Grid - (np.cos(2 * np.pi * x) > 0))
         elif self.curr_cond['style'] == 'grating':
-            self.StimOffsetCyclesPerFrame = self.curr_cond['grat_freq'] / self.fps
+            self.StimOffsetCyclesPerFrame = self.curr_cond['grat_freq'] / self.monitor.fps
             self.generate = lambda x: np.cos(2 * np.pi * (self.cycles[1]*self.curr_cond['bar_width']/self.curr_cond['grat_width'] + x)) > 0  # vertical grading
         elif self.curr_cond['style'] == 'none':
             self.StimOffsetCyclesPerFrame = 1
@@ -103,7 +99,7 @@ class Bar(Stimulus, dj.Manual):
             self.curr_frame += 1
             self.StimOffset += self.StimOffsetCyclesPerFrame
             self.BarOffset += self.BarOffsetCyclesPerFrame
-            self.clock.tick_busy_loop(self.fps)
+            self.Presenter.tick(self.monitor.fps)
         else:
             self.isrunning = False
             self.fill()
