@@ -19,13 +19,13 @@ class Dot(Stimulus, dj.Manual):
 
     cond_tables = ['Dot']
     required_fields = ['dot_x', 'dot_y', 'dot_xsize', 'dot_ysize', 'dot_time']
-    default_key =  {'bg_level'              : 255,
+    default_key =  {'bg_level'              : 1,
                     'dot_level'             : 0,  # degrees
                     'dot_shape'             : 'rect'}
 
     def __init__(self):
         super().__init__()
-        self.fill_colors.background = (255, 255, 255)
+        self.fill_colors.background = (1, 1, 1)
 
     def prepare(self, curr_cond):
         self.curr_cond = curr_cond

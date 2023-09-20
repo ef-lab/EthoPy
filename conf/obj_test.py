@@ -25,6 +25,10 @@ cue_obj = [2, 2, 3, 3]
 resp_obj = [(3, 2), (2, 3), (3, 2), (2, 3)]
 rew_prob = [2, 1, 1, 2]
 reps = 2
+panda_obj = Panda()
+panda_obj.fill_colors.set({'background': (0, 0, 0),
+                      'start': (32, 32, 32),
+                      'punish': (0, 0, 0)})
 
 for irep in range(0, reps):
     for idx, obj_comb in enumerate(resp_obj):
@@ -38,7 +42,7 @@ for irep in range(0, reps):
         tilt_f = lambda: interp(np.random.rand(30)*30)
         yaw_f = lambda: interp(np.random.rand(20)*10)
 
-        conditions += exp.make_conditions(stim_class=Panda(), stim_periods=['Cue', 'Response'], conditions={
+        conditions += exp.make_conditions(stim_class=panda_obj, stim_periods=['Cue', 'Response'], conditions={
             'Cue': {
                 'obj_id'        : cue_obj[idx],
                 'obj_dur'       : 240000,

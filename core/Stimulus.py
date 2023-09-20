@@ -131,7 +131,7 @@ class Stimulus:
         if self.fill_colors.punish: self.fill(self.fill_colors.punish)
 
     def start_stim(self):
-        """Stim Cue for punishment"""
+        """Stim Cue for start"""
         if self.fill_colors.start: self.fill(self.fill_colors.start)
 
     def log_start(self):

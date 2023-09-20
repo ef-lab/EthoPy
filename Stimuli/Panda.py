@@ -98,7 +98,8 @@ class Panda(Stimulus, dj.Manual):
     def init(self, exp):
         super().init(exp)
         cls = self.__class__
-        self.__class__ = cls.__class__(cls.__name__ + "ShowBase", (cls, ShowBase), {})
+        if "ShowBase" not in cls.__name__:
+            self.__class__ = cls.__class__(cls.__name__ + "ShowBase", (cls, ShowBase), {})
         if self.logger.is_pi:
             self.fStartDirect = True
             self.windowType = None

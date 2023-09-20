@@ -28,7 +28,9 @@ class Logger:
     def __init__(self, protocol=False):
         self.setup = socket.gethostname()
         system = os.uname()
-        self.protocol = protocol if isinstance(protocol, str) and os.path.isfile(protocol) else []
+        if isinstance(protocol, str):
+            if not os.path.isfile(protocol): protocol = int(protocol)
+        self.protocol = protocol
         self.is_pi = system.machine.startswith("arm") or system.machine=='aarch64' if system.sysname == 'Linux' else False
         self.manual_run = True if protocol else False
         self.setup_status = 'running' if self.manual_run else 'ready'
@@ -157,7 +159,7 @@ class Logger:
         return (table() & key).fetch(*fields, **kwargs)
 
     def get_protocol(self, task_idx=None, raw_file=False):
-        if not task_idx and not self.protocol:
+        if not task_idx and not isinstance(self.protocol, str):
             task_idx = self.get_setup_info('task_idx')
             if not len(experiment.Task() & dict(task_idx=task_idx)) > 0: return False
             protocol = (experiment.Task() & dict(task_idx=task_idx)).fetch1('protocol')
