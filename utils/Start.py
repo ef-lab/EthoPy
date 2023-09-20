@@ -66,6 +66,7 @@ class PyWelcome():
                 self.main_menu.draw(self.screen)
 
             pygame.display.update()
+            pygame.time.wait(10)
 
         pygame_menu.events.CLOSE
         if pygame.get_init():
