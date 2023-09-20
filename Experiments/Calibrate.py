@@ -189,6 +189,8 @@ class Experiment:
                                 self.params['pulsenum'][cal_idx], self.curr, self.pressure)
 
                 self.create_pulsenum_menu()
+        else:
+            self.create_pulsenum_menu()
 
 
     def exit(self):
