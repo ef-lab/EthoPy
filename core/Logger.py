@@ -98,7 +98,7 @@ class Logger:
     def log_setup(self, task=False):
         rel = experiment.Control() & dict(setup=self.setup)
         key = rel.fetch1() if numpy.size(rel.fetch()) else dict(setup=self.setup)
-        key['task_idx'] = task if task and isinstance(task, int) else -1
+        if task and isinstance(task, int): key['task_idx'] = task
         key = {**key, 'ip': self.get_ip(), 'status': self.setup_status}
         self.put(table='Control', tuple=key, replace=True, priority=1, block=True, validate=True)
 
