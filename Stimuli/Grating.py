@@ -57,10 +57,10 @@ class Grating(Stimulus, dj.Manual):
                     image = self._make_grating(**cond)
                     images = image[:self.monitor.resolution_x, :self.monitor.resolution_y]
                     if cond['flatness_correction']:
-                        images, transform = flat2curve(images, self.monitor.monitor_distance,
-                                                    self.monitor.monitor_size, method='index',
-                                                    center_x=self.monitor.monitor_center_x,
-                                                       center_y=self.monitor.monitor_center_y)
+                        images, transform = flat2curve(images, self.monitor.distance,
+                                                    self.monitor.size, method='index',
+                                                    center_x=self.monitor.center_x,
+                                                       center_y=self.monitor.center_y)
                         images = self._gray2rgb(images)
                     else:
                         transform = lambda x: x
@@ -82,8 +82,8 @@ class Grating(Stimulus, dj.Manual):
         super().setup()
 
         # setup screen
-        ymonsize = self.monitor.monitor_size * 2.54 / np.sqrt(1 + self.monitor.monitor_aspect ** 2)  # cm Y monitor size
-        fov = np.arctan(ymonsize / 2 / self.monitor.monitor_distance) * 2 * 180 / np.pi  # Y FOV degrees
+        ymonsize = self.monitor.size * 2.54 / np.sqrt(1 + self.monitor.aspect ** 2)  # cm Y monitor size
+        fov = np.arctan(ymonsize / 2 / self.monitor.distance) * 2 * 180 / np.pi  # Y FOV degrees
         self.px_per_deg = self.monitor.resolution_y/fov
 
     def prepare(self, curr_cond):
@@ -96,10 +96,10 @@ class Grating(Stimulus, dj.Manual):
             image = self._make_grating(**curr_cond)
             image = image[:self.monitor.resolution_x, :self.monitor.resolution_y]
             if curr_cond['flatness_correction']:
-                image, transform = flat2curve(image, self.monitor.monitor_distance,
-                                          self.monitor.monitor_size, method='index',
-                                          center_x=self.monitor.monitor_center_x,
-                                          center_y=self.monitor.monitor_center_y)
+                image, transform = flat2curve(image, self.monitor.distance,
+                                          self.monitor.size, method='index',
+                                          center_x=self.monitor.center_x,
+                                          center_y=self.monitor.center_y)
                 image = image[:self.monitor.resolution_x, :self.monitor.resolution_y]
             self.grating = self.Presenter.make_surface(self._gray2rgb(image, 3))
         else:
