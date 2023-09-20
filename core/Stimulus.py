@@ -65,26 +65,21 @@ class Stimulus:
 
     cond_tables, required_fields, default_key, curr_cond, conditions, timer = [], [], dict(), dict(), [], Timer()
     period, isrunning, flip_count = 'Trial', False, 0
-
-    def __init__(self):
-        self.fill_colors = FillColors()
+    fill_colors = DictStruct({'start': [], 'ready': [], 'reward': [], 'punish': [], 'background': (0, 0, 0)})
 
     def init(self, exp):
         """store parent objects """
         self.logger = exp.logger
         self.exp = exp
         screen_properties = self.logger.get(table='SetupConfiguration.Screen', key=self.exp.params, as_dict=True)
-        if np.size(screen_properties) > 0:
-            self.monitor = screen_properties[0]
-            if self.logger.is_pi:
-                cmd = 'echo %d > /sys/class/backlight/10-0045/brightness' % self.monitor['intensity']
-                os.system(cmd)
-                exp.interface.setup_touch_exit()
+        self.monitor = DictStruct(screen_properties[0])
+        if self.logger.is_pi:
+            cmd = 'echo %d > /sys/class/backlight/10-0045/brightness' % self.monitor.intensity
+            os.system(cmd)
+            exp.interface.setup_touch_exit()
 
     def setup(self):
         """setup stimulation for presentation before experiment starts"""
-        self.size = (self.monitor['resolution_x'], self.monitor['resolution_y'])
-        self.fps = self.monitor['fps']
         self.Presenter = Presenter(self.monitor, background_color=self.fill_colors.background)
 
     def prepare(self, curr_cond=False, stim_period=''):
@@ -155,11 +150,3 @@ class Stimulus:
                                        condition_tables=['StimCondition'] + self.cond_tables)
         self.conditions += conditions
         return conditions
-
-
-class FillColors():
-    start, ready, reward, punish, background = [], [], [], [], (0, 0, 0)
-
-    def set(self, dictionary):
-        for key, value in dictionary.items():
-            setattr(self, key, value)

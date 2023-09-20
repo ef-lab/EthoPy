@@ -41,7 +41,7 @@ class Movies(Stimulus, dj.Manual):
         if self.timer.elapsed_time() < self.curr_cond['movie_duration']:
             surface = pygame.image.frombuffer(self.vid.get_next_data(), self.vsize, "RGB")
             self.Presenter.render(surface)
-            self.Presenter.flip_clock(self.vfps)
+            self.Presenter.tick(self.vfps)
             self.curr_frame += 1
         else:
             self.isrunning = False
