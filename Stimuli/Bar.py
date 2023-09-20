@@ -39,12 +39,12 @@ class Bar(Stimulus, dj.Manual):
 
     def setup(self):
         super().setup()
-        ymonsize = self.monitor.monitor_size * 2.54 / np.sqrt(1 + self.monitor.monitor_aspect ** 2)  # cm Y monitor size
-        monSize = [ymonsize * self.monitor.monitor_aspect, ymonsize]
-        y_res = int(self.exp.params['max_res'] / self.monitor.monitor_aspect)
+        ymonsize = self.monitor.size * 2.54 / np.sqrt(1 + self.monitor.aspect ** 2)  # cm Y monitor size
+        monSize = [ymonsize * self.monitor.aspect, ymonsize]
+        y_res = int(self.exp.params['max_res'] / self.monitor.aspect)
         self.monRes = [self.exp.params['max_res'], int(y_res + np.ceil(y_res % 2))]
-        self.FoV = np.arctan(np.array(monSize) / 2 / self.monitor.monitor_distance) * 2 * 180 / np.pi  # in degrees
-        self.FoV[1] = self.FoV[0] / self.monitor.monitor_aspect
+        self.FoV = np.arctan(np.array(monSize) / 2 / self.monitor.distance) * 2 * 180 / np.pi  # in degrees
+        self.FoV[1] = self.FoV[0] / self.monitor.aspect
 
     def prepare(self, curr_cond):
         self.curr_cond = curr_cond
@@ -59,10 +59,10 @@ class Bar(Stimulus, dj.Manual):
         [self.cycles[abs(caxis - 1)], self.cycles[caxis]] = np.meshgrid(-Yspace/2/self.curr_cond['bar_width'],
                                                                         -Xspace/2/self.curr_cond['bar_width'])
         if self.curr_cond['flatness_correction']:
-            I_c, self.transform = flat2curve(self.cycles[0], self.monitor.monitor_distance,
-                                             self.monitor.monitor_size, method='index',
-                                             center_x=self.monitor.monitor_center_x,
-                                             center_y=self.monitor.monitor_center_y)
+            I_c, self.transform = flat2curve(self.cycles[0], self.monitor.distance,
+                                             self.monitor.size, method='index',
+                                             center_x=self.monitor.center_x,
+                                             center_y=self.monitor.center_y)
             self.BarOffset = -np.max(I_c) - 0.5
             deg_range = (np.ptp(I_c)+1)*self.curr_cond['bar_width']
         else:

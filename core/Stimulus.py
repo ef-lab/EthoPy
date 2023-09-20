@@ -17,15 +17,15 @@ class Configuration(dj.Manual):
         screen_idx               : tinyint
         ---
         intensity                : tinyint UNSIGNED 
-        monitor_distance         : float
-        monitor_center_x         : float
-        monitor_center_y         : float
-        monitor_aspect           : float
-        monitor_size             : float
+        distance         : float
+        center_x         : float
+        center_y         : float
+        aspect           : float
+        size             : float
         fps                      : tinyint UNSIGNED
         resolution_x             : smallint
         resolution_y             : smallint
-        discription              : varchar(256)
+        description              : varchar(256)
         """
 
     class Speaker(dj.Part):
