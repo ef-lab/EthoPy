@@ -186,7 +186,7 @@ class Panda(Stimulus, dj.Manual):
 
     def start(self):
         if self.flag_no_stim: return
-
+        self.fill()
         if not self.isrunning:
             self.timer.start()
             self.isrunning = True
