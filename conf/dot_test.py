@@ -17,7 +17,7 @@ exp.setup(logger, Behavior, session_params)
 
 # define stimulus conditions
 key = {
-    'bg_level'              : [[255, 255, 255]],
+    'bg_level'              : [[1, 1, 1]],
     'dot_level'             : [[0, 0, 0]],
     'dot_x'                 : list(np.linspace(-.45, .45, 10)),
     'dot_y'                 : list(np.linspace(-.27, .27, 6)),

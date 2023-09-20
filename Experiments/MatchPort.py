@@ -71,7 +71,8 @@ class PreTrial(Experiment):
         self.stim.prepare(self.curr_cond)
         self.beh.prepare(self.curr_cond)
         super().entry()
-        self.stim.start_stim()
+        if self.curr_cond['init_ready'] > 0:
+            self.stim.start_stim()
 
     def run(self):
         if not self.is_stopped() and self.beh.is_ready(self.curr_cond['init_ready'], self.start_time):

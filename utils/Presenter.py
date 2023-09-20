@@ -24,7 +24,9 @@ class Presenter():
         self.info = pygame.display.Info()
         self.texID = glGenTextures(1)
         self.offscreen_surface = pygame.Surface((self.info.current_w, self.info.current_h))
-        self.offscreen_surface.fill(self.background_color)
+        self.offscreen_surface.fill((self.background_color[0]*255,
+                                     self.background_color[1]*255,
+                                     self.background_color[2]*255))
 
         glViewport(0, 0, self.info.current_w, self.info.current_h)
         glDepthRange(0, 1)
@@ -32,7 +34,7 @@ class Presenter():
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         glShadeModel(GL_SMOOTH)
-        glClearColor(self.background_color[0]/255, self.background_color[1]/255, self.background_color[2]/255, 0.0)
+        glClearColor(self.background_color[0], self.background_color[1], self.background_color[2], 0.0)
         glClearDepth(1.0)
         glDisable(GL_DEPTH_TEST)
         glDisable(GL_LIGHTING)
@@ -43,7 +45,7 @@ class Presenter():
 
     def set_background_color(self, color):
         self.background_color = color
-        glClearColor(color[0]/255, color[1]/255, color[2]/255, 0.0)
+        glClearColor(color[0], color[1], color[2], 0.0)
 
     def render(self, surface):
         glClear(GL_COLOR_BUFFER_BIT)
@@ -81,21 +83,18 @@ class Presenter():
         glDisable(GL_LIGHTING)
         glEnable(GL_TEXTURE_2D)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        glClearColor(self.background_color[0] / 255, self.background_color[1] / 255, self.background_color[2] / 255,
-                     0.0)
+        glClearColor(self.background_color[0], self.background_color[1], self.background_color[2], 0.0)
         # draw rectangle
         glDisable(GL_TEXTURE_2D)
-        glColor3fv((color[0]/255, color[1]/255, color[2]/255))
+        glColor3fv(color)
         glRectf(rect[0], rect[1], rect[2], rect[3])
         self.flip()
-        glColor3fv((self.background_color[0] / 255,
-                    self.background_color[1] / 255,
-                    self.background_color[2] / 255))
+        glColor3fv(self.background_color)
 
     def fill(self, color=False):
         if not color:
             color = self.background_color
-        self.offscreen_surface.fill(color)
+        self.offscreen_surface.fill((color[0]*255, color[0]*255, color[0]*255))
         self.render(self.offscreen_surface)
 
     def flip(self):
