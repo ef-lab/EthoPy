@@ -74,6 +74,9 @@ class DummyPorts(Interface):
     def load_calibration(self):
         pass
 
+    def setup_touch_exit(self):
+        pass
+
     def calc_pulse_dur(self, reward_amount):
         actual_rew = dict()
         for port in self.rew_ports:
