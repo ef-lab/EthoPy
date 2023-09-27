@@ -6,6 +6,7 @@ from OpenGL.GL import *
 class Presenter():
 
     def __init__(self, monitor, background_color=(0, 0, 0)):
+        global pygame
         if not pygame.get_init():
             pygame.init()
         if monitor.fullscreen:
