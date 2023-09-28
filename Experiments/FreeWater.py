@@ -47,6 +47,7 @@ class Trial(Experiment):
         self.beh.prepare(self.curr_cond)
         super().entry()
         self.stim.start()
+        self.stim.start_stim()
 
     def run(self):
         time.sleep(.01)
@@ -98,7 +99,7 @@ class InterTrial(Experiment):
             return 'InterTrial'
 
     def exit(self):
-        self.stim.ready_stim()
+        self.stim.start_stim()
 
 
 class Offtime(Experiment):
