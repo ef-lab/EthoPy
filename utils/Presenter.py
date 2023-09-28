@@ -6,8 +6,8 @@ from OpenGL.GL import *
 class Presenter():
 
     def __init__(self, monitor, background_color=(0, 0, 0)):
-        if not pygame.get_init():
-            pygame.init()
+        global pygame
+        if not pygame.get_init(): pygame.init()
         if monitor.fullscreen:
             PROPERTIES = pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.FULLSCREEN | pygame.OPENGL
         else:

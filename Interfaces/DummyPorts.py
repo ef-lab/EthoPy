@@ -5,11 +5,12 @@ from core.Interface import *
 class DummyPorts(Interface):
     def __init__(self, **kwargs):
         super(DummyPorts, self).__init__(**kwargs)
-        pygame.init()
-        self.dummy_ports = {'left_port'       : [pygame.KEYDOWN, pygame.K_LEFT],
-                            'right_port'      : [pygame.KEYDOWN, pygame.K_RIGHT],
-                            'proximity_true'  : [pygame.KEYDOWN, pygame.K_SPACE],
-                            'proximity_false' : [pygame.KEYUP, pygame.K_SPACE]}
+        global pygame
+        if not pygame.get_init(): pygame.init()
+        self.dummy_ports = {'left_port'       : [pygame.KEYDOWN, 'left'],
+                            'right_port'      : [pygame.KEYDOWN, 'right'],
+                            'proximity_true'  : [pygame.KEYDOWN, 'space'],
+                            'proximity_false' : [pygame.KEYUP, 'space']}
 
     def in_position(self):
         self._get_events()
@@ -67,11 +68,14 @@ class DummyPorts(Interface):
 
     def dummy_ports_true(self, event, name):
         if event.type == self.dummy_ports[name][0]:
-            if event.key == self.dummy_ports[name][1]:
+            if pygame.key.name(event.key) == self.dummy_ports[name][1]:
                 return True
         return False
 
     def load_calibration(self):
+        pass
+
+    def setup_touch_exit(self):
         pass
 
     def calc_pulse_dur(self, reward_amount):
