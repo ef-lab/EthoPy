@@ -8,6 +8,8 @@ class DummyPorts(Interface):
         global pygame
         if not pygame.get_init():
             pygame.init()
+        else:
+            print('pygame already initiated!')
         self.dummy_ports = {'left_port'       : [pygame.KEYDOWN, 'left'],
                             'right_port'      : [pygame.KEYDOWN, 'right'],
                             'proximity_true'  : [pygame.KEYDOWN, 'space'],

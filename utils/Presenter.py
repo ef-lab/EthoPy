@@ -9,6 +9,8 @@ class Presenter():
         global pygame
         if not pygame.get_init():
             pygame.init()
+        else:
+            print('pygame already initiated! (Presenter)')
         if monitor.fullscreen:
             PROPERTIES = pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.FULLSCREEN | pygame.OPENGL
         else:
