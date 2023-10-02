@@ -1,11 +1,11 @@
 from Stimuli.Opto import *
-from Experiments.MatchPort import *
+from Experiments.Passive import *
 from Behaviors.HeadFixed import *
 
 
 # define session parameters
 session_params = {
-    'setup_conf_idx'     : 0,
+    'setup_conf_idx'     : 1,
     'trial_selection'    : 'fixed',
 }
 
