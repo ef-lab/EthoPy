@@ -6,13 +6,15 @@ from core.Interface import *
 from Interfaces.Camera import PiCamera
 import multiprocessing as mp
 
+
 class RPPorts(Interface):
     channels = {'Odor': {1: 24, 2: 25},
                 'Liquid': {1: 22, 2: 23},
                 'Lick': {1: 17, 2: 27},
                 'Proximity': {3: 9, 1: 5, 2: 6},
                 'Sound': {1: 13},
-                'Sync': {'in': 21, 'rec': 26},
+                'Sync': {'in': 21, 'rec': 26, 'out': 16},
+                'Opto': 19,
                 'Running': 20}
 
     def __init__(self, **kwargs):
@@ -46,6 +48,8 @@ class RPPorts(Interface):
                                                callback=self._position_change, bouncetime=50)
         if 'Odor' in self.channels:
             self.GPIO.setup(list(self.channels['Odor'].values()), self.GPIO.OUT, initial=self.GPIO.LOW)
+        if 'Opto' in self.channels:
+            self.GPIO.setup(self.channels['Opto'], self.GPIO.OUT, initial=self.GPIO.LOW)
         if 'Liquid' in self.channels:
             for channel in self.channels['Liquid']:
                 self.Pulser.set_mode(self.channels['Liquid'][channel], pigpio.OUTPUT)
@@ -54,6 +58,8 @@ class RPPorts(Interface):
                 self.Pulser.set_mode(self.channels['Sound'][channel], pigpio.OUTPUT)
         if 'Running' in self.channels:
             self.GPIO.setup(self.channels['Running'], self.GPIO.OUT, initial=self.GPIO.LOW)
+        if 'Sync' in self.channels and 'out' in self.channels['Sync']:
+            self.GPIO.setup(self.channels['Sync']['out'], self.GPIO.OUT, initial=self.GPIO.LOW)
 
         if self.exp.sync:
             source_path = '/home/eflab/Sync/'
@@ -97,13 +103,19 @@ class RPPorts(Interface):
         for i, idx in enumerate(odor_id):
             self.thread.submit(self.__pwd_out, self.channels['Odor'][delivery_port[i]], odor_duration, dutycycle[i])
 
+    def opto_stim(self, duration, dutycycle):
+        self.thread.submit(self.__pwd_out, self.channels['Opto'], duration, dutycycle)
+
+    def sync_out(self, state=True):
+        self.GPIO.output(self.channels['Sync']['out'], state)
+
     def give_sound(self, sound_freq=40500, volume=100, pulse_freq=0):
         self.thread.submit(self.__pulse_out, self.channels['Sound'][1], sound_freq, volume, pulse_freq)
 
     def stop_sound(self):
-        self.Pulser.wave_tx_stop()# stop waveform
-        self.Pulser.write(self.channels['Sound'][1],0)
-        self.Pulser.wave_clear()# clear all waveforms
+        self.Pulser.wave_tx_stop()
+        self.Pulser.write(self.channels['Sound'][1], 0)
+        self.Pulser.wave_clear()
 
     def setup_touch_exit(self):
         try:
