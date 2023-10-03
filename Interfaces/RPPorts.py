@@ -13,7 +13,7 @@ class RPPorts(Interface):
                 'Lick': {1: 17, 2: 27},
                 'Proximity': {3: 9, 1: 5, 2: 6},
                 'Sound': {1: 13},
-                'Sync': {'in': 21, 'rec': 26},
+                'Sync': {'in': 21, 'rec': 26, 'out': 16},
                 'Opto': 19,
                 'Running': 20}
 
@@ -58,6 +58,8 @@ class RPPorts(Interface):
                 self.Pulser.set_mode(self.channels['Sound'][channel], pigpio.OUTPUT)
         if 'Running' in self.channels:
             self.GPIO.setup(self.channels['Running'], self.GPIO.OUT, initial=self.GPIO.LOW)
+        if 'Sync' in self.channels and 'out' in self.channels['Sync']:
+            self.GPIO.setup(self.channels['Sync']['out'], self.GPIO.OUT, initial=self.GPIO.LOW)
 
         if self.exp.sync:
             source_path = '/home/eflab/Sync/'
@@ -103,6 +105,9 @@ class RPPorts(Interface):
 
     def opto_stim(self, duration, dutycycle):
         self.thread.submit(self.__pwd_out, self.channels['Opto'], duration, dutycycle)
+
+    def sync_out(self, state=True):
+        self.GPIO.output(self.channels['Sync']['out'], state)
 
     def give_sound(self, sound_freq=40500, volume=100, pulse_freq=0):
         self.thread.submit(self.__pulse_out, self.channels['Sound'][1], sound_freq, volume, pulse_freq)
