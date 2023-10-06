@@ -115,7 +115,6 @@ class Panda(Stimulus, dj.Manual):
         self.fill_colors.background_color = (0, 0, 0)
 
     def setup(self):
-        super().setup()
         ShowBase.__init__(self, fStartDirect=self.fStartDirect, windowType=self.windowType)
         self.props = core.WindowProperties()
         if self.monitor.fullscreen:

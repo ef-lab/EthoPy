@@ -1,4 +1,4 @@
-import numpy, socket, json, os, pathlib, threading, subprocess, time
+import numpy, socket, json, os, pathlib, threading, subprocess, time, platform
 from queue import PriorityQueue
 from datetime import datetime
 from dataclasses import dataclass
@@ -27,11 +27,11 @@ class Logger:
 
     def __init__(self, protocol=False):
         self.setup = socket.gethostname()
-        system = os.uname()
+        system = platform.uname()
         if isinstance(protocol, str):
             if not os.path.isfile(protocol): protocol = int(protocol)
         self.protocol = protocol
-        self.is_pi = system.machine.startswith("arm") or system.machine=='aarch64' if system.sysname == 'Linux' else False
+        self.is_pi = system.machine.startswith("arm") or system.machine=='aarch64' if system.system == 'Linux' else False
         self.manual_run = True if protocol else False
         self.setup_status = 'running' if self.manual_run else 'ready'
         con_info = dj.conn.connection.conn_info
