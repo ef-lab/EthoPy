@@ -1,7 +1,7 @@
 from core.Logger import *
 import itertools
 import matplotlib.pyplot as plt
-
+import warnings
 
 class State:
     state_timer, __shared_state = Timer(), {}
@@ -29,7 +29,7 @@ class State:
 
 class ExperimentClass:
     """  Parent Experiment """
-    curr_state, curr_trial, total_reward, cur_dif, flip_count, states, stim, sync = '', 0, 0, 0, 0, dict(), False, False
+    curr_state, curr_trial, total_reward, cur_dif, flip_count, states, stim, sync, cur_dif_h = '', 0, 0, 0, 0, dict(), False, False, []
     un_choices, difs, iter, curr_cond, dif_h, stims, response, resp_ready = [], [], [], dict(), [], dict(), [], False
     required_fields, default_key, conditions, cond_tables, quit, running = [], dict(), [], [], False, False
 
@@ -66,6 +66,12 @@ class ExperimentClass:
         self.beh.setup(self)
         self.interface = self.beh.interface
         self.session_timer = Timer()
+        self.transition_cond = ExperimentClass.TransitionMethods(transition_method=self.params['transition_method'], 
+                                                                sliding=self.params['sliding'],
+                                                                criterion=self.params['criterion_method'],
+                                                                params=self.params)
+
+        self.select_cond  = ExperimentClass.SelectConditions(experiment_class=self, selection_type=self.params['selection_type'])
         np.random.seed(0)   # fix random seed for repeatability, it can be overidden in the conf file
 
     def start(self):
@@ -77,7 +83,6 @@ class ExperimentClass:
         state_control.run()
 
     def stop(self):
-        self.release()
         self.stim.exit()
         self.beh.exit()
         self.logger.ping(0)
@@ -200,44 +205,182 @@ class ExperimentClass:
         return np.random.choice(un_choices, 1, p=fixed_p/sum(fixed_p))
 
     def _get_new_cond(self):
-        """ Get curr condition & create random block of all conditions """
-        if self.params['trial_selection'] == 'fixed':
-            self.curr_cond = [] if len(self.conditions) == 0 else self.conditions.pop()
-        elif self.params['trial_selection'] == 'block':
-            if np.size(self.iter) == 0: self.iter = np.random.permutation(np.size(self.conditions))
-            cond = self.conditions[self.iter[0]]
-            self.iter = self.iter[1:]
-            self.curr_cond = cond
-        elif self.params['trial_selection'] == 'random':
-            self.curr_cond = np.random.choice(self.conditions)
-        elif self.params['trial_selection'] == 'biased':
-            idx = [~np.isnan(ch).any() for ch in self.beh.choice_history]
-            choice_h = np.asarray(self.beh.choice_history)
-            anti_bias = self._anti_bias(choice_h[idx], self.un_choices)
-            selected_conditions = [i for (i, v) in zip(self.conditions, self.choices == anti_bias) if v]
-            self.curr_cond = np.random.choice(selected_conditions)
-        elif self.params['trial_selection'] == 'staircase':
-            idx = np.logical_or(~np.isnan(self.beh.reward_history), ~np.isnan(self.beh.punish_history))
-            rew_h = np.asarray(self.beh.reward_history); rew_h = rew_h[idx]
-            choice_h = np.int64(np.asarray(self.beh.choice_history)[idx])
-            choice_h = [[c, d] for c, d in zip(choice_h, np.asarray(self.dif_h)[idx])]
-            if self.iter == 1 or np.size(self.iter) == 0:
-                if (self.beh.choice_history[-1:][0]>0 if np.size(self.beh.choice_history)!=0 else True):
-                    self.iter = self.params['staircase_window']
-                    perf = np.nanmean(np.greater(rew_h[-self.params['staircase_window']:], 0))
-                    if   perf >= self.params['stair_up']   and self.cur_dif < max(self.difs):  self.cur_dif += 1
-                    elif perf < self.params['stair_down'] and self.cur_dif > 1:  self.cur_dif -= 1
-                    self.logger.update_setup_info({'difficulty': self.cur_dif})
-            elif np.size(self.beh.choice_history) and self.beh.choice_history[-1:][0] > 0: self.iter -= 1
-            anti_bias = self._anti_bias(choice_h, self.un_choices[self.un_difs == self.cur_dif])
-            sel_conds = [i for (i, v) in zip(self.conditions, np.logical_and(self.choices == anti_bias,
-                                                       self.difs == self.cur_dif)) if v]
-            self.curr_cond = np.random.choice(sel_conds)
-            self.dif_h.append(self.cur_dif)
-        else:
-            print('Selection method not implemented!')
-            self.quit = True
+        """_get_new_cond selects the condition for the trial starts 
+        at prepare_trial which is called most commonly on the PreTrial
 
+        _extended_summary_
+        It is consists of 2 main steps:
+        1. according to transition define the cur_block
+        2. select the correct condition based on block and the type of selection 
+        """
+        # if the window has pass checks if the session must move on next difficulty
+        self.cur_dif = self.transition_cond.select(self.beh.choice_history,
+                                                    self.beh.reward_history, 
+                                                    self.beh.punish_history, 
+                                                    self.cur_dif, self.difs)
+        self.logger.update_setup_info({'difficulty': self.cur_dif})
+        self.curr_cond = self.select_cond.select()
+        
+    class TransitionMethods():
+        def __init__(self, transition_method:str="staircase", 
+                    sliding:bool=True, 
+                    criterion:str="performace",
+                    params=None):
+
+                # implemented transition methods
+                self.transition_dict = {"staircase" : self.staircase,
+                                        "None"       : lambda *var: None}
+                self.sliding = sliding
+                self.params = params
+                self.window_size = params['window_size']
+                self.block_upgrade = params['block_upgrade']
+                self.block_downgrade = params['block_downgrade']
+                
+                self.criterion = criterion
+                self.transition_method = self.transition_dict.get(transition_method, self.NonImplemented)
+                print("self.transition_method ",transition_method)
+                print("criterion_method", self.criterion)
+                if transition_method=="None" and transition_method!=self.criterion: 
+                    raise Exception("if transition_method!=None you must specify a criterion_method")
+                    
+                self.block_counter = 0 # count the the block size at every trial
+
+        def select(self, choice_history, reward_history, punish_history, cur_dif, difs):
+            # check if it's not the first trial and the trial=(reward or punish) 
+            trial_choice = np.size(choice_history) and choice_history[-1:][0] > 0
+
+            if self.window(trial_choice):
+                diff_temp = cur_dif
+                criterion_result = self.criterion_method(self.criterion, reward_history, punish_history)
+                cur_dif = self.transition_method(criterion_result, cur_dif, difs)
+                if diff_temp!=cur_dif and self.sliding==True: self.block_counter=0 # when change block reset counter
+                print("criterion_result ", criterion_result)
+            print("cur_dif ", cur_dif)
+            print("self.block_counter ", self.block_counter)
+            return cur_dif
+
+        def window(self, trial_choice, *args):
+            """window if the size of trials(reward or punish) are equal 
+                to window size return True
+            
+            Args:
+                trial_choice(bool): check if it's not the first trial and the trial=reward or punish 
+            Returns:
+                bool:
+            """
+            if trial_choice: self.block_counter += 1
+            if self.block_counter>=self.window_size:
+                if self.sliding==False: self.block_counter=0
+                return True
+            return False
+        
+        def staircase(self, criterion_result, cur_dif, difs):
+            """staircase increase or decrease the difficulty based on criterion until 
+                difficulty is max
+            If difficukty pass 0 it cannot return. Negative values can also be used.
+            Args:
+                criterion_result (float): the result of the criterion 
+                cur_dif (int): current difficulty
+                difs (list): all the difficulties
+
+            Returns:
+                (int): the next difficulty
+            """
+            if   criterion_result >= self.block_upgrade   and cur_dif < max(difs): cur_dif = self.succeed_block(cur_dif, "Upgrade")
+            elif criterion_result <self.block_downgrade and cur_dif > 1: cur_dif = self.succeed_block(cur_dif, "Downgrade")
+            return cur_dif
+
+        def criterion_method(self, criterion_method, reward_history, punish_history)->float:
+            """criterion_method return a float based on criterion_result
+            Args:
+                criterion (str): 
+                reward_history (list): list with rewards
+                punish_history (list): list with bool if trial is punish else nan
+
+            Raises:
+                NotImplementedError: if criterion is not implemented
+
+            Returns:
+                float:
+            """
+            if criterion_method == "performance":
+                # check the performace of the last n=window_size trials
+                idx = np.logical_or(~np.isnan(reward_history), ~np.isnan(punish_history))
+                rew_h  = np.asarray(reward_history)[idx]
+                return np.nanmean(np.greater(rew_h[-self.window_size:], 0))
+            elif criterion_method == "None":
+                return True
+            else:
+                raise NotImplementedError("criterion_method method on TransitionMethods class is not implemented!")
+        
+        def succeed_block(self,cur_dif, next_type='Upgrade'):
+            """this method is responsible for the next_type
+            for example it can be a model respoble for this"""
+            if next_type=="Upgrade":
+                return cur_dif+1
+            elif next_type=="Downgrade":
+                return cur_dif-1
+
+        def NonImplemented(self,*args):
+            raise NotImplementedError("TransitionMethods method is Not Implemented")
+
+
+    class SelectConditions():
+        def __init__(self, experiment_class, selection_type):
+            """__init__ 
+
+            Args:
+                experiment_class (object): 
+                selection_type (str): type of selection(fix,random,antibias,block)
+            """
+            self.exp_cls = experiment_class
+            self.select_dict = {"fix"     : self.fix,
+                                "random"   : self.random,
+                                "antibias" : self.antibias,
+                                "block"    : self.block}
+            self.select_cond_func = self.select_dict.get(selection_type, self.NonImplemented)
+
+        def select(self):
+            return self.select_cond_func()
+        
+        def fix(self):
+            """fix select conditions in fix order based in configuration until they finish
+            """
+            return [] if len(self.exp_cls.conditions) == 0 else self.exp_cls.conditions.pop()
+
+        def random(self):
+            """random select a condtion randomnly according to the difficulty
+            """
+            sel_conds = [i for (i, v) in zip(self.exp_cls.conditions, self.exp_cls.difs == self.exp_cls.cur_dif) if v]
+            return np.random.choice(sel_conds)
+            
+        def antibias(self):
+            """antibias select randomly from the conditions contractive to the bias of the animal
+            """
+            # find indexes for reward/punish only trials
+            idx = np.logical_or(~np.isnan(self.exp_cls.beh.reward_history), ~np.isnan(self.exp_cls.beh.punish_history))         
+            choice_h = np.int64(np.asarray(self.exp_cls.beh.choice_history)[idx])
+            # create a list with choice and difficulty for previous trials
+            choice_h = [[c, d] for c, d in zip(choice_h, np.asarray(self.exp_cls.dif_h)[idx])]
+            #use anti_bias to select next condition
+            anti_bias = self.exp_cls._anti_bias(choice_h, self.exp_cls.un_choices[self.exp_cls.un_difs == self.exp_cls.cur_dif])
+ 
+            sel_conds = [i for (i, v) in zip(self.exp_cls.conditions, np.logical_and(self.exp_cls.choices == anti_bias,
+                                                    self.exp_cls.difs == self.exp_cls.cur_dif)) if v]
+            self.exp_cls.dif_h.append(self.exp_cls.cur_dif)
+            return np.random.choice(sel_conds)
+
+        def block(self):
+            """block select all conditions randomly one by one and when they finish repeat
+            """
+            if np.size(self.exp_cls.iter) == 0 or np.size(self.exp_cls.beh.choice_history)==0: 
+                self.exp_cls.iter = np.random.permutation(np.size(self.exp_cls.conditions))
+            cond = self.exp_cls.conditions[self.iter[0]]
+            self.exp_cls.iter = self.exp_cls.iter[1:]
+            return cond
+
+        def NonImplemented(self,*args):
+            raise NotImplementedError("SelectConditions method is Not Implemented")
 
 @experiment.schema
 class Session(dj.Manual):
@@ -314,7 +457,7 @@ class Trial(dj.Manual):
         definition = """
         # Trial state timestamps
         -> Trial
-        time			    : int 	            # time from session start (ms)
+        time                : int               # time from session start (ms)
         state               : varchar(64)
         """
 
