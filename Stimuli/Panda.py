@@ -112,6 +112,9 @@ class Panda(Stimulus, dj.Manual):
             self.Fullscreen = False
             self.path = '\\Stimuli\\objects\\'  # default path to copy local stimuli
             self.movie_path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
+
+        if not os.path.isdir(self.movie_path): os.mkdir(self.movie_path)
+
         self.fill_colors.background_color = (0, 0, 0)
 
     def setup(self):
@@ -176,6 +179,7 @@ class Panda(Stimulus, dj.Manual):
             self.mov_texture = loader.loadTexture(self.movie_path + file_name[0])
             cm = CardMaker("card")
             tx_scale = self.mov_texture.getTexScale()
+            print('tx_scale',tx_scale)
             cm.setFrame(-1, 1, -tx_scale[1]/tx_scale[0], tx_scale[1]/tx_scale[0])
             self.movie_node = NodePath(cm.generate())
             self.movie_node.setTexture(self.mov_texture, 1)
