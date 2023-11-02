@@ -179,7 +179,6 @@ class Panda(Stimulus, dj.Manual):
             self.mov_texture = loader.loadTexture(self.movie_path + file_name[0])
             cm = CardMaker("card")
             tx_scale = self.mov_texture.getTexScale()
-            print('tx_scale',tx_scale)
             cm.setFrame(-1, 1, -tx_scale[1]/tx_scale[0], tx_scale[1]/tx_scale[0])
             self.movie_node = NodePath(cm.generate())
             self.movie_node.setTexture(self.mov_texture, 1)
