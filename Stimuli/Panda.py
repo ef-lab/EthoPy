@@ -104,15 +104,14 @@ class Panda(Stimulus, dj.Manual):
             self.fStartDirect = True
             self.windowType = None
             self.Fullscreen = True
-            self.path = os.path.dirname(os.path.abspath(__file__)) + '/objects/'  # default path to copy local stimuli
-            self.movie_path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
         else:
             self.fStartDirect = False
             self.windowType = 'onscreen'
             self.Fullscreen = False
-            self.path = os.path.dirname(os.path.abspath(__file__)) + '/objects/'  # default path to copy local stimuli
-            self.movie_path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
-            self.record_path = os.path.dirname(os.path.abspath(__file__)) + '/recorded/'
+
+        self.path = os.path.dirname(os.path.abspath(__file__)) + '/objects/'  # default path to copy local stimuli
+        self.movie_path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
+        self.record_path = os.path.dirname(os.path.abspath(__file__)) + '/recorded/'
 
         if not os.path.isdir(self.path): os.mkdir(self.path)
         if not os.path.isdir(self.movie_path): os.mkdir(self.movie_path)
