@@ -93,7 +93,7 @@ class Panda(Stimulus, dj.Manual):
                    'obj_yaw': 0,
                    'obj_delay': 0}
 
-    object_files = dict()
+    object_files, record = dict(), False
 
     def init(self, exp):
         super().init(exp)
@@ -110,12 +110,16 @@ class Panda(Stimulus, dj.Manual):
             self.fStartDirect = False
             self.windowType = 'onscreen'
             self.Fullscreen = False
-            self.path = '\\Stimuli\\objects\\'  # default path to copy local stimuli
+            self.path = os.path.dirname(os.path.abspath(__file__)) + '/objects/'  # default path to copy local stimuli
             self.movie_path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
+            self.record_path = os.path.dirname(os.path.abspath(__file__)) + '/recorded/'
 
+        if not os.path.isdir(self.path): os.mkdir(self.path)
         if not os.path.isdir(self.movie_path): os.mkdir(self.movie_path)
+        if self.record and not os.path.isdir(self.record_path): os.mkdir(self.record_path)
 
         self.fill_colors.background_color = (0, 0, 0)
+
 
     def setup(self):
         ShowBase.__init__(self, fStartDirect=self.fStartDirect, windowType=self.windowType)
@@ -132,7 +136,7 @@ class Panda(Stimulus, dj.Manual):
         self.set_background_color(0, 0, 0)
         self.disableMouse()
         self.isrunning = False
-        self.movie = False
+        self.present_movie = False
 
         # Create Ambient Light
         self.ambientLight = core.AmbientLight('ambientLight')
@@ -173,7 +177,7 @@ class Panda(Stimulus, dj.Manual):
             self.objects[idx] = Agent(self, self.get_cond('obj_', idx))
 
         if 'movie_name' in self.curr_cond:
-            self.movie = True
+            self.present_movie = True
             loader = Loader(self)
             file_name = self.get_clip_info(self.curr_cond, 'file_name')
             self.mov_texture = loader.loadTexture(self.movie_path + file_name[0])
@@ -195,10 +199,14 @@ class Panda(Stimulus, dj.Manual):
             self.isrunning = True
 
         self.log_start()
-        if self.movie: self.mov_texture.play()
+        if self.present_movie: self.mov_texture.play()
         for idx, obj in enumerate(iterable(self.curr_cond['obj_id'])):
             self.objects[idx].run()
         self.flip(2)
+
+        if self.record:
+            self.movie(namePrefix= self.record_path + '/trial'+ str(self.exp.curr_trial) +'_frame',
+                       duration=self.curr_cond['obj_dur'], fps=30, format='png')
 
     def present(self):
         self.flip()
@@ -215,15 +223,23 @@ class Panda(Stimulus, dj.Manual):
             obj.remove(obj.task)
         for idx, light in self.lights.items():
             self.render.clearLight(self.lightsNP[idx])
-        if self.movie:
+        if self.present_movie:
             self.mov_texture.stop()
             self.movie_node.removeNode()
-            self.movie = False
+            self.present_movie = False
         self.render.clearLight
 
         self.flip(2) # clear double buffer
         self.log_stop()
         self.isrunning = False
+
+        if self.record:
+            name = self.record_path + '/trial'+ str(self.exp.curr_trial) +'_frame%04d.png'
+            stream = ffmpeg.input(name)
+            stream = ffmpeg.filter(stream,'fps', fps=30)
+            stream = ffmpeg.output(stream, self.record_path + '/trial'+ str(self.exp.curr_trial)+'mov',
+                                   crf=5, preset='slow', codec='libx264', pix_fmt='yuv420p')
+            ffmpeg.run(stream)
 
     def fill(self, color=None):
         if not color: color = self.curr_cond['background_color']
@@ -235,6 +251,9 @@ class Panda(Stimulus, dj.Manual):
 
     def exit(self):
         self.destroy()
+
+    def record(self):
+        self.record = True
 
     def get_cond(self, cond_name, idx=0):
         return {k.split(cond_name, 1)[1]: v if type(v) is int or type(v) is float else v[idx]
