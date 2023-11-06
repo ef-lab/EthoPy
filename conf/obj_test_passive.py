@@ -26,8 +26,9 @@ obj_combs = [[3, 2]]
 times = 10
 reps = 1
 
-p = Panda()
-p.record()
+panda_obj = Panda()
+panda_obj.record()
+
 for idx, obj_comb in enumerate(obj_combs):
     for irep in range(0, reps):
         pos_x_f = lambda x: interp(np.random.rand(x) - 0.5)
@@ -38,7 +39,8 @@ for idx, obj_comb in enumerate(obj_combs):
         yaw_f = lambda x: interp(np.random.rand(x)*10)
         dir1_f = lambda: np.array([0, -20, 0]) + np.random.randn(3)*30
         dir2_f = lambda: np.array([180, -20, 0]) + np.random.randn(3)*30
-        conditions += exp.make_conditions(stim_class=p, conditions={
+        conditions += exp.make_conditions(stim_class=panda_obj, conditions={
+            'background_color': (0.5, 0.5, 0.5),
             'obj_dur': 3000,
             'obj_id': [obj_comb],
             'obj_pos_x': [[pos_x_f(times), pos_x_f(times)]],

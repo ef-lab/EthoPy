@@ -93,7 +93,7 @@ class Panda(Stimulus, dj.Manual):
                    'obj_yaw': 0,
                    'obj_delay': 0}
 
-    object_files, record = dict(), False
+    object_files, is_recording = dict(), False
 
     def init(self, exp):
         super().init(exp)
@@ -116,7 +116,7 @@ class Panda(Stimulus, dj.Manual):
 
         if not os.path.isdir(self.path): os.mkdir(self.path)
         if not os.path.isdir(self.movie_path): os.mkdir(self.movie_path)
-        if self.record and not os.path.isdir(self.record_path): os.mkdir(self.record_path)
+        if self.is_recording and not os.path.isdir(self.record_path): os.mkdir(self.record_path)
 
         self.fill_colors.background_color = (0, 0, 0)
 
@@ -203,10 +203,7 @@ class Panda(Stimulus, dj.Manual):
         for idx, obj in enumerate(iterable(self.curr_cond['obj_id'])):
             self.objects[idx].run()
         self.flip(2)
-
-        if self.record:
-            self.movie(namePrefix= self.record_path + '/trial'+ str(self.exp.curr_trial) +'_frame',
-                       duration=self.curr_cond['obj_dur'], fps=30, format='png')
+        self.start_recording()
 
     def present(self):
         self.flip()
@@ -229,17 +226,10 @@ class Panda(Stimulus, dj.Manual):
             self.present_movie = False
         self.render.clearLight
 
+        self.stop_recording()
         self.flip(2) # clear double buffer
         self.log_stop()
         self.isrunning = False
-
-        if self.record:
-            name = self.record_path + '/trial'+ str(self.exp.curr_trial) +'_frame%04d.png'
-            stream = ffmpeg.input(name)
-            stream = ffmpeg.filter(stream,'fps', fps=30)
-            stream = ffmpeg.output(stream, self.record_path + '/trial'+ str(self.exp.curr_trial)+'mov',
-                                   crf=5, preset='slow', codec='libx264', pix_fmt='yuv420p')
-            ffmpeg.run(stream)
 
     def fill(self, color=None):
         if not color: color = self.curr_cond['background_color']
@@ -251,9 +241,33 @@ class Panda(Stimulus, dj.Manual):
 
     def exit(self):
         self.destroy()
+        if self.is_recording: self.create_movies()
 
     def record(self):
-        self.record = True
+        self.is_recording = True
+
+    def start_recording(self):
+        if self.is_recording:
+            self.record_task = self.movie(namePrefix=self.record_path + '/trial' + str(self.exp.curr_trial) + '_frame',
+                                          duration=self.curr_cond['obj_dur'], fps=30, format='png')
+
+    def stop_recording(self):
+        if self.is_recording:
+            self.taskMgr.remove(self.record_task)
+
+    def create_movies(self):
+        import ffmpeg, glob, os
+        for itrial in range(1, self.exp.curr_trial + 1):
+            name = self.record_path + 'trial' + str(itrial) + '_frame_%04d.png'
+            stream = ffmpeg.input(name)
+            stream = ffmpeg.filter(stream, 'fps', fps=30)
+            stream = ffmpeg.output(stream, self.record_path + str(self.exp.logger.trial_key['animal_id']) + '_' +
+                                   str(self.exp.logger.trial_key['session']) + '_trial' + str(itrial) + '.mov',
+                                   crf=5, preset='slow', codec='libx264', pix_fmt='yuv420p')
+            ffmpeg.run(stream)
+
+        for f in glob.glob(self.record_path+ '*.png'):
+            os.remove(f)
 
     def get_cond(self, cond_name, idx=0):
         return {k.split(cond_name, 1)[1]: v if type(v) is int or type(v) is float else v[idx]
