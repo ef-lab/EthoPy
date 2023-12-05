@@ -75,7 +75,7 @@ class PyWelcome():
             pygame.display.quit()
             
     def create_main(self) -> 'pygame_menu.Menu':
-        menu = pygame_menu.Menu('PyMouse',
+        menu = pygame_menu.Menu('EthoPy',
                                 self.SCREEN_WIDTH,
                                 self.SCREEN_HEIGHT,
                                 center_content=False,
