@@ -40,9 +40,9 @@ class Writer(object):
             if not self.queue.empty():
                 values = self.queue.get()
                 with h5py.File(self.datapath, mode='a') as h5f:
-                    self.dset = h5f[values['dataset']]
-                    self.dset.resize((self.datasets[values['dataset']].i + 1, ) + self.datasets[values['dataset']].shape)
-                    self.dset[self.datasets[values['dataset']].i] = [values['data']]
+                    dset = h5f[values['dataset']]
+                    dset.resize((dset.shape[0] + 1), axis=0)
+                    dset[-1:] = np.array(tuple([values['data']][0]), dset.dtype)
                     self.datasets[values['dataset']].i += 1
                     h5f.flush()
             else:
