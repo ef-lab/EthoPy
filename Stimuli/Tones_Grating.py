@@ -23,9 +23,9 @@ class Tones_Grating(Grating, dj.Manual):
     def __init__(self):
         super().__init__()
         self.fill_colors.set({'background': (0, 0, 0),
-                              'start': (32, 32, 32),
+                              'start': (0.125, 0.125, 0.125),
                               'ready': [],
-                              'reward': (128, 128, 128),
+                              'reward': (0.5, 0.5, 0.5),
                               'punish': (0, 0, 0)})
         self.grating_isrunning = False
         self.sound_isrunning = False
