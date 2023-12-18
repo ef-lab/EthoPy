@@ -111,3 +111,7 @@ class DictStruct:
         for key, value in dictionary.items():
             setattr(self, key, value)
 
+    def values(self):
+        return self.__dict__.values()
+
+

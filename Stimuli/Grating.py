@@ -40,6 +40,12 @@ class Grating(Stimulus, dj.Manual):
         clip                     : longblob     
         """
 
+    def init(self, exp):
+        super().init(exp)
+        ymonsize = self.monitor.size * 2.54 / np.sqrt(1 + self.monitor.aspect ** 2)  # cm Y monitor size
+        fov = np.arctan(ymonsize / 2 / self.monitor.distance) * 2 * 180 / np.pi  # Y FOV degrees
+        self.px_per_deg = self.monitor.resolution_y/fov
+
     def make_conditions(self, conditions=[]):
         self.path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
         if not os.path.isdir(self.path):  # create path if necessary
@@ -77,14 +83,6 @@ class Grating(Stimulus, dj.Manual):
                                                       'clip': np.fromfile(self.path + filename, dtype=np.int8)},
                                     schema='stimulus', priority=2, block=True, validate=True)
         return conditions
-
-    def setup(self):
-        super().setup()
-
-        # setup screen
-        ymonsize = self.monitor.size * 2.54 / np.sqrt(1 + self.monitor.aspect ** 2)  # cm Y monitor size
-        fov = np.arctan(ymonsize / 2 / self.monitor.distance) * 2 * 180 / np.pi  # Y FOV degrees
-        self.px_per_deg = self.monitor.resolution_y/fov
 
     def prepare(self, curr_cond):
         self.isrunning = True
