@@ -47,7 +47,7 @@ class Tones_Grating(Grating, dj.Manual):
             self.stop_sound()
             self.sound_isrunning = False
         if self.timer.elapsed_time() > self.curr_cond['duration'] and self.grating_isrunning:
-            super().stop()
+            if self.movie: self.vid.close()
             if self.ready_flag:
                 if self.fill_colors.ready: self.fill(self.fill_colors.ready)
             self.grating_isrunning = False
