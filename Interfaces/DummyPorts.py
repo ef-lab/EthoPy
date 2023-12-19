@@ -21,6 +21,9 @@ class DummyPorts(Interface):
         self._get_events()
         return self.position.type != 'Proximity'
 
+    def stop_sound(self):
+        print('Stopping sound')
+
     def _get_events(self):
         port = 0
         events = pygame.event.get() if pygame.get_init() else []
