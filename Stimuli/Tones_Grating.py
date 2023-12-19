@@ -33,6 +33,7 @@ class Tones_Grating(Grating, dj.Manual):
     def start(self):
         self.sound_isrunning = True
         self.grating_isrunning = True
+        self.ready_flag = False
         tone_frequency = self.curr_cond['tone_frequency']
         tone_volume = self.curr_cond['tone_volume']
         tone_pulse_freq=self.curr_cond['tone_pulse_freq']
@@ -47,6 +48,8 @@ class Tones_Grating(Grating, dj.Manual):
             self.sound_isrunning = False
         if self.timer.elapsed_time() > self.curr_cond['duration'] and self.grating_isrunning:
             super().stop()
+            if self.ready_flag:
+                if self.fill_colors.ready: self.fill(self.fill_colors.ready)
             self.grating_isrunning = False
 
         if self.timer.elapsed_time() > self.curr_cond['duration'] and self.timer.elapsed_time() > self.curr_cond['tone_duration']:
@@ -62,3 +65,9 @@ class Tones_Grating(Grating, dj.Manual):
 
     def stop_sound(self):
         self.exp.interface.stop_sound()
+
+    def ready_stim(self):
+        self.ready_flag = True
+        if not self.grating_isrunning:
+            super().ready_stim()
+
