@@ -26,12 +26,11 @@ key = {
     'dot_shape'             : 'rect',
     'dot_time'              : .25,
 }
-
 repeat_n = 10
-
 conditions = []
+dot = Dot()
 for rep in range(0, repeat_n):
-    conditions += exp.make_conditions(stim_class=Dot(), conditions=key)
+    conditions += exp.make_conditions(stim_class=dot, conditions=key)
 
 # randomize conditions
 random.seed(0)

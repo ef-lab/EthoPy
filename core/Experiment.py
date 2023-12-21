@@ -82,7 +82,7 @@ class ExperimentClass:
         self.beh.exit()
         self.logger.ping(0)
         if self.sync:
-            if self.interface.is_recording():
+            while self.interface.is_recording():
                 print('Waiting for recording to end...')
                 time.sleep(1)
         self.logger.closeDatasets()

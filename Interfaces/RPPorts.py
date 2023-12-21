@@ -132,7 +132,7 @@ class RPPorts(Interface):
 
     def set_running_state(self, running_state):
         if self.exp.sync:
-            if not self.is_recording():
+            while not self.is_recording():
                 print('Waiting for recording to start...')
                 time.sleep(1)
         self.GPIO.output(self.channels['Running'], running_state)
