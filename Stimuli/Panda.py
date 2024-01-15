@@ -115,10 +115,6 @@ class Panda(Stimulus, dj.Manual):
         self.globalClock = ClockObject.getGlobalClock()
         self.fps = 30
 
-        if self.is_recording:
-            self.globalClock.setMode(ClockObject.MLimited)
-            self.globalClock.setFrameRate(self.fps)
-
         if not os.path.isdir(self.path): os.mkdir(self.path)
         if not os.path.isdir(self.movie_path): os.mkdir(self.movie_path)
         if self.is_recording and not os.path.isdir(self.record_path): os.mkdir(self.record_path)
@@ -255,6 +251,8 @@ class Panda(Stimulus, dj.Manual):
         if self.is_recording:
             self.record_task = self.movie(namePrefix=self.record_path + '/trial' + str(self.exp.curr_trial) + '_frame',
                                           duration=self.curr_cond['obj_dur'], fps=self.fps, format='png')
+            self.globalClock.setMode(ClockObject.MLimited)
+            self.globalClock.setFrameRate(self.fps)
 
     def stop_recording(self):
         if self.is_recording:
