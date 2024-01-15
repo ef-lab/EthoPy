@@ -7,7 +7,7 @@ from direct.showbase.Loader import Loader
 from direct.task import Task
 import panda3d.core as core
 from utils.Timer import *
-from panda3d.core import NodePath, CardMaker, TextureStage
+from panda3d.core import NodePath, CardMaker, TextureStage, ClockObject
 
 
 @stimulus.schema
@@ -112,6 +112,12 @@ class Panda(Stimulus, dj.Manual):
         self.path = os.path.dirname(os.path.abspath(__file__)) + '/objects/'  # default path to copy local stimuli
         self.movie_path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
         self.record_path = os.path.dirname(os.path.abspath(__file__)) + '/recorded/'
+        self.globalClock = ClockObject.getGlobalClock()
+
+        if self.is_recording:
+            fps = 30.0
+            self.globalClock.setMode(ClockObject.MLimited)
+            self.globalClock.setFrameRate(fps)
 
         if not os.path.isdir(self.path): os.mkdir(self.path)
         if not os.path.isdir(self.movie_path): os.mkdir(self.movie_path)
@@ -191,6 +197,7 @@ class Panda(Stimulus, dj.Manual):
             self.movie_node.reparentTo(self.render)
 
     def start(self):
+        self.steps = 0
         if self.flag_no_stim: return
         self.fill()
         if not self.isrunning:
@@ -205,6 +212,7 @@ class Panda(Stimulus, dj.Manual):
         self.start_recording()
 
     def present(self):
+        self.steps += 1
         self.flip()
         if 'obj_dur' in self.curr_cond and self.curr_cond['obj_dur'] < self.timer.elapsed_time():
             self.isrunning = False
@@ -214,6 +222,7 @@ class Panda(Stimulus, dj.Manual):
             self.taskMgr.step()
 
     def stop(self):
+        print('steps:', self.steps)
         if self.flag_no_stim: return
         for idx, obj in self.objects.items():
             obj.remove(obj.task)
@@ -255,17 +264,17 @@ class Panda(Stimulus, dj.Manual):
             self.taskMgr.remove(self.record_task)
 
     def create_movies(self):
-        import ffmpeg, glob, os
+        import glob, os
+        print('creating movies..')
         for itrial in range(1, self.exp.curr_trial + 1):
-            name = self.record_path + 'trial' + str(itrial) + '_frame_%04d.png'
-            stream = ffmpeg.input(name)
-            stream = ffmpeg.filter(stream, 'fps', fps=30)
-            stream = ffmpeg.output(stream, self.record_path + str(self.exp.logger.trial_key['animal_id']) + '_' +
-                                   str(self.exp.logger.trial_key['session']) + '_trial' + str(itrial) + '.mov',
-                                   crf=5, preset='slow', codec='libx264', pix_fmt='yuv420p')
-            ffmpeg.run(stream)
+            name = self.record_path + 'trial' + str(itrial) + '_frame_*.png'
+            output_name = self.record_path + str(self.exp.logger.trial_key['animal_id']) + '_' + \
+                          str(self.exp.logger.trial_key['session']) + '_trial' + str(itrial) + '.mov'
+            print(output_name)
+            os.system("ffmpeg -framerate 30 -pattern_type glob -i " + f'"{name}"' + " -loglevel quiet" +
+                      " -c:v libx264 -pix_fmt yuv420p -crf 5 " + f'"{output_name}"')
 
-        for f in glob.glob(self.record_path+ '*.png'):
+        for f in glob.glob(self.record_path + '*.png'):
             os.remove(f)
 
     def get_cond(self, cond_name, idx=0):
