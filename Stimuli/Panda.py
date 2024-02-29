@@ -48,6 +48,7 @@ class Panda(Stimulus, dj.Manual):
         obj_yaw               : blob
         obj_delay             : int
         obj_dur               : int
+        obj_occluder           : int
         """
 
     class Environment(dj.Part):
@@ -135,6 +136,7 @@ class Panda(Stimulus, dj.Manual):
         self.win.requestProperties(self.props)
         self.graphicsEngine.openWindows()
         self.set_background_color(0, 0, 0)
+
         self.disableMouse()
         self.isrunning = False
         self.present_movie = False
@@ -306,7 +308,7 @@ class Panda(Stimulus, dj.Manual):
         Use this at the setup of pandas because for some reason the taskMgr the first time it 
         doesn't work properly. It needs time sleep between steps or to run many steps
         """
-        self.set_background_color((0,0,0))
+        self.set_background_color((0, 0, 0))
         for i in range(0, 2):
             time.sleep(0.1)
             self.taskMgr.step()
@@ -322,9 +324,10 @@ class Agent(Panda):
         self.rot_fun = self.time_fun(cond['rot'])
         self.tilt_fun = self.time_fun(cond['tilt'])
         self.yaw_fun = self.time_fun(cond['yaw'])
-        z_loc = 2
-        self.x_fun = self.time_fun(cond['pos_x'], lambda x, t: np.arctan(x * hfov[0]) * z_loc)
-        self.y_fun = self.time_fun(cond['pos_y'], lambda x, t: np.arctan(x * hfov[0]) * z_loc)
+        self.z_loc = 2
+        if cond['occluder']: self.z_loc = 1.5
+        self.x_fun = self.time_fun(cond['pos_x'], lambda x, t: np.arctan(x * hfov[0]) * self.z_loc)
+        self.y_fun = self.time_fun(cond['pos_y'], lambda x, t: np.arctan(x * hfov[0]) * self.z_loc)
         self.scale_fun = self.time_fun(cond['mag'], lambda x, t: .15*x)
         # add task object
         self.name = "Obj%s-Task" % cond['id']
@@ -333,6 +336,9 @@ class Agent(Panda):
         self.timer.start()
         self.model = self.env.loader.loadModel(self.env.object_files[self.cond['id']])
         self.model.reparentTo(self.env.render)
+        if self.cond['occluder']:
+            self.model.setLightOff()
+            self.model.setColor(*self.env.curr_cond['background_color'])
         self.task = self.env.taskMgr.doMethodLater(self.cond['delay']/1000, self.objTask, self.name)
 
     def objTask(self, task):
@@ -341,7 +347,7 @@ class Agent(Panda):
             self.remove(task)
             return
         self.model.setHpr(self.rot_fun(t), self.tilt_fun(t), self.yaw_fun(t))
-        self.model.setPos(self.x_fun(t), 2, self.y_fun(t))
+        self.model.setPos(self.x_fun(t), self.z_loc, self.y_fun(t))
         self.model.setScale(self.scale_fun(t))
 
         return Task.cont
