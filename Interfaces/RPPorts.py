@@ -70,7 +70,7 @@ class RPPorts(Interface):
                                        callback=self._sync_in, bouncetime=20)
             filename, self.dataset = self.logger.createDataset(source_path, target_path, dataset_name='sync_data',
                                           dataset_type=np.dtype([("sync_times", np.double)]))
-            self.exp.log_recording(dict(rec_aim='sync', software='EthoPy', version='0.1',
+            self.logger.log_recording(dict(rec_aim='sync', software='EthoPy', version='0.1',
                                            filename=filename, source_path=source_path, target_path=target_path))
 
         if self.exp.params['setup_conf_idx'] in self.logger.get(table='SetupConfiguration.Camera',fields=['setup_conf_idx']): 
@@ -92,7 +92,7 @@ class RPPorts(Interface):
 
             self.camera_Process = mp.Process(self.camera.start_rec())
             self.camera_Process.start()
-            self.exp.log_recording(dict(rec_aim = camera_params['video_aim'],software='EthoPy', version='0.1',
+            self.logger.log_recording(dict(rec_aim = camera_params['video_aim'],software='EthoPy', version='0.1',
                                         filename=self.camera.filename, source_path=self.camera.source_path, target_path=self.camera.target_path))
 
     def give_liquid(self, port, duration=False):
