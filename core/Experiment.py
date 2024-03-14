@@ -1,7 +1,7 @@
 from core.Logger import *
 import itertools
 import matplotlib.pyplot as plt
-
+from utils.helper_functions import generate_conf_list
 
 class State:
     state_timer, __shared_state = Timer(), {}
@@ -518,7 +518,6 @@ class Control(dj.Lookup):
     ip=null                     : varchar(16)                  # setup IP address
     """
 
-
 @experiment.schema
 class Task(dj.Lookup):
     definition = """
@@ -530,10 +529,7 @@ class Task(dj.Lookup):
     timestamp                   : timestamp    
     """
 
-    contents = [[0, 'calibrate_ports.py', 'Test calibration protocol', '2021-01-01 00:00:00'],
-                [1, 'free_water.py'     , 'Test free water protocol', '2021-01-01 00:00:00'],
-                [2, 'grating_test.py'   , 'Test grating discimination protocol', '2021-01-01 00:00:00']]
-
+    contents = generate_conf_list("conf/")
 
 @mice.schema
 class MouseWeight(dj.Manual):
