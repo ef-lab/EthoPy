@@ -11,10 +11,11 @@ class Images(Stimulus, dj.Manual):
     # images conditions
     -> StimCondition
     ---
-    -> Image
-    pre_blank_period     : int                        # (ms) off duration
-    presentation_time    : int                        # (ms) image duration
-
+    image_id                 : int                        # image index
+    image_class              : char(24)                   # 1 for test image, else 0
+    pre_blank_period         : int                        # (ms) off duration
+    presentation_time=0.5    : int                        # (ms) image duration
+    stimulus_class='Images'  : char(24)
     """
 
     default_key = dict(pre_blank_period=200, presentation_time=1000)
