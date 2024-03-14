@@ -407,7 +407,7 @@ class Trial(dj.Manual):
 
 
 @experiment.schema
-class SetupConfiguration(dj.Lookup):
+class SetupConfiguration(dj.Manual,  dj.Lookup):
     definition = """
     # Setup configuration
     setup_conf_idx           : tinyint                                            # configuration version
@@ -416,7 +416,9 @@ class SetupConfiguration(dj.Lookup):
     discription              : varchar(256)
     """
 
-    class Port(dj.Part):
+    contents = [[0, 'DummyPorts', 'Simulation'],]
+
+    class Port(dj.Part, dj.Lookup):
         definition = """
         # Probe identity
         port                     : tinyint                      # port id
@@ -430,7 +432,11 @@ class SetupConfiguration(dj.Lookup):
         discription              : varchar(256)
         """
 
-    class Screen(dj.Part):
+        contents = [[1,'Lick', 0, 0 , 1, 1, 0, 'probe'],
+                    [2,'Lick', 0, 0 , 1, 1, 0, 'probe'],
+                    [3,'Proximity', 0, 1 , 0, 0, 0, 'probe']]
+
+    class Screen(dj.Part, dj.Lookup):
         definition = """
         # Screen information
         screen_idx               : tinyint
@@ -446,14 +452,12 @@ class SetupConfiguration(dj.Lookup):
         resolution_x             : smallint
         resolution_y             : smallint
         description              : varchar(256)
-        reward_color             : tinyblob
-        punish_color             : tinyblob
-        ready_color              : tinyblob
-        background_color         : tinyblob
-        start_color              : tinyblob
+        fullscreen               : varchar(256)
         """
 
-    class Ball(dj.Part):
+        contents = [[1,0, 64, 5.0, 0, -0.1, 1.66, 7.0, 30, 800, 480, 'Simulation', 0],]
+
+    class Ball(dj.Part, dj.Lookup):
         definition = """
         # Ball information
         -> SetupConfiguration
@@ -464,7 +468,7 @@ class SetupConfiguration(dj.Lookup):
         discription              : varchar(256)
         """
 
-    class Speaker(dj.Part):
+    class Speaker(dj.Part, dj.Lookup):
         definition = """
         # Speaker information
         speaker_idx             : tinyint
@@ -476,7 +480,7 @@ class SetupConfiguration(dj.Lookup):
         discription             : varchar(256)
         """
 
-    class Camera(dj.Part):
+    class Camera(dj.Part, dj.Lookup):
         definition = """
         # Camera information
         camera_idx               : tinyint
