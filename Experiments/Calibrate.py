@@ -1,11 +1,9 @@
 import pygame
-import pygame_menu
 from Interfaces.RPPorts import *
 import time
 
 try:
     import pygame_menu
-    from pygame_menu.examples import create_example_window
     IMPORT_PYGAME_MENU = True
 except:
     IMPORT_PYGAME_MENU = False
