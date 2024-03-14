@@ -26,7 +26,7 @@ class Ball(Interface):
                                                                     ("theta", np.double),
                                                                     ("tmst", np.double)]))
 
-        self.logger.log_recording(dict(rec_aim='ball', software='EthoPy', version='0.1',
+        self.exp.log_recording(dict(rec_aim='ball', software='EthoPy', version='0.1',
                                     filename=filename, source_path=source_path,
                                     target_path=target_path, rec_type='behavioral'))
 
