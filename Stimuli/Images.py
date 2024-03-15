@@ -1,20 +1,28 @@
 from core.Stimulus import *
-from time import sleep
-import os, imageio
+import os
 import numpy as np
 from utils.Presenter import *
 
 
 @stimulus.schema
-class Images(Stimulus, dj.Manual):
+class Image(dj.Lookup):
     definition = """
+    # images conditions
+    image_class              : char(24)                   # 1 for test image, else 0
+    image_id                 : int                        # image index
+    ---
+    image                    : longblob                   # actual image
+    """
+
+@stimulus.schema
+class Images(Stimulus, dj.Manual):
+    definition ="""
     # images conditions
     -> StimCondition
     ---
-    image_id                 : int                        # image index
-    image_class              : char(24)                   # 1 for test image, else 0
-    pre_blank_period         : int                        # (ms) off duration
-    presentation_time=0.5    : int                        # (ms) image duration
+    -> Image
+    pre_blank_period     : int                        # (ms) off duration
+    presentation_time    : int                        # (ms) image duration
     stimulus_class='Images'  : char(24)
     """
 
@@ -58,6 +66,3 @@ class Images(Stimulus, dj.Manual):
 
     def _get_image_info(self, key, table, *fields):
         return self.exp.logger.get(schema='stimulus', table=table, key=key, fields=fields)
-
-
-
