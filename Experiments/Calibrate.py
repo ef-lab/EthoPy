@@ -1,9 +1,13 @@
 import pygame
-import pygame_menu
 from Interfaces.RPPorts import *
-from pygame_menu.examples import create_example_window
 import time
 
+try:
+    import pygame_menu
+    IMPORT_PYGAME_MENU = True
+except:
+    IMPORT_PYGAME_MENU = False
+    
 class Experiment:
     """ _summary_
     I created a main menu where every time i want to move to new one a clean it 
@@ -28,6 +32,9 @@ class Experiment:
         self.screen_height = 480
         self.ports = None
         self.port = None
+        if not globals()['IMPORT_PYGAME_MENU']:
+            raise ImportError('You need to install the pygame-menu: pip install pygame-menu')
+
 
     def setup(self, logger, params):
         """setup _summary_
