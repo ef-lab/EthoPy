@@ -407,7 +407,7 @@ class Trial(dj.Manual):
 
 
 @experiment.schema
-class SetupConfiguration(dj.Manual,  dj.Lookup):
+class SetupConfiguration(dj.Lookup, dj.Manual):
     definition = """
     # Setup configuration
     setup_conf_idx           : tinyint                                            # configuration version
@@ -418,9 +418,10 @@ class SetupConfiguration(dj.Manual,  dj.Lookup):
 
     contents = [[0, 'DummyPorts', 'Simulation'],]
 
-    class Port(dj.Part, dj.Lookup):
+    class Port(dj.Lookup, dj.Part):
         definition = """
-        # Probe identity
+        # Probe identityrepeat_n = 1
+
         port                     : tinyint                      # port id
         type="Lick"              : enum('Lick','Proximity')     # port type
         -> SetupConfiguration
@@ -436,7 +437,7 @@ class SetupConfiguration(dj.Manual,  dj.Lookup):
                     [2,'Lick', 0, 0 , 1, 1, 0, 'probe'],
                     [3,'Proximity', 0, 1 , 0, 0, 0, 'probe']]
 
-    class Screen(dj.Part, dj.Lookup):
+    class Screen(dj.Lookup, dj.Part):
         definition = """
         # Screen information
         screen_idx               : tinyint
@@ -457,7 +458,7 @@ class SetupConfiguration(dj.Manual,  dj.Lookup):
 
         contents = [[1,0, 64, 5.0, 0, -0.1, 1.66, 7.0, 30, 800, 480, 'Simulation', 0],]
 
-    class Ball(dj.Part, dj.Lookup):
+    class Ball(dj.Lookup, dj.Part):
         definition = """
         # Ball information
         -> SetupConfiguration
@@ -468,7 +469,7 @@ class SetupConfiguration(dj.Manual,  dj.Lookup):
         discription              : varchar(256)
         """
 
-    class Speaker(dj.Part, dj.Lookup):
+    class Speaker(dj.Lookup, dj.Part):
         definition = """
         # Speaker information
         speaker_idx             : tinyint
@@ -480,7 +481,7 @@ class SetupConfiguration(dj.Manual,  dj.Lookup):
         discription             : varchar(256)
         """
 
-    class Camera(dj.Part, dj.Lookup):
+    class Camera(dj.Lookup, dj.Part):
         definition = """
         # Camera information
         camera_idx               : tinyint
