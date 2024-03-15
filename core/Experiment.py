@@ -452,7 +452,7 @@ class SetupConfiguration(dj.Manual,  dj.Lookup):
         resolution_x             : smallint
         resolution_y             : smallint
         description              : varchar(256)
-        fullscreen               : varchar(256)
+        fullscreen               : tinyint
         """
 
         contents = [[1,0, 64, 5.0, 0, -0.1, 1.66, 7.0, 30, 800, 480, 'Simulation', 0],]
