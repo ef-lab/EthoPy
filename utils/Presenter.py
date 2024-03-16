@@ -1,6 +1,7 @@
-import pygame, numpy
+import pygame
 from pygame.locals import *
 from OpenGL.GL import *
+import numpy as np
 
 
 class Presenter():
@@ -16,7 +17,23 @@ class Presenter():
                                               PROPERTIES, display=monitor.screen_idx-1)
         pygame.display.init()
         pygame.mouse.set_visible(0)
-        self.photodiode = photodiode
+        if photodiode:
+            if photodiode == 'parity':
+                # Encodes the flip even / dot in the flip amplitude
+                self.phd_f = lambda x: float(float(x // 2) == x / 2)
+                self.photodiode = True
+            elif photodiode == 'flipcount':
+                # Encodes the flip count (n) in the flip amplitude.
+                # Every 32 sequential flips encode 32 21-bit flip numbers.
+                # Thus each n is a 21-bit flip number: FFFFFFFFFFFFFFFFCCCCP
+                # C = the position within F
+                # F = the current block of 32 flips
+                self.phd_f = lambda x: 0.5 * float(((x+1) & 1) * (2 - ((x+1) & (1 << (((np.int64(np.floor((x+1) / 2)) & 15) + 6) - 1)) != 0)))
+                self.photodiode = True
+            else:
+                print(photodiode, ' method not implemented! Available methods: parity, flipcount')
+                self.photodiode = False
+
         self.clock = pygame.time.Clock()
         self.set_background_color(background_color)
         self.flip_count = 0
@@ -29,7 +46,6 @@ class Presenter():
                                      self.background_color[1]*255,
                                      self.background_color[2]*255))
         self.phd_size = (self.phd_size, self.phd_size * float(self.info.current_w/self.info.current_h))
-        print(self.info.current_w, self.info.current_h, self.phd_size)
         glViewport(0, 0, self.info.current_w, self.info.current_h)
         glDepthRange(0, 1)
         glMatrixMode(GL_PROJECTION)
@@ -126,20 +142,10 @@ class Presenter():
         return surface_rect
 
     def _encode_photodiode(self):
-        """ Encodes the flip even/dot in the flip amplitude.
-        If encode_flipnumber=True it encodes the flip number n in the flip amplitude.
-        Every 32 sequential flips encode 32 21-bit flip numbers.
-        Thus each n is a 21-bit flip number: FFFFFFFFFFFFFFFFCCCCP
-        C = the position within F
-        F = the current block of 32 flips
+        """ Encodes the flip parity or flip number in the flip amplitude.
         """
-        encode_flipnumber = False
         if self.photodiode:
-            if encode_flipnumber:
-                n = self.flip_count + 1
-                amp = 0.5 * float((n & 1) * (2 - (n & (1 << (((numpy.int64(numpy.floor(n / 2)) & 15) + 6) - 1)) != 0)))
-            else:
-                amp = float(float(self.flip_count//2) == self.flip_count/2)
+            amp = self.phd_f(self.flip_count)
             glLoadIdentity()
             glDisable(GL_LIGHTING)
             glEnable(GL_TEXTURE_2D)
