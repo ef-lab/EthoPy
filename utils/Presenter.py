@@ -33,6 +33,8 @@ class Presenter():
             else:
                 print(photodiode, ' method not implemented! Available methods: parity, flipcount')
                 self.photodiode = False
+        else:
+            self.photodiode = False
 
         self.clock = pygame.time.Clock()
         self.set_background_color(background_color)
