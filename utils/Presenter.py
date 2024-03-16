@@ -1,11 +1,11 @@
-import pygame
+import pygame, numpy
 from pygame.locals import *
 from OpenGL.GL import *
 
 
 class Presenter():
 
-    def __init__(self, monitor, background_color=(0, 0, 0)):
+    def __init__(self, monitor, background_color=(0, 0, 0), photodiode=False):
         global pygame
         if not pygame.get_init(): pygame.init()
         if monitor.fullscreen:
@@ -16,10 +16,11 @@ class Presenter():
                                               PROPERTIES, display=monitor.screen_idx-1)
         pygame.display.init()
         pygame.mouse.set_visible(0)
+        self.photodiode = photodiode
         self.clock = pygame.time.Clock()
         self.set_background_color(background_color)
         self.flip_count = 0
-        #self.phd_size = (50, 50)  # default photodiode signal size in pixels
+        self.phd_size = 0.05  # default photodiode signal size in ratio of the X screen size
 
         self.info = pygame.display.Info()
         self.texID = glGenTextures(1)
@@ -27,7 +28,8 @@ class Presenter():
         self.offscreen_surface.fill((self.background_color[0]*255,
                                      self.background_color[1]*255,
                                      self.background_color[2]*255))
-
+        self.phd_size = (self.phd_size, self.phd_size * float(self.info.current_w/self.info.current_h))
+        print(self.info.current_w, self.info.current_h, self.phd_size)
         glViewport(0, 0, self.info.current_w, self.info.current_h)
         glDepthRange(0, 1)
         glMatrixMode(GL_PROJECTION)
@@ -64,7 +66,6 @@ class Presenter():
             x_scale = 1
             y_scale = window_ratio/surf_ratio
 
-        glBindTexture(GL_TEXTURE_2D, self.texID)
         glBegin(GL_QUADS)
         glTexCoord2f(0, 0)
         glVertex2f(-1*x_scale, 1*y_scale)
@@ -98,10 +99,11 @@ class Presenter():
         self.render(self.offscreen_surface)
 
     def flip(self):
+        self.flip_count += 1
+        self._encode_photodiode()
         pygame.display.flip()
         for event in pygame.event.get():
             if event.type == QUIT: pygame.quit()
-        self.flip_count += 1
 
     def make_surface(self, array):
         return pygame.surfarray.make_surface(array)
@@ -119,24 +121,32 @@ class Presenter():
         surface_rect = pygame_surface.get_rect()
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, surface_rect.width, surface_rect.height, 0, GL_RGB, GL_UNSIGNED_BYTE,
                      rgb_surface)
+        glColor3f(1.0, 1.0, 1.0)
         glGenerateMipmap(GL_TEXTURE_2D)
-        glBindTexture(GL_TEXTURE_2D, 0)
         return surface_rect
 
-    #def _encode_photodiode(self):
-    #    """Encodes the flip number n in the flip amplitude.
-    #    Every 32 sequential flips encode 32 21-bit flip numbers.
-    #    Thus each n is a 21-bit flip number:
-    #    FFFFFFFFFFFFFFFFCCCCP
-    #    P = parity, only P=1 encode bits
-    #    C = the position within F
-    #    F = the current block of 32 flips
-    #    """
-    #    n = self.flip_count + 1
-    #    amp = 127 * (n & 1) * (2 - (n & (1 << (((np.int64(np.floor(n / 2)) & 15) + 6) - 1)) != 0))
-    #    surf = pygame.Surface(self.phd_size)
-    #    surf.fill((amp, amp, amp))
-    #    self.screen.blit(surf, (0, 0))
+    def _encode_photodiode(self):
+        """ Encodes the flip even/dot in the flip amplitude.
+        If encode_flipnumber=True it encodes the flip number n in the flip amplitude.
+        Every 32 sequential flips encode 32 21-bit flip numbers.
+        Thus each n is a 21-bit flip number: FFFFFFFFFFFFFFFFCCCCP
+        C = the position within F
+        F = the current block of 32 flips
+        """
+        encode_flipnumber = False
+        if self.photodiode:
+            if encode_flipnumber:
+                n = self.flip_count + 1
+                amp = 0.5 * float((n & 1) * (2 - (n & (1 << (((numpy.int64(numpy.floor(n / 2)) & 15) + 6) - 1)) != 0)))
+            else:
+                amp = float(float(self.flip_count//2) == self.flip_count/2)
+            glLoadIdentity()
+            glDisable(GL_LIGHTING)
+            glEnable(GL_TEXTURE_2D)
+            glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA)
+            glDisable(GL_TEXTURE_2D)
+            glColor3f(amp, amp, amp)
+            glRectf(-1, 1, self.phd_size[0]-1, 1-self.phd_size[1])
 
     def quit(self):
         pygame.mouse.set_visible(1)

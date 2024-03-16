@@ -64,7 +64,7 @@ class Stimulus:
     """ This class handles the stimulus presentation use function overrides for each stimulus class """
 
     cond_tables, required_fields, default_key, curr_cond, conditions, timer = [], [], dict(), dict(), [], Timer()
-    period, isrunning, flip_count = 'Trial', False, 0
+    period, isrunning, flip_count, photodiode = 'Trial', False, 0, False
     fill_colors = DictStruct({'start': [], 'ready': [], 'reward': [], 'punish': [], 'background': (0, 0, 0)})
 
     def init(self, exp):
@@ -80,7 +80,8 @@ class Stimulus:
 
     def setup(self):
         """setup stimulation for presentation before experiment starts"""
-        self.Presenter = Presenter(self.monitor, background_color=self.fill_colors.background)
+        self.Presenter = Presenter(self.monitor, background_color=self.fill_colors.background,
+                                   photodiode=self.photodiode)
 
     def prepare(self, curr_cond=False, stim_period=''):
         """prepares stuff for presentation before trial starts"""
