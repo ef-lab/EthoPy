@@ -22,8 +22,8 @@ class Presenter():
                 # Encodes the flip even / dot in the flip amplitude
                 self.phd_f = lambda x: float(float(x // 2) == x / 2)
                 self.photodiode = True
-            elif photodiode == 'flipnumber':
-                # Encodes the flip number n in the flip amplitude.
+            elif photodiode == 'flipcount':
+                # Encodes the flip count (n) in the flip amplitude.
                 # Every 32 sequential flips encode 32 21-bit flip numbers.
                 # Thus each n is a 21-bit flip number: FFFFFFFFFFFFFFFFCCCCP
                 # C = the position within F
@@ -31,7 +31,7 @@ class Presenter():
                 self.phd_f = lambda x: 0.5 * float(((x+1) & 1) * (2 - ((x+1) & (1 << (((np.int64(np.floor((x+1) / 2)) & 15) + 6) - 1)) != 0)))
                 self.photodiode = True
             else:
-                print(photodiode, ' method not implemented! Available methods: parity, flipnumber')
+                print(photodiode, ' method not implemented! Available methods: parity, flipcount')
                 self.photodiode = False
 
         self.clock = pygame.time.Clock()
