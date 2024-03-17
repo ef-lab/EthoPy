@@ -2,7 +2,8 @@ import numpy as np
 from scipy import ndimage
 from itertools import product
 import hashlib, base64, functools
-
+import os
+from datetime import datetime
 
 def sub2ind(array_shape, rows, cols):
     return rows * array_shape[1] + cols
@@ -115,3 +116,10 @@ class DictStruct:
         return self.__dict__.values()
 
 
+def generate_conf_list(folder_path):
+    contents = []
+    files = os.listdir(folder_path)
+    current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    for i, file_name in enumerate(files):
+        contents.append([i, file_name, '', current_datetime])
+    return contents
