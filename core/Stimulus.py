@@ -80,7 +80,7 @@ class Stimulus:
 
     def setup(self):
         """setup stimulation for presentation before experiment starts"""
-        self.Presenter = Presenter(self.monitor, background_color=self.fill_colors.background,
+        self.Presenter = Presenter(self.logger, self.monitor, background_color=self.fill_colors.background,
                                    photodiode=self.photodiode)
 
     def prepare(self, curr_cond=False, stim_period=''):

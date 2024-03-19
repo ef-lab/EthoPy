@@ -17,6 +17,8 @@ schemata = {'experiment': 'lab_experiments',
             'recording' : 'lab_recordings',
             'mice'      : 'lab_mice'}
 
+VERSION = '0.1'
+
 for schema, value in schemata.items():  # separate connection for internal comminication
     globals()[schema] = dj.create_virtual_module(schema, value, create_tables=True, create_schema=True)
 
@@ -36,7 +38,7 @@ class Logger:
         self.setup_status = 'running' if self.manual_run else 'ready'
         con_info = dj.conn.connection.conn_info
         self.private_conn = dj.Connection(con_info['host'], con_info['user'], con_info['passwd'])
-        for schema, value in schemata.items():  # separate connection for internal comminication
+        for schema, value in schemata.items():  # separate connection for internal communication
             self._schemata.update({schema: dj.create_virtual_module(schema, value, connection=self.private_conn)})
         self.thread_end, self.thread_lock = threading.Event(),  threading.Lock()
         self.inserter_thread = threading.Thread(target=self.inserter)
@@ -185,13 +187,29 @@ class Logger:
         while not self.queue.empty(): print('Waiting for empty queue... qsize: %d' % self.queue.qsize()); time.sleep(1)
         self.thread_end.set()
 
-    def createDataset(self, path, target_path, dataset_name, dataset_type):
+    def createDataset(self, dataset_name, dataset_type, log=True):
+        path = dj.config['source_path'] + dataset_name + '/'
+        target_path = dj.config['target_path'] + dataset_name + '/'
+
+        if not os.path.isdir(path):  # create path if necessary
+            os.makedirs(path)
+        if not os.path.isdir(target_path):  # create path if necessary
+            os.makedirs(target_path)
+
         filename = '%s_%d_%d_%s.h5' % (dataset_name, self.trial_key['animal_id'],
-                                         self.trial_key['session'],
-                                         datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
+                                         self.trial_key['session'], datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
         self.datasets[dataset_name] = self.Writer(path + filename, target_path)
-        self.datasets[dataset_name].createDataset(dataset_name, shape=(len(dataset_type.names),), dtype=dataset_type)
-        return filename, self.datasets[dataset_name]
+        print('shape',(len(dataset_type.names),),' type ', dataset_type)
+        self.datasets[dataset_name].createDataset(dataset_name, shape=(1,), dtype=dataset_type)
+
+        if log:
+            recs = self.get(schema='recording', table='Recording', key=self.trial_key, fields=['rec_idx'])
+            rec_idx = 1 if not recs else max(recs) + 1
+            rec_key = dict(rec_aim=dataset_name, software='EthoPy', version=VERSION,
+                           filename=filename, source_path=path, target_path=target_path, rec_idx= rec_idx)
+            self.log('Recording', data=rec_key, schema='recording')
+
+        return self.datasets[dataset_name]
 
     def closeDatasets(self):
         for dataset in self.datasets:

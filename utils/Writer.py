@@ -7,7 +7,7 @@ from queue import Queue
 
 class Writer(object):
     """
-    Simple class to append value to a hdf5 file on disc (usefull for building k$
+    Simple class to append value to a hdf5 file on disc (useful for building k$
     Params:
         datapath: filepath of h5 file
         dataset: dataset name within the file
@@ -42,7 +42,7 @@ class Writer(object):
                 with h5py.File(self.datapath, mode='a') as h5f:
                     dset = h5f[values['dataset']]
                     dset.resize((dset.shape[0] + 1), axis=0)
-                    dset[-1:] = np.array(tuple([values['data']][0]), dset.dtype)
+                    dset[-1:] = np.asarray(tuple([values['data']][0]), dset.dtype)
                     self.datasets[values['dataset']].i += 1
                     h5f.flush()
             else:
