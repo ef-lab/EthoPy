@@ -48,6 +48,20 @@ class Logger:
         self.getter_thread.start()
         self.logger_timer.start()
         self.Writer = Writer
+        self.rec_fliptimes = True
+
+        # set up paths
+        if 'source_path' not in dj.config or not os.path.isdir(dj.config['source_path']):
+            self.source_path = os.path.expanduser("~") + '/EthoPy_Files/Recordings/'
+            if not os.path.isdir(self.source_path):  os.makedirs(self.source_path)  # create path if necessary
+            print('setting local storage directory: ', self.source_path)
+        else:
+            self.source_path = dj.config['source_path']
+
+        if 'target_path' in dj.config and os.path.isdir(dj.config['target_path']):
+            self.target_path = dj.config['target_path']
+        else:
+            self.target_path = False
 
     def setup_schema(self, extra_schema):
         for schema, value in extra_schema.items():
@@ -188,28 +202,30 @@ class Logger:
         self.thread_end.set()
 
     def createDataset(self, dataset_name, dataset_type, log=True):
-        path = dj.config['source_path'] + dataset_name + '/'
-        target_path = dj.config['target_path'] + dataset_name + '/'
 
-        if not os.path.isdir(path):  # create path if necessary
-            os.makedirs(path)
-        if not os.path.isdir(target_path):  # create path if necessary
-            os.makedirs(target_path)
+        path = self.source_path + '%d_%d/' % (self.trial_key['animal_id'], self.trial_key['session'])
+        if not os.path.isdir(path):  os.makedirs(path) # create path if necessary
+
+        if not os.path.isdir(self.target_path):
+            print('No target directory set! Autocopying will not work.')
+            target_path = False
+        else:
+            target_path = self.target_path + '%d_%d/' % (self.trial_key['animal_id'], self.trial_key['session'])
+            if not os.path.isdir(target_path): os.makedirs(target_path)
 
         filename = '%s_%d_%d_%s.h5' % (dataset_name, self.trial_key['animal_id'],
                                          self.trial_key['session'], datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
         self.datasets[dataset_name] = self.Writer(path + filename, target_path)
-        print('shape',(len(dataset_type.names),),' type ', dataset_type)
         self.datasets[dataset_name].createDataset(dataset_name, shape=(1,), dtype=dataset_type)
-
-        if log:
-            recs = self.get(schema='recording', table='Recording', key=self.trial_key, fields=['rec_idx'])
-            rec_idx = 1 if not recs else max(recs) + 1
-            rec_key = dict(rec_aim=dataset_name, software='EthoPy', version=VERSION,
-                           filename=filename, source_path=path, target_path=target_path, rec_idx= rec_idx)
-            self.log('Recording', data=rec_key, schema='recording')
-
+        rec_key = dict(rec_aim=dataset_name, software='EthoPy', version=VERSION,
+                       filename=filename, source_path=path, target_path=target_path)
+        if log: self.log_recording(rec_key)
         return self.datasets[dataset_name]
+
+    def log_recording(self, rec_key):
+        recs = self.get(schema='recording', table='Recording', key=self.trial_key, fields=['rec_idx'])
+        rec_idx = 1 if not recs else max(recs) + 1
+        self.log('Recording', data={**rec_key, 'rec_idx': rec_idx}, schema='recording')
 
     def closeDatasets(self):
         for dataset in self.datasets:

@@ -25,7 +25,7 @@ class Writer(object):
         self.queue = Queue()
         self.datasets = dict()
         self.thread_end = threading.Event()
-        self.thread_runner = threading.Thread(target=self.dequeue)  # max insertion rate of 10 events/sec
+        self.thread_runner = threading.Thread(target=self.dequeue)
         self.thread_runner.start()
         self.target_path = target_path
 
@@ -33,7 +33,7 @@ class Writer(object):
         self.datasets[dataset] = self.h5Dataset(self.datapath, dataset, shape, dtype, compression, chunk_len)
 
     def append(self, dataset, data):
-        self.queue.put({'dataset': dataset, 'data':data})
+        self.queue.put({'dataset': dataset, 'data': data})
 
     def dequeue(self):
         while not self.thread_end.is_set():

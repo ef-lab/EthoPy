@@ -6,7 +6,7 @@ import numpy as np
 
 class Presenter():
 
-    def __init__(self, logger, monitor, background_color=(0, 0, 0), photodiode=False):
+    def __init__(self, logger, monitor, background_color=(0, 0, 0), photodiode=False, rec_fliptimes=False):
         global pygame
         if not pygame.get_init(): pygame.init()
 
@@ -38,9 +38,12 @@ class Presenter():
         else:
             self.photodiode = False
 
-        self.phd_dataset = self.logger.createDataset(dataset_name='photodiode',
-                                                     dataset_type=np.dtype([("flip_idx", np.double),
-                                                                            ("tmst", np.double)]))
+        self.rec_fliptimes = rec_fliptimes
+        if self.rec_fliptimes:
+            self.fliptimes_dataset = self.logger.createDataset(dataset_name='fliptimes',
+                                                               dataset_type=np.dtype([("flip_idx", np.double),
+                                                                                      ("tmst", np.double)]))
+
         self.clock = pygame.time.Clock()
         self.set_background_color(background_color)
         self.flip_count = 0
@@ -125,8 +128,8 @@ class Presenter():
         self.flip_count += 1
         self._encode_photodiode()
         pygame.display.flip()
-        if self.photodiode:
-            self.phd_dataset.append('photodiode', [self.flip_count, self.logger.logger_timer.elapsed_time()])
+        if self.rec_fliptimes:
+            self.fliptimes_dataset.append('fliptimes', [self.flip_count, self.logger.logger_timer.elapsed_time()])
         for event in pygame.event.get():
             if event.type == QUIT: pygame.quit()
 

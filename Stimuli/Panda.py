@@ -111,9 +111,9 @@ class Panda(Stimulus, dj.Manual):
             self.windowType = 'onscreen'
             self.Fullscreen = False
 
-        self.path = os.path.dirname(os.path.abspath(__file__)) + '/objects/'  # default path to copy local stimuli
-        self.movie_path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
-        self.record_path = os.path.dirname(os.path.abspath(__file__)) + '/recorded/'
+        self.path = self.logger.source_path + 'objects/'  # default path to copy local stimuli
+        self.movie_path = self.logger.source_path + 'movies/'
+        self.record_path = self.logger.source_path + 'recorded/'
         self.globalClock = ClockObject.getGlobalClock()
         self.fps = 30
 
