@@ -51,8 +51,11 @@ class Logger:
         self.rec_fliptimes = True
 
         # set up paths
-        if 'source_path' not in dj.config or not os.path.isdir(dj.config['source_path']):
-            self.source_path = os.path.expanduser("~") + '/EthoPy_Files/Recordings/'
+        if 'source_path' in dj.config and not os.path.isdir(dj.config['source_path']):
+            self.source_path = dj.config['source_path']
+            if not os.path.isdir(self.source_path):  os.makedirs(self.source_path)  # create path if necessary
+        elif 'source_path' not in dj.config or not os.path.isdir(dj.config['source_path']):
+            self.source_path = os.path.expanduser("~") + '/EthoPy_Files/'
             if not os.path.isdir(self.source_path):  os.makedirs(self.source_path)  # create path if necessary
             print('setting local storage directory: ', self.source_path)
         else:
@@ -203,7 +206,7 @@ class Logger:
 
     def createDataset(self, dataset_name, dataset_type, log=True):
 
-        path = self.source_path + '%d_%d/' % (self.trial_key['animal_id'], self.trial_key['session'])
+        path = self.source_path + 'Recordings/%d_%d/' % (self.trial_key['animal_id'], self.trial_key['session'])
         if not os.path.isdir(path):  os.makedirs(path) # create path if necessary
 
         if not os.path.isdir(self.target_path):
