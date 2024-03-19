@@ -47,7 +47,7 @@ class Grating(Stimulus, dj.Manual):
         self.px_per_deg = self.monitor.resolution_y/fov
 
     def make_conditions(self, conditions=[]):
-        self.path = os.path.dirname(os.path.abspath(__file__)) + '/movies/'
+        self.path = self.logger.source_path + '/movies/'
         if not os.path.isdir(self.path):  # create path if necessary
             os.makedirs(self.path)
         super().make_conditions(conditions)
