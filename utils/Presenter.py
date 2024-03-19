@@ -148,6 +148,7 @@ class Presenter():
         surface_rect = pygame_surface.get_rect()
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, surface_rect.width, surface_rect.height, 0, GL_RGB, GL_UNSIGNED_BYTE,
                      rgb_surface)
+        glColor3f(1.0, 1.0, 1.0)
         glGenerateMipmap(GL_TEXTURE_2D)
         return surface_rect
 
