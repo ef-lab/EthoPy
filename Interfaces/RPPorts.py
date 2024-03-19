@@ -62,38 +62,12 @@ class RPPorts(Interface):
             self.GPIO.setup(self.channels['Sync']['out'], self.GPIO.OUT, initial=self.GPIO.LOW)
 
         if self.exp.sync:
-            source_path = '/home/eflab/Sync/'
-            target_path = '/mnt/lab/data/Sync/'
             self.GPIO.setup(self.channels['Sync']['rec'], self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
             self.GPIO.setup(self.channels['Sync']['in'], self.GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
             self.GPIO.add_event_detect(self.channels['Sync']['in'], self.GPIO.BOTH,
                                        callback=self._sync_in, bouncetime=20)
-            filename, self.dataset = self.logger.createDataset(source_path, target_path, dataset_name='sync_data',
-                                          dataset_type=np.dtype([("sync_times", np.double)]))
-            self.exp.log_recording(dict(rec_aim='sync', software='EthoPy', version='0.1',
-                                           filename=filename, source_path=source_path, target_path=target_path))
-
-        if self.exp.params['setup_conf_idx'] in self.logger.get(table='SetupConfiguration.Camera',fields=['setup_conf_idx']): 
-            source_path = '/home/eflab/behavior_video_rp/'
-            target_path = '/mnt/lab/data/behavior_video_rp/'
-            camera_params= self.logger.get(table='SetupConfiguration.Camera',
-                                            key=f"setup_conf_idx={self.exp.params['setup_conf_idx']}", 
-                                            as_dict=True)[0]
-            
-            animal_id_session_str = f"animal_id_{self.logger.trial_key['animal_id']}_session_{self.logger.trial_key['session']}"
-            self.camera = PiCamera (source_path = source_path,
-                                    target_path = target_path,
-                                    filename = animal_id_session_str,
-                                    video_format = camera_params['file_format'],
-                                    fps = camera_params['fps'],
-                                    shutter_speed = camera_params['shutter_speed'],
-                                    resolution = (camera_params['resolution_x'],camera_params['resolution_y']),
-                                    logger_timer = self.logger.logger_timer)
-
-            self.camera_Process = mp.Process(self.camera.start_rec())
-            self.camera_Process.start()
-            self.exp.log_recording(dict(rec_aim = camera_params['video_aim'],software='EthoPy', version='0.1',
-                                        filename=self.camera.filename, source_path=self.camera.source_path, target_path=self.camera.target_path))
+            self.dataset = self.logger.createDataset(dataset_name='sync',
+                                                     dataset_type=np.dtype([("sync_times", np.double)]))
 
     def give_liquid(self, port, duration=False):
         if not duration: duration=self.duration[port]

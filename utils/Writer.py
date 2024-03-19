@@ -7,7 +7,7 @@ from queue import Queue
 
 class Writer(object):
     """
-    Simple class to append value to a hdf5 file on disc (usefull for building k$
+    Simple class to append value to a hdf5 file on disc (useful for building k$
     Params:
         datapath: filepath of h5 file
         dataset: dataset name within the file
@@ -25,7 +25,7 @@ class Writer(object):
         self.queue = Queue()
         self.datasets = dict()
         self.thread_end = threading.Event()
-        self.thread_runner = threading.Thread(target=self.dequeue)  # max insertion rate of 10 events/sec
+        self.thread_runner = threading.Thread(target=self.dequeue)
         self.thread_runner.start()
         self.target_path = target_path
 
@@ -33,7 +33,7 @@ class Writer(object):
         self.datasets[dataset] = self.h5Dataset(self.datapath, dataset, shape, dtype, compression, chunk_len)
 
     def append(self, dataset, data):
-        self.queue.put({'dataset': dataset, 'data':data})
+        self.queue.put({'dataset': dataset, 'data': data})
 
     def dequeue(self):
         while not self.thread_end.is_set():
@@ -42,7 +42,7 @@ class Writer(object):
                 with h5py.File(self.datapath, mode='a') as h5f:
                     dset = h5f[values['dataset']]
                     dset.resize((dset.shape[0] + 1), axis=0)
-                    dset[-1:] = np.array(tuple([values['data']][0]), dset.dtype)
+                    dset[-1:] = np.asarray(tuple([values['data']][0]), dset.dtype)
                     self.datasets[values['dataset']].i += 1
                     h5f.flush()
             else:

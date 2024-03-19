@@ -6,9 +6,11 @@ import numpy as np
 
 class Presenter():
 
-    def __init__(self, monitor, background_color=(0, 0, 0), photodiode=False):
+    def __init__(self, logger, monitor, background_color=(0, 0, 0), photodiode=False, rec_fliptimes=False):
         global pygame
         if not pygame.get_init(): pygame.init()
+
+        self.logger = logger
         if monitor.fullscreen:
             PROPERTIES = pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.FULLSCREEN | pygame.OPENGL
         else:
@@ -36,10 +38,16 @@ class Presenter():
         else:
             self.photodiode = False
 
+        self.rec_fliptimes = rec_fliptimes
+        if self.rec_fliptimes:
+            self.fliptimes_dataset = self.logger.createDataset(dataset_name='fliptimes',
+                                                               dataset_type=np.dtype([("flip_idx", np.double),
+                                                                                      ("tmst", np.double)]))
+
         self.clock = pygame.time.Clock()
         self.set_background_color(background_color)
         self.flip_count = 0
-        self.phd_size = 0.05  # default photodiode signal size in ratio of the X screen size
+        self.phd_size = 0.025  # default photodiode signal size in ratio of the X screen size
 
         self.info = pygame.display.Info()
         self.texID = glGenTextures(1)
@@ -108,7 +116,6 @@ class Presenter():
         glColor3fv(color)
         glRectf(rect[0], rect[1], rect[2], rect[3])
         self.flip()
-        glColor3fv(self.background_color)
 
     def fill(self, color=False):
         if not color:
@@ -120,6 +127,8 @@ class Presenter():
         self.flip_count += 1
         self._encode_photodiode()
         pygame.display.flip()
+        if self.rec_fliptimes:
+            self.fliptimes_dataset.append('fliptimes', [self.flip_count, self.logger.logger_timer.elapsed_time()])
         for event in pygame.event.get():
             if event.type == QUIT: pygame.quit()
 
@@ -139,7 +148,6 @@ class Presenter():
         surface_rect = pygame_surface.get_rect()
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, surface_rect.width, surface_rect.height, 0, GL_RGB, GL_UNSIGNED_BYTE,
                      rgb_surface)
-        glColor3f(1.0, 1.0, 1.0)
         glGenerateMipmap(GL_TEXTURE_2D)
         return surface_rect
 
@@ -154,7 +162,7 @@ class Presenter():
             glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA)
             glDisable(GL_TEXTURE_2D)
             glColor3f(amp, amp, amp)
-            glRectf(-1, 1, self.phd_size[0]-1, 1-self.phd_size[1])
+            glRectf(-1, 1, self.phd_size[0]*2-1, 1-self.phd_size[1]*2)
 
     def quit(self):
         pygame.mouse.set_visible(1)

@@ -184,7 +184,9 @@ Create dj_local_conf.json with the correct parameters in the EthoPy folder:
     "database.password": "PASSWORD",
     "database.port": "PORT",
     "database.reconnect": true,
-    "database.enable_python_native_blobs": true
+    "database.enable_python_native_blobs": true,
+    "source_path" : "LOCAL_RECORDINGS_DIRECTORY",
+    "target_path" : "TARGET_RECORDINGS_DIRECTORY"
 }
 ```
 

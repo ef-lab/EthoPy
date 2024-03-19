@@ -23,10 +23,6 @@ class Dot(Stimulus, dj.Manual):
                     'dot_level'             : 0,  # degrees
                     'dot_shape'             : 'rect'}
 
-    def __init__(self):
-        super().__init__()
-        self.fill_colors.background = (1, 1, 1)
-
     def prepare(self, curr_cond):
         self.curr_cond = curr_cond
         self.fill_colors.background = self.curr_cond['bg_level']
@@ -51,5 +47,11 @@ class Dot(Stimulus, dj.Manual):
     def present(self):
         if self.timer.elapsed_time() > self.curr_cond['dot_time']*1000:
             self.isrunning = False
+
+    def exit(self):
+        self.Presenter.fill(self.fill_colors.background)
+        super().exit()
+
+
 
 

@@ -82,8 +82,5 @@ class InterTrial(Experiment):
 
 
 class Exit(Experiment):
-    def entry(self):
-        self.release()
-    
     def run(self):
         self.stop()

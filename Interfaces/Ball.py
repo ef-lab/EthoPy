@@ -7,8 +7,6 @@ class Ball(Interface):
     speed, timestamp, update_location, prev_loc_x, prev_loc_y, loc_x, loc_y, theta, xmx, ymx = 0, 0, True, 0, 0, 0, 0, 0, 1, 1
 
     def __init__(self, exp, ball_radius=0.125):
-        source_path = '/home/eflab/Tracking/'
-        target_path = '/mnt/lab/data/Tracking/'
         self.cleanup()
         self.logger = exp.logger
         self.exp = exp
@@ -20,16 +18,11 @@ class Ball(Interface):
         self.phi_y1 = np.pi - 0.13  # angle of y1 axis (mouse1) .6
         self.phi_y2 = self.phi_y1 + np.pi/2  # angle of y2 axis (mouse2)
         self.ball_radius = ball_radius
-        filename, self.dataset = self.logger.createDataset(source_path, target_path, dataset_name='tracking_data',
-                                             dataset_type=np.dtype([("loc_x", np.double),
-                                                                    ("loc_y", np.double),
-                                                                    ("theta", np.double),
-                                                                    ("tmst", np.double)]))
-
-        self.exp.log_recording(dict(rec_aim='ball', software='EthoPy', version='0.1',
-                                    filename=filename, source_path=source_path,
-                                    target_path=target_path, rec_type='behavioral'))
-
+        self.dataset = self.logger.createDataset(dataset_name='ball',
+                                                 dataset_type=np.dtype([("loc_x", np.double),
+                                                                        ("loc_y", np.double),
+                                                                        ("theta", np.double),
+                                                                        ("tmst", np.double)]))
 
         self.thread_end = threading.Event()
         self.thread_runner = threading.Thread(target=self.readMouse)
