@@ -194,6 +194,14 @@ class ExperimentClass:
         if sum(fixed_p) == 0:  fixed_p = np.ones(np.shape(fixed_p))
         return np.random.choice(un_choices, 1, p=fixed_p/sum(fixed_p))
 
+    def get_performance(self):
+        idx = np.logical_or(~np.isnan(self.beh.reward_history), ~np.isnan(self.beh.punish_history))
+        rew_h = np.asarray(self.beh.reward_history); rew_h = rew_h[idx]
+        perf = np.nanmean(np.greater(rew_h[-self.params['staircase_window']:], 0))
+        choice_h = np.int64(np.asarray(self.beh.choice_history)[idx])
+        choice_h = [[c, d] for c, d in zip(choice_h, np.asarray(self.dif_h)[idx])]
+        return perf, choice_h
+
     def _get_new_cond(self):
         """ Get curr condition & create random block of all conditions """
         if self.params['trial_selection'] == 'fixed':
@@ -535,3 +543,21 @@ class MouseWeight(dj.Manual):
     ---
     weight                          : double(5,2)                  # weight in grams
     """
+
+
+@dataclass
+class Block:
+    id: int = datafield(compare=True, default=0, hash=True)
+    thr_up: float = datafield(compare=False, default=.7)
+    thr_down: float = datafield(compare=False, default=0.55)
+    next_up: int = datafield(compare=False, default=0)
+    next_down: int = datafield(compare=False, default=0)
+    window: int = datafield(compare=False, default=20)
+    method: str = datafield(compare=False, default='fixed')
+    metric: str = datafield(compare=False, default='performance')
+    antibias: bool = datafield(compare=False, default=True)
+
+    def __init__(self, **kwargs):
+        names = set([f.name for f in fields(self)])
+        for k, v in kwargs.items():
+            if k in names: setattr(self, k, v)
