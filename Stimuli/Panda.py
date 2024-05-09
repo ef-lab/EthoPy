@@ -270,7 +270,7 @@ class Panda(Stimulus, dj.Manual):
                           str(self.exp.logger.trial_key['session']) + '_trial' + str(itrial) + '.mov'
             print(output_name)
             os.system("ffmpeg -framerate " + str(self.fps) + " -pattern_type glob -i " + f'"{name}"'
-                      + " -loglevel quiet -c:v libx264 -pix_fmt yuv420p -crf 5 " + f'"{output_name}"')
+                      + " -loglevel quiet -c:v libx264 -pix_fmt gray -crf 5 " + f'"{output_name}"')
 
         for f in glob.glob(self.record_path + '*.png'):
             os.remove(f)
