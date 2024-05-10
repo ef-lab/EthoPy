@@ -3,6 +3,8 @@ import itertools
 import matplotlib.pyplot as plt
 from utils.helper_functions import generate_conf_list
 from dataclasses import dataclass, field, fields
+from sklearn.metrics import roc_auc_score
+from scipy import stats
 
 class State:
     state_timer, __shared_state = Timer(), {}
@@ -30,9 +32,9 @@ class State:
 
 class ExperimentClass:
     """  Parent Experiment """
-    curr_state, curr_trial, total_reward, cur_dif, flip_count, states, stim, sync = '', 0, 0, 0, 0, dict(), False, False
-    un_choices, difs, iter, curr_cond, dif_h, stims, response, resp_ready = [], [], [], dict(), [], dict(), [], False
-    required_fields, default_key, conditions, cond_tables, quit, running = [], dict(), [], [], False, False
+    curr_state, curr_trial, total_reward, cur_block, flip_count, states, stim, sync = '', 0, 0, 0, 0, dict(), False, False
+    un_choices, blocks, iter, curr_cond, block_h, stims, response, resp_ready = [], [], [], dict(), [], dict(), [], False
+    required_fields, default_key, conditions, cond_tables, quit, running, cur_block_sz = [], dict(), [], [], False, False, 0
 
     # move from State to State using a template method.
     class StateMachine:
@@ -57,7 +59,7 @@ class ExperimentClass:
 
     def setup(self, logger, BehaviorClass, session_params):
         self.running = False
-        self.conditions, self.iter, self.quit, self.curr_cond, self.dif_h, self.stims, self.curr_trial = [], [], False, dict(), [], dict(),0
+        self.conditions, self.iter, self.quit, self.curr_cond, self.block_h, self.stims, self.curr_trial = [], [], False, dict(), [], dict(),0
         if "setup_conf_idx" not in self.default_key: self.default_key["setup_conf_idx"] = 0
         self.params = {**self.default_key, **session_params}
         self.logger = logger
@@ -132,18 +134,18 @@ class ExperimentClass:
         self.conditions = conditions
         resp_cond = self.params['resp_cond'] if 'resp_cond' in self.params else 'response_port'
         if np.all(['difficulty' in cond for cond in conditions]):
-            self.difs = np.array([cond['difficulty'] for cond in self.conditions])
-            diff_flag = True
-            self.cur_dif = min(self.difs)
+            self.blocks = np.array([cond['difficulty'] for cond in self.conditions])
+            block_flag = True
+            self.cur_block = min(self.blocks)
         else:
-            diff_flag = False
+            block_flag = False
         if np.all([resp_cond in cond for cond in conditions]):
-            if diff_flag:
-                self.choices = np.array([make_hash([d[resp_cond], d['difficulty']]) for d in conditions])
+            if block_flag:
+                self.choices = np.array([make_hash([d[resp_cond], d['block'].id]) for d in conditions])
             else:
                 self.choices = np.array([make_hash(d[resp_cond]) for d in conditions])
             self.un_choices, un_idx = np.unique(self.choices, axis=0, return_index=True)
-            if diff_flag: self.un_difs = self.difs[un_idx]
+            if block_flag: self.un_blocks = self.blocks[un_idx]
 
     def prepare_trial(self):
         old_cond = self.curr_cond
@@ -195,68 +197,51 @@ class ExperimentClass:
         if sum(fixed_p) == 0:  fixed_p = np.ones(np.shape(fixed_p))
         return np.random.choice(un_choices, 1, p=fixed_p/sum(fixed_p))
 
-    def get_performance(self):
-        idx = np.logical_or(~np.isnan(self.beh.reward_history), ~np.isnan(self.beh.punish_history))
+    def _get_performance(self):
+        idx = np.logical_or(~np.isnan(self.beh.reward_history), ~np.isnan(self.beh.punish_history))  # select valid
         rew_h = np.asarray(self.beh.reward_history); rew_h = rew_h[idx]
-        perf = np.nanmean(np.greater(rew_h[-self.params['staircase_window']:], 0))
         choice_h = np.int64(np.asarray(self.beh.choice_history)[idx])
-        choice_h = [[c, d] for c, d in zip(choice_h, np.asarray(self.dif_h)[idx])]
+        choice_h = [[c, d] for c, d in zip(choice_h, np.asarray(self.block_h)[idx])]
+        if self.curr_cond['block'].metric == 'accuracy':
+            perf = np.nanmean(np.greater(rew_h[-self.curr_cond['block'].window:], 0))
+        elif self.curr_cond['block'].metric == 'dprime':
+            y_true = [c if r else c % 2 + 1 for (c, r) in zip(choice_h, rew_h)]
+            perf = np.sqrt(2) * stats.norm.ppf(roc_auc_score(y_true, choice_h))
+        else:
+            print('Performance method not implemented!')
+            self.quit = True
+            perf = np.nan
         return perf, choice_h
 
     def _get_new_cond(self):
         """ Get curr condition & create random block of all conditions """
-        perf, choice_h = self.get_performance()
-        if self.iter == 1 or np.size(self.iter) == 0:
-            if (self.beh.choice_history[-1:][0]>0 if np.size(self.beh.choice_history)!=0 else True):
-                self.iter = self.params['staircase_window']
-                perf = np.nanmean(np.greater(rew_h[-self.params['staircase_window']:], 0))
-                if   perf >= self.params['stair_up']   and self.cur_dif < max(self.difs):  self.cur_dif += 1
-                elif perf < self.params['stair_down'] and self.cur_dif > 1 and self.cur_dif > min(self.difs):
-                    self.cur_dif -= 1
-                self.logger.update_setup_info({'difficulty': self.cur_dif})
-        elif np.size(self.beh.choice_history) and self.beh.choice_history[-1:][0] > 0: self.iter -= 1
-        anti_bias = self._anti_bias(choice_h, self.un_choices[self.un_difs == self.cur_dif])
-        sel_conds = [i for (i, v) in zip(self.conditions, np.logical_and(self.choices == anti_bias,
-                                                   self.difs == self.cur_dif)) if v]
-        self.curr_cond = np.random.choice(sel_conds)
-        self.dif_h.append(self.cur_dif)
-
-    def _get_new_cond(self):
-        """ Get curr condition & create random block of all conditions """
-        if self.params['trial_selection'] == 'fixed':
+        if self.curr_cond['block'].method == 'fixed':
             self.curr_cond = [] if len(self.conditions) == 0 else self.conditions.pop()
-        elif self.params['trial_selection'] == 'block':
+        elif self.curr_cond['block'].method == 'block':
             if np.size(self.iter) == 0: self.iter = np.random.permutation(np.size(self.conditions))
             cond = self.conditions[self.iter[0]]
             self.iter = self.iter[1:]
             self.curr_cond = cond
-        elif self.params['trial_selection'] == 'random':
+        elif self.curr_cond['block'].method == 'random':
             self.curr_cond = np.random.choice(self.conditions)
-        elif self.params['trial_selection'] == 'biased':
-            idx = [~np.isnan(ch).any() for ch in self.beh.choice_history]
-            choice_h = np.asarray(self.beh.choice_history)
-            anti_bias = self._anti_bias(choice_h[idx], self.un_choices)
-            selected_conditions = [i for (i, v) in zip(self.conditions, self.choices == anti_bias) if v]
-            self.curr_cond = np.random.choice(selected_conditions)
-        elif self.params['trial_selection'] == 'staircase':
-            idx = np.logical_or(~np.isnan(self.beh.reward_history), ~np.isnan(self.beh.punish_history))
-            rew_h = np.asarray(self.beh.reward_history); rew_h = rew_h[idx]
-            choice_h = np.int64(np.asarray(self.beh.choice_history)[idx])
-            choice_h = [[c, d] for c, d in zip(choice_h, np.asarray(self.dif_h)[idx])]
-            if self.iter == 1 or np.size(self.iter) == 0:
-                if (self.beh.choice_history[-1:][0]>0 if np.size(self.beh.choice_history)!=0 else True):
-                    self.iter = self.params['staircase_window']
-                    perf = np.nanmean(np.greater(rew_h[-self.params['staircase_window']:], 0))
-                    if   perf >= self.params['stair_up']   and self.cur_dif < max(self.difs):  self.cur_dif += 1
-                    elif perf < self.params['stair_down'] and self.cur_dif > 1 and self.cur_dif > min(self.difs):
-                        self.cur_dif -= 1
-                    self.logger.update_setup_info({'difficulty': self.cur_dif})
-            elif np.size(self.beh.choice_history) and self.beh.choice_history[-1:][0] > 0: self.iter -= 1
-            anti_bias = self._anti_bias(choice_h, self.un_choices[self.un_difs == self.cur_dif])
-            sel_conds = [i for (i, v) in zip(self.conditions, np.logical_and(self.choices == anti_bias,
-                                                       self.difs == self.cur_dif)) if v]
+        elif self.curr_cond['block'].method == 'staircase':
+            perf, choice_h = self._get_performance()
+            if np.size(self.beh.choice_history) and self.beh.choice_history[-1:][0] > 0:
+                self.cur_block_sz += 1  # current block trial counter
+            if self.cur_block_sz >= self.curr_cond['block'].window:
+                if perf >= self.params['stair_up']:
+                    self.cur_block = self.curr_cond['block'].next_up
+                elif perf < self.params['stair_down']:
+                    self.cur_block = self.curr_cond['block'].next_down
+                self.cur_block_sz = 0
+                self.logger.update_setup_info({'difficulty': self.cur_block})
+            if self.curr_cond['block'].antibias:
+                anti_bias = self._anti_bias(choice_h, self.un_choices[self.un_blocks == self.cur_block])
+                condition_idx = np.logical_and(self.choices == anti_bias, self.blocks == self.cur_block)
+            else: condition_idx = self.blocks == self.cur_block
+            sel_conds = [i for (i, v) in zip(self.conditions, condition_idx) if v]
             self.curr_cond = np.random.choice(sel_conds)
-            self.dif_h.append(self.cur_dif)
+            self.block_h.append(self.cur_block)
         else:
             print('Selection method not implemented!')
             self.quit = True
@@ -573,7 +558,7 @@ class Block:
     next_down: int = field(compare=False, default=0)
     window: int = field(compare=False, default=20)
     method: str = field(compare=False, default='fixed')
-    metric: str = field(compare=False, default='performance')
+    metric: str = field(compare=False, default='accuracy')
     antibias: bool = field(compare=False, default=True)
 
     def __init__(self, **kwargs):
