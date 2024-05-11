@@ -61,6 +61,7 @@ class ExperimentClass:
         self.running = False
         self.conditions, self.iter, self.quit, self.curr_cond, self.block_h, self.stims, self.curr_trial = [], [], False, dict(), [], dict(),0
         if "setup_conf_idx" not in self.default_key: self.default_key["setup_conf_idx"] = 0
+        self.default_key['block'] = self.Block()
         self.params = {**self.default_key, **session_params}
         self.logger = logger
         self.logger.log_session({**self.default_key, **session_params, 'experiment_type': self.cond_tables[0]},
@@ -105,9 +106,10 @@ class ExperimentClass:
 
     def make_conditions(self, stim_class, conditions, stim_periods=None):
         stim_name = stim_class.__class__.__name__
+        print('stim_name:', stim_name)
         if stim_name not in self.stims:
             stim_class.init(self)
-            stim_name = stim_class.__class__.__name__
+            stim_name = stim_class.__class__.__name__ # WHY?
             self.stims[stim_name] = stim_class
         conditions.update({'stimulus_class': stim_name})
         if not stim_periods:
@@ -121,7 +123,6 @@ class ExperimentClass:
             for comb in list(itertools.product(*all_cond)):
                 for i in range(len(stim_periods)): conditions[stim_periods[i]].append(comb[i])
             conditions = factorize(conditions)
-
         conditions = self.log_conditions(**self.beh.make_conditions(conditions))
         for cond in conditions:
             assert np.all([field in cond for field in self.required_fields])
@@ -133,30 +134,28 @@ class ExperimentClass:
     def push_conditions(self, conditions):
         self.conditions = conditions
         resp_cond = self.params['resp_cond'] if 'resp_cond' in self.params else 'response_port'
-        if np.all(['difficulty' in cond for cond in conditions]):
-            self.blocks = np.array([cond['difficulty'] for cond in self.conditions])
-            block_flag = True
-            self.cur_block = min(self.blocks)
-        else:
-            block_flag = False
+        self.blocks = np.array([cond['block'].id for cond in self.conditions])
         if np.all([resp_cond in cond for cond in conditions]):
-            if block_flag:
-                self.choices = np.array([make_hash([d[resp_cond], d['block'].id]) for d in conditions])
-            else:
-                self.choices = np.array([make_hash(d[resp_cond]) for d in conditions])
+            self.choices = np.array([make_hash([d[resp_cond], d['block'].id]) for d in conditions])
             self.un_choices, un_idx = np.unique(self.choices, axis=0, return_index=True)
-            if block_flag: self.un_blocks = self.blocks[un_idx]
+            self.un_blocks = self.blocks[un_idx]
+        # select random condition for first trial initialization
+        self.curr_cond = np.random.choice([i for (i, v) in zip(self.conditions, self.blocks == min(self.blocks)) if v])
 
     def prepare_trial(self):
         old_cond = self.curr_cond
         self._get_new_cond()
+
         if not self.curr_cond or self.logger.thread_end.is_set():
             self.quit = True
             return
-        if 'stimulus_class' not in old_cond or old_cond['stimulus_class'] != self.curr_cond['stimulus_class']:
-            if 'stimulus_class' in old_cond: self.stim.exit()
+        if 'stimulus_class' not in old_cond or self.curr_trial == 0 \
+                or old_cond['stimulus_class'] != self.curr_cond['stimulus_class']:
+            if 'stimulus_class' in old_cond and self.curr_trial != 0: self.stim.exit()
             self.stim = self.stims[self.curr_cond['stimulus_class']]
+            print('setting up stimulus')
             self.stim.setup()
+            print('done')
         self.curr_trial += 1
         self.logger.update_trial_idx(self.curr_trial)
         self.trial_start = self.logger.logger_timer.elapsed_time()
@@ -180,7 +179,7 @@ class ExperimentClass:
                 core = [field for field in rgetattr(eval(schema), ctable).primary_key if field != hsh]
                 fields = [field for field in rgetattr(eval(schema), ctable).heading.names]
                 if not np.all([np.any(np.array(k) == list(cond.keys())) for k in fields]):
-                    if self.logger.manual_run: print('skipping ', ctable)
+                    #if self.logger.manual_run: print('skipping ', ctable)
                     continue # only insert complete tuples
                 if core and hasattr(cond[core[0]], '__iter__'):
                     for idx, pcond in enumerate(cond[core[0]]):
@@ -230,21 +229,38 @@ class ExperimentClass:
                 self.cur_block_sz += 1  # current block trial counter
             if self.cur_block_sz >= self.curr_cond['block'].window:
                 if perf >= self.params['stair_up']:
-                    self.cur_block = self.curr_cond['block'].next_up
+                    cur_block = self.curr_cond['block'].next_up
                 elif perf < self.params['stair_down']:
-                    self.cur_block = self.curr_cond['block'].next_down
+                    cur_block = self.curr_cond['block'].next_down
                 self.cur_block_sz = 0
-                self.logger.update_setup_info({'difficulty': self.cur_block})
+                self.logger.update_setup_info({'difficulty': cur_block})
             if self.curr_cond['block'].antibias:
-                anti_bias = self._anti_bias(choice_h, self.un_choices[self.un_blocks == self.cur_block])
-                condition_idx = np.logical_and(self.choices == anti_bias, self.blocks == self.cur_block)
-            else: condition_idx = self.blocks == self.cur_block
+                anti_bias = self._anti_bias(choice_h, self.un_choices[self.un_blocks == cur_block])
+                condition_idx = np.logical_and(self.choices == anti_bias, self.blocks == cur_block)
+            else: condition_idx = self.blocks == cur_block
             sel_conds = [i for (i, v) in zip(self.conditions, condition_idx) if v]
             self.curr_cond = np.random.choice(sel_conds)
-            self.block_h.append(self.cur_block)
+            self.block_h.append(cur_block)
         else:
             print('Selection method not implemented!')
             self.quit = True
+
+    @dataclass
+    class Block:
+        id: int = field(compare=True, default=0, hash=True)
+        thr_up: float = field(compare=False, default=.7)
+        thr_down: float = field(compare=False, default=0.55)
+        next_up: int = field(compare=False, default=0)
+        next_down: int = field(compare=False, default=0)
+        window: int = field(compare=False, default=20)
+        method: str = field(compare=False, default='fixed')
+        metric: str = field(compare=False, default='accuracy')
+        antibias: bool = field(compare=False, default=True)
+
+        def __init__(self, **kwargs):
+            names = set([f.name for f in fields(self)])
+            for k, v in kwargs.items():
+                if k in names: setattr(self, k, v)
 
 
 @experiment.schema
@@ -549,19 +565,3 @@ class MouseWeight(dj.Manual):
     """
 
 
-@dataclass
-class Block:
-    id: int = field(compare=True, default=0, hash=True)
-    thr_up: float = field(compare=False, default=.7)
-    thr_down: float = field(compare=False, default=0.55)
-    next_up: int = field(compare=False, default=0)
-    next_down: int = field(compare=False, default=0)
-    window: int = field(compare=False, default=20)
-    method: str = field(compare=False, default='fixed')
-    metric: str = field(compare=False, default='accuracy')
-    antibias: bool = field(compare=False, default=True)
-
-    def __init__(self, **kwargs):
-        names = set([f.name for f in fields(self)])
-        for k, v in kwargs.items():
-            if k in names: setattr(self, k, v)

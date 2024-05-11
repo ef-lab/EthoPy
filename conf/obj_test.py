@@ -59,7 +59,8 @@ for irep in range(0, reps):
                 'obj_rot'       : (rot_f(), rot_f()),
                 'obj_tilt'      : 0,
                 'obj_yaw'       : 0},
-            'difficulty'        : 0,
+            'block'        : exp.Block(id=0),
+            'difficulty': 0,
             'reward_port'       : rew_prob[idx],
             'response_port'     : rew_prob[idx],
             'cue_ready'         : 100,
@@ -69,6 +70,7 @@ for irep in range(0, reps):
             'reward_duration'   : 2000,
             'punish_duration'   : 5000,
             'reward_amount'     : 6})
+
 
 # run experiments
 exp.push_conditions(conditions)
