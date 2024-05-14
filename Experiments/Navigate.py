@@ -171,7 +171,7 @@ class InterTrial(Experiment):
 
 class Exit(Experiment):
     def entry(self):
-        self.release()
+        self.interface.release()
         
     def run(self):
         self.stop()

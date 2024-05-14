@@ -1,12 +1,21 @@
-from time import sleep
-import numpy as np
-from utils.Timer import *
-from utils.helper_functions import *
+import multiprocessing
+import socket
+import struct
+import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
-import threading, multiprocessing, struct, time, socket
-from datetime import datetime
-from dataclasses import dataclass, fields, astuple
+from dataclasses import astuple, dataclass
 from dataclasses import field as datafield
+from dataclasses import fields
+from datetime import datetime
+from importlib import import_module
+from time import sleep
+
+import numpy as np
+
+from utils.helper_functions import *
+from utils.Timer import *
+
 
 class Interface:
     port, resp_tmst, ready_dur, activity_tmst, ready_tmst, pulse_rew, ports, response, duration = 0, 0, 0, 0, 0, dict(), [], [], dict()
@@ -27,6 +36,27 @@ class Interface:
         self.ports = np.array(self.ports)
         self.proximity_ports = np.array([p.port for p in self.ports if p.type == 'Proximity'])
         self.rew_ports = np.array([p.port for p in self.ports if p.reward])
+
+        # check is the setup idx has a camera and initialize it
+        if self.exp.params["setup_conf_idx"] in self.logger.get(
+            table="SetupConfiguration.Camera", fields=["setup_conf_idx"]
+        ):
+            camera_params = self.logger.get(
+                table="SetupConfiguration.Camera",
+                key=f"setup_conf_idx={self.exp.params['setup_conf_idx']}",
+                as_dict=True,
+            )[0]
+            _camera = getattr(
+                import_module("Interfaces.Camera"), camera_params["discription"]
+            )
+            self.camera = _camera(
+                filename=(f"{self.logger.trial_key['animal_id']}"
+                          f"_{self.logger.trial_key['session']}"),
+                logger=self.logger,
+                logger_timer = self.logger.logger_timer,
+                video_aim = camera_params.pop('video_aim'),
+                **camera_params,
+            )
 
     def give_liquid(self, port, duration=False, log=True):
         pass
@@ -53,8 +83,10 @@ class Interface:
         pass
 
     def release(self):
-        pass
-    
+        if self.camera:
+            print("Release camear"*10)
+            if self.camera.recording.is_set(): self.camera.stop_rec()
+
     def load_calibration(self):
         for port in list(set(self.rew_ports)):
             self.pulse_rew[port] = dict()
