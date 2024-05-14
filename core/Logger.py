@@ -1,10 +1,19 @@
-import numpy, socket, json, os, pathlib, threading, subprocess, time, platform
-from queue import PriorityQueue
-from datetime import datetime
+import os
+import pathlib
+import platform
+import socket
+import subprocess
+import threading
+import time
 from dataclasses import dataclass
 from dataclasses import field as datafield
-from typing import Any
+from datetime import datetime
+from queue import PriorityQueue
+from typing import Any, Optional
+
 import datajoint as dj
+import numpy
+
 from utils.helper_functions import *
 from utils.Timer import Timer
 from utils.Writer import Writer
@@ -60,7 +69,6 @@ class Logger:
             print('setting local storage directory: ', self.source_path)
         else:
             self.source_path = dj.config['source_path']
-
         if 'target_path' in dj.config and os.path.isdir(dj.config['target_path']):
             self.target_path = dj.config['target_path']
         else:
@@ -204,27 +212,65 @@ class Logger:
         while not self.queue.empty(): print('Waiting for empty queue... qsize: %d' % self.queue.qsize()); time.sleep(1)
         self.thread_end.set()
 
-    def createDataset(self, dataset_name, dataset_type, log=True):
-
-        path = self.source_path + 'Recordings/%d_%d/' % (self.trial_key['animal_id'], self.trial_key['session'])
-        if not os.path.isdir(path):  os.makedirs(path) # create path if necessary
+    def createDataset(
+                    self,
+                    dataset_name: str,
+                    dataset_type: type,
+                    filename: Optional[str] = None,
+                    log: Optional[bool]=True,
+                ) -> Any:
+        """
+        Create a dataset and return the dataset object.
+        Args:
+            target_path (str): The target path for the dataset.
+            dataset_name (str): The name of the dataset.
+            dataset_type (type): The datatype of the dataset.
+            filename (str, optional): The filename for the h5 file. If not provided, 
+            a default filename will be generated based on the dataset name, animal ID, 
+            session, and current timestamp.
+            log (bool, optional): If True call the log_recording
+        Returns:
+            Tuple[str, Any]: A tuple containing the filename and the dataset object.
+        """
+        folder = (f"Recordings/{self.trial_key['animal_id']}"
+                  f"_{self.trial_key['session']}/")
+        path = self.source_path + folder
+        if not os.path.isdir(path):
+            os.makedirs(path) # create path if necessary
 
         if not os.path.isdir(self.target_path):
             print('No target directory set! Autocopying will not work.')
             target_path = False
         else:
-            target_path = self.target_path + '%d_%d/' % (self.trial_key['animal_id'], self.trial_key['session'])
-            if not os.path.isdir(target_path): os.makedirs(target_path)
+            target_path = self.target_path + folder
+            if not os.path.isdir(target_path):
+                os.makedirs(target_path)
 
-        filename = '%s_%d_%d_%s.h5' % (dataset_name, self.trial_key['animal_id'],
-                                         self.trial_key['session'], datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
-        self.datasets[dataset_name] = self.Writer(path + filename, target_path)
-        self.datasets[dataset_name].createDataset(dataset_name, shape=(1,), dtype=dataset_type)
-        rec_key = dict(rec_aim=dataset_name, software='EthoPy', version=VERSION,
-                       filename=filename, source_path=path, target_path=target_path)
-        if log: self.log_recording(rec_key)
-        return self.datasets[dataset_name]
+        # Generate filename if not provided
+        if filename is None:
+            filename = "%s_%d_%d_%s.h5" % (
+                dataset_name,
+                self.trial_key["animal_id"],
+                self.trial_key["session"],
+                datetime.now().strftime("%Y-%m-%d-%H-%M-%S"),
+            )
 
+        if filename not in self.datasets:
+            # create h5 file if not exists
+            self.datasets[filename] = self.Writer(path + filename, target_path)
+
+        # create new dataset in the h5 files
+        self.datasets[filename].createDataset(
+            dataset_name, shape=(1,), dtype=dataset_type
+        )
+
+        if log:
+            rec_key = dict(rec_aim=dataset_name, software='EthoPy', version=VERSION,
+                        filename=filename, source_path=path, target_path=target_path)
+            self.log_recording(rec_key)
+
+        return self.datasets[filename]
+    
     def log_recording(self, rec_key):
         recs = self.get(schema='recording', table='Recording', key=self.trial_key, fields=['rec_idx'])
         rec_idx = 1 if not recs else max(recs) + 1

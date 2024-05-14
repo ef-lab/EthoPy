@@ -1,292 +1,631 @@
+import base64
 import io
+import json
+import logging
 import multiprocessing as mp
 import os
 import shutil
 import threading
 import time
 import warnings
+from abc import ABC, abstractmethod
 from datetime import datetime
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from multiprocessing import Pool
+from pathlib import Path
 from queue import Queue
-from typing import Optional, Tuple
+from threading import Condition, Lock, Thread
+from typing import Any, List, Optional, Union
 
 import numpy as np
 
-try:
-    from skvideo.io import FFmpegWriter
-    import_skvideo = True
-except:
-    import_skvideo = False
+from utils.Timer import Timer
+
+# from libcamera import controls
+
 
 try:
-    import picamera
-    import_PiCamera = True
-except:
-    import_PiCamera = False
+    from core.Logger import Logger
+except ImportError:
+    print("Logger not found.")
 
-class Camera:
-    def __init__(self,
-                source_path: Optional[str] = None,
-                target_path: Optional[str] = None,
-                filename: Optional[str] = None,  
-                fps: int = 15, 
-                logger_timer: 'Timer' = None, 
-                **kwargs):
-        
-        self.initialized = threading.Event()
-        self.initialized.clear()
+try:
+    import cv2
+    from picamera2 import MappedArray, Picamera2
+    from picamera2.encoders import H264Encoder, MJPEGEncoder
+    from picamera2.outputs import FfmpegOutput, FileOutput
 
+    IMPORT_PICAMERA = True
+except ImportError as e:
+    IMPORT_PICAMERA = False
+
+
+class Camera(ABC):
+    """
+    A class to manage a camera.
+
+    This class provides methods to initialize, start, stop, and record from a camera.
+    It also provides methods to manage the recording process, such as setting up a frame
+    queue and writing frames to it.
+
+    Attributes:
+        filename (str, optional): The name of the file.
+        initialized (threading.Event): An event to indicate whether the camera is initialized.
+        recording (mp.Event): An event to indicate whether the camera is recording.
+        stop (mp.Event): An event to indicate whether the camera should stop recording.
+    """
+
+    def __init__(
+        self,
+        filename: Optional[str] = None,
+        logger: Optional["Logger"] = None,
+        video_aim: Optional[str] = None,
+    ):
         self.recording = mp.Event()
-        self.recording.clear() 
+        self.recording.clear()
+
+        with open("dj_local_conf.json", "r", encoding="utf-8") as f:
+            conf = json.load(f)
+
+        self.source_path = (
+            self._check_json_config("video_source_path", conf)
+            + f"/Recordings/{filename}/"
+        )
+        self.target_path = (
+            self._check_json_config("video_target_path", conf)
+            + f"/Recordings/{filename}/"
+        )
+        print(conf)
+        try:
+            self.serve_port = conf["server.port"]
+        except KeyError:
+            self.serve_port = 0
+        if self.serve_port:
+            self.server_user = self._check_json_config("server.user", conf)
+            self.server_password = self._check_json_config("server.password", conf)
+        self.httpthread = None
+        self.tmst_type = None
+        self.dataset = None
+
+        self.post_process = mp.Event()
+        self.post_process.clear()
+        self.process_queue = mp.Queue()
 
         self.stop = mp.Event()
         self.stop.clear()
 
-        self.fps = fps
-        self._cam = None 
+        self._cam = None
         self.filename = filename
-        self.source_path = source_path
-        self.target_path = target_path 
-        self.logger_timer = logger_timer
-        if not globals()['import_skvideo']:
-            raise ImportError('you need to install the skvideo: sudo pip3 install sk-video')
-        
-        self.setup()
+        self.logger = logger
+
+        self.frame_queue = None
+        self.capture_runner = None
+        self.write_runner = None
+
+        if logger:
+            # log video recording
+            logger.log_recording(
+                dict(
+                    rec_aim=video_aim,
+                    software="EthoPy",
+                    version="0.1",
+                    filename=self.filename + ".mp4",
+                    source_path=self.source_path,
+                    target_path=self.target_path,
+                )
+            )
+            h5s_filename = (
+                f"animal_id_{logger.trial_key['animal_id']}"
+                f"_session_{logger.trial_key['session']}.h5"
+            )
+            self.filename_tmst = "video_tmst_" + h5s_filename
+            logger.log_recording(
+                dict(
+                    rec_aim="sync",
+                    software="EthoPy",
+                    version="0.1",
+                    filename=self.filename_tmst,
+                    source_path=self.source_path,
+                    target_path=self.target_path,
+                )
+            )
+
+        self.camera_process = mp.Process(target=self.start_rec)
+        self.camera_process.start()
 
     @property
-    def filename(self):
+    def filename(self) -> str:
+        """
+        Get the filename.
+
+        Returns:
+            str: The filename.
+        """
         return self._filename
 
     @filename.setter
-    def filename(self, filename):
-        if filename is None:
-            filename = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}"
-        self._filename = filename
+    def filename(self, filename: Optional[str]):
+        """
+        Set the filename. If filename is None, set it to the current date and time.
+
+        Args:
+            filename (Optional[str]): The filename.
+        """
+        self._filename = filename or datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     @property
     def source_path(self) -> str:
+        """
+        Get the source path.
+
+        Returns:
+            str: The source path.
+        """
         return self._source_path
 
     @source_path.setter
-    def source_path(self, source_path):
-        # make folder if doesn't exist
-        if not os.path.exists(source_path) and not self.recording.is_set():
-            os.makedirs(source_path)
+    def source_path(self, source_path: str):
+        """
+        Set the source path. If the path does not exist, create it.
 
-        # check that folder has been made correctly
-        if not os.path.exists(source_path):
-            raise FileNotFoundError(f"The path '{source_path}' does not exist.")
-
-        self._source_path = source_path
+        Args:
+            source_path (str): The source path.
+        """
+        self._source_path = self._create_and_set_path(source_path)
 
     @property
     def target_path(self) -> str:
+        """
+        Get the target path.
+
+        Returns:
+            str: The target path.
+        """
         return self._target_path
 
     @target_path.setter
-    def target_path(self, target_path):
-        # make folder if doesn't exist
-        if not os.path.exists(target_path) and not self.recording.is_set():
-            os.makedirs(target_path)
+    def target_path(self, target_path: str):
+        """
+        Set the target path. If the path does not exist, create it.
 
-        # check that folder has been made correctly
-        if not os.path.exists(target_path):
-            raise FileNotFoundError(f"The path '{target_path}' does not exist.")
+        Args:
+            target_path (str): The target path.
+        """
+        self._target_path = self._create_and_set_path(target_path)
 
-        self._target_path = target_path
+    def _create_and_set_path(self, path: str) -> str:
+        """
+        Create the path if it does not exist and return the path.
 
-    def clear_local_videos(self):
-        if os.path.exists(self.source_path):
-            files = [file for _, _, files in os.walk(self.source_path) for file in files]
-            for file in files:
-                shutil.move(os.path.join(self.source_path, file), os.path.join(self.target_path, file))
-                print(f"transfered file : {file}")
+        Args:
+            path (str): The path.
 
-    def setup(self):
+        Returns:
+            str: The path.
+        """
+        if not self.recording.is_set():
+            os.makedirs(path, exist_ok=True)
+
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"The path '{path}' does not exist.")
+
+        return path
+
+    @staticmethod
+    def copy_file(args):
+        """
+        Copy a file from the source path to the target path.
+
+        Args:
+            args (tuple): A tuple containing the source file path and the target directory path.
+
+        Returns:
+            None
+
+        Raises:
+            FileNotFoundError: If the source file is not found.
+
+        """
+        file, target = args
+        try:
+            shutil.copy(str(file), str(target / file.name))
+            print(f"Transferred file: {file.name}")
+        except FileNotFoundError as ex:
+            print(f"Failed to transfer file: {file.name}. Reason: {ex}")
+
+    def clear_local_videos(self) -> None:
+        """
+        Move all files from the source path to the target path.
+        """
+        source = Path(self.source_path)
+        target = Path(self.target_path)
+
+        if not source.exists():
+            raise ValueError(f"Source path {source} does not exist.")
+
+        if not target.exists():
+            raise ValueError(f"Target path {target} does not exist.")
+
+        files = [(entry, target) for entry in source.iterdir() if entry.is_file()]
+
+        # Use all available CPUs
+        with Pool(os.cpu_count()) as p:
+            p.map(self.copy_file, files)
+
+    def setup(self) -> None:
+        """
+        Set up the frame queue and the capture and write runners.
+        """
         self.frame_queue = Queue()
         self.capture_runner = threading.Thread(target=self.rec)
-        self.write_runner = threading.Thread(target=self.dequeue, args=(self.frame_queue,))  # max insertion rate of 10 events/sec
-            
-    def start_rec(self):
+        self.write_runner = threading.Thread(
+            target=self.dequeue, args=(self.frame_queue,)
+        )
+
+    def start_rec(self) -> None:
+        """
+        Start the capture and write runners.
+        """
+        self.setup()
         self.capture_runner.start()
         self.write_runner.start()
+        self.capture_runner.join()
+        self.write_runner.join()
 
-    def dequeue(self, frame_queue:"Queue"):
+    def dequeue(self, frame_queue: Queue) -> None:
+        """
+        Dequeue frames from the frame queue and write them until the stop event is set.
+
+        Args:
+            frame_queue (Queue): The frame queue to dequeue frames from.
+        """
         while not self.stop.is_set() or not frame_queue.empty():
             if not frame_queue.empty():
                 self.write_frame(frame_queue.get())
             else:
-                time.sleep(.01)
+                time.sleep(0.01)
 
-    def stop_rec(self):
+    def stop_rec(self) -> None:
+        """
+        Set the stop event and join the write runner.
+        """
         self.stop.set()
-        self.capture_runner.join()
-        self.write_runner.join()
+        time.sleep(1)
+        # TODO: use join and close (possible issue due to h5 files)
+        self.camera_process.join()
 
-    def rec(self):
-        raise NotImplementedError
+    @staticmethod
+    def _check_json_config(key: str, conf) -> str:
+        """
+        Check if a key exists in the JSON configuration file.
 
-    def write_frame(self, item):
-        raise NotImplementedError
+        Args:
+            key (str): The key to check.
+        """
+        if not conf.get(key, False):
+            raise ValueError(f"{key} is not provided in the dj_local_conf.json.")
+        else:
+            return conf[key]
+
+    @abstractmethod
+    def rec(self) -> None:
+        """
+        Record frames. This method should be implemented by subclasses.
+        """
+
+    @abstractmethod
+    def write_frame(self, item: Any) -> None:
+        """
+        Write a frame. This method should be implemented by subclasses.
+
+        Args:
+            item (Any): The frame to write.
+        """
+
 
 class PiCamera(Camera):
-    def __init__(self,  
-                sensor_mode:int=0,
-                resolution:tuple=(1280,720), 
-                shutter_speed:int=0,
-                video_format:str='rgb',
-                logger_timer:'Timer'=None,
-                *args, **kwargs):
+    """A class to manage a rasberry pi camera."""
+    def __init__(
+        self,
+        resolution_x: int = 1280,
+        resolution_y: int = 720,
+        fps: int = 15,
+        sensor_mode: int = 1,
+        shutter_speed: int = 10000,
+        file_format: str = "rgb",
+        logger_timer: "Timer" = None,
+        **kwargs,
+    ):
 
-        if not globals()['import_PiCamera']:
-            raise ImportError('the picamera package could not be imported, install it before use!')
-        
-        self.video_format = video_format
-        
-        super(PiCamera, self).__init__(*args, **kwargs)
-        self.resolution    = resolution
-        self.logger_timer  = logger_timer
-        self.video_type    = self.check_video_format(video_format)
+        if not globals()["IMPORT_PICAMERA"]:
+            raise ImportError(
+                "the picamera package could not be imported, install it before use!"
+            )
+        self.initialized = threading.Event()
+        self.initialized.clear()
+        self.cam = None
+        self.picamera_ouput = None
+
+        self.sensor_mode = sensor_mode
+        self.resolution = (resolution_x, resolution_y)
         self.shutter_speed = shutter_speed
-        self.sensor_mode   = sensor_mode
+        self.file_format = file_format
+        self.tmst_output = None
 
-    @property
-    def sensor_mode(self) -> int:
-        return self._sensor_mode
+        self.fps = fps
+        self.logger_timer = logger_timer
 
-    @sensor_mode.setter
-    def sensor_mode(self, sensor_mode: int):
-        self._sensor_mode = sensor_mode
-        if self.initialized.is_set():
-            self.cam.sensor_mode = self._sensor_mode
+        self._lock_serving = Lock()
+        self._counter_serving = 0
+        self._encoder_serving = None
+        self._output_serving = None
+
+        super().__init__(kwargs["filename"], kwargs["logger"], kwargs["video_aim"])
 
     @property
     def fps(self) -> int:
+        """Get the frames per second of the camera."""
         return self._fps
 
     @fps.setter
-    def fps(self, fps:int):
+    def fps(self, fps: int):
+        """Set the frames per second of the camera."""
+        if not isinstance(fps, int):
+            raise TypeError("FPS must be an integer.")
         self._fps = fps
         if self.initialized.is_set():
             self.cam.framerate = self._fps
 
     def setup(self):
-        if 'compress'==self.check_video_format(self.video_format):
-            self.stream='compress'
-            self.video_output = io.open(self.source_path+self.filename+'.'+self.video_format, 'wb')
+        """Setup the camera."""
+        if self.logger is not None:
+            self.tmst_type = "h5"
+            self.dataset = self.logger.createDataset(
+                dataset_name="frame_tmst",
+                dataset_type=np.dtype([("txt", np.double)]),
+                filename=self.filename_tmst,
+                log=False,
+            )
         else:
-            self.stream='raw'
-            self.tmst_output   = io.open(f"{self.source_path}tmst_{self.filename}.txt", 'w', 1) # buffering = 1 means that every line is buffered
-            out_vid_fn = self.source_path+self.filename+'.mp4'
-            self.video_output = FFmpegWriter(out_vid_fn, inputdict={'-r': str(self.fps),},
-                                            outputdict={
-                                                '-vcodec': 'libx264',
-                                                '-pix_fmt': 'yuv420p',
-                                                '-r': str(self.fps),
-                                                '-preset': 'ultrafast',
-                                            },)
+            self.tmst_type = "txt"
+            self.tmst_output = io.open(
+                os.path.join(self.source_path, f"tmst_{self.filename}.txt"),
+                "w",
+                encoding="utf-8",
+            )
         super().setup()
 
-    def rec(self):
+    def rec(self) -> None:
+        """Start recording."""
         if self.recording.is_set():
-            warnings.warn('Camera is already recording!')
+            warnings.warn("Camera is already recording!")
             return
 
         self.recording_init()
-        self.cam.start_recording(self._picam_writer, self.video_format)
-        
-    def recording_init(self):
-        
+        self.cam.start()
+        while not self.stop.is_set():
+            time.sleep(1)
+        self._stop_recording()
+
+    def recording_init(self) -> None:
+        """Initialize the recording."""
         self.stop.clear()
         self.recording.set()
-
         self.cam = self.init_cam()
-        self._picam_writer = self.PiCam_Output(self.cam, resolution=self.resolution, 
-                                                frame_queue=self.frame_queue, 
-                                                video_type = self.video_type,
-                                                logger_timer=self.logger_timer)        
 
-    def init_cam(self) -> 'picamera.PiCamera':
-        cam = picamera.PiCamera(
-            resolution=self.resolution,
-            framerate=self.fps,
-            sensor_mode=self.sensor_mode)
-        if self.shutter_speed!=0: cam.shutter_speed = self.shutter_speed
-        self.initialized.set()
+    def init_cam(self) -> "PiCamera2":
+        """Initialize the camera."""
+        picam2 = Picamera2()
+        _mode = picam2.sensor_modes[self.sensor_mode]
+        config = picam2.create_video_configuration(
+            raw={"size": _mode["size"], "format": _mode["format"].format},
+            main={
+                "format": "RGB888",
+                "size": self.resolution,
+            },
+            lores={
+                "format": "YUV420",
+                "size": (int(self.resolution[0] / 4), int(self.resolution[1] / 4)),
+            },
+            controls={
+                "FrameDurationLimits": (int(1e6 / self.fps), int(1e6 / self.fps)),
+                "ExposureTime": int(self.shutter_speed),
+                # "AfMode": controls.AfModeEnum.Manual,
+                # "LensPosition": 0.0,
+            },
+        )
+        picam2.configure(config)
+        self.picamera_ouput = PicameraOutput(
+            self.logger_timer, self.frame_queue, self.process_queue, self.post_process
+        )
+        picam2.post_callback = lambda request: self.picamera_ouput.annotate_timestamp(
+            request
+        )
+        encoder = H264Encoder(10000000)
+        output = FfmpegOutput(str(Path(self.source_path) / f"{self.filename}.mp4"))
+        if self.serve_port > 0:
+            self.httpthread = HTTPServerThread(
+                self, server_user=self.server_user, server_password=self.server_password
+            )
+            self.httpthread.start()
+        picam2.start_encoder(encoder, output)
 
-        return cam
+        return picam2
 
-    def stop_rec(self):
+    def _stop_recording(self) -> None:
+        """Stop recording."""
         if self.recording.is_set():
+            if self.httpthread:
+                self.httpthread.stop_serving()
             self.cam.stop_recording()
             self.cam.close()
-        super().stop_rec()
 
-        self.video_output.close()
-        if self.stream=='raw': self.tmst_output.close()
+        if self.tmst_type == "txt":
+            self.tmst_output.close()
+        else:
+            self.dataset.exit()
 
         self.recording.clear()
-        self._cam=None
+        self._cam = None
         self.clear_local_videos()
 
-    def write_frame(self, item):
+    def write_frame(self, item: Union[List, tuple]) -> None:
+        """Write a frame to the output."""
         if not self.stop.is_set():
-            if self.stream=='compress':
-                self.video_output.write(item[1])
-            elif self.stream=='raw':
-                img=item[1].copy()
-                self.video_output.writeFrame(img)
+            if self.tmst_type == "txt":
                 self.tmst_output.write(f"{item[0]}\n")
+            elif self.tmst_type == "h5":
+                self.dataset.append("frame_tmst", [item[0]])
+
+    def start_serving(self) -> "StreamingOutput":
+        """Start serving frames."""
+        with self._lock_serving:
+            if self._counter_serving == 0:
+                self._encoder_serving = MJPEGEncoder()
+                self._encoder_serving.framerate = self._fps
+                self._output_serving = StreamingOutput()
+                self.cam.start_recording(
+                    self._encoder_serving, FileOutput(self._output_serving)
+                )
+            self._counter_serving += 1
+        return self._output_serving
+
+    def stop_serving(self) -> None:
+        """Stop serving frames."""
+        with self._lock_serving:
+            self._counter_serving -= 1
+            if self._counter_serving == 0:
+                self.cam.stop_encoder(self._encoder_serving)
+                self._encoder_serving = None
+                self._output_serving = None
+
+
+class PicameraOutput:
+    """Process the output of the PiCamera."""
+    def __init__(self, timer: Any, frame_queue: Any, process_queue: Any, post_process):
+        self.timer = timer
+        self.frame_queue = frame_queue
+        self.process_queue = process_queue
+        self.post_process = post_process
+        self.position = (8, 16)
+        self.font = cv2.FONT_HERSHEY_PLAIN
+        self.color = (255, 255, 255)
+
+    def annotate_timestamp(self, request: Any) -> None:
+        """Annotate the frame with a timestamp."""
+        timestamp = f"{self.timer.elapsed_time()}"
+        with MappedArray(request, "main") as frame:
+            cv2.putText(
+                frame.array, timestamp, self.position, self.font, 1.0, self.color
+            )
+            self.frame_queue.put((timestamp,))
+            if self.post_process.is_set():
+                self.process_queue.put((timestamp, frame.array))
+
+
+class StreamingOutput(io.BufferedIOBase):
+    """A class that handles the streaming output."""
+
+    def __init__(self):
+        super().__init__()
+        self.frame = None
+        self.tmst_time = None
+        self.condition = Condition()
+
+    def write(self, buf: bytes) -> None:
+        """Write the buffer to the frame and notify all waiting threads."""
+        with self.condition:
+            self.frame = buf
+            self.tmst_time = time.time()
+            self.condition.notify_all()
+
+
+class HTTPServerThread(Thread):
+    """A class that handles the HTTP server thread."""
+
+    def __init__(
+        self,
+        cam: "Camera",
+        serve_port: int = 8000,
+        server_user: Optional[str] = None,
+        server_password: Optional[str] = None,
+    ):
+        super().__init__()
+        self.python_logger = logging.getLogger(self.__class__.__name__)
+        self.server = ThreadingHTTPServer(
+            ("", serve_port), self.CameraHTTPRequestHandler
+        )
+        self.server.cam = cam
+        self.server.auth = None
+        if server_user and server_password:
+            str_auth = f"{server_user}:{server_password}"
+            self.server.auth = "Basic " + base64.b64encode(str_auth.encode()).decode()
+
+    def run(self) -> None:
+        """Start the server."""
+        self.python_logger.info(
+            "Starting HTTP server on port %s", self.server.server_port
+        )
+        self.server.serve_forever()
+
+    def stop_serving(self) -> None:
+        """Stop the server."""
+        self.python_logger.info("Stopping HTTP server")
+        self.server.shutdown()
+
+    class CameraHTTPRequestHandler(BaseHTTPRequestHandler):
+        """A class that handles HTTP requests for the camera."""
+
+        def logger(self) -> logging.Logger:
+            """Return the logger for this class."""
+            return logging.getLogger("HTTPRequestHandler")
+
+        def check_auth(self) -> bool:
+            """Check if the request is authorized."""
+            if self.server.auth is None or self.server.auth == self.headers.get(
+                "authorization"
+            ):
+                return True
             else:
-                warnings.warn("Recording is neither raw or stream so the results aren't saved")
-                return
-            
-        
-    def check_video_format(self, video_format:str):
-        if video_format in ['h264', 'mjpeg']:
-            return 'compress'
-        elif video_format in ['yuv', 'rgb', 'rgba','bgr','bgra']:
-            return 'raw'
-        else:
-            raise Exception(f"the video format: {video_format} is not supported by picamera!!") 
+                self.send_response(401)
+                self.send_header("WWW-Authenticate", "Basic")
+                self.end_headers()
+                return False
 
-    class PiCam_Output:
-            def __init__(self, camera, resolution:Tuple[int, int], frame_queue, video_type, logger_timer):
-                
-                self.camera = camera
-                self.resolution = resolution
-                self.frame_queue = frame_queue
-                self.logger_timer=logger_timer
+        def send_jpeg(self, output: StreamingOutput) -> None:
+            """Send a JPEG image."""
+            with output.condition:
+                output.condition.wait()
+                self.send_header("Content-Type", "image/jpeg")
+                self.send_header("Content-Length", len(output.frame))
+                self.end_headers()
+                self.wfile.write(output.frame)
 
-                self.first_tmst = None
-                self.tmst=0
-                self.i_frames = 0
-                self.video_type = video_type
+        def do_GET(self) -> None:
+            """Handle a GET request."""
+            if self.path == "/cam.mjpg":
+                if self.check_auth():
+                    output = self.server.cam.start_serving()
+                    try:
+                        self.send_response(200)
+                        self.send_header(
+                            "Content-Type", "multipart/x-mixed-replace; boundary=FRAME"
+                        )
+                        self.end_headers()
 
-            def write(self, buf):
-                '''
-                Write timestamps of each frame: https://forums.raspberrypi.com/viewtopic.php?f=43&t=106930&p=736694#p741128
-                '''
-                if self.video_type=='raw':
-                    if self.camera.frame.complete and self.camera.frame.timestamp:
-                        # TODO:Use camera timestamps
-                        # the first time consider the first timestamp as zero
-                        # if self.first_tmst is None:
-                        #     self.first_tmst = self.camera.frame.timestamp # first timestamp of camera
-                        # self.tmst = (self.camera.frame.timestamp-self.first_tmst)+self.logger_timer.elapsed_time()
-                        # print("self.logger_timer.elapsed_time() :", self.logger_timer.elapsed_time())
-                        
-                        self.tmst = self.logger_timer.elapsed_time()
-                        self.frame = np.frombuffer(
-                                buf, dtype=np.uint8,
-                                count=self.camera.resolution[0]*self.camera.resolution[1]*3
-                            ).reshape((self.camera.resolution[1], self.camera.resolution[0], 3))
-                        self.frame_queue.put(( self.tmst,self.frame))
-                else:
-                    tmst_t = self.camera.frame.timestamp
-                    if  tmst_t != None:
-                        # TODO:Fix timestamps in camera is in μs but in timer in ms
-                        if self.first_tmst is None:
-                            self.first_tmst = tmst_t # first timestamp of camera
-                        else:
-                            self.tmst = (tmst_t-self.first_tmst)+self.logger_timer.elapsed_time()
-                    self.frame_queue.put((self.tmst,buf))
+                        while not self.wfile.closed:
+                            self.wfile.write(b"--FRAME\r\n")
+                            self.send_jpeg(output)
+                            self.wfile.write(b"\r\n")
+                            self.wfile.flush()
+                    except IOError as err:
+                        self.logger().error(
+                            "Exception while serving client %s: %s",
+                            self.client_address,
+                            err,
+                        )
+                    finally:
+                        self.server.cam.stop_serving()
+                        output = None
+            else:
+                self.send_error(404)

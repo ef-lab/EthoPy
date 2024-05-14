@@ -1,7 +1,10 @@
-from core.Logger import *
 import itertools
+
 import matplotlib.pyplot as plt
+
+from core.Logger import *
 from utils.helper_functions import generate_conf_list
+
 
 class State:
     state_timer, __shared_state = Timer(), {}
@@ -78,7 +81,7 @@ class ExperimentClass:
 
     def stop(self):
         self.stim.exit()
-        self.release()
+        self.interface.release()
         self.beh.exit()
         self.logger.ping(0)
         if self.sync:
@@ -87,11 +90,6 @@ class ExperimentClass:
                 time.sleep(1)
         self.logger.closeDatasets()
         self.running = False
-
-    def release(self):
-        if self.interface.camera:
-            if self.interface.camera.recording.is_set(): self.interface.camera.stop_rec()
-            self.interface.camera_Process.join()
 
     def is_stopped(self):
         self.quit = self.quit or self.logger.setup_status in ['stop', 'exit']
