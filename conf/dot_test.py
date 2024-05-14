@@ -26,9 +26,11 @@ key = {
     'dot_shape'             : 'rect',
     'dot_time'              : .25,
 }
-repeat_n = 10
+repeat_n = 1
 conditions = []
 dot = Dot()
+dot.photodiode = False
+dot.rec_fliptimes = False
 for rep in range(0, repeat_n):
     conditions += exp.make_conditions(stim_class=dot, conditions=key)
 

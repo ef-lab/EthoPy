@@ -8,14 +8,13 @@ class Condition(dj.Manual):
         # Passive experiment conditions
         -> Condition
         ---
-        trial_selection='fixed' : enum('fixed','random') 
         intertrial_duration     : int
         """
 
 
 class Experiment(State, ExperimentClass):
     cond_tables = ['Passive']
-    default_key = {'trial_selection'       : 'fixed',
+    default_key = {'trial_selection'        : 'fixed',
                    'intertrial_duration'    : 100}
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions

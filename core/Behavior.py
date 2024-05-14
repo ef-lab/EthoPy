@@ -232,7 +232,7 @@ class PortCalibration(dj.Manual):
 class Behavior:
     """ This class handles the behavior variables """
     cond_tables, interface, required_fields, curr_cond, response, licked_port, logging = [], [], [], [], [], 0, False
-    default_key, reward_amount, choice_history, reward_history = dict(), dict(), list(), list()
+    default_key, reward_amount, choice_history, reward_history, block_history = dict(), dict(), list(), list(), list()
 
     def setup(self, exp):
         self.params = exp.params
@@ -388,6 +388,7 @@ class Behavior:
         self.choice_history.append(choice)
         self.reward_history.append(reward)
         self.punish_history.append(punish)
+        self.block_history.append(self.curr_cond['difficulty'])
         self.logger.total_reward = np.nansum(self.reward_history)
 
     def get_false_history(self, h=10):

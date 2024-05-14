@@ -9,10 +9,6 @@ session_params = {
     'start_time'         : '10:00:00',
     'stop_time'          : '22:00:00',
     'max_reward'         : 3000,
-    'bias_window'        : 5,
-    'staircase_window'   : 10,
-    'stair_up'           : 0.7,
-    'stair_down'         : 0.6,
     'setup_conf_idx'     : 1,
 }
 
@@ -26,7 +22,6 @@ odor_ratios = {1: [(100, 0)],
 v_dur = 4000
 o_dur = 500
 key = {
-    'difficulty'         : 1,
     'odorant_id'         : (1, 2),
     'delivery_port'      : (1, 2),
     'timeout_duration'   : 4000,
@@ -37,9 +32,10 @@ key = {
     'reward_amount'      : 8,
 }
 
+block = exp.Block(difficulty=1, next_up=2, next_down=1, trial_selection='staircase', stair_up=0.7, stair_down=0.6)
 for port in [1, 2]:
     for ratio in odor_ratios[port]:
-        conditions += exp.make_conditions(stim_class=Olfactory(), conditions={**key,
+        conditions += exp.make_conditions(stim_class=Olfactory(), conditions={**key, **block.dict(),
                               'reward_port'    : port,
                               'response_port'  : port,
                               'dutycycle'      : ratio,
@@ -50,7 +46,6 @@ odor_ratios = {1: [(100, 0), (85, 15), (65, 35), (50, 50)],
                2: [(0, 100), (15, 85), (35, 65), (50, 50)]}
 o_dur = 500
 key = {
-    'difficulty'         : 2,
     'odorant_id'         : (1, 2),
     'delivery_port'      : (1, 2),
     'trial_duration'     : 5000,
@@ -60,9 +55,10 @@ key = {
     'reward_amount'      : 5,
 }
 
+block = exp.Block(difficulty=2, next_up=2, next_down=1, trial_selection='staircase', stair_up=0.7, stair_down=0.6)
 for port in [1, 2]:
     for ratio in odor_ratios[port]:
-        conditions += exp.make_conditions(stim_class=Olfactory(), conditions={**key,
+        conditions += exp.make_conditions(stim_class=Olfactory(), conditions={**key, **block.dict(),
                               'reward_port'    : port,
                               'response_port'  : port,
                               'dutycycle'      : ratio,
