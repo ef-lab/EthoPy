@@ -288,7 +288,7 @@ class Offtime(Experiment):
     def entry(self):
         super().entry()
         self.stim.fill([0, 0, 0])
-        self.release()
+        self.interface.release()
 
     def run(self):
         if self.logger.setup_status not in ['sleeping', 'wakeup'] and self.beh.is_sleep_time():

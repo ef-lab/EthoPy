@@ -3,8 +3,6 @@ import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 from threading import Event
 from core.Interface import *
-from Interfaces.Camera import PiCamera
-import multiprocessing as mp
 
 
 class RPPorts(Interface):
@@ -20,7 +18,6 @@ class RPPorts(Interface):
     def __init__(self, **kwargs):
         super(RPPorts, self).__init__(**kwargs)
         from RPi import GPIO
-        import pigpio
         self.GPIO = GPIO
         self.GPIO.setmode(self.GPIO.BCM)
         self.Pulser = pigpio.pi()
@@ -136,11 +133,6 @@ class RPPorts(Interface):
             self.closeDatasets()
         if self.ts:
             self.ts.stop()
-
-    def release(self):
-        if self.interface.camera:
-            if self.interface.camera.recording.is_set(): self.interface.camera.stop_rec()
-            self.interface.camera_Process.join()
 
     def in_position(self, port=0):
         """Determine if the specified port is in position and return the position data.
