@@ -64,7 +64,6 @@ class ExperimentClass:
         self.running = False
         self.conditions, self.iter, self.quit, self.curr_cond, self.block_h, self.stims, self.curr_trial = [], [], False, dict(), [], dict(),0
         if "setup_conf_idx" not in self.default_key: self.default_key["setup_conf_idx"] = 0
-        self.default_key['block'] = self.Block()
         self.params = {**self.default_key, **session_params}
         self.logger = logger
         self.logger.log_session({**self.default_key, **session_params, 'experiment_type': self.cond_tables[0]},
@@ -103,13 +102,14 @@ class ExperimentClass:
         return self.quit
 
     def make_conditions(self, stim_class, conditions, stim_periods=None):
-        stim_name = stim_class.__class__.__name__
-        print('stim_name:', stim_name)
+        # get stimulus class name
+        stim_name = stim_class.name()
         if stim_name not in self.stims:
             stim_class.init(self)
-            stim_name = stim_class.__class__.__name__ # WHY?
             self.stims[stim_name] = stim_class
         conditions.update({'stimulus_class': stim_name})
+
+        # Create conditions with permutation of variables
         if not stim_periods:
             conditions = self.stims[stim_name].make_conditions(factorize(conditions))
         else:
@@ -122,9 +122,13 @@ class ExperimentClass:
                 for i in range(len(stim_periods)): conditions[stim_periods[i]].append(comb[i])
             conditions = factorize(conditions)
         conditions = self.log_conditions(**self.beh.make_conditions(conditions))
+
+        # Verify all required fields are set
         for cond in conditions:
             assert np.all([field in cond for field in self.required_fields])
             cond.update({**self.default_key, **self.params, **cond, 'experiment_class': self.cond_tables[0]})
+
+        # Generate correct table name and Log conditions
         cond_tables = ['Condition.' + table for table in self.cond_tables]
         conditions = self.log_conditions(conditions, condition_tables=['Condition'] + cond_tables)
         return conditions
@@ -132,9 +136,9 @@ class ExperimentClass:
     def push_conditions(self, conditions):
         self.conditions = conditions
         resp_cond = self.params['resp_cond'] if 'resp_cond' in self.params else 'response_port'
-        self.blocks = np.array([cond['block'].id for cond in self.conditions])
+        self.blocks = np.array([cond['difficulty'] for cond in self.conditions])
         if np.all([resp_cond in cond for cond in conditions]):
-            self.choices = np.array([make_hash([d[resp_cond], d['block'].id]) for d in conditions])
+            self.choices = np.array([make_hash([d[resp_cond], d['difficulty']]) for d in conditions])
             self.un_choices, un_idx = np.unique(self.choices, axis=0, return_index=True)
             self.un_blocks = self.blocks[un_idx]
         # select random condition for first trial initialization
@@ -179,7 +183,7 @@ class ExperimentClass:
                 fields = [field for field in rgetattr(eval(schema), ctable).heading.names]
                 if not np.all([np.any(np.array(k) == list(cond.keys())) for k in fields]):
                     #if self.logger.manual_run: print('skipping ', ctable)
-                    continue # only insert complete tuples
+                    continue  # only insert complete tuples
                 if core and hasattr(cond[core[0]], '__iter__'):
                     for idx, pcond in enumerate(cond[core[0]]):
                         cond_key = {k: cond[k] if type(cond[k]) in [int, float, str] else cond[k][idx] for k in fields}
@@ -189,25 +193,26 @@ class ExperimentClass:
         return conditions
 
     def _anti_bias(self, choice_h, un_choices):
-        choice_h = np.array([make_hash(c) for c in choice_h[-self.curr_cond['block'].bias_window:]])
-        if len(choice_h) < self.curr_cond['block'].bias_window: choice_h = self.choices
+        choice_h = np.array([make_hash(c) for c in choice_h[-self.curr_cond['bias_window']:]])
+        if len(choice_h) < self.curr_cond['bias_window']: choice_h = self.choices
         fixed_p = 1 - np.array([np.mean(choice_h == un) for un in un_choices])
         if sum(fixed_p) == 0:  fixed_p = np.ones(np.shape(fixed_p))
         return np.random.choice(un_choices, 1, p=fixed_p/sum(fixed_p))
 
     def _get_performance(self):
         idx = np.logical_or(~np.isnan(self.beh.reward_history), ~np.isnan(self.beh.punish_history))  # select valid
+        idx = np.logical_and(idx, np.array(self.beh.block_history) == self.curr_cond['difficulty'])  # select current block
         rew_h = np.asarray(self.beh.reward_history); rew_h = rew_h[idx]
         choice_h = np.int64(np.asarray(self.beh.choice_history)[idx])
         perf = np.nan
-        if self.curr_cond['block'].metric == 'accuracy':
-            perf = np.nanmean(np.greater(rew_h[-self.curr_cond['block'].window:], 0))
-        elif self.curr_cond['block'].metric == 'dprime':
+        if self.curr_cond['metric'] == 'accuracy':
+            perf = np.nanmean(np.greater(rew_h[-self.curr_cond['staircase_window']:], 0))
+        elif self.curr_cond['metric'] == 'dprime':
             y_true = [c if r > 0 else c % 2 + 1 for (c, r) in zip(choice_h, rew_h)]
             if len(np.unique(y_true)) > 1:
                 perf = np.sqrt(2) * stats.norm.ppf(roc_auc_score(y_true, np.array(choice_h)))
             if self.logger.manual_run:
-                print('perf: ', perf, ' accuracy: ', np.nanmean(np.greater(rew_h[-self.curr_cond['block'].window:], 0)))
+                print('perf: ', perf, ' accuracy: ', np.nanmean(np.greater(rew_h[-self.curr_cond['staircase_window']:], 0)))
         else:
             print('Performance method not implemented!')
             self.quit = True
@@ -216,58 +221,58 @@ class ExperimentClass:
 
     def _get_new_cond(self):
         """ Get curr condition & create random block of all conditions """
-        if self.curr_cond['block'].method == 'fixed':
+        if self.curr_cond['trial_selection'] == 'fixed':
             self.curr_cond = [] if len(self.conditions) == 0 else self.conditions.pop()
-            print(self.curr_cond)
-        elif self.curr_cond['block'].method == 'block':
+        elif self.curr_cond['trial_selection'] == 'block':
             if np.size(self.iter) == 0: self.iter = np.random.permutation(np.size(self.conditions))
             cond = self.conditions[self.iter[0]]
             self.iter = self.iter[1:]
             self.curr_cond = cond
-        elif self.curr_cond['block'].method == 'random':
+        elif self.curr_cond['trial_selection'] == 'random':
             self.curr_cond = np.random.choice(self.conditions)
-        elif self.curr_cond['block'].method == 'staircase':
+        elif self.curr_cond['trial_selection'] == 'staircase':
             perf, choice_h = self._get_performance()
             if np.size(self.beh.choice_history) and self.beh.choice_history[-1:][0] > 0:
                 self.cur_block_sz += 1  # current block trial counter
-            print('current block length ', self.cur_block_sz)
-            if self.cur_block_sz >= self.curr_cond['block'].window:
-                if perf >= self.params['stair_up']:
-                    self.cur_block = self.curr_cond['block'].next_up
-                    print('moving up!')
-                elif perf < self.params['stair_down']:
-                    self.cur_block = self.curr_cond['block'].next_down
-                    print('moving down!')
+            if self.cur_block_sz >= self.curr_cond['staircase_window']:
+                if perf >= self.curr_cond['stair_up']:
+                    self.cur_block = self.curr_cond['next_up']
+                elif perf < self.curr_cond['stair_down']:
+                    self.cur_block = self.curr_cond['next_down']
                 self.cur_block_sz = 0
                 self.logger.update_setup_info({'difficulty': self.cur_block})
-            if self.curr_cond['block'].antibias:
+            if self.curr_cond['antibias']:
                 anti_bias = self._anti_bias(choice_h, self.un_choices[self.un_blocks == self.cur_block])
                 condition_idx = np.logical_and(self.choices == anti_bias, self.blocks == self.cur_block)
             else: condition_idx = self.blocks == self.cur_block
-            sel_conds = [i for (i, v) in zip(self.conditions, condition_idx) if v]
-            self.curr_cond = np.random.choice(sel_conds)
+            self.curr_cond = np.random.choice([i for (i, v) in zip(self.conditions, condition_idx) if v])
             self.block_h.append(self.cur_block)
+        elif self.curr_cond['trial_selection'] == 'biased':
+            perf, choice_h = self._get_performance()
+            condition_idx = self.choices == self._anti_bias(choice_h, self.un_choices)
+            self.curr_cond = np.random.choice([i for (i, v) in zip(self.conditions, condition_idx) if v])
         else:
             print('Selection method not implemented!')
             self.quit = True
 
+
     @dataclass
     class Block:
-        id: int = field(compare=True, default=0, hash=True)
-        thr_up: float = field(compare=False, default=.7)
-        thr_down: float = field(compare=False, default=0.55)
+        difficulty: int = field(compare=True, default=0, hash=True)
+        stair_up: float = field(compare=False, default=.7)
+        stair_down: float = field(compare=False, default=0.55)
         next_up: int = field(compare=False, default=0)
         next_down: int = field(compare=False, default=0)
-        window: int = field(compare=False, default=20)
+        staircase_window: int = field(compare=False, default=20)
         bias_window: int = field(compare=False, default=5)
-        method: str = field(compare=False, default='fixed')
+        trial_selection: str = field(compare=False, default='fixed')
         metric: str = field(compare=False, default='accuracy')
         antibias: bool = field(compare=False, default=True)
+        noresponse_intertrial: bool = field(compare=False, default=True)
+        incremental_punishment: bool = field(compare=False, default=False)
 
-        def __init__(self, **kwargs):
-            names = set([f.name for f in fields(self)])
-            for k, v in kwargs.items():
-                if k in names: setattr(self, k, v)
+        def dict(self):
+            return self.__dict__
 
 
 @experiment.schema

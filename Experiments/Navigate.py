@@ -8,16 +8,23 @@ class Condition(dj.Manual):
         # Navigation experiment conditions
         -> Condition
         ---
-        trial_selection='staircase' : enum('fixed','random','staircase','biased') 
+        max_reward=3000             : smallint
+        min_reward=500              : smallint
+        norun_response=1            : tinyint(1)
+
+        trial_selection='staircase' : enum('fixed','block','random','staircase', 'biased') 
+        difficulty                  : int   
         bias_window=5               : smallint
         staircase_window=20         : smallint
         stair_up=0.7                : float
         stair_down=0.55             : float
         noresponse_intertrial=1     : tinyint(1)
-        norun_response=1            : tinyint(1)
         incremental_punishment=1    : tinyint(1)
+        next_up=0                   : tinyint
+        next_down=0                 : tinyint
+        metric='accuracy'           : enum('accuracy','dprime') 
+        antibias=1                  : tinyint(1)
     
-        difficulty                  : int   
         trial_ready                 : int
         trial_duration              : int
         intertrial_duration         : int
@@ -28,17 +35,12 @@ class Condition(dj.Manual):
 
 class Experiment(State, ExperimentClass):
     cond_tables = ['Navigate']
-    required_fields = []
-    default_key = {'trial_selection'       : 'staircase',
-                   'bias_window'           : 5,
-                   'staircase_window'      : 20,
-                   'stair_up'              : 0.7,
-                   'stair_down'            : 0.55,
-                   'noresponse_intertrial' : True,
+    required_fields = ['difficulty']
+    default_key = {'noresponse_intertrial' : True,
                    'norun_response'        : True,
                    'incremental_punishment': True,
+                   'trial_selection'       : 'staircase',
 
-                   'difficulty'             : 0,
                    'trial_ready'            : 0,
                    'intertrial_duration'    : 1000,
                    'trial_duration'         : 1000,

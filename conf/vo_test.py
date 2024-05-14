@@ -4,16 +4,10 @@ from Behaviors.MultiPort import *
 
 # define session parameters
 session_params = {
-    'trial_selection'      : 'staircase',
     'start_time'           : '08:00:00',
     'stop_time'            : '22:00:00',
     'min_reward'           : 100,
     'max_reward'           : 3000,
-    'bias_window'          : 5,
-    'staircase_window'     : 10,
-    'stair_up'             : 0.7,
-    'stair_down'           : 0.6,
-    'noresponse_intertrial': True,
     'setup_conf_idx'       : 1,
 }
 
@@ -21,8 +15,9 @@ exp = Experiment()
 exp.setup(logger, MultiPort, session_params)
 vo, vis = [], []
 
-trial_params = {
-    'difficulty'            : 0,
+block = exp.Block(difficulty=0, next_up=1, next_down=0, trial_selection='staircase')
+
+trial_params = {**block.dict(),
     'timeout_duration'      : 6000,
     'cue_duration'          : 5000,
     'intertrial_duration'   : 500,

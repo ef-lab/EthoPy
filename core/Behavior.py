@@ -388,7 +388,7 @@ class Behavior:
         self.choice_history.append(choice)
         self.reward_history.append(reward)
         self.punish_history.append(punish)
-        self.block_history.append(self.curr_cond['block'].id)
+        self.block_history.append(self.curr_cond['difficulty'])
         self.logger.total_reward = np.nansum(self.reward_history)
 
     def get_false_history(self, h=10):

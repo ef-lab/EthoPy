@@ -151,3 +151,6 @@ class Stimulus:
                                        condition_tables=['StimCondition'] + self.cond_tables)
         self.conditions += conditions
         return conditions
+
+    def name(self):
+        return type(self).__name__

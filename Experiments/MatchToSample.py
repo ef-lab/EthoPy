@@ -8,17 +8,22 @@ class Condition(dj.Manual):
         # Match2Sample experiment conditions
         -> Condition
         ---
-        trial_selection='staircase' : enum('fixed','random','staircase','biased') 
         max_reward=3000             : smallint
         min_reward=500              : smallint
+    
+        trial_selection='staircase' : enum('fixed','block','random','staircase', 'biased') 
+        difficulty                  : int   
         bias_window=5               : smallint
         staircase_window=20         : smallint
         stair_up=0.7                : float
         stair_down=0.55             : float
         noresponse_intertrial=1     : tinyint(1)
         incremental_punishment=1    : tinyint(1)
-    
-        difficulty                  : int   
+        next_up=0                   : tinyint
+        next_down=0                 : tinyint
+        metric='accuracy'           : enum('accuracy','dprime') 
+        antibias=1                  : tinyint(1)
+        
         init_ready                  : int
         cue_ready                   : int
         delay_ready                 : int
@@ -35,16 +40,10 @@ class Condition(dj.Manual):
 
 class Experiment(State, ExperimentClass):
     cond_tables = ['MatchToSample']
-    required_fields = []
-    default_key = {'trial_selection'     : 'staircase',
+    required_fields = ['difficulty']
+    default_key = {'trial_selection'       : 'staircase',
                    'max_reward'            : 3000,
                    'min_reward'            : 500,
-                   'bias_window'           : 5,
-                   'staircase_window'      : 20,
-                   'stair_up'              : 0.7,
-                   'stair_down'            : 0.55,
-                   'noresponse_intertrial' : True,
-                   'incremental_punishment': True,
 
                    'init_ready'             : 0,
                    'cue_ready'              : 0,
@@ -99,7 +98,8 @@ class PreTrial(Experiment):
 
     def exit(self):
         self.stim.fill()
-        
+
+
 class Cue(Experiment):
     def entry(self):
         self.stim.start()

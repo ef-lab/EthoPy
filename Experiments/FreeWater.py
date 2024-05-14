@@ -8,25 +8,23 @@ class Condition(dj.Manual):
         # Passive experiment conditions
         -> Condition
         ---
-        trial_selection='staircase': enum('fixed','random','staircase','biased') 
         max_reward=3000            : smallint
-        bias_window=5              : smallint
         noresponse_intertrial=1    : tinyint(1)
+        trial_selection='staircase' : enum('fixed','block','random','staircase','biased')     
         intertrial_duration        : int
         """
 
 
 class Experiment(State, ExperimentClass):
     cond_tables = ['FreeWater']
-    default_key = {'trial_selection'       : 'biased',
+    default_key = {'trial_selection'       : 'fixed',
                    'max_reward'            : 6000,
-                   'bias_window'           : 5,
                    'noresponse_intertrial' : True,
                    'intertrial_duration'   : 1000}
 
     def entry(self):  # updates stateMachine from Database entry - override for timing critical transitions
         self.logger.curr_state = self.name()
-        print(self.name())
+        if self.logger.manual_run: print(self.name())
         self.start_time = self.logger.logger_timer.elapsed_time()
         self.resp_ready = False
         self.state_timer.start()

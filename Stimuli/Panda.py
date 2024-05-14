@@ -123,6 +123,8 @@ class Panda(Stimulus, dj.Manual):
 
         self.fill_colors.background_color = (0, 0, 0)
 
+    def name(self):
+        return 'Panda'
 
     def setup(self):
         ShowBase.__init__(self, fStartDirect=self.fStartDirect, windowType=self.windowType)
