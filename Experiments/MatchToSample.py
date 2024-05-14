@@ -10,6 +10,7 @@ class Condition(dj.Manual):
         ---
         max_reward=3000             : smallint
         min_reward=500              : smallint
+        hydrate_delay=0             : int # delay hydration in minutes
     
         trial_selection='staircase' : enum('fixed','block','random','staircase', 'biased') 
         difficulty                  : int   
@@ -44,6 +45,7 @@ class Experiment(State, ExperimentClass):
     default_key = {'trial_selection'       : 'staircase',
                    'max_reward'            : 3000,
                    'min_reward'            : 500,
+                   'hydrate_delay'         : 0,
 
                    'init_ready'             : 0,
                    'cue_ready'              : 0,
@@ -87,9 +89,12 @@ class PreTrial(Experiment):
         self.logger.ping()
 
     def next(self):
+        is_sleep_time = self.beh.is_sleep_time()
         if self.is_stopped():
             return 'Exit'
-        elif self.beh.is_sleep_time():
+        elif is_sleep_time and not self.beh.is_hydrated(self.params['min_reward']) and self.curr_trial > 1: # find a better method to illustrate that the session is running (not curr_trial)
+            return 'Hydrate'
+        elif is_sleep_time:
             return 'Offtime'
         elif self.resp_ready:
             return 'Cue'
@@ -259,7 +264,7 @@ class InterTrial(Experiment):
             return 'Hydrate'
         elif self.beh.is_sleep_time() or self.beh.is_hydrated():
             return 'Offtime'
-        elif self.state_timer.elapsed_time() >= self.curr_cond['intertrial_duration'] and self.beh.is_off_proximity():
+        elif self.state_timer.elapsed_time() >= self.curr_cond['intertrial_duration']:
             return 'PreTrial'
         else:
             return 'InterTrial'
@@ -270,7 +275,8 @@ class InterTrial(Experiment):
 
 class Hydrate(Experiment):
     def run(self):
-        if self.beh.get_response():
+        if self.beh.get_response() and self.state_timer.elapsed_time() > self.params['hydrate_delay']*60*1000:
+            self.stim.ready_stim()
             self.beh.reward()
             time.sleep(1)
         self.logger.ping()
