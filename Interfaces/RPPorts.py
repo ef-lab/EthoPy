@@ -18,6 +18,7 @@ class RPPorts(Interface):
     def __init__(self, **kwargs):
         super(RPPorts, self).__init__(**kwargs)
         from RPi import GPIO
+        import pigpio
         self.GPIO = GPIO
         self.GPIO.setmode(self.GPIO.BCM)
         self.Pulser = pigpio.pi()
