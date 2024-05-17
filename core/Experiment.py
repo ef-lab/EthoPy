@@ -205,14 +205,15 @@ class ExperimentClass:
         rew_h = np.asarray(self.beh.reward_history); rew_h = rew_h[idx]
         choice_h = np.int64(np.asarray(self.beh.choice_history)[idx])
         perf = np.nan
+        window = self.curr_cond['staircase_window']
         if self.curr_cond['metric'] == 'accuracy':
-            perf = np.nanmean(np.greater(rew_h[-self.curr_cond['staircase_window']:], 0))
+            perf = np.nanmean(np.greater(rew_h[-window:], 0))
         elif self.curr_cond['metric'] == 'dprime':
-            y_true = [c if r > 0 else c % 2 + 1 for (c, r) in zip(choice_h, rew_h)]
+            y_true = [c if r > 0 else c % 2 + 1 for (c, r) in zip(choice_h[-window:], rew_h[-window:])]
             if len(np.unique(y_true)) > 1:
                 perf = np.sqrt(2) * stats.norm.ppf(roc_auc_score(y_true, np.array(choice_h)))
             if self.logger.manual_run:
-                print('perf: ', perf, ' accuracy: ', np.nanmean(np.greater(rew_h[-self.curr_cond['staircase_window']:], 0)))
+                print('perf: ', perf, ' accuracy: ', np.nanmean(np.greater(rew_h[-window:], 0)))
         else:
             print('Performance method not implemented!')
             self.quit = True
