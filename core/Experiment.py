@@ -211,7 +211,7 @@ class ExperimentClass:
         elif self.curr_cond['metric'] == 'dprime':
             y_true = [c if r > 0 else c % 2 + 1 for (c, r) in zip(choice_h[-window:], rew_h[-window:])]
             if len(np.unique(y_true)) > 1:
-                perf = np.sqrt(2) * stats.norm.ppf(roc_auc_score(y_true, np.array(choice_h)))
+                perf = np.sqrt(2) * stats.norm.ppf(roc_auc_score(y_true, np.array(choice_h[-window:])))
             if self.logger.manual_run:
                 print('perf: ', perf, ' accuracy: ', np.nanmean(np.greater(rew_h[-window:], 0)))
         else:
