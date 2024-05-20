@@ -17,6 +17,7 @@ class Condition(dj.Manual):
 
 class Experiment(State, ExperimentClass):
     cond_tables = ['FreeWater']
+    required_fields = ['staircase_window'] # Needs to change in the new version
     default_key = {'trial_selection'       : 'fixed',
                    'max_reward'            : 6000,
                    'noresponse_intertrial' : True,
