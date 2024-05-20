@@ -238,10 +238,12 @@ class ExperimentClass:
             if self.cur_block_sz >= self.curr_cond['staircase_window']:
                 if perf >= self.curr_cond['stair_up']:
                     self.cur_block = self.curr_cond['next_up']
+                    self.cur_block_sz = 0
+                    self.logger.update_setup_info({'difficulty': self.cur_block})
                 elif perf < self.curr_cond['stair_down']:
                     self.cur_block = self.curr_cond['next_down']
-                self.cur_block_sz = 0
-                self.logger.update_setup_info({'difficulty': self.cur_block})
+                    self.cur_block_sz = 0
+                    self.logger.update_setup_info({'difficulty': self.cur_block})
             if self.curr_cond['antibias']:
                 anti_bias = self._anti_bias(choice_h, self.un_choices[self.un_blocks == self.cur_block])
                 condition_idx = np.logical_and(self.choices == anti_bias, self.blocks == self.cur_block)
