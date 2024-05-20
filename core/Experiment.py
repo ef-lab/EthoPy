@@ -201,7 +201,6 @@ class ExperimentClass:
 
     def _get_performance(self):
         idx = np.logical_or(~np.isnan(self.beh.reward_history), ~np.isnan(self.beh.punish_history))  # select valid
-        idx = np.logical_and(idx, np.array(self.beh.block_history) == self.curr_cond['difficulty'])  # select current block
         rew_h = np.asarray(self.beh.reward_history); rew_h = rew_h[idx]
         choice_h = np.int64(np.asarray(self.beh.choice_history)[idx])
         perf = np.nan
