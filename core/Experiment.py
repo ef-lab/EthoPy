@@ -62,7 +62,7 @@ class ExperimentClass:
 
     def setup(self, logger, BehaviorClass, session_params):
         self.running = False
-        self.conditions, self.iter, self.quit, self.curr_cond, self.block_h, self.stims, self.curr_trial = [], [], False, dict(), [], dict(),0
+        self.conditions, self.iter, self.quit, self.curr_cond, self.block_h, self.stims, self.curr_trial, self.cur_block_sz = [], [], False, dict(), [], dict(),0, 0
         if "setup_conf_idx" not in self.default_key: self.default_key["setup_conf_idx"] = 0
         self.params = {**self.default_key, **session_params}
         self.logger = logger
