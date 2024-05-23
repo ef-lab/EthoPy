@@ -52,7 +52,7 @@ class Tones_Grating(Grating, dj.Manual):
                 if self.fill_colors.ready: self.fill(self.fill_colors.ready)
             self.grating_isrunning = False
 
-        if self.timer.elapsed_time() > self.curr_cond['duration'] and self.timer.elapsed_time() > self.curr_cond['tone_duration']:
+        if self.timer.elapsed_time() > self.curr_cond['duration'] and self.timer.elapsed_time() > self.curr_cond['tone_duration'] and self.isrunning:
             self.log_stop()
             self.isrunning = False
         elif self.movie and self.grating_isrunning:
