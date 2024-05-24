@@ -56,12 +56,12 @@ class Tones_Grating(Grating, dj.Manual):
         if elapsed_time > tone_duration and self.sound_isrunning:
             self.exp.interface.stop_sound()
             self.sound_isrunning = False
-        if  elapsed_time > grating_duration and self.grating_isrunning:
+        if elapsed_time > grating_duration and self.grating_isrunning:
             if self.movie: self.vid.close()
             if self.ready_flag:
                 if self.fill_colors.ready: self.fill(self.fill_colors.ready)
             self.grating_isrunning = False
-        if  elapsed_time > grating_duration and self.timer.elapsed_time() > tone_duration and self.isrunning:
+        if elapsed_time > grating_duration and self.timer.elapsed_time() > tone_duration and self.isrunning:
             self.isrunning = False
         elif self.movie and self.grating_isrunning:
             grating = pygame.image.frombuffer(self.vid.get_next_data(), self.vsize, "RGB")
