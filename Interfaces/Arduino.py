@@ -8,24 +8,16 @@ from queue import PriorityQueue
 
 
 class Arduino(Interface):
-    channels = {'Liquid': {1: 22, 2: 23},
-                'Lick': {1: 17, 2: 27},
-                'Proximity': {3: 9, 1: 5, 2: 6}}
     thread_end, msg_queue = threading.Event(), PriorityQueue(maxsize=1)
 
     def __init__(self, **kwargs):
-        print('initializing Arduino')
         super(Arduino, self).__init__(**kwargs)
-        print('done initing super')
-
         self.port = '/dev/tty.usbserial-0174726C'
         self.baud = 115200
         self.timeout = .001
         self.no_response = False
         self.timeout_timer = time.time()
-        print('starting serial')
         self.ser = Serial(self.port, baudrate=self.baud)
-        print('done starting serial')
         sleep(1)
         self.thread_runner = threading.Thread(target=self._communicator)
         self.thread_runner.start()
@@ -56,7 +48,7 @@ class Arduino(Interface):
         return self.position, position_dur, self.position_tmst
 
     def off_proximity(self):
-        """checks if any proximity ports is activated
+        """checks if any proximity ports are activated
         used to make sure that none of the ports is activated before move on to the next trial
         if get_position returns 0 but position.type == Proximity means that self.position should be off
         so call _position_change to reset it to the correct value
@@ -72,11 +64,9 @@ class Arduino(Interface):
         while not self.thread_end.is_set():
             if not self.msg_queue.empty():
                 msg = self.msg_queue.get().dict()
-                print('sending message: ', msg)
                 self._write_msg(msg)  # Send it
             msg = self._read_msg()  # Read the response
             if msg is not None:
-                print(msg)
                 response = self.ports[Port(type=msg['type'], port=msg['port']) == self.ports][0]
                 response.state = msg['state']
                 if msg['type'] == 'Proximity':
