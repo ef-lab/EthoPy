@@ -76,6 +76,7 @@ class Arduino(Interface):
                 self._write_msg(msg)  # Send it
             msg = self._read_msg()  # Read the response
             if msg is not None:
+                print(msg)
                 response = self.ports[Port(type=msg['type'], port=msg['port']) == self.ports][0]
                 response.state = msg['state']
                 if msg['type'] == 'Proximity':
@@ -105,9 +106,6 @@ class Arduino(Interface):
 
     def _write_msg(self, message=None):
         """Sends a JSON-formatted command to the serial interface."""
-        if self.no_response:
-            # If no response was received last time, we don't send another request
-            return
         try:
             json_msg = json.dumps(message)
             self.ser.write(json_msg.encode("utf-8"))
