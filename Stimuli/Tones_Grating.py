@@ -43,17 +43,25 @@ class Tones_Grating(Grating, dj.Manual):
         super().start()
     
     def present(self):
-        if self.timer.elapsed_time() > self.curr_cond['tone_duration'] and self.sound_isrunning:
-            self.stop_sound()
+        """
+        This method is responsible for presenting media (sounds and gratings) based on 
+        the elapsed time. It stops the sound after its duration, closes the gratings and 
+        fills color if ready after the grating duration. It also renders the grating or 
+        the movie frame based on the conditions.
+        """
+        elapsed_time = self.timer.elapsed_time()
+        grating_duration = self.curr_cond["duration"]
+        tone_duration = self.curr_cond["tone_duration"]
+
+        if elapsed_time > tone_duration and self.sound_isrunning:
+            self.exp.interface.stop_sound()
             self.sound_isrunning = False
-        if self.timer.elapsed_time() > self.curr_cond['duration'] and self.grating_isrunning:
+        if elapsed_time > grating_duration and self.grating_isrunning:
             if self.movie: self.vid.close()
             if self.ready_flag:
                 if self.fill_colors.ready: self.fill(self.fill_colors.ready)
             self.grating_isrunning = False
-
-        if self.timer.elapsed_time() > self.curr_cond['duration'] and self.timer.elapsed_time() > self.curr_cond['tone_duration']:
-            self.log_stop()
+        if elapsed_time > grating_duration and self.timer.elapsed_time() > tone_duration and self.isrunning:
             self.isrunning = False
         elif self.movie and self.grating_isrunning:
             grating = pygame.image.frombuffer(self.vid.get_next_data(), self.vsize, "RGB")
@@ -63,7 +71,10 @@ class Tones_Grating(Grating, dj.Manual):
             self.Presenter.render(self.grating)
         self.frame_idx += 1
 
-    def stop_sound(self):
+    # Stop sound stimulus when mooving ot the next state
+    def stop(self):
+        self.log_stop()
+        self.isrunning=False
         self.exp.interface.stop_sound()
 
     def ready_stim(self):
