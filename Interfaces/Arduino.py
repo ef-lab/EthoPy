@@ -60,6 +60,19 @@ class Arduino(Interface):
     def cleanup(self):
         self.ser.close()  # Close the Serial connection
 
+    def setup_touch_exit(self):
+        try:
+            import ft5406 as TS
+            self.ts = TS.Touchscreen()
+            self.ts_press_event = TS.TS_PRESS
+            for touch in self.ts.touches:
+                touch.on_press = self._touch_handler
+                touch.on_release = self._touch_handler
+            self.ts.run()
+        except:
+            self.ts = False
+            print('Cannot create a touch exit!')
+
     def _communicator(self):
         while not self.thread_end.is_set():
             if not self.msg_queue.empty():
