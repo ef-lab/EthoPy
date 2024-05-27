@@ -126,6 +126,7 @@ class Port:
     reward: bool = datafield(compare=False, default=False)
     response: bool = datafield(compare=False, default=False)
     invert: bool = datafield(compare=False, default=False)
+    state: bool = datafield(compare=False, default=False)
 
     def __init__(self, **kwargs):
         names = set([f.name for f in fields(self)])

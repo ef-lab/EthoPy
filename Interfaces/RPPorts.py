@@ -173,7 +173,7 @@ class RPPorts(Interface):
         so call _position_change to reset it to the correct value
 
         Returns:
-            bool: True if all proximity ports are not acrtivated
+            bool: True if all proximity ports are not activated
         """
         port = self._get_position()
         # port=0 means that no proximity port is activated
