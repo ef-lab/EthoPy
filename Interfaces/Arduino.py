@@ -8,7 +8,7 @@ from queue import PriorityQueue
 
 
 class Arduino(Interface):
-    thread_end, msg_queue = threading.Event(), PriorityQueue(maxsize=1)
+    thread_end, msg_queue, callbacks = threading.Event(), PriorityQueue(maxsize=1), True
 
     def __init__(self, **kwargs):
         super(Arduino, self).__init__(**kwargs)
@@ -79,7 +79,7 @@ class Arduino(Interface):
                 msg = self.msg_queue.get().dict()
                 self._write_msg(msg)  # Send it
             msg = self._read_msg()  # Read the response
-            if msg is not None:
+            if msg is not None and self.callbacks:
                 response = self.ports[Port(type=msg['type'], port=msg['port']) == self.ports][0]
                 response.state = msg['state']
                 if msg['type'] == 'Proximity':
