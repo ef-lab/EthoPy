@@ -55,7 +55,7 @@ class Arduino(Interface):
         Returns:
             bool: True if all proximity ports are not acrtivated
         """
-        return(self.position.state)
+        return(not self.position.state)
 
     def cleanup(self):
         self.ser.close()  # Close the Serial connection
