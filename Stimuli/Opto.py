@@ -19,8 +19,8 @@ class Opto(Stimulus, dj.Manual):
         super().start()
 
     def present(self):
-        if self.timer.elapsed_time() > self.curr_cond['duration'] and self.isrunning:
-            self.isrunning = False
+        if self.timer.elapsed_time() > self.curr_cond['duration'] and self.in_operation:
+            self.in_operation = False
             self.log_stop()
 
     def stop(self):

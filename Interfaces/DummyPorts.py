@@ -88,5 +88,5 @@ class DummyPorts(Interface):
         return actual_rew
 
     def cleanup(self):
-        self.set_running_state(False)
+        self.set_operation_status(False)
 

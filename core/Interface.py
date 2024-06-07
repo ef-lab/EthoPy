@@ -76,7 +76,7 @@ class Interface:
     def sync_out(self, state=False):
         pass
 
-    def set_running_state(self, running_state):
+    def set_operation_status(self, operation_status):
         pass
 
     def cleanup(self):

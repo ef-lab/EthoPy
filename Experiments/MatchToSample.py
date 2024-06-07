@@ -316,7 +316,7 @@ class Offtime(Experiment):
 
     def exit(self):
         if self.logger.setup_status in ['wakeup', 'sleeping']:
-            self.logger.update_setup_info({'status': 'running'})
+            self.logger.update_setup_info({'status': 'operational'})
 
 
 class Exit(Experiment):

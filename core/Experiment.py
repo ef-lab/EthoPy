@@ -37,7 +37,7 @@ class ExperimentClass:
     """  Parent Experiment """
     curr_state, curr_trial, total_reward, cur_block, flip_count, states, stim, sync = '', 0, 0, 0, 0, dict(), False, False
     un_choices, blocks, iter, curr_cond, block_h, stims, response, resp_ready = [], [], [], dict(), [], dict(), [], False
-    required_fields, default_key, conditions, cond_tables, quit, running, cur_block_sz = [], dict(), [], [], False, False, 0
+    required_fields, default_key, conditions, cond_tables, quit, in_operation, cur_block_sz = [], dict(), [], [], False, False, 0
 
     # move from State to State using a template method.
     class StateMachine:
@@ -61,7 +61,7 @@ class ExperimentClass:
             self.exitState.run()
 
     def setup(self, logger, BehaviorClass, session_params):
-        self.running = False
+        self.in_operation = False
         self.conditions, self.iter, self.quit, self.curr_cond, self.block_h, self.stims, self.curr_trial, self.cur_block_sz = [], [], False, dict(), [], dict(),0, 0
         if "setup_conf_idx" not in self.default_key: self.default_key["setup_conf_idx"] = 0
         self.params = {**self.default_key, **session_params}
@@ -79,7 +79,7 @@ class ExperimentClass:
         for state in self.__class__.__subclasses__():  # Initialize states
             states.update({state().__class__.__name__: state(self)})
         state_control = self.StateMachine(states)
-        self.interface.set_running_state(True)
+        self.interface.set_operation_status(True)
         state_control.run()
 
     def stop(self):
@@ -92,13 +92,13 @@ class ExperimentClass:
                 print('Waiting for recording to end...')
                 time.sleep(1)
         self.logger.closeDatasets()
-        self.running = False
+        self.in_operation = False
 
     def is_stopped(self):
         self.quit = self.quit or self.logger.setup_status in ['stop', 'exit']
         if self.quit and self.logger.setup_status not in ['stop', 'exit']:
             self.logger.update_setup_info({'status': 'stop'})
-        if self.quit: self.running = False
+        if self.quit: self.in_operation = False
         return self.quit
 
     def make_conditions(self, stim_class, conditions, stim_periods=None):
@@ -163,8 +163,8 @@ class ExperimentClass:
         self.logger.update_trial_idx(self.curr_trial)
         self.trial_start = self.logger.logger_timer.elapsed_time()
         self.logger.log('Trial', dict(cond_hash=self.curr_cond['cond_hash'], time=self.trial_start), priority=3)
-        if not self.running:
-            self.running = True
+        if not self.in_operation:
+            self.in_operation = True
 
     def name(self): return type(self).__name__
 
@@ -540,7 +540,7 @@ class Control(dj.Lookup):
     # Control table 
     setup                       : varchar(256)                 # Setup name
     ---
-    status="exit"               : enum('ready','running','stop','sleeping','exit','offtime','wakeup') 
+    status="exit"               : enum('ready','operational','stop','sleeping','exit','offtime','wakeup') 
     animal_id=0                 : int                          # animal id
     task_idx=0                  : int                          # task identification number
     session=0                   : int                          

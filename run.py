@@ -9,15 +9,15 @@ logger = Logger(protocol=protocol)   # setup logger
 
 # # # # Waiting for instructions loop # # # # #
 while not logger.setup_status == 'exit':
-    if logger.setup_status != 'running': PyWelcome(logger)
-    if logger.setup_status == 'running':   # run experiment unless stopped
+    if logger.setup_status != 'operational': PyWelcome(logger)
+    if logger.setup_status == 'operational':   # run experiment unless stopped
         try:
             if logger.get_protocol(): exec(open(logger.get_protocol()).read())
         except Exception as e:
             error = e
             logger.update_setup_info({'state': 'ERROR!', 'notes': str(e), 'status': 'exit'})
         if logger.manual_run:  logger.update_setup_info({'status': 'exit'}); break
-        elif logger.setup_status not in ['exit', 'running']:  # restart if session ended
+        elif logger.setup_status not in ['exit', 'operational']:  # restart if session ended
             logger.update_setup_info({'status': 'ready'})  # restart
     time.sleep(.1)
 

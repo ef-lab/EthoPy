@@ -42,11 +42,11 @@ class Dot(Stimulus, dj.Manual):
 
     def stop(self):
         self.log_stop()
-        self.isrunning = False
+        self.in_operation = False
 
     def present(self):
         if self.timer.elapsed_time() > self.curr_cond['dot_time']*1000:
-            self.isrunning = False
+            self.in_operation = False
 
     def exit(self):
         self.Presenter.fill(self.fill_colors.background)

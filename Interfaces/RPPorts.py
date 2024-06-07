@@ -13,7 +13,7 @@ class RPPorts(Interface):
                 'Sound': {1: 13},
                 'Sync': {'in': 21, 'rec': 26, 'out': 16},
                 'Opto': 19,
-                'Running': 20}
+                'Status': 20}
 
     def __init__(self, **kwargs):
         super(RPPorts, self).__init__(**kwargs)
@@ -54,8 +54,8 @@ class RPPorts(Interface):
         if 'Sound' in self.channels:
             for channel in self.channels['Sound']:
                 self.Pulser.set_mode(self.channels['Sound'][channel], pigpio.OUTPUT)
-        if 'Running' in self.channels:
-            self.GPIO.setup(self.channels['Running'], self.GPIO.OUT, initial=self.GPIO.LOW)
+        if 'Status' in self.channels:
+            self.GPIO.setup(self.channels['Status'], self.GPIO.OUT, initial=self.GPIO.LOW)
         if 'Sync' in self.channels and 'out' in self.channels['Sync']:
             self.GPIO.setup(self.channels['Sync']['out'], self.GPIO.OUT, initial=self.GPIO.LOW)
 
@@ -102,12 +102,12 @@ class RPPorts(Interface):
             self.ts = False
             print('Cannot create a touch exit!')
 
-    def set_running_state(self, running_state):
+    def set_operation_status(self, operation_status):
         if self.exp.sync:
             while not self.is_recording():
                 print('Waiting for recording to start...')
                 time.sleep(1)
-        self.GPIO.output(self.channels['Running'], running_state)
+        self.GPIO.output(self.channels['Status'], operation_status)
 
     def is_recording(self):
         if self.exp.sync:
@@ -116,7 +116,7 @@ class RPPorts(Interface):
             return False
 
     def cleanup(self):
-        self.set_running_state(False)
+        self.set_operation_status(False)
         self.Pulser.wave_clear()
         self.Pulser.stop()
         if self.callbacks:

@@ -347,7 +347,7 @@ class Behavior:
         if not activity.time: activity.time = self.logger.logger_timer.elapsed_time()
         key = {**self.logger.trial_key, **activity.__dict__}
         # log the activity in the database
-        if self.exp.running and self.logging:
+        if self.exp.in_operation and self.logging:
             self.logger.log('Activity', key, schema='behavior', priority=10)
             self.logger.log('Activity.' + activity.type, key, schema='behavior')
         # if activity.type == 'Response': append to the response queue

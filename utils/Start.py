@@ -54,7 +54,7 @@ class PyWelcome():
 
         :param test: Test status
         """
-        while self.logger.setup_status != 'running' and self.logger.setup_status != 'exit':
+        while self.logger.setup_status != 'operational' and self.logger.setup_status != 'exit':
             events = pygame.event.get()
             for event in events:
                 if event.type == pygame.QUIT:
@@ -217,7 +217,7 @@ class PyWelcome():
         os.system('systemctl poweroff')
         
     def start_experiment(self):
-        self.logger.update_setup_info({'status': 'running'})
+        self.logger.update_setup_info({'status': 'operational'})
 
     def close(self):
         pygame.mouse.set_visible(1)
