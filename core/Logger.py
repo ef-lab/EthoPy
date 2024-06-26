@@ -85,7 +85,7 @@ class Logger:
 
         self.thread_end, self.thread_lock = threading.Event(), threading.Lock()
         self.inserter_thread = threading.Thread(target=self._inserter)
-        self.getter_thread = threading.Thread(target=self.getter)
+        self.getter_thread = threading.Thread(target=self._update_setup_status_periodically)
         self.inserter_thread.start()
         self._log_setup(self.task_idx)
         self.getter_thread.start()
@@ -311,12 +311,25 @@ class Logger:
             if item.block:
                 self.queue.task_done()
 
-    def getter(self):
+    def _update_setup_status_periodically(self):
+        """
+        This method continuously updates the setup information and status from the experiment
+        database.
+
+        It runs in a loop until the thread_end event is set. In each iteration, it acquires the thread lock,
+        fetches the setup information from the Control table in the experiment database, releases the thread lock,
+        and updates the setup status. It then sleeps for 1 second before the next iteration.
+
+        Returns:
+            None
+        """
         while not self.thread_end.is_set():
             self.thread_lock.acquire()
-            self.setup_info = (self._schemata['experiment'].Control() & dict(setup=self.setup)).fetch1()
+            self.setup_info = (
+                self._schemata["experiment"].Control() & dict(setup=self.setup)
+            ).fetch1()
             self.thread_lock.release()
-            self.setup_status = self.setup_info['status']
+            self.setup_status = self.setup_info["status"]
             time.sleep(1)  # update once a second
 
     def log(self, table, data=dict(), **kwargs):
