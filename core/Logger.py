@@ -1,3 +1,4 @@
+import json
 import os
 import pathlib
 import platform
@@ -8,8 +9,9 @@ import time
 from dataclasses import dataclass
 from dataclasses import field as datafield
 from datetime import datetime
+from os import environ
 from queue import PriorityQueue
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 import datajoint as dj
 import numpy
@@ -18,19 +20,29 @@ from utils.helper_functions import *
 from utils.Timer import Timer
 from utils.Writer import Writer
 
-dj.config["enable_python_native_blobs"] = True
+with open("local_conf.json", "r", encoding="utf-8") as f:
+    config = json.load(f)
+dj.config.update(config["dj_local_conf"])
+dj.logger.setLevel(dj.config["datajoint.loglevel"])
 
-schemata = {'experiment': 'lab_experiments',
-            'stimulus'  : 'lab_stimuli',
-            'behavior'  : 'lab_behavior',
-            'recording' : 'lab_recordings',
-            'mice'      : 'lab_mice'}
 
-VERSION = '0.1'
+environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
-for schema, value in schemata.items():  # separate connection for internal comminication
-    globals()[schema] = dj.create_virtual_module(schema, value, create_tables=True, create_schema=True)
+# Schema mappings
+SCHEMATA = config["SCHEMATA"]
 
+# Create virtual modules
+virtual_modules = {
+    name: dj.create_virtual_module(name, schema, create_tables=True, create_schema=True)
+    for name, schema in SCHEMATA.items()
+}
+experiment = virtual_modules["experiment"]
+stimulus = virtual_modules["stimulus"]
+behavior = virtual_modules["behavior"]
+recording = virtual_modules["recording"]
+mice = virtual_modules["mice"]
+
+VERSION = "0.1"
 
 class Logger:
     trial_key, setup_info, _schemata, datasets = dict(animal_id=0, session=1, trial_idx=0), dict(), dict(), dict()
@@ -45,10 +57,13 @@ class Logger:
         self.is_pi = system.machine.startswith("arm") or system.machine=='aarch64' if system.system == 'Linux' else False
         self.manual_run = True if protocol else False
         self.setup_status = 'running' if self.manual_run else 'ready'
-        con_info = dj.conn.connection.conn_info
-        self.private_conn = dj.Connection(con_info['host'], con_info['user'], con_info['passwd'])
-        for schema, value in schemata.items():  # separate connection for internal communication
-            self._schemata.update({schema: dj.create_virtual_module(schema, value, connection=self.private_conn)})
+        # separate connection for internal communication
+        self.private_conn = dj.Connection(
+            dj.config["database.host"],
+            dj.config["database.user"],
+            dj.config["database.password"],
+        )
+        self._schemata = self._initialize_schemata()
         self.thread_end, self.thread_lock = threading.Event(),  threading.Lock()
         self.inserter_thread = threading.Thread(target=self.inserter)
         self.getter_thread = threading.Thread(target=self.getter)
@@ -74,6 +89,14 @@ class Logger:
         else:
             self.target_path = False
 
+    def _initialize_schemata(self) -> Dict[str, dj.VirtualModule]:
+        return {
+            schema: dj.create_virtual_module(
+                schema, value, connection=self.private_conn
+            )
+            for schema, value in SCHEMATA.items()
+        }
+    
     def setup_schema(self, extra_schema):
         for schema, value in extra_schema.items():
             globals()[schema] = dj.create_virtual_module(schema, value, create_tables=True, create_schema=True)
