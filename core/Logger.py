@@ -2,6 +2,7 @@ import json
 import os
 import pathlib
 import platform
+import pprint
 import socket
 import subprocess
 import threading
@@ -280,7 +281,8 @@ class Logger:
         the database.
 
         It runs in a loop until the thread_end event is set. In each iteration, it checks if
-        the queue is empty.If it is, it sleeps for 0.5 seconds and then continues to the next iteration.
+        the queue is empty.If it is, it sleeps for 0.5 seconds and then continues to the next
+        iteration.
         If the queue is not empty, it gets an item from the queue, acquires the thread lock,
         and tries to insert the item into it's table.
         If an error occurs during the insertion, it handles the error.
@@ -316,9 +318,10 @@ class Logger:
         This method continuously updates the setup information and status from the experiment
         database.
 
-        It runs in a loop until the thread_end event is set. In each iteration, it acquires the thread lock,
-        fetches the setup information from the Control table in the experiment database, releases the thread lock,
-        and updates the setup status. It then sleeps for 1 second before the next iteration.
+        It runs in a loop until the thread_end event is set. In each iteration, it acquires the
+        thread lock,fetches the setup information from the Control table in the experiment database,
+        releases the thread lock, and updates the setup status. It then sleeps for 1 second before
+        the next iteration.
 
         Returns:
             None
@@ -360,12 +363,13 @@ class Logger:
         """
         This method logs the setup information into the Control table in the experiment database.
 
-        It first fetches the control information for the current setup. If no control information is found,
-        it creates a new dictionary with the setup information. If a task is provided and it is an integer,
-        it adds the task index to the key. It then adds the IP and status information to the key.
+        It first fetches the control information for the current setup. If no control information
+        is found, it creates a new dictionary with the setup information. If a task is provided and
+        it is an integer, it adds the task index to the key. It then adds the IP and status
+        information to the key.
 
-        The method finally puts the key into the Control table, replacing any existing entry with the same key.
-        It blocks until the operation is complete and validates the operation.
+        The method finally puts the key into the Control table, replacing any existing entry with
+        the same key. It blocks until the operation is complete and validates the operation.
 
         Args:
             task (int, optional): The task index. Defaults to None.
@@ -404,42 +408,182 @@ class Logger:
         ).fetch("session")
         return 0 if np.size(last_sessions) == 0 else np.max(last_sessions)
 
-    def log_session(self, params, log_protocol=False):
-        self.total_reward = 0
-        self.trial_key = dict(animal_id=self.get_setup_info('animal_id'),
-                              trial_idx=0, session=self._get_last_session() + 1)
-        session_key = {**self.trial_key, **params, 'setup': self.setup,
-                       'user_name': params['user'] if 'user_name' in params else 'bot'}
-        if self.manual_run: print('Logging Session: ', session_key)
-        self.put(table='Session', tuple=session_key, priority=1, validate=True, block=True)
+    def log_session(self, params: Dict[str, Any], log_protocol: bool = False) -> None:
+        """
+        Logs a session with the given parameters and optionally logs the protocol.
+
+        Args:
+            params (Dict[str, Any]): Parameters for the session.
+            log_protocol (bool): Whether to log the protocol information.
+        """
+        self._initialize_session()
+        session_key = self._create_session_key(params)
+        self._log_session_entry(session_key)
+
         if log_protocol:
             self._log_protocol_details()
 
-        self.put(table='Configuration', tuple=self.trial_key, schema='behavior', priority=2, validate=True, block=True)
-        self.put(table='Configuration', tuple=self.trial_key, schema='stimulus', priority=2, validate=True, block=True)
-        ports = (experiment.SetupConfiguration.Port & {'setup_conf_idx': params['setup_conf_idx']}
-                 ).fetch(as_dict=True)
-        for port in ports:
-            self.put(table='Configuration.Port', tuple={**port, **self.trial_key}, schema='behavior')
-        screens = (experiment.SetupConfiguration.Screen & {'setup_conf_idx': params['setup_conf_idx']}
-                   ).fetch(as_dict=True)
-        for scr in screens:
-            self.put(table='Configuration.Screen', tuple={**scr, **self.trial_key}, schema='stimulus')
-        balls = (experiment.SetupConfiguration.Ball & {'setup_conf_idx': params['setup_conf_idx']}
-                 ).fetch(as_dict=True)
-        for ball in balls:
-            self.put(table='Configuration.Ball', tuple={**ball, **self.trial_key}, schema='behavior')
-        speakers = (experiment.SetupConfiguration.Speaker & {'setup_conf_idx': params['setup_conf_idx']}
-                 ).fetch(as_dict=True)
-        for spk in speakers:
-            self.put(table='Configuration.Speaker', tuple={**spk, **self.trial_key}, schema='stimulus')
+        self._log_session_configs(params)
+        self._set_setup_status(params)
 
-        key = {'session': self.trial_key['session'], 'trials': 0, 'total_liquid': 0, 'difficulty': 1, 'state': ''}
-        if 'start_time' in params:
-            tdelta = lambda t: datetime.strptime(t, "%H:%M:%S") - datetime.strptime("00:00:00", "%H:%M:%S")
-            key = {**key,'start_time': str(tdelta(params['start_time'])), 'stop_time': str(tdelta(params['stop_time']))}
-        self.update_setup_info({**key, "status":self.setup_info['status']})
-        self.logger_timer.start()  # start session time
+        self.logger_timer.start()  # Start session time
+
+    def _initialize_session(self) -> None:
+        """
+        Initializes session attributes.
+
+        Args:
+            params (Dict[str, Any]): Parameters for the session.
+        """
+        self.total_reward = 0
+        self.trial_key = {
+            "animal_id": self.get_setup_info("animal_id"),
+            "trial_idx": 0,
+            "session": self._get_last_session() + 1,
+        }
+
+    def _create_session_key(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Creates a session key by merging trial key with session parameters.
+
+        Args:
+            params (Dict[str, Any]): Parameters for the session.
+
+        Returns:
+            Dict[str, Any]: The complete session key.
+        """
+        return {
+            **self.trial_key,
+            **params,
+            "setup": self.setup,
+            "user_name": params.get("user_name", "bot"),
+        }
+
+    def _log_session_entry(self, session_key: Dict[str, Any]) -> None:
+        """
+        Logs the session entry to the database.
+
+        Args:
+            session_key (Dict[str, Any]): The session key to log.
+        """
+        if self.manual_run:
+            print("Logging Session:")
+            pprint.pprint(session_key)
+        self.put(
+            table="Session", tuple=session_key, priority=1, validate=True, block=True
+        )
+
+    def _log_session_configs(self, params) -> None:
+        """
+        Logs the session and animal_id in configuration tables of behavior/stimulus.
+        """
+
+        # Logs the session and animal_id in configuration tables of behavior/stimulus.
+        _schemas = ['behavior', 'stimulus']
+        for schema in _schemas:
+            self.put(
+                table="Configuration",
+                tuple=self.trial_key,
+                schema=schema,
+                priority=2,
+                validate=True,
+                block=True,
+            )
+
+        conf_table_schema = {
+            "Port": "behavior",
+            "Screen": "stimulus",
+            "Ball": "behavior",
+            "Speaker": "stimulus",
+        }
+        for config_table, schema in conf_table_schema.items():
+            self._log_part_table_config(params, config_table, schema)
+
+    def _log_part_table_config(
+        self, params: Dict[str, Any], config_table: str, schema: str
+    ) -> None:
+        """
+        Logs individual configuration type to the database.
+
+        Args:
+            params (Dict[str, Any]): Parameters for the session.
+            config_table (str): The part table to be recorded (e.g., Port, Screen).
+            schema (str): The schema for the configuration.
+        """
+        configuration_data = (
+            getattr(experiment.SetupConfiguration, config_table)
+            & {"setup_conf_idx": params["setup_conf_idx"]}
+        ).fetch(as_dict=True)
+        for conf in configuration_data:
+            self.put(
+                table=f"Configuration.{config_table}",
+                tuple={**conf, **self.trial_key},
+                schema=schema,
+            )
+
+    def _set_setup_status(self, params: Dict[str, Any]) -> None:
+        """
+        Sets the setup status and updates setup information.
+
+        Args:
+            params (Dict[str, Any]): Parameters for the session.
+        """
+        key = {
+            "session": self.trial_key["session"],
+            "trials": 0,
+            "total_liquid": 0,
+            "difficulty": 1,
+            "state": "",
+        }
+        # if in the start_time is defined in the configuration use this
+        # otherwise use the Control table
+        if "start_time" in params:
+            def tdelta(t):
+                return datetime.strptime(t, "%H:%M:%S") - datetime.strptime(
+                    "00:00:00", "%H:%M:%S"
+                )
+            key.update(
+                {
+                    "start_time": str(tdelta(params["start_time"])),
+                    "stop_time": str(tdelta(params["stop_time"])),
+                }
+            )
+
+        self.update_setup_info({**key, "status": self.setup_info["status"]})
+
+    def update_setup_info(self, info: Dict[str, Any], key: Optional[Dict[str, Any]] = None):
+        """
+        This method updates the setup information with the provided info and key.
+
+        It first fetches the existing setup information from the experiment's Control table,
+        then updates it with the provided info. If 'status' is in the provided info, it blocks
+        and validates the update operation.
+
+        Args:
+            info (dict): The information to update the setup with.
+            key (dict, optional): Additional keys to fetch the setup information with.
+            Defaults to an empty dict.
+
+        Side Effects:
+            Updates the setup_info attribute with the new setup information.
+            Updates the setup_status attribute with the new status.
+        """
+        if key is None:
+            key = dict()
+        self.setup_info = {
+            **(experiment.Control() & {**{"setup": self.setup}, **key}).fetch1(),
+            **info,
+        }
+        block = True if "status" in info else False
+        self.put(
+            table="Control",
+            tuple=self.setup_info,
+            replace=True,
+            priority=1,
+            block=block,
+            validate=block,
+        )
+        self.setup_status = self.setup_info["status"]
 
     def _log_protocol_details(self) -> None:
         """
@@ -460,30 +604,62 @@ class Logger:
             },
         )
 
-    def update_setup_info(self, info, key=dict()):
-        self.setup_info = {**(experiment.Control() & {**{'setup': self.setup}, **key}).fetch1(), **info}
-        block = True if 'status' in info else False
-        self.put(table='Control', tuple=self.setup_info, replace=True, priority=1, block=block, validate=block)
-        self.setup_status = self.setup_info['status']
-
     def get_setup_info(self, field):
         return (experiment.Control() & dict(setup=self.setup)).fetch1(field)
 
     def get(self, schema='experiment', table='Control', fields='', key=dict(), **kwargs):
+        """
+        Fetches data from a specified table in a schema.
+
+        Parameters:
+        schema (str): The schema to fetch data from. Defaults to "experiment".
+        table (str): The table to fetch data from. Defaults to "Control".
+        fields (str): The fields to fetch. Defaults to "".
+        key (dict): The key used to fetch data. Defaults to an empty dict.
+        **kwargs: Additional keyword arguments.
+
+        Returns:
+        The fetched data.
+        """
         table = rgetattr(eval(schema), table)
         return (table() & key).fetch(*fields, **kwargs)
 
-    def update_trial_idx(self, trial_idx): self.trial_key['trial_idx'] = trial_idx
+    def update_trial_idx(self, trial_idx):
+        """
+        Updates the trial index in the trial_key dictionary.
+
+        Args:
+            trial_idx (int): The new trial index to be updated.
+        """
+        self.trial_key['trial_idx'] = trial_idx
 
     def ping(self, period=5000):
+        """
+        Sends a periodic ping to update setup information.
+
+        This method updates the setup information at a specified interval (period).
+        It records the current time, queue size,trial index, total liquid dispensed,
+        and the current state of the system.
+
+        Args:
+            period (int, optional): The period in milliseconds between pings. Defaults to 5000.
+        """
         if self.ping_timer.elapsed_time() >= period:  # occasionally update control table
             self.ping_timer.start()
-            self.update_setup_info({'last_ping': str(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-                                    'queue_size': self.queue.qsize(), 'trials': self.trial_key['trial_idx'],
-                                    'total_liquid': self.total_reward, 'state': self.curr_state})
+            self.update_setup_info(
+                {
+                    "last_ping": str(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+                    "queue_size": self.queue.qsize(),
+                    "trials": self.trial_key["trial_idx"],
+                    "total_liquid": self.total_reward,
+                    "state": self.curr_state,
+                }
+            )
 
     def cleanup(self):
-        while not self.queue.empty(): print('Waiting for empty queue... qsize: %d' % self.queue.qsize()); time.sleep(1)
+        while not self.queue.empty():
+            print('Waiting for empty queue... qsize: %d' % self.queue.qsize())
+            time.sleep(1)
         self.thread_end.set()
 
     def createDataset(
@@ -491,7 +667,7 @@ class Logger:
                     dataset_name: str,
                     dataset_type: type,
                     filename: Optional[str] = None,
-                    log: Optional[bool]=True,
+                    log: Optional[bool] = True,
                 ) -> Any:
         """
         Create a dataset and return the dataset object.
@@ -510,7 +686,7 @@ class Logger:
                   f"_{self.trial_key['session']}/")
         path = self.source_path + folder
         if not os.path.isdir(path):
-            os.makedirs(path) # create path if necessary
+            os.makedirs(path)  # create path if necessary
 
         if not os.path.isdir(self.target_path):
             print('No target directory set! Autocopying will not work.')
@@ -539,14 +715,25 @@ class Logger:
         )
 
         if log:
-            rec_key = dict(rec_aim=dataset_name, software='EthoPy', version=VERSION,
-                        filename=filename, source_path=path, target_path=target_path)
+            rec_key = dict(
+                rec_aim=dataset_name,
+                software="EthoPy",
+                version=VERSION,
+                filename=filename,
+                source_path=path,
+                target_path=target_path,
+            )
             self.log_recording(rec_key)
 
         return self.datasets[filename]
-    
+
     def log_recording(self, rec_key):
-        recs = self.get(schema='recording', table='Recording', key=self.trial_key, fields=['rec_idx'])
+        recs = self.get(
+            schema="recording",
+            table="Recording",
+            key=self.trial_key,
+            fields=["rec_idx"],
+        )        
         rec_idx = 1 if not recs else max(recs) + 1
         self.log('Recording', data={**rec_key, 'rec_idx': rec_idx}, schema='recording')
 
@@ -557,15 +744,19 @@ class Logger:
     @staticmethod
     def get_ip():
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        try: s.connect(("8.8.8.8", 80)); IP = s.getsockname()[0]
-        except Exception: IP = '127.0.0.1'
-        finally: s.close()
-        return IP
+        try:
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+        except Exception:
+            ip = "127.0.0.1"
+        finally:
+            s.close()
+        return ip
 
 
 @dataclass(order=True)
 class PrioritizedItem:
-    table: str = datafield(compare =False)
+    table: str = datafield(compare=False)
     tuple: Any = datafield(compare=False)
     field: str = datafield(compare=False, default='')
     value: Any = datafield(compare=False, default='')
@@ -576,4 +767,3 @@ class PrioritizedItem:
     priority: int = datafield(default=50)
     error: bool = datafield(compare=False, default=False)
     ignore_extra_fields: bool = datafield(compare=False, default=True)
-
