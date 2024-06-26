@@ -332,10 +332,28 @@ class Logger:
             self.setup_status = self.setup_info["status"]
             time.sleep(1)  # update once a second
 
-    def log(self, table, data=dict(), **kwargs):
+    def log(self, table, data=None, **kwargs):
+        """
+        This method logs the given data into the specified table in the experiment database.
+
+        It first gets the elapsed time from the logger timer and adds it to the data dictionary.
+        It then puts the data into the specified table. If the manual_run flag is set and the
+        table is "Trial.StateOnset",
+        it prints the state.
+
+        Args:
+            table (str): The name of the table in the experiment database.
+            data (dict, optional): The data to be logged. Defaults to an empty dictionary.
+            **kwargs: Additional keyword arguments to be passed to the put method.
+
+        Returns:
+            float: The elapsed time from the logger timer.
+        """
         tmst = self.logger_timer.elapsed_time()
-        self.put(table=table, tuple={**self.trial_key, 'time': tmst, **data}, **kwargs)
-        if self.manual_run and table == 'Trial.StateOnset': print('State: ', data['state'])
+        data = data or {}
+        self.put(table=table, tuple={**self.trial_key, "time": tmst, **data}, **kwargs)
+        if self.manual_run and table == "Trial.StateOnset":
+            print("State: ", data["state"])
         return tmst
 
     def _log_setup(self, task=None):
