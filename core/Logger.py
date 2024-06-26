@@ -387,14 +387,27 @@ class Logger:
             validate=True,
         )
 
-    def get_last_session(self):
-        last_sessions = (experiment.Session() & dict(animal_id=self.get_setup_info('animal_id'))).fetch('session')
+    def _get_last_session(self):
+        """
+        This method fetches the last session for a given animal_id from the experiment.Session.
+
+        It first fetches all sessions for the given animal_id. If no sessions are found,
+        it returns 0.
+        If sessions are found, it returns the maximum session number, which corresponds to
+        the last session.
+
+        Returns:
+            int: The last session number or 0 if no sessions are found.
+        """
+        last_sessions = (
+            experiment.Session() & dict(animal_id=self.get_setup_info("animal_id"))
+        ).fetch("session")
         return 0 if np.size(last_sessions) == 0 else np.max(last_sessions)
 
     def log_session(self, params, log_protocol=False):
         self.total_reward = 0
         self.trial_key = dict(animal_id=self.get_setup_info('animal_id'),
-                              trial_idx=0, session=self.get_last_session() + 1)
+                              trial_idx=0, session=self._get_last_session() + 1)
         session_key = {**self.trial_key, **params, 'setup': self.setup,
                        'user_name': params['user'] if 'user_name' in params else 'bot'}
         if self.manual_run: print('Logging Session: ', session_key)
