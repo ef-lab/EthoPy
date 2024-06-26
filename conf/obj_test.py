@@ -1,8 +1,10 @@
-from Experiments.MatchToSample import *
-from Behaviors.MultiPort import *
-from Stimuli.Panda import *
-from scipy import interpolate
 import numpy as np
+from scipy import interpolate
+
+from Behaviors.MultiPort import *
+from Experiments.MatchToSample import *
+from Stimuli.Panda import *
+
 global logger
 interp = lambda x: interpolate.splev(np.linspace(0, len(x), 100),
                                      interpolate.splrep(np.linspace(0, len(x), len(x)), x)) if len(x) > 3 else x
@@ -11,7 +13,7 @@ interp = lambda x: interpolate.splev(np.linspace(0, len(x), 100),
 session_params = {
     'start_time'            : '00:00:00',
     'stop_time'             : '23:59:00',
-    'setup_conf_idx'        : 20,
+    'setup_conf_idx'        : 0,
 }
 
 exp = Experiment()
