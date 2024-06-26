@@ -1,6 +1,7 @@
 import os
 import time
 
+import datajoint as dj
 import numpy as np
 import panda3d.core as core
 from direct.showbase.Loader import Loader
@@ -8,7 +9,8 @@ from direct.showbase.ShowBase import ShowBase
 from direct.task import Task
 from panda3d.core import CardMaker, ClockObject, NodePath, TextureStage
 
-from core.Stimulus import *
+from core.Logger import stimulus
+from core.Stimulus import Stimulus
 from utils.helper_functions import iterable
 from utils.Timer import Timer
 
