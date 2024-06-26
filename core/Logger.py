@@ -47,8 +47,6 @@ VERSION = "0.1"
 class Logger:
     DEFAULT_SOURCE_PATH = os.path.expanduser("~") + "/EthoPy_Files/"
     DEFAULT_TARGET_PATH = False
-    trial_key, setup_info, _schemata, datasets = dict(animal_id=0, session=1, trial_idx=0), dict(), dict(), dict()
-    lock, queue, ping_timer, logger_timer, total_reward, curr_state = False, PriorityQueue(), Timer(), Timer(), 0, ''
 
     def __init__(self, protocol=False):
         self.setup = socket.gethostname()
@@ -68,19 +66,30 @@ class Logger:
             dj.config["database.password"],
         )
         self._schemata = self._initialize_schemata()
-        self.thread_end, self.thread_lock = threading.Event(),  threading.Lock()
+
+        self.Writer = Writer
+        self.rec_fliptimes = True
+        self.trial_key = {'animal_id': 0, 'session': 1, 'trial_idx': 0}
+        self.setup_info = {}
+        self.datasets = {}
+        self.lock = False
+        self.queue = PriorityQueue()
+        self.ping_timer = Timer()
+        self.logger_timer = Timer()
+        self.total_reward = 0
+        self.curr_state = ""
+
+        # set up paths
+        self.source_path = self._get_path("source_path", self.DEFAULT_SOURCE_PATH)
+        self.target_path = self._get_path("target_path", self.DEFAULT_TARGET_PATH)
+
+        self.thread_end, self.thread_lock = threading.Event(), threading.Lock()
         self.inserter_thread = threading.Thread(target=self.inserter)
         self.getter_thread = threading.Thread(target=self.getter)
         self.inserter_thread.start()
         self._log_setup(self.task_idx)
         self.getter_thread.start()
         self.logger_timer.start()
-        self.Writer = Writer
-        self.rec_fliptimes = True
-
-        # set up paths
-        self.source_path = self._get_path("source_path", self.DEFAULT_SOURCE_PATH)
-        self.target_path = self._get_path("target_path", self.DEFAULT_TARGET_PATH)
 
     def _parse_protocol(self, protocol):
         if protocol and protocol.isdigit():
