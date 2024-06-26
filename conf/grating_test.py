@@ -1,12 +1,13 @@
 # Orientation discrimination experiment
+from Behaviors.MultiPort import *
 from Experiments.MatchPort import *
 from Stimuli.Grating import *
-from Behaviors.MultiPort import *
 
 # define session parameters
 session_params = {
     'trial_selection'    : 'staircase',
     'max_reward'         : 3000,
+    'min_reward'         : 10,
     'bias_window'        : 5,
     'staircase_window'   : 10,
     'stair_up'           : 0.7,
@@ -42,8 +43,10 @@ ports = {1: 0,
 
 Grating_Stimuli = Grating() #if session_params['setup_conf_idx'] ==0 else GratingOld()
 Grating_Stimuli.fill_colors.ready = []
+block = exp.Block(difficulty=1, next_up=1, next_down=1, trial_selection='staircase', metric='dprime', stair_up=1, stair_down=0.5)
 for port in ports:
-    conditions += exp.make_conditions(stim_class=Grating_Stimuli, conditions={**key,
+    conditions += exp.make_conditions(stim_class=Grating_Stimuli, conditions={**block.dict(),
+                                                                              **key,
                                                                               'theta'        : ports[port],
                                                                               'reward_port'  : port,
                                                                               'response_port': port})
