@@ -14,7 +14,7 @@ from queue import PriorityQueue
 from typing import Any, Dict, Optional
 
 import datajoint as dj
-import numpy
+import numpy as np
 
 from utils.helper_functions import *
 from utils.Timer import Timer
@@ -50,13 +50,15 @@ class Logger:
 
     def __init__(self, protocol=False):
         self.setup = socket.gethostname()
-        system = platform.uname()
-        if isinstance(protocol, str):
-            if not os.path.isfile(protocol): protocol = int(protocol)
-        self.protocol = protocol
-        self.is_pi = system.machine.startswith("arm") or system.machine=='aarch64' if system.system == 'Linux' else False
-        self.manual_run = True if protocol else False
+        self.is_pi = self._check_if_raspberry_pi()
+
+        self.task_idx, self.protocol_path = self._parse_protocol(protocol)
+
+        # if the protocol path or task id is defined means that it runs manually
+        self.manual_run = True if self.protocol_path else False
+
         self.setup_status = 'running' if self.manual_run else 'ready'
+
         # separate connection for internal communication
         self.private_conn = dj.Connection(
             dj.config["database.host"],
@@ -68,7 +70,7 @@ class Logger:
         self.inserter_thread = threading.Thread(target=self.inserter)
         self.getter_thread = threading.Thread(target=self.getter)
         self.inserter_thread.start()
-        self.log_setup(protocol)
+        self._log_setup(self.task_idx)
         self.getter_thread.start()
         self.logger_timer.start()
         self.Writer = Writer
@@ -89,6 +91,73 @@ class Logger:
         else:
             self.target_path = False
 
+    def _parse_protocol(self, protocol):
+        if protocol and protocol.isdigit():
+            return int(protocol), self._find_protocol_path(int(protocol))
+        elif protocol and isinstance(protocol, str):
+            return None, protocol
+        return None, None
+
+    def update_protocol(self):
+        """
+        This method updates the protocol path.
+
+        If the run is not manual, it fetches the task index from the setup info.
+        It then checks if there is a task with this index in the experiment's Task table.
+        If there is no such task, it returns False.
+        Otherwise, it fetches the protocol associated with this task and updates the protocol path.
+
+        Returns:
+            bool: True if the protocol path was successfully updated, False otherwise.
+        """
+        # find the protocol_path based on the task_id from the control table
+        if not self.manual_run:
+            task_idx = self.get_setup_info('task_idx')
+            if not len(experiment.Task() & dict(task_idx=task_idx)) > 0:
+                return False
+            protocol = (experiment.Task() & dict(task_idx=task_idx)).fetch1('protocol')
+            self.protocol_path = protocol
+        # checks if the file exist
+        if not os.path.isfile(self.protocol_path):
+            print(f"Protocol file {self.protocol_path} not found!")
+            return False
+        return True
+
+    @property
+    def protocol_path(self) -> str:
+        """
+        Get the protocol path.
+
+        Returns:
+            str: The protocol path.
+        """
+        return self._protocol_path
+
+    @protocol_path.setter
+    def protocol_path(self, protocol_path: str):
+        """
+        Set the protocol path. if protocol_path has only filename
+        set the protocol_path at the conf directory.
+
+        Args:
+            protocol_path (str): The protocol path.
+        """
+
+        if protocol_path is not None:
+            path, filename = os.path.split(protocol_path)
+            if not path:
+                protocol_path = (
+                    str(pathlib.Path(__file__).parent.absolute()) + "/../conf/" + filename
+                )
+        self._protocol_path = protocol_path
+
+    def _find_protocol_path(self, task_idx=None):
+        """find the protocol path from the task index"""
+        if task_idx:
+            return (experiment.Task() & dict(task_idx=task_idx)).fetch1("protocol")
+        else:
+            return False
+
     def _initialize_schemata(self) -> Dict[str, dj.VirtualModule]:
         return {
             schema: dj.create_virtual_module(
@@ -96,7 +165,15 @@ class Logger:
             )
             for schema, value in SCHEMATA.items()
         }
-    
+
+    def _check_if_raspberry_pi(self) -> bool:
+        system = platform.uname()
+        return (
+            system.machine.startswith("arm") or system.machine == "aarch64"
+            if system.system == "Linux"
+            else False
+        )
+
     def setup_schema(self, extra_schema):
         for schema, value in extra_schema.items():
             globals()[schema] = dj.create_virtual_module(schema, value, create_tables=True, create_schema=True)
@@ -145,16 +222,40 @@ class Logger:
         if self.manual_run and table == 'Trial.StateOnset': print('State: ', data['state'])
         return tmst
 
-    def log_setup(self, task=False):
+    def _log_setup(self, task=None):
+        """
+        This method logs the setup information into the Control table in the experiment database.
+
+        It first fetches the control information for the current setup. If no control information is found,
+        it creates a new dictionary with the setup information. If a task is provided and it is an integer,
+        it adds the task index to the key. It then adds the IP and status information to the key.
+
+        The method finally puts the key into the Control table, replacing any existing entry with the same key.
+        It blocks until the operation is complete and validates the operation.
+
+        Args:
+            task (int, optional): The task index. Defaults to None.
+
+        Returns:
+            None
+        """
         rel = experiment.Control() & dict(setup=self.setup)
-        key = rel.fetch1() if numpy.size(rel.fetch()) else dict(setup=self.setup)
-        if task and isinstance(task, int): key['task_idx'] = task
-        key = {**key, 'ip': self.get_ip(), 'status': self.setup_status}
-        self.put(table='Control', tuple=key, replace=True, priority=1, block=True, validate=True)
+        key = rel.fetch1() if np.size(rel.fetch()) else dict(setup=self.setup)
+        if task and isinstance(task, int):
+            key["task_idx"] = task
+        key = {**key, "ip": self.get_ip(), "status": self.setup_status}
+        self.put(
+            table="Control",
+            tuple=key,
+            replace=True,
+            priority=1,
+            block=True,
+            validate=True,
+        )
 
     def get_last_session(self):
         last_sessions = (experiment.Session() & dict(animal_id=self.get_setup_info('animal_id'))).fetch('session')
-        return 0 if numpy.size(last_sessions) == 0 else numpy.max(last_sessions)
+        return 0 if np.size(last_sessions) == 0 else np.max(last_sessions)
 
     def log_session(self, params, log_protocol=False):
         self.total_reward = 0
@@ -165,10 +266,8 @@ class Logger:
         if self.manual_run: print('Logging Session: ', session_key)
         self.put(table='Session', tuple=session_key, priority=1, validate=True, block=True)
         if log_protocol:
-            pr_name, pr_file = self.get_protocol(raw_file=True)
-            git_hash = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode('ascii').strip()
-            self.put(table='Session.Protocol', tuple={**self.trial_key, 'protocol_name': pr_name,
-                                                      'protocol_file': pr_file, 'git_hash': git_hash})
+            self._log_protocol_details()
+
         self.put(table='Configuration', tuple=self.trial_key, schema='behavior', priority=2, validate=True, block=True)
         self.put(table='Configuration', tuple=self.trial_key, schema='stimulus', priority=2, validate=True, block=True)
         ports = (experiment.SetupConfiguration.Port & {'setup_conf_idx': params['setup_conf_idx']}
@@ -195,6 +294,25 @@ class Logger:
         self.update_setup_info({**key, "status":self.setup_info['status']})
         self.logger_timer.start()  # start session time
 
+    def _log_protocol_details(self) -> None:
+        """
+        Save the protocol file,name and the git_hash in the database.
+        """
+        git_hash = (
+            subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
+            .decode("ascii")
+            .strip()
+        )
+        self.put(
+            table="Session.Protocol",
+            tuple={
+                **self.trial_key,
+                "protocol_name": self.protocol_path,
+                "protocol_file": np.fromfile(self.protocol_path, dtype=np.int8),
+                "git_hash": git_hash,
+            },
+        )
+
     def update_setup_info(self, info, key=dict()):
         self.setup_info = {**(experiment.Control() & {**{'setup': self.setup}, **key}).fetch1(), **info}
         block = True if 'status' in info else False
@@ -207,20 +325,6 @@ class Logger:
     def get(self, schema='experiment', table='Control', fields='', key=dict(), **kwargs):
         table = rgetattr(eval(schema), table)
         return (table() & key).fetch(*fields, **kwargs)
-
-    def get_protocol(self, task_idx=None, raw_file=False):
-        if not task_idx and not isinstance(self.protocol, str):
-            task_idx = self.get_setup_info('task_idx')
-            if not len(experiment.Task() & dict(task_idx=task_idx)) > 0: return False
-            protocol = (experiment.Task() & dict(task_idx=task_idx)).fetch1('protocol')
-        else:
-            protocol = self.protocol
-        path, filename = os.path.split(protocol)
-        if not path: protocol = str(pathlib.Path(__file__).parent.absolute()) + '/../conf/' + filename
-        if raw_file:
-            return protocol, np.fromfile(protocol, dtype=np.int8)
-        else:
-            return protocol
 
     def update_trial_idx(self, trial_idx): self.trial_key['trial_idx'] = trial_idx
 
