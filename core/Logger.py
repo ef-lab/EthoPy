@@ -191,10 +191,24 @@ class Logger:
             print(f"Setting storage directory: {path}")
         return path
 
-    def setup_schema(self, extra_schema):
+    def setup_schema(self, extra_schema: Dict[str, Any]) -> None:
+        """
+        Set up additional schema.
+
+        Args:
+        extra_schema (Dict[str, Any]): The additional schema to set up.
+        """
         for schema, value in extra_schema.items():
-            globals()[schema] = dj.create_virtual_module(schema, value, create_tables=True, create_schema=True)
-            self._schemata.update({schema: dj.create_virtual_module(schema, value, connection=self.private_conn)})
+            globals()[schema] = dj.create_virtual_module(
+                schema, value, create_tables=True, create_schema=True
+            )
+            self._schemata.update(
+                {
+                    schema: dj.create_virtual_module(
+                        schema, value, connection=self.private_conn
+                    )
+                }
+            )
 
     def put(self, **kwargs):
         item = PrioritizedItem(**kwargs)
