@@ -1,13 +1,16 @@
-from core.Stimulus import *
 import os
 import time
+
 import numpy as np
-from direct.showbase.ShowBase import ShowBase
-from direct.showbase.Loader import Loader
-from direct.task import Task
 import panda3d.core as core
-from utils.Timer import *
-from panda3d.core import NodePath, CardMaker, TextureStage, ClockObject
+from direct.showbase.Loader import Loader
+from direct.showbase.ShowBase import ShowBase
+from direct.task import Task
+from panda3d.core import CardMaker, ClockObject, NodePath, TextureStage
+
+from core.Stimulus import *
+from utils.helper_functions import iterable
+from utils.Timer import Timer
 
 
 @stimulus.schema
@@ -264,7 +267,8 @@ class Panda(Stimulus, dj.Manual):
             self.taskMgr.remove(self.record_task)
 
     def create_movies(self):
-        import glob, os
+        import glob
+        import os
         print('creating movies..')
         for itrial in range(1, self.exp.curr_trial + 1):
             name = self.record_path + 'trial' + str(itrial) + '_frame_*.png'
