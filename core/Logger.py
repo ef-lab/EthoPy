@@ -45,6 +45,8 @@ mice = virtual_modules["mice"]
 VERSION = "0.1"
 
 class Logger:
+    DEFAULT_SOURCE_PATH = os.path.expanduser("~") + "/EthoPy_Files/"
+    DEFAULT_TARGET_PATH = False
     trial_key, setup_info, _schemata, datasets = dict(animal_id=0, session=1, trial_idx=0), dict(), dict(), dict()
     lock, queue, ping_timer, logger_timer, total_reward, curr_state = False, PriorityQueue(), Timer(), Timer(), 0, ''
 
@@ -77,19 +79,8 @@ class Logger:
         self.rec_fliptimes = True
 
         # set up paths
-        if 'source_path' in dj.config and not os.path.isdir(dj.config['source_path']):
-            self.source_path = dj.config['source_path']
-            if not os.path.isdir(self.source_path):  os.makedirs(self.source_path)  # create path if necessary
-        elif 'source_path' not in dj.config or not os.path.isdir(dj.config['source_path']):
-            self.source_path = os.path.expanduser("~") + '/EthoPy_Files/'
-            if not os.path.isdir(self.source_path):  os.makedirs(self.source_path)  # create path if necessary
-            print('setting local storage directory: ', self.source_path)
-        else:
-            self.source_path = dj.config['source_path']
-        if 'target_path' in dj.config and os.path.isdir(dj.config['target_path']):
-            self.target_path = dj.config['target_path']
-        else:
-            self.target_path = False
+        self.source_path = self._get_path("source_path", self.DEFAULT_SOURCE_PATH)
+        self.target_path = self._get_path("target_path", self.DEFAULT_TARGET_PATH)
 
     def _parse_protocol(self, protocol):
         if protocol and protocol.isdigit():
@@ -173,6 +164,23 @@ class Logger:
             if system.system == "Linux"
             else False
         )
+
+    def _get_path(self, path_key: str, default_path: str = None) -> str:
+        """
+        Get the path from the configuration or create a new directory at the default path.
+
+        Args:
+        path_key (str): The key to look up in the configuration.
+        default_path (str): The path to use if the key is not in the configuration.
+
+        Returns:
+        str: The path from the configuration or the default path.
+        """
+        path = config.get(path_key, default_path)
+        if path:
+            os.makedirs(path, exist_ok=True)
+            print(f"Setting storage directory: {path}")
+        return path
 
     def setup_schema(self, extra_schema):
         for schema, value in extra_schema.items():
