@@ -67,7 +67,7 @@ class Logger:
         )
         self._schemata = self._initialize_schemata()
 
-        self.Writer = Writer
+        self.writer = Writer
         self.rec_fliptimes = True
         self.trial_key = {'animal_id': 0, 'session': 1, 'trial_idx': 0}
         self.setup_info = {}
@@ -401,7 +401,7 @@ class Logger:
 
         if filename not in self.datasets:
             # create h5 file if not exists
-            self.datasets[filename] = self.Writer(path + filename, target_path)
+            self.datasets[filename] = self.writer(path + filename, target_path)
 
         # create new dataset in the h5 files
         self.datasets[filename].createDataset(
