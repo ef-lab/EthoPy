@@ -16,7 +16,7 @@ from typing import Any, Dict, Optional
 import datajoint as dj
 import numpy as np
 
-from utils.helper_functions import *
+from utils.helper_functions import rgetattr
 from utils.Timer import Timer
 from utils.Writer import Writer
 
@@ -84,7 +84,7 @@ class Logger:
         self.target_path = self._get_path("target_path", self.DEFAULT_TARGET_PATH)
 
         self.thread_end, self.thread_lock = threading.Event(), threading.Lock()
-        self.inserter_thread = threading.Thread(target=self.inserter)
+        self.inserter_thread = threading.Thread(target=self._inserter)
         self.getter_thread = threading.Thread(target=self.getter)
         self.inserter_thread.start()
         self._log_setup(self.task_idx)
@@ -224,28 +224,92 @@ class Logger:
         else:
             self.queue.join()
 
-    def inserter(self):
+    def _insert_item(self, item, table):
+        """
+        Inserts an item into the specified table.
+
+        Args:
+            item: The item to be inserted.
+            table: The table to insert the item into.
+
+        Returns:
+            None
+        """
+        table.insert1(
+            item.tuple,
+            ignore_extra_fields=item.ignore_extra_fields,
+            skip_duplicates=False if item.replace else True,
+            replace=item.replace,
+        )
+
+    def _validate_item(self, item, table):
+        """
+        Validates an item against a table.
+        """
+        if item.validate:  # validate tuple exists in database
+            key = {k: v for (k, v) in item.tuple.items() if k in table.primary_key}
+            if "status" in item.tuple.keys():
+                key["status"] = item.tuple["status"]
+            while not len(table & key) > 0:
+                time.sleep(0.5)
+
+    def _handle_error(self, item, table, e, thread_end, queue):
+        """
+        Handles an error by logging the error message and add the item again in the queue
+        and re-trying again later.
+
+        Parameters:
+        item : Description of parameter `item`.
+        table : Description of parameter `table`.
+        e (Exception): The exception that was raised.
+        thread_end : Description of parameter `thread_end`.
+        queue : Description of parameter `queue`.
+        """
+        str_error = f"Failed to insert:\n{item.tuple}\n in {table}\n With error:\n{e}"
+        if item.error:
+            thread_end.set()
+            raise str_error + "\nSecond time..."
+        print(str_error+"\nWill retry later")
+        item.error = True
+        item.priority = item.priority + 2
+        queue.put(item)
+
+    def _inserter(self):
+        """
+        This method continuously inserts items from the queue into their respective tables in
+        the database.
+
+        It runs in a loop until the thread_end event is set. In each iteration, it checks if
+        the queue is empty.If it is, it sleeps for 0.5 seconds and then continues to the next iteration.
+        If the queue is not empty, it gets an item from the queue, acquires the thread lock,
+        and tries to insert the item into it's table.
+        If an error occurs during the insertion, it handles the error.
+        After the insertion, it releases the thread lock.
+        If the item was marked to block, it marks the task as done.
+
+        Returns:
+            None
+        """
         while not self.thread_end.is_set():
-            if self.queue.empty():  time.sleep(.5); continue
+            if self.queue.empty():
+                time.sleep(0.5)
+                continue
             item = self.queue.get()
-            skip = False if item.replace else True
             table = rgetattr(self._schemata[item.schema], item.table)
             self.thread_lock.acquire()
             try:
-                table.insert1(item.tuple, ignore_extra_fields=item.ignore_extra_fields,
-                              skip_duplicates=skip, replace=item.replace)
-                if item.validate:  # validate tuple exists in database
-                    key = {k: v for (k, v) in item.tuple.items() if k in table.primary_key}
-                    if 'status' in item.tuple.keys(): key['status'] = item.tuple['status']
-                    while not len(table & key) > 0: time.sleep(.5)
-            except Exception as e:
-                if item.error: self.thread_end.set(); raise
-                print('Failed to insert:\n', item.tuple, '\n in ', table, '\n With error:\n', e, '\nWill retry later')
-                item.error = True
-                item.priority = item.priority + 2
-                self.queue.put(item)
+                self._insert_item(item, table)
+                self._validate_item(item, table)
+            except ValueError as e:
+                if item.error:
+                    self.thread_end.set()
+                    raise Exception(
+                        f"Second time failed to insert:\n {item.tuple} in {table} With error:\n {e}"
+                    ) from e        
+                self._handle_error(item, table, e, self.thread_end, self.queue)
             self.thread_lock.release()
-            if item.block: self.queue.task_done()
+            if item.block:
+                self.queue.task_done()
 
     def getter(self):
         while not self.thread_end.is_set():
