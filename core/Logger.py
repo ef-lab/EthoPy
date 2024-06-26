@@ -210,11 +210,19 @@ class Logger:
                 }
             )
 
-    def put(self, **kwargs):
+    def put(self, **kwargs: Any) -> None:
+        """
+        Put an item in the queue.
+
+        Parameters:
+        **kwargs (Any): The item to put in the queue.
+        """
         item = PrioritizedItem(**kwargs)
         self.queue.put(item)
-        if not item.block: self.queue.task_done()
-        else: self.queue.join()
+        if not item.block:
+            self.queue.task_done()
+        else:
+            self.queue.join()
 
     def inserter(self):
         while not self.thread_end.is_set():
