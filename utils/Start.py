@@ -2,12 +2,12 @@
 Graphical user interface when an experiment starts
 """
 
+import os
+from typing import List, Union
+
 import pygame
 import pygame_menu
 
-from typing import Union, List
-
-import os
 
 class PyWelcome():
     def __init__(self, logger)->None:
@@ -16,7 +16,9 @@ class PyWelcome():
 
         self.SCREEN_WIDTH = 800
         self.SCREEN_HEIGHT = 480
-        pygame.init()
+        if not pygame.get_init():
+            pygame.init()
+
         if self.logger.is_pi:
             self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.FULLSCREEN)
         else:
