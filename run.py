@@ -1,3 +1,4 @@
+import logging
 import sys
 import time
 import traceback
@@ -30,5 +31,5 @@ while logger.setup_status != 'exit':
 # # # # # Exit # # # # #
 logger.cleanup()
 if ERROR:
-    print(ERROR)
+    logging.error("ERROR %s", ERROR)
 sys.exit(0)

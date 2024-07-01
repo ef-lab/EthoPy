@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import pathlib
 import platform
@@ -18,6 +19,7 @@ import datajoint as dj
 import numpy as np
 
 from utils.helper_functions import rgetattr
+from utils.logging import setup_logging
 from utils.Timer import Timer
 from utils.Writer import Writer
 
@@ -57,7 +59,7 @@ class Logger:
 
         # if the protocol path or task id is defined means that it runs manually
         self.manual_run = True if self.protocol_path else False
-
+        setup_logging(self.manual_run)
         self.setup_status = 'running' if self.manual_run else 'ready'
 
         # separate connection for internal communication
@@ -120,7 +122,8 @@ class Logger:
             self.protocol_path = protocol
         # checks if the file exist
         if not os.path.isfile(self.protocol_path):
-            print(f"Protocol file {self.protocol_path} not found!")
+            # print(f"Protocol file {self.protocol_path} not found!")
+            logging.info("Protocol file %s not found!", self.protocol_path)
             return False
         return True
 
@@ -189,7 +192,8 @@ class Logger:
         path = config.get(path_key, default_path)
         if path:
             os.makedirs(path, exist_ok=True)
-            print(f"Setting storage directory: {path}")
+            # print(f"Setting storage directory: {path}")
+            logging.info("Setting storage directory: %s", path)
         return path
 
     def setup_schema(self, extra_schema: Dict[str, Any]) -> None:
@@ -355,8 +359,10 @@ class Logger:
         tmst = self.logger_timer.elapsed_time()
         data = data or {}
         self.put(table=table, tuple={**self.trial_key, "time": tmst, **data}, **kwargs)
-        if self.manual_run and table == "Trial.StateOnset":
-            print("State: ", data["state"])
+        if table == "Trial.StateOnset":
+            # if self.manual_run:
+                # print("State: ", data["state"])
+            logging.info("State: %s", data["state"])
         return tmst
 
     def _log_setup(self, task=None):
@@ -417,6 +423,7 @@ class Logger:
             log_protocol (bool): Whether to log the protocol information.
         """
         self._initialize_session()
+        logging.info("\n%s\n%s\n%s", "#" * 70, self.trial_key, "#" * 70)        
         session_key = self._create_session_key(params)
         self._log_session_entry(session_key)
 
@@ -467,8 +474,10 @@ class Logger:
             session_key (Dict[str, Any]): The session key to log.
         """
         if self.manual_run:
-            print("Logging Session:")
-            pprint.pprint(session_key)
+            # print("Logging Session:")
+            # pprint.pprint(session_key)
+            logging.info("session_key:\n" + pprint.pformat(session_key))
+
         self.put(
             table="Session", tuple=session_key, priority=1, validate=True, block=True
         )
