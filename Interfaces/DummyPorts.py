@@ -1,4 +1,5 @@
 import pygame
+
 from core.Interface import *
 
 
@@ -7,6 +8,7 @@ class DummyPorts(Interface):
         super(DummyPorts, self).__init__(**kwargs)
         global pygame
         if not pygame.get_init(): pygame.init()
+        pygame.display.init()
         self.dummy_ports = {'left_port'       : [pygame.KEYDOWN, 'left'],
                             'right_port'      : [pygame.KEYDOWN, 'right'],
                             'proximity_true'  : [pygame.KEYDOWN, 'space'],
