@@ -7,7 +7,6 @@ from Stimuli.Grating import *
 session_params = {
     'trial_selection'    : 'staircase',
     'max_reward'         : 3000,
-    'min_reward'         : 10,
     'bias_window'        : 5,
     'staircase_window'   : 10,
     'stair_up'           : 0.7,
