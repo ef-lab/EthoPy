@@ -55,11 +55,13 @@ class Logger:
         self.setup = socket.gethostname()
         self.is_pi = self._check_if_raspberry_pi()
 
-        self.task_idx, self.protocol_path = self._parse_protocol(protocol)
+        self.task_idx, self.protocol_path = self._resolve_protocol_parameters(protocol)
 
         # if the protocol path or task id is defined means that it runs manually
         self.manual_run = True if self.protocol_path else False
+        # set the python logging
         setup_logging(self.manual_run)
+        # if manual true run the experiment else set it to ready state
         self.setup_status = 'running' if self.manual_run else 'ready'
 
         # separate connection for internal communication
@@ -83,8 +85,8 @@ class Logger:
         self.curr_state = ""
 
         # set up paths
-        self.source_path = self._get_path("source_path", self.DEFAULT_SOURCE_PATH)
-        self.target_path = self._get_path("target_path", self.DEFAULT_TARGET_PATH)
+        self.source_path = self._set_path_from_config("source_path", self.DEFAULT_SOURCE_PATH)
+        self.target_path = self._set_path_from_config("target_path", self.DEFAULT_TARGET_PATH)
 
         self.thread_end, self.thread_lock = threading.Event(), threading.Lock()
         self.inserter_thread = threading.Thread(target=self._inserter)
@@ -94,7 +96,22 @@ class Logger:
         self.getter_thread.start()
         self.logger_timer.start()
 
-    def _parse_protocol(self, protocol):
+    def _resolve_protocol_parameters(self, protocol):
+        """
+        Parses the input protocol to determine its type and corresponding path.
+
+        This method checks if the input protocol is a digit or a string. If it's a digit,
+        it assumes the protocol is an ID and finds its corresponding path. If it's a string,
+        it assumes the protocol is already a path. If the protocol is None or doesn't match
+        these conditions, it returns None for both the protocol ID and path.
+
+        Parameters:
+        - protocol (str|int|None): The input protocol, which can be an ID (digit) or a
+        path (string).
+
+        Returns:
+        - tuple: A tuple containing the protocol ID (int|None) and the protocol path (str|None).
+        """
         if protocol and protocol.isdigit():
             return int(protocol), self._find_protocol_path(int(protocol))
         elif protocol and isinstance(protocol, str):
@@ -122,7 +139,6 @@ class Logger:
             self.protocol_path = protocol
         # checks if the file exist
         if not os.path.isfile(self.protocol_path):
-            # print(f"Protocol file {self.protocol_path} not found!")
             logging.info("Protocol file %s not found!", self.protocol_path)
             return False
         return True
@@ -140,8 +156,8 @@ class Logger:
     @protocol_path.setter
     def protocol_path(self, protocol_path: str):
         """
-        Set the protocol path. if protocol_path has only filename
-        set the protocol_path at the conf directory.
+        Set the protocol path.
+        if protocol_path has only filename set the protocol_path at the conf directory.
 
         Args:
             protocol_path (str): The protocol path.
@@ -178,9 +194,9 @@ class Logger:
             else False
         )
 
-    def _get_path(self, path_key: str, default_path: str = None) -> str:
+    def _set_path_from_config(self, path_key: str, default_path: str = None) -> str:
         """
-        Get the path from the configuration or create a new directory at the default path.
+        Get the path from the local_conf or create a new directory at the default path.
 
         Args:
         path_key (str): The key to look up in the configuration.
@@ -192,7 +208,6 @@ class Logger:
         path = config.get(path_key, default_path)
         if path:
             os.makedirs(path, exist_ok=True)
-            # print(f"Setting storage directory: {path}")
             logging.info("Setting storage directory: %s", path)
         return path
 
@@ -309,9 +324,9 @@ class Logger:
             except ValueError as e:
                 if item.error:
                     self.thread_end.set()
-                    raise Exception(
+                    raise RuntimeError(
                         f"Second time failed to insert:\n {item.tuple} in {table} With error:\n {e}"
-                    ) from e        
+                    ) from e
                 self._handle_error(item, table, e, self.thread_end, self.queue)
             self.thread_lock.release()
             if item.block:
@@ -361,7 +376,7 @@ class Logger:
         self.put(table=table, tuple={**self.trial_key, "time": tmst, **data}, **kwargs)
         if table == "Trial.StateOnset":
             # if self.manual_run:
-                # print("State: ", data["state"])
+            #     print("State: ", data["state"])
             logging.info("State: %s", data["state"])
         return tmst
 
@@ -423,7 +438,7 @@ class Logger:
             log_protocol (bool): Whether to log the protocol information.
         """
         self._initialize_session()
-        logging.info("\n%s\n%s\n%s", "#" * 70, self.trial_key, "#" * 70)        
+        logging.info("\n%s\n%s\n%s", "#" * 70, self.trial_key, "#" * 70)
         session_key = self._create_session_key(params)
         self._log_session_entry(session_key)
 
@@ -667,7 +682,7 @@ class Logger:
 
     def cleanup(self):
         while not self.queue.empty():
-            print('Waiting for empty queue... qsize: %d' % self.queue.qsize())
+            logging.info('Waiting for empty queue... qsize: %d', self.queue.qsize())
             time.sleep(1)
         self.thread_end.set()
 
@@ -707,13 +722,9 @@ class Logger:
 
         # Generate filename if not provided
         if filename is None:
-            filename = "%s_%d_%d_%s.h5" % (
-                dataset_name,
-                self.trial_key["animal_id"],
-                self.trial_key["session"],
-                datetime.now().strftime("%Y-%m-%d-%H-%M-%S"),
-            )
-
+            filename = (f"{dataset_name}_{self.trial_key['animal_id']}_"
+                        f"{self.trial_key['session']}_"
+                        f"{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.h5")
         if filename not in self.datasets:
             # create h5 file if not exists
             self.datasets[filename] = self.writer(path + filename, target_path)
@@ -737,16 +748,36 @@ class Logger:
         return self.datasets[filename]
 
     def log_recording(self, rec_key):
+        """
+        Logs a new recording entry with an incremented recording index.
+
+        This method retrieves the current recordings associated with the trial,
+        calculates the next recording index (rec_idx) by finding the maximum
+        recording index and adding one, and logs the new recording entry with
+        the provided recording key (rec_key) and the calculated recording index.
+
+        Parameters:
+        - rec_key (dict): A dictionary containing the key information for the recording entry.
+
+        The method assumes the existence of a `get` method to retrieve existing recordings
+        and a `log` method to log the new recording entry.
+        """
         recs = self.get(
             schema="recording",
             table="Recording",
             key=self.trial_key,
             fields=["rec_idx"],
-        )        
+        )
         rec_idx = 1 if not recs else max(recs) + 1
         self.log('Recording', data={**rec_key, 'rec_idx': rec_idx}, schema='recording')
 
     def closeDatasets(self):
+        """
+        Closes all datasets managed by this instance.
+
+        Iterates through the datasets dictionary, calling the `exit` method on each dataset
+        object to properly close them.
+        """
         for dataset in self.datasets:
             self.datasets[dataset].exit()
 
