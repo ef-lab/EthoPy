@@ -83,8 +83,9 @@ def setup_logging(console_log):
         backupCount=5
     )
     rotating_handler.setLevel(log_level)
-    rotating_handler.setFormatter(logging.Formatter("%(asctime)-15s %(message)s"))
-
+    frmt = "%(asctime)-15s - (%(filename)s:%(lineno)d) - %(levelname)s - %(message)s"
+    rotating_handler.setFormatter(logging.Formatter(frmt))
+    # rotating_handler.setFormatter(CustomFormatter())  # Use CustomFormatter here
     # Configure the root logger
     logging.basicConfig(
         datefmt="%Y-%m-%d %H:%M:%S",
