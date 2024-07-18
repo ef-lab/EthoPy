@@ -1,3 +1,4 @@
+import importlib
 import json
 import logging
 import os
@@ -13,7 +14,7 @@ from dataclasses import field as datafield
 from datetime import datetime
 from os import environ
 from queue import PriorityQueue
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import datajoint as dj
 import numpy as np
@@ -34,18 +35,23 @@ environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 # Schema mappings
 SCHEMATA = config["SCHEMATA"]
 
-# Create virtual modules
-virtual_modules = {
-    name: dj.create_virtual_module(name, schema, create_tables=True, create_schema=True)
-    for name, schema in SCHEMATA.items()
-}
-experiment = virtual_modules["experiment"]
-stimulus = virtual_modules["stimulus"]
-behavior = virtual_modules["behavior"]
-recording = virtual_modules["recording"]
-mice = virtual_modules["mice"]
+try:
+    # Create virtual modules
+    virtual_modules = {
+        name: dj.create_virtual_module(name, schema, create_tables=True, create_schema=True)
+        for name, schema in SCHEMATA.items()
+    }
+    experiment = virtual_modules["experiment"]
+    stimulus = virtual_modules["stimulus"]
+    behavior = virtual_modules["behavior"]
+    recording = virtual_modules["recording"]
+    mice = virtual_modules["mice"]
+except Exception as e:
+    error_message = f"Failed to connect to the database due to an internet connection error: {e}"
+    raise Exception(error_message) from e
 
 VERSION = "0.1"
+
 
 class Logger:
     DEFAULT_SOURCE_PATH = os.path.expanduser("~") + "/EthoPy_Files/"
@@ -57,7 +63,7 @@ class Logger:
 
         self.task_idx, self.protocol_path = self._resolve_protocol_parameters(protocol)
 
-        # if the protocol path or task id is defined means that it runs manually
+        # if the protocol path or task id is defined we consider that it runs manually
         self.manual_run = True if self.protocol_path else False
         # set the python logging
         setup_logging(self.manual_run)
@@ -83,16 +89,23 @@ class Logger:
         self.logger_timer = Timer()
         self.total_reward = 0
         self.curr_state = ""
+        self.thread_exception = None
 
-        # set up paths
-        self.source_path = self._set_path_from_config("source_path", self.DEFAULT_SOURCE_PATH)
-        self.target_path = self._set_path_from_config("target_path", self.DEFAULT_TARGET_PATH)
+        # source path is the local path that data are saved
+        self.source_path = self._set_path_from_local_conf("source_path", self.DEFAULT_SOURCE_PATH)
+        # target path is the path that data will be moved after the session ends
+        self.target_path = self._set_path_from_local_conf("target_path", self.DEFAULT_TARGET_PATH)
 
+        # inserter_thread read the queue and insert the data in the database
         self.thread_end, self.thread_lock = threading.Event(), threading.Lock()
         self.inserter_thread = threading.Thread(target=self._inserter)
-        self.getter_thread = threading.Thread(target=self._update_setup_status_periodically)
         self.inserter_thread.start()
-        self._log_setup(self.task_idx)
+
+        # _log_setup_info needs to run after the inserter_thread is started
+        self._log_setup_info(self.setup, self.setup_status)
+
+        # before starting the getter thread we need to _log_setup_info
+        self.getter_thread = threading.Thread(target=self._update_setup_status_periodically)
         self.getter_thread.start()
         self.logger_timer.start()
 
@@ -101,9 +114,10 @@ class Logger:
         Parses the input protocol to determine its type and corresponding path.
 
         This method checks if the input protocol is a digit or a string. If it's a digit,
-        it assumes the protocol is an ID and finds its corresponding path. If it's a string,
-        it assumes the protocol is already a path. If the protocol is None or doesn't match
-        these conditions, it returns None for both the protocol ID and path.
+        it assumes the protocol is an ID and finds its corresponding path from Task table.
+        If it's a string, it assumes the protocol is already a path. If the protocol
+        is None or doesn't match these conditions, it returns None for both the protocol
+        ID and path.
 
         Parameters:
         - protocol (str|int|None): The input protocol, which can be an ID (digit) or a
@@ -141,6 +155,7 @@ class Logger:
         if not os.path.isfile(self.protocol_path):
             logging.info("Protocol file %s not found!", self.protocol_path)
             return False
+        self.thread_exception = None
         return True
 
     @property
@@ -194,7 +209,7 @@ class Logger:
             else False
         )
 
-    def _set_path_from_config(self, path_key: str, default_path: str = None) -> str:
+    def _set_path_from_local_conf(self, path_key: str, default_path: str = None) -> str:
         """
         Get the path from the local_conf or create a new directory at the default path.
 
@@ -208,7 +223,7 @@ class Logger:
         path = config.get(path_key, default_path)
         if path:
             os.makedirs(path, exist_ok=True)
-            logging.info("Setting storage directory: %s", path)
+            logging.info("Set %s to directory: %s", path_key, path)
         return path
 
     def setup_schema(self, extra_schema: Dict[str, Any]) -> None:
@@ -234,8 +249,16 @@ class Logger:
         """
         Put an item in the queue.
 
+        This method creates a `PrioritizedItem` from the given keyword arguments and puts it into
+        the queue. After putting an item in the queue, it checks the 'block' attribute of the item.
+        If 'block' is False, it marks the item as processed by calling `task_done()`. This is useful
+        in scenarios where items are processed asynchronously, and the queue needs to be notified
+        that a task is complete. If 'block' is True, it waits for all items in the queue to be
+        processed by calling `join()`.
+
         Parameters:
-        **kwargs (Any): The item to put in the queue.
+        **kwargs (Any): The keyword arguments used to create a `PrioritizedItem` and put it in the
+        queue.
         """
         item = PrioritizedItem(**kwargs)
         self.queue.put(item)
@@ -273,10 +296,10 @@ class Logger:
             while not len(table & key) > 0:
                 time.sleep(0.5)
 
-    def _handle_error(self, item, table, e, thread_end, queue):
+    def _handle_log_error(self, item, table, e, queue):
         """
-        Handles an error by logging the error message and add the item again in the queue
-        and re-trying again later.
+        Handles an error by logging the error message, set the item.error=True, increase priority
+        and  add the item again in the queue for re-trying to log later.
 
         Parameters:
         item : Description of parameter `item`.
@@ -285,11 +308,9 @@ class Logger:
         thread_end : Description of parameter `thread_end`.
         queue : Description of parameter `queue`.
         """
-        str_error = f"Failed to insert:\n{item.tuple}\n in {table}\n With error:\n{e}"
-        if item.error:
-            thread_end.set()
-            raise str_error + "\nSecond time..."
-        print(str_error+"\nWill retry later")
+        logging.warning(
+            "Failed to insert:\n%s in %s\n With error:%s\nWill retry later",
+            item.tuple, table, e, exc_info=True,)
         item.error = True
         item.priority = item.priority + 2
         queue.put(item)
@@ -300,13 +321,12 @@ class Logger:
         the database.
 
         It runs in a loop until the thread_end event is set. In each iteration, it checks if
-        the queue is empty.If it is, it sleeps for 0.5 seconds and then continues to the next
+        the queue is empty. If it is, it sleeps for 0.5 seconds and then continues to the next
         iteration.
         If the queue is not empty, it gets an item from the queue, acquires the thread lock,
         and tries to insert the item into it's table.
-        If an error occurs during the insertion, it handles the error.
-        After the insertion, it releases the thread lock.
-        If the item was marked to block, it marks the task as done.
+        If an error occurs during the insertion, it handles the error. After the insertion,
+        it releases the thread lock. If the item was marked to block, it marks the task as done.
 
         Returns:
             None
@@ -321,13 +341,13 @@ class Logger:
             try:
                 self._insert_item(item, table)
                 self._validate_item(item, table)
-            except ValueError as e:
+            except Exception as insert_error:
                 if item.error:
                     self.thread_end.set()
-                    raise RuntimeError(
-                        f"Second time failed to insert:\n {item.tuple} in {table} With error:\n {e}"
-                    ) from e
-                self._handle_error(item, table, e, self.thread_end, self.queue)
+                    logging.error("Second time failed to insert:\n %s in %s With error:\n %s",
+                                  item.tuple, table, insert_error, exc_info=True)
+                    self.thread_exception = insert_error
+                self._handle_log_error(item, table, insert_error, self.queue)
             self.thread_lock.release()
             if item.block:
                 self.queue.task_done()
@@ -338,8 +358,8 @@ class Logger:
         database.
 
         It runs in a loop until the thread_end event is set. In each iteration, it acquires the
-        thread lock,fetches the setup information from the Control table in the experiment database,
-        releases the thread lock, and updates the setup status. It then sleeps for 1 second before
+        thread lock, fetches the setup information from the Control table in the experiment database
+        ,releases the thread lock, and updates the setup status. It then sleeps for 1 second before
         the next iteration.
 
         Returns:
@@ -347,9 +367,13 @@ class Logger:
         """
         while not self.thread_end.is_set():
             self.thread_lock.acquire()
-            self.setup_info = (
-                self._schemata["experiment"].Control() & dict(setup=self.setup)
-            ).fetch1()
+            try:
+                self.setup_info = (
+                    self._schemata["experiment"].Control() & dict(setup=self.setup)
+                ).fetch1()
+            except Exception as fetch_error:
+                logging.error("Failed to fetch setup info: %s", fetch_error, exc_info=True)
+                self.thread_exception = fetch_error
             self.thread_lock.release()
             self.setup_status = self.setup_info["status"]
             time.sleep(1)  # update once a second
@@ -359,9 +383,7 @@ class Logger:
         This method logs the given data into the specified table in the experiment database.
 
         It first gets the elapsed time from the logger timer and adds it to the data dictionary.
-        It then puts the data into the specified table. If the manual_run flag is set and the
-        table is "Trial.StateOnset",
-        it prints the state.
+        It then puts the data into the specified table.
 
         Args:
             table (str): The name of the table in the experiment database.
@@ -372,25 +394,23 @@ class Logger:
             float: The elapsed time from the logger timer.
         """
         tmst = self.logger_timer.elapsed_time()
-        data = data or {}
+        data = data or {}  # if data is None or False use an empty dictionary
         self.put(table=table, tuple={**self.trial_key, "time": tmst, **data}, **kwargs)
         if table == "Trial.StateOnset":
-            # if self.manual_run:
-            #     print("State: ", data["state"])
             logging.info("State: %s", data["state"])
         return tmst
 
-    def _log_setup(self, task=None):
+    def _log_setup_info(self, setup, setup_status='running'):
         """
         This method logs the setup information into the Control table in the experiment database.
 
         It first fetches the control information for the current setup. If no control information
-        is found, it creates a new dictionary with the setup information. If a task is provided and
-        it is an integer, it adds the task index to the key. It then adds the IP and status
-        information to the key.
+        is found, it creates a new dictionary with the setup information.It then adds the IP and
+        status information to the key.
 
-        The method finally puts the key into the Control table, replacing any existing entry with
-        the same key. It blocks until the operation is complete and validates the operation.
+        The method finally puts the key into the Control table, replacing any existing entry.
+        Because it blocks the queue until the operation is complete it needs the inserter_thread
+        to be running.
 
         Args:
             task (int, optional): The task index. Defaults to None.
@@ -398,11 +418,9 @@ class Logger:
         Returns:
             None
         """
-        rel = experiment.Control() & dict(setup=self.setup)
-        key = rel.fetch1() if np.size(rel.fetch()) else dict(setup=self.setup)
-        if task and isinstance(task, int):
-            key["task_idx"] = task
-        key = {**key, "ip": self.get_ip(), "status": self.setup_status}
+        rel = experiment.Control() & dict(setup=setup)
+        key = rel.fetch1() if np.size(rel.fetch()) else dict(setup=setup)
+        key = {**key, "ip": self.get_ip(), "status": setup_status}
         self.put(
             table="Control",
             tuple=key,
@@ -437,65 +455,66 @@ class Logger:
             params (Dict[str, Any]): Parameters for the session.
             log_protocol (bool): Whether to log the protocol information.
         """
-        self._initialize_session()
-        logging.info("\n%s\n%s\n%s", "#" * 70, self.trial_key, "#" * 70)
-        session_key = self._create_session_key(params)
-        self._log_session_entry(session_key)
+        # Initializes session parameters and logs the session start.
+        self._init_session_params(params)
 
+        # Save the protocol file, name and the git_hash in the database.
         if log_protocol:
             self._log_protocol_details()
 
+        # save the relevant params in configuration tables of behavior/stimulus schemas
         self._log_session_configs(params)
-        self._set_setup_status(params)
+
+        #  Init the informations(e.g. trial_id=0, session) in control table
+        self._init_control_table(params)
 
         self.logger_timer.start()  # Start session time
 
-    def _initialize_session(self) -> None:
+    def _init_session_params(self, params: Dict[str, Any]) -> None:
         """
-        Initializes session attributes.
+        Initializes session parameters and logs the session start.
+
+        This method initializes the session parameters by setting the total reward to zero
+        and creating a trial key with the animal ID, trial index set to zero, and the session
+        number incremented by one from the last session. It logs the trial key and creates a
+        session key by merging the trial key with the provided session parameters, setup
+        information, and a default or provided user name. The session key is then logged and
+        stored in the database.
 
         Args:
-            params (Dict[str, Any]): Parameters for the session.
+            params (Dict[str, Any]): A dictionary containing parameters for initializing the
+            session. This includes any additional information that should be merged into the
+            session key.
         """
         self.total_reward = 0
-        self.trial_key = {
-            "animal_id": self.get_setup_info("animal_id"),
-            "trial_idx": 0,
-            "session": self._get_last_session() + 1,
-        }
+        self.trial_key = {"animal_id": self.get_setup_info("animal_id"),
+                          "trial_idx": 0,
+                          "session": self._get_last_session() + 1}
+        logging.info("\n%s\n%s\n%s", "#" * 70, self.trial_key, "#" * 70)
+        # Creates a session key by merging trial key with session parameters.
+        # TODO: Make user_name mandatory for non manual sessions
+        session_key = {**self.trial_key, **params, "setup": self.setup,
+                       "user_name": params.get("user_name", "bot")}
+        logging.info("session_key:\n%s", pprint.pformat(session_key))
+        # Logs the new session id to the database
+        self.put(table="Session", tuple=session_key, priority=1, validate=True, block=True)
 
-    def _create_session_key(self, params: Dict[str, Any]) -> Dict[str, Any]:
+    @staticmethod
+    def get_inner_classes_list(outer_class):
         """
-        Creates a session key by merging trial key with session parameters.
+        Retrieve a list of names of all inner classes defined within an outer class.
 
         Args:
-            params (Dict[str, Any]): Parameters for the session.
+            outer_class: The class object of the outer class containing the inner classes.
 
         Returns:
-            Dict[str, Any]: The complete session key.
+            A list of strings, each representing the fully qualified name of an inner class
+            defined within the outer class.
         """
-        return {
-            **self.trial_key,
-            **params,
-            "setup": self.setup,
-            "user_name": params.get("user_name", "bot"),
-        }
-
-    def _log_session_entry(self, session_key: Dict[str, Any]) -> None:
-        """
-        Logs the session entry to the database.
-
-        Args:
-            session_key (Dict[str, Any]): The session key to log.
-        """
-        if self.manual_run:
-            # print("Logging Session:")
-            # pprint.pprint(session_key)
-            logging.info("session_key:\n" + pprint.pformat(session_key))
-
-        self.put(
-            table="Session", tuple=session_key, priority=1, validate=True, block=True
-        )
+        inner_classes = [getattr(outer_class, attr_name) for attr_name in dir(outer_class)
+                         if isinstance(getattr(outer_class, attr_name), type)
+                         and getattr(outer_class, attr_name).__module__ == outer_class.__module__]
+        return [outer_class.__name__+'.'+cls.__name__ for cls in inner_classes]
 
     def _log_session_configs(self, params) -> None:
         """
@@ -505,52 +524,61 @@ class Logger:
         # Logs the session and animal_id in configuration tables of behavior/stimulus.
         _schemas = ['behavior', 'stimulus']
         for schema in _schemas:
-            self.put(
-                table="Configuration",
-                tuple=self.trial_key,
-                schema=schema,
-                priority=2,
-                validate=True,
-                block=True,
-            )
+            self.put(table="Configuration", tuple=self.trial_key, schema=schema, priority=2,
+                     validate=True, block=True,)
 
-        conf_table_schema = {
-            "Port": "behavior",
-            "Screen": "stimulus",
-            "Ball": "behavior",
-            "Speaker": "stimulus",
-        }
-        for config_table, schema in conf_table_schema.items():
-            self._log_part_table_config(params, config_table, schema)
+        # Find the subclasses of Configuration class in the behavior and stimulus modules
+        _modules = ['core.Behavior', 'core.Stimulus']
+        # create a dict with the parernt class as key and the subclasses as values
+        # consider that the parent class have the same name as the schema
+        # (e.g class Behaviour schema behavior)
+        conf_table_schema = {}
+        for _module in _modules:
+            conf = importlib.import_module(_module).Configuration
+            conf_table_schema[_module.split('.')[1].lower()] = self.get_inner_classes_list(conf)
+
+        # update the configuration tables
+        for schema, config_tables in conf_table_schema.items():
+            self._log_part_table_config(params, config_tables, schema)
 
     def _log_part_table_config(
-        self, params: Dict[str, Any], config_table: str, schema: str
+        self, params: Dict[str, Any], config_tables: List, schema: str
     ) -> None:
         """
-        Logs individual configuration type to the database.
-
         Args:
             params (Dict[str, Any]): Parameters for the session.
             config_table (str): The part table to be recorded (e.g., Port, Screen).
             schema (str): The schema for the configuration.
         """
-        configuration_data = (
-            getattr(experiment.SetupConfiguration, config_table)
-            & {"setup_conf_idx": params["setup_conf_idx"]}
-        ).fetch(as_dict=True)
-        for conf in configuration_data:
-            self.put(
-                table=f"Configuration.{config_table}",
-                tuple={**conf, **self.trial_key},
-                schema=schema,
-            )
+        for config_table in config_tables:
+            configuration_data = (
+                getattr(experiment.SetupConfiguration, config_table.split('.')[1])
+                & {"setup_conf_idx": params["setup_conf_idx"]}
+            ).fetch(as_dict=True)
+            # put the configuration data in the configuration table
+            # it can be a list of configurations (e.g two ports)
+            for conf in configuration_data:
+                self.put(
+                    table=config_table,
+                    tuple={**conf, **self.trial_key},
+                    schema=schema,
+                )
 
-    def _set_setup_status(self, params: Dict[str, Any]) -> None:
+    def _init_control_table(self, params: Dict[str, Any]) -> None:
         """
-        Sets the setup status and updates setup information.
+        Set the control table informations for the setup.
+
+        This method sets various parameters related to the session setup, including
+        session ID, number of trials, total liquid, difficulty level, and state. It also
+        optionally sets start and stop times if they are provided in the `params` argument.
+
+        The start and stop times are expected to be in "%H:%M:%S" format. If they are provided,
+        this method calculates the time delta from "00:00:00" for each and updates the setup
+        information accordingly.
 
         Args:
-            params (Dict[str, Any]): Parameters for the session.
+            params (Dict[str, Any]): A dictionary containing parameters for the session setup.
+                This may include 'start_time' and 'stop_time' among other setup parameters.
         """
         key = {
             "session": self.trial_key["session"],
@@ -559,6 +587,9 @@ class Logger:
             "difficulty": 1,
             "state": "",
         }
+        # TODO in the case the task is the path of the config there is no update in Control table
+        if self.task_idx and isinstance(self.task_idx, int):
+            key["task_idx"] = self.task_idx
         # if in the start_time is defined in the configuration use this
         # otherwise use the Control table
         if "start_time" in params:
@@ -575,9 +606,45 @@ class Logger:
 
         self.update_setup_info({**key, "status": self.setup_info["status"]})
 
+    def check_internet_connection(self, host="8.8.8.8", port=53, timeout=3):
+        """
+        Check if the internet connection is available by attempting to connect to a 
+        specified host and port.
+
+        Parameters:
+        - host (str): The host to connect to. Defaults to '8.8.8.8' (Google DNS).
+        - port (int): The port to connect on. Defaults to 53 (DNS service).
+        - timeout (int): The timeout in seconds for the connection attempt. Defaults to 3 seconds.
+
+        Returns:
+        - bool: True if the connection is successful, False otherwise.
+        """
+        try:
+            socket.setdefaulttimeout(timeout)
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+            return True
+        except socket.error as ex:
+            return False
+
     def update_setup_info(self, info: Dict[str, Any], key: Optional[Dict[str, Any]] = None):
         """
-        This method updates the setup information with the provided info and key.
+        Updates the setup information in the Control table with the provided info and key.
+
+        This method fetches the existing setup information from the experiment's Control table,
+        then updates it with the provided info. If 'status' is in the provided info, it blocks
+        and validates the update operation.
+
+        Parameters:
+        - info (Dict[str, Any]): The information to update in the setup.
+        - key (Optional[Dict[str, Any]]): The key to identify the setup information to be updated. Defaults to None.
+
+        Returns:
+        - None
+        """
+    
+    def update_setup_info(self, info: Dict[str, Any], key: Optional[Dict[str, Any]] = None):
+        """
+        This method updates the setup information in Control table with the provided info and key.
 
         It first fetches the existing setup information from the experiment's Control table,
         then updates it with the provided info. If 'status' is in the provided info, it blocks
@@ -592,12 +659,16 @@ class Logger:
             Updates the setup_info attribute with the new setup information.
             Updates the setup_status attribute with the new status.
         """
+        if not self.check_internet_connection():
+            logging.info("No internet connection\nTry to update info: %s\nQueue size: %s",
+                         info, self.queue.qsize())
+            return None
+
         if key is None:
             key = dict()
-        self.setup_info = {
-            **(experiment.Control() & {**{"setup": self.setup}, **key}).fetch1(),
-            **info,
-        }
+        self.setup_info = {**(experiment.Control() & {**{"setup": self.setup}, **key}).fetch1(),
+                        **info}
+
         block = True if "status" in info else False
         self.put(
             table="Control",
@@ -629,6 +700,15 @@ class Logger:
         )
 
     def get_setup_info(self, field):
+        """
+        Retrieve specific setup information from an experiment control table.
+
+        Args:
+            field: The name of the field to fetch from the experiment control setup.
+
+        Returns:
+            The value of the specified field from the experiment control setup.
+        """
         return (experiment.Control() & dict(setup=self.setup)).fetch1(field)
 
     def get(self, schema='experiment', table='Control', fields='', key=dict(), **kwargs):
@@ -656,6 +736,7 @@ class Logger:
             trial_idx (int): The new trial index to be updated.
         """
         self.trial_key['trial_idx'] = trial_idx
+        logging.info("\nTrial idx: %s",  self.trial_key['trial_idx'])
 
     def ping(self, period=5000):
         """
@@ -668,6 +749,9 @@ class Logger:
         Args:
             period (int, optional): The period in milliseconds between pings. Defaults to 5000.
         """
+        if self.thread_exception:
+            raise Exception("Thread exception occurred: %s", self.thread_exception)
+
         if self.ping_timer.elapsed_time() >= period:  # occasionally update control table
             self.ping_timer.start()
             self.update_setup_info(
@@ -681,10 +765,20 @@ class Logger:
             )
 
     def cleanup(self):
-        while not self.queue.empty():
+        """
+        Waits for the logging queue to be empty and signals the logging thread to end.
+
+        This method checks if the logging queue is empty, and if not, it waits until it
+        becomes empty. Once the queue is empty, it sets the thread_end event to signal
+        the logging thread to terminate.
+        """
+        while not self.queue.empty() and not self.thread_end.is_set():
             logging.info('Waiting for empty queue... qsize: %d', self.queue.qsize())
             time.sleep(1)
         self.thread_end.set()
+
+        if not self.queue.empty():
+            logging.warning('Clean up finished but queue size is: %d', self.queue.qsize())
 
     def createDataset(
                     self,
@@ -778,11 +872,21 @@ class Logger:
         Iterates through the datasets dictionary, calling the `exit` method on each dataset
         object to properly close them.
         """
-        for dataset in self.datasets:
-            self.datasets[dataset].exit()
+        for _, dataset in self.datasets.items():
+            dataset.exit()
 
     @staticmethod
     def get_ip():
+        """
+        Retrieves the local IP address of the machine.
+
+        Attempts to establish a dummy connection to a public DNS server (8.8.8.8) to determine
+        the local network IP address of the machine. If the connection fails, defaults to
+        localhost (127.0.0.1).
+
+        Returns:
+            str: The local IP address.
+        """
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
             s.connect(("8.8.8.8", 80))
