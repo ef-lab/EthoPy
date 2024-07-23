@@ -1,3 +1,12 @@
+"""
+This module defines a Logger class used for managing logging and data handling in
+an experimental setup.
+
+It includes functionalities for logging experimental data, managing database connections,
+controlling the flow of data from source to target locations, and supporting both manual
+and automatic running modes. The Logger class manages threads for data insertion and setup 
+status updates.
+"""
 import importlib
 import json
 import logging
@@ -30,6 +39,7 @@ dj.config.update(config["dj_local_conf"])
 dj.logger.setLevel(dj.config["datajoint.loglevel"])
 
 
+# Hides the Pygame welcome message
 environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 
 # Schema mappings
@@ -54,6 +64,54 @@ VERSION = "0.1"
 
 
 class Logger:
+    """
+    Logger class for managing logging and data handling in an experimental setup.
+
+    This class is designed to handle the logging of experimental data, manage database connections,
+    and control the flow of data from source to target locations. It supports both manual and
+    automatic running modes of a session, integrates with a Python logging setup, and manages
+    threads for data insertion and setup status updates.
+
+    Attributes:
+        DEFAULT_SOURCE_PATH (str): Default path where data are saved locally.
+        DEFAULT_TARGET_PATH (bool): Default target path where data will be moved after the session
+        ends.
+        setup (str): The hostname of the machine running the experiment.
+        is_pi (bool): Flag indicating if the current machine is a Raspberry Pi.
+        task_idx (int): Task index resolved from protocol parameters.
+        protocol_path (str): Path to the protocol file.
+        manual_run (bool): Flag indicating if the experiment is run manually.
+        setup_status (str): Current status of the setup (e.g. 'running', 'ready').
+        private_conn (Connection): Connection for internal database communication.
+        writer (Writer): Writer class instance for handling data writing.
+        rec_fliptimes (bool): Flag indicating if flip times should be recorded.
+        trial_key (dict): Dictionary containing identifiers for the current trial.
+        setup_info (dict): Dictionary containing setup information.
+        datasets (dict): Dictionary containing datasets.
+        lock (bool): Lock flag for thread synchronization.
+        queue (PriorityQueue): Queue for managing data insertion order.
+        ping_timer (Timer): Timer for managing pings.
+        logger_timer (Timer): Timer for managing logging intervals.
+        total_reward (int): Total reward accumulated.
+        curr_state (str): Current state of the logger.
+        thread_exception (Exception): Exception caught in threads, if any.
+        source_path (str): Path where data are saved.
+        target_path (str): Path where data will be moved after the session ends.
+        thread_end (Event): Event to signal thread termination.
+        thread_lock (Lock): Lock for thread synchronization.
+        inserter_thread (Thread): Thread for inserting data into the database.
+        getter_thread (Thread): Thread for periodically updating setup status.
+
+    Methods:
+        __init__(protocol=False): Initializes the Logger instance.
+        _check_if_raspberry_pi(): Checks if the current machine is a Raspberry Pi.
+        _resolve_protocol_parameters(protocol): Resolves protocol parameters.
+        _set_path_from_local_conf(key, default): Sets path from local configuration.
+        _initialize_schemata(): Initializes database schemata.
+        _inserter(): Inserts data into the database.
+        _log_setup_info(setup, status): Logs setup information.
+        _update_setup_status_periodically(): Periodically updates setup status.
+    """
     DEFAULT_SOURCE_PATH = os.path.expanduser("~") + "/EthoPy_Files/"
     DEFAULT_TARGET_PATH = False
 
@@ -154,8 +212,7 @@ class Logger:
         # checks if the file exist
         if not os.path.isfile(self.protocol_path):
             logging.info("Protocol file %s not found!", self.protocol_path)
-            return False
-        self.thread_exception = None
+            raise FileNotFoundError(f"Protocol file {self.protocol_path} not found!")
         return True
 
     @property
@@ -189,7 +246,11 @@ class Logger:
     def _find_protocol_path(self, task_idx=None):
         """find the protocol path from the task index"""
         if task_idx:
-            return (experiment.Task() & dict(task_idx=task_idx)).fetch1("protocol")
+            if len(experiment.Task() & dict(task_idx=task_idx)) > 0:
+                return (experiment.Task() & dict(task_idx=task_idx)).fetch1("protocol")
+            else:
+                logging.info("There is no task_idx:%s in the tables Tasks", task_idx)
+                raise FileNotFoundError(f"There is no task_idx:{task_idx} in the tables Tasks")
         else:
             return False
 
@@ -347,6 +408,7 @@ class Logger:
                     logging.error("Second time failed to insert:\n %s in %s With error:\n %s",
                                   item.tuple, table, insert_error, exc_info=True)
                     self.thread_exception = insert_error
+                    break
                 self._handle_log_error(item, table, insert_error, self.queue)
             self.thread_lock.release()
             if item.block:
@@ -374,6 +436,8 @@ class Logger:
             except Exception as fetch_error:
                 logging.error("Failed to fetch setup info: %s", fetch_error, exc_info=True)
                 self.thread_exception = fetch_error
+                self.thread_lock.release()
+                break
             self.thread_lock.release()
             self.setup_status = self.setup_info["status"]
             time.sleep(1)  # update once a second
@@ -462,7 +526,7 @@ class Logger:
         if log_protocol:
             self._log_protocol_details()
 
-        # save the relevant params in configuration tables of behavior/stimulus schemas
+        # update the configuration tables of behavior/stimulus schemas
         self._log_session_configs(params)
 
         #  Init the informations(e.g. trial_id=0, session) in control table
@@ -495,7 +559,7 @@ class Logger:
         # TODO: Make user_name mandatory for non manual sessions
         session_key = {**self.trial_key, **params, "setup": self.setup,
                        "user_name": params.get("user_name", "bot")}
-        logging.info("session_key:\n%s", pprint.pformat(session_key))
+        logging.debug("session_key:\n%s", pprint.pformat(session_key))
         # Logs the new session id to the database
         self.put(table="Session", tuple=session_key, priority=1, validate=True, block=True)
 
@@ -518,30 +582,33 @@ class Logger:
 
     def _log_session_configs(self, params) -> None:
         """
-        Logs the session and animal_id in configuration tables of behavior/stimulus.
+        Logs the session parameters in Configuration table and subtable of behavior/stimulus.
+        We log the parameters on each session in the case the setup configuration table in
+        experiment schema is changed fot the same setup_conf_idx.
         """
+        # modules that have a Configuration classes
+        _modules = ['core.Behavior', 'core.Stimulus']
+        # consider that the module have the same name as the schema but in lower case
+        # (e.g for class Behaviour the schema is the behavior)
+        _schemas = [_module.split('.')[1].lower() for _module in _modules]
 
         # Logs the session and animal_id in configuration tables of behavior/stimulus.
-        _schemas = ['behavior', 'stimulus']
         for schema in _schemas:
             self.put(table="Configuration", tuple=self.trial_key, schema=schema, priority=2,
                      validate=True, block=True,)
 
-        # Find the subclasses of Configuration class in the behavior and stimulus modules
-        _modules = ['core.Behavior', 'core.Stimulus']
-        # create a dict with the parernt class as key and the subclasses as values
-        # consider that the parent class have the same name as the schema
-        # (e.g class Behaviour schema behavior)
+        # create a dict with the configuration as key and the subclasses as values
         conf_table_schema = {}
-        for _module in _modules:
+        for _schema, _module in zip(_schemas, _modules):
             conf = importlib.import_module(_module).Configuration
-            conf_table_schema[_module.split('.')[1].lower()] = self.get_inner_classes_list(conf)
+            # Find the inner classes of the class Configuration
+            conf_table_schema[_schema] = self.get_inner_classes_list(conf)
 
-        # update the configuration tables
+        # update the sub tables of Configuration table
         for schema, config_tables in conf_table_schema.items():
-            self._log_part_table_config(params, config_tables, schema)
+            self._log_sub_tables_config(params, config_tables, schema)
 
-    def _log_part_table_config(
+    def _log_sub_tables_config(
         self, params: Dict[str, Any], config_tables: List, schema: str
     ) -> None:
         """
@@ -556,7 +623,7 @@ class Logger:
                 & {"setup_conf_idx": params["setup_conf_idx"]}
             ).fetch(as_dict=True)
             # put the configuration data in the configuration table
-            # it can be a list of configurations (e.g two ports)
+            # it can be a list of configurations (e.g have two ports with different ids)
             for conf in configuration_data:
                 self.put(
                     table=config_table,
@@ -606,7 +673,7 @@ class Logger:
 
         self.update_setup_info({**key, "status": self.setup_info["status"]})
 
-    def check_internet_connection(self, host="8.8.8.8", port=53, timeout=3):
+    def check_connection(self, host="8.8.8.8", port=53, timeout=3):
         """
         Check if the internet connection is available by attempting to connect to a 
         specified host and port.
@@ -643,8 +710,13 @@ class Logger:
             Updates the setup_info attribute with the new setup information.
             Updates the setup_status attribute with the new status.
         """
-        if not self.check_internet_connection():
-            logging.info("No internet connection\nTry to update info: %s\nQueue size: %s",
+        # check the internet connection before updating the setup info because otherwise it will
+        # halt due to the fetch1 of the control table
+        if self.thread_exception:
+            self.thread_exception = None
+            raise Exception("Thread exception occurred: %s", self.thread_exception)
+        if not self.check_connection(host=dj.config["database.host"]):
+            logging.info("No database connection\nTry to update info: %s\nQueue size: %s",
                          info, self.queue.qsize())
             return None
 
@@ -733,8 +805,6 @@ class Logger:
         Args:
             period (int, optional): The period in milliseconds between pings. Defaults to 5000.
         """
-        if self.thread_exception:
-            raise Exception("Thread exception occurred: %s", self.thread_exception)
 
         if self.ping_timer.elapsed_time() >= period:  # occasionally update control table
             self.ping_timer.start()
