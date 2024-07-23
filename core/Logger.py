@@ -628,22 +628,6 @@ class Logger:
 
     def update_setup_info(self, info: Dict[str, Any], key: Optional[Dict[str, Any]] = None):
         """
-        Updates the setup information in the Control table with the provided info and key.
-
-        This method fetches the existing setup information from the experiment's Control table,
-        then updates it with the provided info. If 'status' is in the provided info, it blocks
-        and validates the update operation.
-
-        Parameters:
-        - info (Dict[str, Any]): The information to update in the setup.
-        - key (Optional[Dict[str, Any]]): The key to identify the setup information to be updated. Defaults to None.
-
-        Returns:
-        - None
-        """
-    
-    def update_setup_info(self, info: Dict[str, Any], key: Optional[Dict[str, Any]] = None):
-        """
         This method updates the setup information in Control table with the provided info and key.
 
         It first fetches the existing setup information from the experiment's Control table,
@@ -667,7 +651,7 @@ class Logger:
         if key is None:
             key = dict()
         self.setup_info = {**(experiment.Control() & {**{"setup": self.setup}, **key}).fetch1(),
-                        **info}
+                           **info}
 
         block = True if "status" in info else False
         self.put(
