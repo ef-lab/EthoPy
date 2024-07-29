@@ -4,7 +4,7 @@ an experimental setup.
 
 It includes functionalities for logging experimental data, managing database connections,
 controlling the flow of data from source to target locations, and supporting both manual
-and automatic running modes. The Logger class manages threads for data insertion and setup 
+and automatic running modes. The Logger class manages threads for data insertion and setup
 status updates.
 """
 import importlib
@@ -556,7 +556,7 @@ class Logger:
                           "session": self._get_last_session() + 1}
         logging.info("\n%s\n%s\n%s", "#" * 70, self.trial_key, "#" * 70)
         # Creates a session key by merging trial key with session parameters.
-        # TODO: Make user_name mandatory for non manual sessions
+        # TODO: Read the user name from the Control Table
         session_key = {**self.trial_key, **params, "setup": self.setup,
                        "user_name": params.get("user_name", "bot")}
         logging.debug("session_key:\n%s", pprint.pformat(session_key))
@@ -673,7 +673,7 @@ class Logger:
 
         self.update_setup_info({**key, "status": self.setup_info["status"]})
 
-    def check_connection(self, host="8.8.8.8", port=53, timeout=3):
+    def check_connection(self, host="8.8.8.8", port=53, timeout=0.1):
         """
         Check if the internet connection is available by attempting to connect to a 
         specified host and port.
@@ -715,7 +715,7 @@ class Logger:
         if self.thread_exception:
             self.thread_exception = None
             raise Exception("Thread exception occurred: %s", self.thread_exception)
-        if not self.check_connection(host=dj.config["database.host"]):
+        if not self.check_connection(host=dj.config["database.host"], port=3306):
             logging.info("No database connection\nTry to update info: %s\nQueue size: %s",
                          info, self.queue.qsize())
             return None
