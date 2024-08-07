@@ -241,20 +241,23 @@ class Logger:
         if protocol_path:
             path, filename = os.path.split(protocol_path)
             if not path:
-                protocol_path = os.path.join(str(pathlib.Path(__file__).parent.absolute()), "..", "conf", filename)
+                protocol_path = os.path.join(
+                    str(pathlib.Path(__file__).parent.absolute()), "..", "conf", filename
+                    )
         else:
             protocol_path = None
         self._protocol_path = protocol_path
 
-
     def _find_protocol_path(self, task_idx=None):
         """find the protocol path from the task index"""
         if task_idx:
-            if len(experiment.Task() & dict(task_idx=task_idx)) > 0:
-                return (experiment.Task() & dict(task_idx=task_idx)).fetch1("protocol")
+            task_query = experiment.Task() & dict(task_idx=task_idx)
+            if len(task_query) > 0:
+                return task_query.fetch1("protocol")
             else:
-                logging.info("There is no task_idx:%s in the tables Tasks", task_idx)
-                raise FileNotFoundError(f"There is no task_idx:{task_idx} in the tables Tasks")
+                error_msg = f"There is no task_idx:{task_idx} in the tables Tasks"
+                logging.info(error_msg)
+                raise FileNotFoundError(error_msg)
         else:
             return False
 
