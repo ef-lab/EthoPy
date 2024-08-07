@@ -203,9 +203,10 @@ class Logger:
         This method updates the protocol path.
 
         If the run is not manual, it fetches the task index from the setup info.
-        It then checks if there is a task with this index in the experiment's Task table.
-        If there is no such task, it returns False.
-        Otherwise, it fetches the protocol associated with this task and updates the protocol path.
+        In the case the run is manual the protocol_path has been defined in Logger __init__,
+        manual can also run without task_id been defined just by the protocol path.
+        It then finds the protocol path based on the task index and updates the protocol path.
+        If the protocol path is not found, it raises a FileNotFoundError
 
         Returns:
             bool: True if the protocol path was successfully updated, False otherwise.
@@ -213,14 +214,12 @@ class Logger:
         # find the protocol_path based on the task_id from the control table
         if not self.manual_run:
             task_idx = self.get_setup_info('task_idx')
-            if not len(experiment.Task() & dict(task_idx=task_idx)) > 0:
-                return False
-            protocol = (experiment.Task() & dict(task_idx=task_idx)).fetch1('protocol')
-            self.protocol_path = protocol
+            self.protocol_path = self._find_protocol_path(task_idx)
         # checks if the file exist
         if not os.path.isfile(self.protocol_path):
-            logging.info("Protocol file %s not found!", self.protocol_path)
-            raise FileNotFoundError(f"Protocol file {self.protocol_path} not found!")
+            error_msg = f"Protocol file does not exist at {self._protocol_path}"
+            logging.error(error_msg)
+            raise FileNotFoundError(error_msg)
         return True
 
     @property
