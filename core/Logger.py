@@ -1,6 +1,5 @@
 """
-This module defines a Logger class used for managing logging and data handling in
-an experimental setup.
+This module defines a Logger class used for managing data handling in an experimental setup.
 
 It includes functionalities for logging experimental data, managing database connections,
 controlling the flow of data from source to target locations, and supporting both manual
@@ -33,11 +32,12 @@ from utils.logging import setup_logging
 from utils.Timer import Timer
 from utils.Writer import Writer
 
+# read the configuration from the local_conf.json
 with open("local_conf.json", "r", encoding="utf-8") as f:
     config = json.load(f)
+# set the datajoint parameters
 dj.config.update(config["dj_local_conf"])
 dj.logger.setLevel(dj.config["datajoint.loglevel"])
-
 
 # Hides the Pygame welcome message
 environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
@@ -51,6 +51,9 @@ try:
         name: dj.create_virtual_module(name, schema, create_tables=True, create_schema=True)
         for name, schema in SCHEMATA.items()
     }
+    # Explicit Module Variables
+    # This is done so these modules can be imported by name in other files,
+    # making the code more readable and maintainable
     experiment = virtual_modules["experiment"]
     stimulus = virtual_modules["stimulus"]
     behavior = virtual_modules["behavior"]
@@ -357,7 +360,7 @@ class Logger:
             while not len(table & key) > 0:
                 time.sleep(0.5)
 
-    def _handle_log_error(self, item, table, e, queue):
+    def _handle_log_error(self, item, table, exception, queue):
         """
         Handles an error by logging the error message, set the item.error=True, increase priority
         and  add the item again in the queue for re-trying to log later.
@@ -365,13 +368,13 @@ class Logger:
         Parameters:
         item : Description of parameter `item`.
         table : Description of parameter `table`.
-        e (Exception): The exception that was raised.
+        exception (Exception): The exception that was raised.
         thread_end : Description of parameter `thread_end`.
         queue : Description of parameter `queue`.
         """
         logging.warning(
             "Failed to insert:\n%s in %s\n With error:%s\nWill retry later",
-            item.tuple, table, e, exc_info=True,)
+            item.tuple, table, exception, exc_info=True,)
         item.error = True
         item.priority = item.priority + 2
         queue.put(item)
@@ -675,22 +678,22 @@ class Logger:
 
     def check_connection(self, host="8.8.8.8", port=53, timeout=0.1):
         """
-        Check if the internet connection is available by attempting to connect to a 
+        Check if the internet connection is available by attempting to connect to a
         specified host and port.
 
-        Parameters:
-        - host (str): The host to connect to. Defaults to '8.8.8.8' (Google DNS).
-        - port (int): The port to connect on. Defaults to 53 (DNS service).
-        - timeout (int): The timeout in seconds for the connection attempt. Defaults to 3 seconds.
+        Args:
+            host (str): The host to connect to. Defaults to '8.8.8.8' (Google DNS).
+            port (int): The port to connect on. Defaults to 53 (DNS service).
+            timeout (int): The timeout in seconds for the connection attempt. Defaults to 3 seconds.
 
         Returns:
-        - bool: True if the connection is successful, False otherwise.
+            bool: True if the connection is successful, False otherwise.
         """
         try:
             socket.setdefaulttimeout(timeout)
             socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
             return True
-        except socket.error as ex:
+        except socket.error:
             return False
 
     def update_setup_info(self, info: Dict[str, Any], key: Optional[Dict[str, Any]] = None):
@@ -847,8 +850,8 @@ class Logger:
             target_path (str): The target path for the dataset.
             dataset_name (str): The name of the dataset.
             dataset_type (type): The datatype of the dataset.
-            filename (str, optional): The filename for the h5 file. If not provided, 
-            a default filename will be generated based on the dataset name, animal ID, 
+            filename (str, optional): The filename for the h5 file. If not provided,
+            a default filename will be generated based on the dataset name, animal ID,
             session, and current timestamp.
             log (bool, optional): If True call the log_recording
         Returns:
