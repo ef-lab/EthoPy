@@ -22,7 +22,7 @@ from dataclasses import field as datafield
 from datetime import datetime
 from os import environ
 from queue import PriorityQueue
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import datajoint as dj
 import numpy as np
@@ -170,7 +170,8 @@ class Logger:
         self.getter_thread.start()
         self.logger_timer.start()
 
-    def _resolve_protocol_parameters(self, protocol):
+    def _resolve_protocol_parameters(
+            self, protocol: Union[str, int, None]) -> Tuple[Optional[int], Optional[str]]:
         """
         Parses the input protocol to determine its type and corresponding path.
 
@@ -187,11 +188,15 @@ class Logger:
         Returns:
         - tuple: A tuple containing the protocol ID (int|None) and the protocol path (str|None).
         """
-        if protocol and protocol.isdigit():
-            return int(protocol), self._find_protocol_path(int(protocol))
-        elif protocol and isinstance(protocol, str):
+        if isinstance(protocol, int):
+            return protocol, self._find_protocol_path(protocol)
+        elif isinstance(protocol, str) and protocol.isdigit():
+            protocol_id = int(protocol)
+            return protocol_id, self._find_protocol_path(protocol_id)
+        elif protocol:
             return None, protocol
-        return None, None
+        else:
+            return None, None
 
     def update_protocol(self):
         """
