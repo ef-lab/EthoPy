@@ -33,6 +33,7 @@ from utils.logging import setup_logging
 from utils.Timer import Timer
 from utils.Writer import Writer
 
+setup_logging(False)
 # read the configuration from the local_conf.json
 with open("local_conf.json", "r", encoding="utf-8") as f:
     config = json.load(f)
@@ -62,6 +63,7 @@ try:
     mice = virtual_modules["mice"]
 except Exception as e:
     error_message = f"Failed to connect to the database due to an internet connection error: {e}"
+    logging.error("ERROR %s", error_message)
     raise Exception(error_message) from e
 
 VERSION = "0.1"
