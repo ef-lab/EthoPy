@@ -115,7 +115,7 @@ class Logger:
         _log_setup_info(setup, status): Logs setup information.
         _update_setup_status_periodically(): Periodically updates setup status.
     """
-    DEFAULT_SOURCE_PATH = os.path.expanduser("~") + "/EthoPy_Files/"
+    DEFAULT_SOURCE_PATH = os.path.join(os.path.expanduser("~"), "EthoPy_Files/")
     DEFAULT_TARGET_PATH = False
 
     def __init__(self, protocol=False):
