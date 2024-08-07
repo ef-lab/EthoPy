@@ -238,13 +238,14 @@ class Logger:
             protocol_path (str): The protocol path.
         """
 
-        if protocol_path is not None:
+        if protocol_path:
             path, filename = os.path.split(protocol_path)
             if not path:
-                protocol_path = (
-                    str(pathlib.Path(__file__).parent.absolute()) + "/../conf/" + filename
-                )
+                protocol_path = os.path.join(str(pathlib.Path(__file__).parent.absolute()), "..", "conf", filename)
+        else:
+            protocol_path = None
         self._protocol_path = protocol_path
+
 
     def _find_protocol_path(self, task_idx=None):
         """find the protocol path from the task index"""
