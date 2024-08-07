@@ -17,6 +17,7 @@ import socket
 import subprocess
 import threading
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass
 from dataclasses import field as datafield
 from datetime import datetime
@@ -387,6 +388,24 @@ class Logger:
         item.priority = item.priority + 2
         queue.put(item)
 
+    @contextmanager
+    def acquire_lock(self, lock):
+        """
+        Acquire a lock, yield control, and release the lock.
+
+        This context manager ensures that the given lock is acquired before
+        entering the block of code and released after exiting the block, even
+        if an exception is raised within the block.
+
+        Parameters:
+        - lock: The lock object to acquire and release.
+        """
+        lock.acquire()
+        try:
+            yield
+        finally:
+            lock.release()
+
     def _inserter(self):
         """
         This method continuously inserts items from the queue into their respective tables in
@@ -409,19 +428,18 @@ class Logger:
                 continue
             item = self.queue.get()
             table = rgetattr(self._schemata[item.schema], item.table)
-            self.thread_lock.acquire()
-            try:
-                self._insert_item(item, table)
-                self._validate_item(item, table)
-            except Exception as insert_error:
-                if item.error:
-                    self.thread_end.set()
-                    logging.error("Second time failed to insert:\n %s in %s With error:\n %s",
-                                  item.tuple, table, insert_error, exc_info=True)
-                    self.thread_exception = insert_error
-                    break
-                self._handle_log_error(item, table, insert_error, self.queue)
-            self.thread_lock.release()
+            with self.acquire_lock(self.thread_lock):
+                try:
+                    self._insert_item(item, table)
+                    self._validate_item(item, table)
+                except Exception as insert_error:
+                    if item.error:
+                        self.thread_end.set()
+                        logging.error("Second time failed to insert:\n %s in %s With error:\n %s",
+                                      item.tuple, table, insert_error, exc_info=True)
+                        self.thread_exception = insert_error
+                        break
+                    self._handle_log_error(item, table, insert_error, self.queue)
             if item.block:
                 self.queue.task_done()
 
