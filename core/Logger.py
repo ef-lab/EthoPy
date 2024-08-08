@@ -33,7 +33,6 @@ from utils.logging import setup_logging
 from utils.Timer import Timer
 from utils.Writer import Writer
 
-setup_logging(False)
 # read the configuration from the local_conf.json
 with open("local_conf.json", "r", encoding="utf-8") as f:
     config = json.load(f)

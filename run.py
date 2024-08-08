@@ -4,14 +4,11 @@ import time
 import traceback
 
 from core.Logger import Logger
-from utils.logging import setup_logging
 from utils.Start import PyWelcome
-
-setup_logging(False)
 
 ERROR = None
 protocol = sys.argv[1] if len(sys.argv) > 1 else False
-logger = Logger(protocol=protocol)   # setup logger
+logger = Logger(protocol=protocol)
 
 # # # # Waiting for instructions loop # # # # #
 while logger.setup_status != 'exit':
