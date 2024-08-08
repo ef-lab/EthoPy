@@ -16,7 +16,7 @@ while logger.setup_status != 'exit':
         PyWelcome(logger)
     if logger.setup_status == 'running':   # run experiment unless stopped
         try:
-            if logger.update_protocol():
+            if logger.get_protocol():
                 exec(open(logger.protocol_path, encoding='utf-8').read())
         except Exception as e:
             ERROR = traceback.format_exc()

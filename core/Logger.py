@@ -200,14 +200,13 @@ class Logger:
         else:
             return None, None
 
-    def update_protocol(self):
+    def get_protocol(self):
         """
-        This method updates the protocol path.
+        This method gets the protocol path.
 
         If the run is not manual, it fetches the task index from the setup info.
-        In the case the run is manual the protocol_path has been defined in Logger __init__,
-        manual can also run without task_id been defined just by the protocol path.
         It then finds the protocol path based on the task index and updates the protocol path.
+        In the case the run is manual the protocol_path has been defined in Logger __init__.
         If the protocol path is not found, it raises a FileNotFoundError
 
         Returns:
@@ -215,8 +214,8 @@ class Logger:
         """
         # find the protocol_path based on the task_id from the control table
         if not self.manual_run:
-            task_idx = self.get_setup_info('task_idx')
-            self.protocol_path = self._find_protocol_path(task_idx)
+            self.task_idx = self.get_setup_info('task_idx')
+            self.protocol_path = self._find_protocol_path(self.task_idx)
         # checks if the file exist
         if not os.path.isfile(self.protocol_path):
             error_msg = f"Protocol file does not exist at {self._protocol_path}"
