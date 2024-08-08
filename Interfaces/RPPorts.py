@@ -1,7 +1,10 @@
-from time import sleep
-import numpy as np
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from threading import Event
+from time import sleep
+
+import numpy as np
+
 from core.Interface import *
 
 
@@ -17,8 +20,8 @@ class RPPorts(Interface):
 
     def __init__(self, **kwargs):
         super(RPPorts, self).__init__(**kwargs)
-        from RPi import GPIO
         import pigpio
+        from RPi import GPIO
         self.GPIO = GPIO
         self.GPIO.setmode(self.GPIO.BCM)
         self.Pulser = pigpio.pi()
@@ -227,17 +230,20 @@ class RPPorts(Interface):
             channel (int, optional): The channel number of the proximity sensor. Defaults to 0.
         """
         # Get the port number corresponding to the proximity sensor channel
-        port = self._channel2port(channel, 'Proximity')
+        port = replace(self._channel2port(channel, 'Proximity'))
         # Check if the animal is in position
         in_position = self._get_position(port.port)
         # Start the timer if the animal is in position
         if in_position: self.timer_ready.start()
         # Log the in_position event and update the position if there is a change in position
         if in_position and not self.position.port:
-            self.position_tmst = self.beh.log_activity({**port.__dict__, 'in_position': 1})
-            self.position = port
+            self.position_tmst = self.logger.logger_timer.elapsed_time()
+            self.position = replace(port)
         elif not in_position and self.position.port:
-            tmst = self.beh.log_activity({**port.__dict__, 'in_position': 0})
+            tmst = self.logger.logger_timer.elapsed_time()
+            if tmst - self.position_tmst > 50:
+                self.beh.log_activity({**{**self.position.__dict__, 'time': self.position_tmst}, 'in_position': 1})
+                self.beh.log_activity({**{**port.__dict__, 'time': tmst}, 'in_position': 0})
             self.position_dur = tmst - self.position_tmst
             self.position = Port()
 
