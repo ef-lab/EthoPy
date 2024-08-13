@@ -115,7 +115,7 @@ class Logger:
         _initialize_schemata(): Initializes database schemata.
         _inserter(): Inserts data into the database.
         _log_setup_info(setup, status): Logs setup information.
-        _update_setup_status_periodically(): Periodically updates setup status.
+        _get_setup_status_periodically(): Periodically get setup status.
     """
     DEFAULT_SOURCE_PATH = os.path.join(os.path.expanduser("~"), "EthoPy_Files/")
     DEFAULT_TARGET_PATH = False
@@ -168,7 +168,7 @@ class Logger:
         self._log_setup_info(self.setup, self.setup_status)
 
         # before starting the getter thread we need to _log_setup_info
-        self.getter_thread = threading.Thread(target=self._update_setup_status_periodically)
+        self.getter_thread = threading.Thread(target=self._get_setup_status_periodically)
         self.getter_thread.start()
         self.logger_timer.start()
 
@@ -443,10 +443,9 @@ class Logger:
             if item.block:
                 self.queue.task_done()
 
-    def _update_setup_status_periodically(self):
+    def _get_setup_status_periodically(self):
         """
-        This method continuously updates the setup information and status from the experiment
-        database.
+        This method continuously fetch the setup status from Control table at the experiment schema.
 
         It runs in a loop until the thread_end event is set. In each iteration, it acquires the
         thread lock, fetches the setup information from the Control table in the experiment database
