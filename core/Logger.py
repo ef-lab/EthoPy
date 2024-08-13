@@ -183,7 +183,7 @@ class Logger:
         is None or doesn't match these conditions, it returns None for both the protocol
         ID and path.
 
-        Parameters:
+        Args:
         - protocol (str|int|None): The input protocol, which can be an ID (digit) or a
         path (string).
 
@@ -329,7 +329,7 @@ class Logger:
         that a task is complete. If 'block' is True, it waits for all items in the queue to be
         processed by calling `join()`.
 
-        Parameters:
+        Args:
         **kwargs (Any): The keyword arguments used to create a `PrioritizedItem` and put it in the
         queue.
         """
@@ -374,7 +374,7 @@ class Logger:
         Handles an error by logging the error message, set the item.error=True, increase priority
         and add the item again in the queue for re-trying to insert later.
 
-        Parameters:
+        Args:
         item : Description of parameter `item`.
         table : Description of parameter `table`.
         exception (Exception): The exception that was raised.
@@ -397,7 +397,7 @@ class Logger:
         entering the block of code and released after exiting the block, even
         if an exception is raised within the block.
 
-        Parameters:
+        Args:
         - lock: The lock object to acquire and release.
         """
         lock.acquire()
@@ -655,7 +655,7 @@ class Logger:
         table within the given schema.
 
         Args:
-            params (Dict[str, Any]): Parameters for the session.
+            params (Dict[str, Any]): Parameters for the setup conf.
             config_table (str): The part table to be recorded (e.g., Port, Screen).
             schema (str): The schema for the configuration.
         """
@@ -814,7 +814,7 @@ class Logger:
         """
         Fetches data from a specified table in a schema.
 
-        Parameters:
+        Args:
         schema (str): The schema to fetch data from. Defaults to "experiment".
         table (str): The table to fetch data from. Defaults to "Control".
         fields (str): The fields to fetch. Defaults to "".
@@ -947,7 +947,7 @@ class Logger:
         recording index and adding one, and logs the new recording entry with
         the provided recording key (rec_key) and the calculated recording index.
 
-        Parameters:
+        Args:
         - rec_key (dict): A dictionary containing the key information for the recording entry.
 
         The method assumes the existence of a `get` method to retrieve existing recordings
