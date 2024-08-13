@@ -757,7 +757,8 @@ class Logger:
         if self.thread_exception:
             self.thread_exception = None
             raise Exception("Thread exception occurred: %s", self.thread_exception)
-        if not self.check_connection(host=dj.config["database.host"], port=3306):
+        if not self.check_connection(host=dj.config["database.host"],
+                                     port=dj.config["database.port"]):
             logging.info("No database connection\nTry to update info: %s\nQueue size: %s",
                          info, self.queue.qsize())
             return None
