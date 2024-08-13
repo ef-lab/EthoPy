@@ -369,10 +369,10 @@ class Logger:
             while not len(table & key) > 0:
                 time.sleep(0.5)
 
-    def _handle_log_error(self, item, table, exception, queue):
+    def _handle_insert_error(self, item, table, exception, queue):
         """
         Handles an error by logging the error message, set the item.error=True, increase priority
-        and  add the item again in the queue for re-trying to log later.
+        and add the item again in the queue for re-trying to insert later.
 
         Parameters:
         item : Description of parameter `item`.
@@ -439,7 +439,7 @@ class Logger:
                                       item.tuple, table, insert_error, exc_info=True)
                         self.thread_exception = insert_error
                         break
-                    self._handle_log_error(item, table, insert_error, self.queue)
+                    self._handle_insert_error(item, table, insert_error, self.queue)
             if item.block:
                 self.queue.task_done()
 
@@ -611,9 +611,19 @@ class Logger:
 
     def _log_session_configs(self, params) -> None:
         """
-        Logs the session parameters in Configuration table and subtable of behavior/stimulus.
-        We log the parameters on each session in the case the setup configuration table in
-        experiment schema is changed fot the same setup_conf_idx.
+        Logs the parameters of a session into the appropriate schema tables.
+
+        This method performs several key operations to ensure that the configuration of a session,
+        including behavior and stimulus settings, is accurately logged into the database.It involves
+        the following steps:
+        1. Identifies the relevant modules (e.g., core.Behavior, core.Stimulus) that contain
+        Configuration classes.
+        2. Derives schema names from these modules, assuming the schema name matches the class
+        name in lowercase.
+        3. Logs the session and animal_id into the Configuration tables of the identified schemas.
+        4. Creates a dictionary mapping each schema to its respective Configuration class's
+        inner classes.
+        5. Calls a helper method to log the configuration of sub-tables for each schema.
         """
         # modules that have a Configuration classes
         _modules = ['core.Behavior', 'core.Stimulus']
@@ -641,6 +651,10 @@ class Logger:
         self, params: Dict[str, Any], config_tables: List, schema: str
     ) -> None:
         """
+        This method iterates over a list of configuration tables, retrieves the configuration data
+        for each table based on the provided parameters, and then logs this data into the respective
+        table within the given schema.
+
         Args:
             params (Dict[str, Any]): Parameters for the session.
             config_table (str): The part table to be recorded (e.g., Port, Screen).
