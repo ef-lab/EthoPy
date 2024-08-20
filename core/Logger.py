@@ -723,15 +723,17 @@ class Logger:
         Args:
             host (str): The host to connect to. Defaults to '8.8.8.8' (Google DNS).
             port (int): The port to connect on. Defaults to 53 (DNS service).
-            timeout (int): The timeout in seconds for the connection attempt. Defaults to 3 seconds.
+            timeout (int): The timeout in seconds for the connection attempt.
+            Defaults to 0.1 seconds.
 
         Returns:
             bool: True if the connection is successful, False otherwise.
         """
         try:
             socket.setdefaulttimeout(timeout)
-            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
-            return True
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((host, port))
+                return True
         except socket.error:
             return False
 
@@ -757,9 +759,8 @@ class Logger:
         if self.thread_exception:
             self.thread_exception = None
             raise Exception("Thread exception occurred: %s", self.thread_exception)
-        if not self.check_connection(host=dj.config["database.host"],
-                                     port=dj.config["database.port"]):
-            logging.info("No database connection\nTry to update info: %s\nQueue size: %s",
+        if not self.check_connection():
+            logging.info("No internet connection\nTry to update info: %s\nQueue size: %s",
                          info, self.queue.qsize())
             return None
 
