@@ -64,7 +64,7 @@ class Camera(ABC):
         self.recording = mp.Event()
         self.recording.clear()
 
-        with open("dj_local_conf.json", "r", encoding="utf-8") as f:
+        with open("local_conf.json", "r", encoding="utf-8") as f:
             conf = json.load(f)
 
         self.source_path = (
