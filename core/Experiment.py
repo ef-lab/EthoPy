@@ -90,7 +90,6 @@ class ExperimentClass:
         self.stim.exit()
         self.interface.release()
         self.beh.exit()
-        self.logger.ping(0)
         if self.sync:
             while self.interface.is_recording():
                 print('Waiting for recording to end...')

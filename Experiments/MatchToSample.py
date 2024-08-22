@@ -86,7 +86,6 @@ class PreTrial(Experiment):
     def run(self):
         if not self.is_stopped() and self.beh.is_ready(self.curr_cond['init_ready'], self.start_time):
             self.resp_ready = True
-        self.logger.ping()
 
     def next(self):
         is_sleep_time = self.beh.is_sleep_time()
@@ -112,7 +111,6 @@ class Cue(Experiment):
 
     def run(self):
         self.stim.present()
-        self.logger.ping()
         self.response = self.beh.get_response(self.start_time)
         if self.beh.is_ready(self.curr_cond['cue_ready'], self.start_time):
             self.resp_ready = True
@@ -142,7 +140,6 @@ class Delay(Experiment):
 
     def run(self):
         self.stim.present()
-        self.logger.ping()
         self.response = self.beh.get_response(self.start_time)
         if self.beh.is_ready(self.curr_cond['delay_ready'], self.start_time):
             self.resp_ready = True
@@ -169,7 +166,6 @@ class Response(Experiment):
 
     def run(self):
         self.stim.present()  # Start Stimulus
-        self.logger.ping()
         self.response = self.beh.get_response(self.start_time)
         if self.beh.is_ready(self.curr_cond['resp_ready'], self.start_time):
             self.resp_ready = True
@@ -190,7 +186,6 @@ class Response(Experiment):
 
     def exit(self):
         self.stim.stop()
-        self.logger.ping()
 
 
 class Abort(Experiment):
@@ -255,7 +250,6 @@ class InterTrial(Experiment):
     def run(self):
         if self.beh.is_licking() and self.params.get('noresponse_intertrial'):
             self.state_timer.start()
-        self.logger.ping()
 
     def next(self):
         if self.is_stopped():
@@ -279,7 +273,6 @@ class Hydrate(Experiment):
             self.stim.ready_stim()
             self.beh.reward()
             time.sleep(1)
-        self.logger.ping()
 
     def next(self):
         if self.is_stopped():  # if wake up then update session
@@ -299,7 +292,6 @@ class Offtime(Experiment):
     def run(self):
         if self.logger.setup_status not in ['sleeping', 'wakeup'] and self.beh.is_sleep_time():
             self.logger.update_setup_info({'status': 'sleeping'})
-        self.logger.ping()
         time.sleep(1)
 
     def next(self):

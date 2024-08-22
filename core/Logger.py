@@ -168,8 +168,8 @@ class Logger:
         self._log_setup_info(self.setup, self.setup_status)
 
         # before starting the getter thread we need to _log_setup_info
-        self.getter_thread = threading.Thread(target=self._get_setup_status)
-        self.getter_thread.start()
+        self.update_thread = threading.Thread(target=self._sync_control_table)
+        self.update_thread.start()
         self.logger_timer.start()
 
     def _resolve_protocol_parameters(
@@ -443,32 +443,54 @@ class Logger:
             if item.block:
                 self.queue.task_done()
 
-    def _get_setup_status(self):
+    def _sync_control_table(self, update_period: float = 5000) -> None:
         """
-        This method continuously fetch the setup status from Control table at the experiment schema.
+        Synchronize the Control table by continuously fetching the setup status
+        from the experiment schema and periodically updating the setup info.
 
-        It runs in a loop until the thread_end event is set. In each iteration, it acquires the
-        thread lock, fetches the setup information from the Control table in the experiment database
-        ,releases the thread lock, and updates the setup status. It then sleeps for 1 second before
-        the next iteration.
+        Runs in a loop until the thread_end event is set.
 
-        Returns:
-            None
+        Args:
+            update_period (float): Time in milliseconds between Control table updates.
         """
         while not self.thread_end.is_set():
-            self.thread_lock.acquire()
-            try:
-                self.setup_info = (
-                    self._schemata["experiment"].Control() & dict(setup=self.setup)
-                ).fetch1()
-            except Exception as fetch_error:
-                logging.error("Failed to fetch setup info: %s", fetch_error, exc_info=True)
-                self.thread_exception = fetch_error
-                self.thread_lock.release()
-                break
-            self.thread_lock.release()
-            self.setup_status = self.setup_info["status"]
-            time.sleep(1)  # update once a second
+            with self.thread_lock:
+                try:
+                    self._fetch_setup_info()
+                    self._update_setup_info(update_period)
+                except Exception as error:
+                    logging.exception("Error during Control table sync: %s", error)
+                    self.thread_exception = error
+
+            time.sleep(1)  # Cycle once a second
+
+    def _fetch_setup_info(self) -> None:
+        self.setup_info = (
+            self._schemata["experiment"].Control() & {"setup": self.setup}
+        ).fetch1()
+        self.setup_status = self.setup_info["status"]
+
+    def _update_setup_info(self, update_period: float) -> None:
+        """
+        Update the setup information if the elapsed time exceeds the update period.
+
+        This method checks if the elapsed time since the last ping exceeds the given
+        update period. If it does, it resets the ping timer and updates the setup
+        information with the current state, queue size, trial index, total liquid reward,
+        and the current timestamp. The updated information is then stored in the "Control"
+        table with a priority of 1.
+        """
+        if self.ping_timer.elapsed_time() >= update_period:
+            self.ping_timer.start()
+            info = {
+                "last_ping": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "queue_size": self.queue.qsize(),
+                "trials": self.trial_key["trial_idx"],
+                "total_liquid": self.total_reward,
+                "state": self.curr_state,
+            }
+            self.setup_info.update(info)
+            self.put(table="Control", tuple=self.setup_info, replace=True, priority=1)
 
     def log(self, table, data=None, **kwargs):
         """
@@ -756,9 +778,6 @@ class Logger:
         """
         # check the internet connection before updating the setup info because otherwise it will
         # halt due to the fetch1 of the control table
-        if self.thread_exception:
-            self.thread_exception = None
-            raise Exception("Thread exception occurred: %s", self.thread_exception)
         if not self.check_connection():
             logging.info("No internet connection\nTry to update info: %s\nQueue size: %s",
                          info, self.queue.qsize())
@@ -830,37 +849,17 @@ class Logger:
 
     def update_trial_idx(self, trial_idx):
         """
-        Updates the trial index in the trial_key dictionary.
+        Updates the trial index in the trial_key dictionary and check if there is any
+        exception in the threads.
 
         Args:
             trial_idx (int): The new trial index to be updated.
         """
         self.trial_key['trial_idx'] = trial_idx
         logging.info("\nTrial idx: %s",  self.trial_key['trial_idx'])
-
-    def ping(self, period=5000):
-        """
-        Sends a periodic ping to update setup information.
-
-        This method updates the setup information at a specified interval (period).
-        It records the current time, queue size,trial index, total liquid dispensed,
-        and the current state of the system.
-
-        Args:
-            period (int, optional): The period in milliseconds between pings. Defaults to 5000.
-        """
-
-        if self.ping_timer.elapsed_time() >= period:  # occasionally update control table
-            self.ping_timer.start()
-            self.update_setup_info(
-                {
-                    "last_ping": str(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
-                    "queue_size": self.queue.qsize(),
-                    "trials": self.trial_key["trial_idx"],
-                    "total_liquid": self.total_reward,
-                    "state": self.curr_state,
-                }
-            )
+        if self.thread_exception:
+            self.thread_exception = None
+            raise Exception("Thread exception occurred: %s", self.thread_exception)
 
     def cleanup(self):
         """
