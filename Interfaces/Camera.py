@@ -212,9 +212,9 @@ class Camera(ABC):
         return path
 
     @staticmethod
-    def copy_file(args):
+    def move_file(args):
         """
-        Copy a file from the source path to the target path.
+        move a file from the source path to the target path.
 
         Args:
             args (tuple): A tuple containing the source file path and the target directory path.
@@ -228,7 +228,7 @@ class Camera(ABC):
         """
         file, target = args
         try:
-            shutil.copy(str(file), str(target / file.name))
+            shutil.move(str(file), str(target / file.name))
             print(f"Transferred file: {file.name}")
         except FileNotFoundError as ex:
             print(f"Failed to transfer file: {file.name}. Reason: {ex}")
@@ -250,7 +250,7 @@ class Camera(ABC):
 
         # Use all available CPUs
         with Pool(os.cpu_count()) as p:
-            p.map(self.copy_file, files)
+            p.map(self.move_file, files)
 
     def setup(self) -> None:
         """
