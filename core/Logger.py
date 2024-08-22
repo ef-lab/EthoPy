@@ -609,7 +609,7 @@ class Logger:
         # TODO: Read the user name from the Control Table
         session_key = {**self.trial_key, **params, "setup": self.setup,
                        "user_name": params.get("user_name", "bot")}
-        logging.debug("session_key:\n%s", pprint.pformat(session_key))
+        logging.info("session_key:\n%s", pprint.pformat(session_key))
         # Logs the new session id to the database
         self.put(table="Session", tuple=session_key, priority=1, validate=True, block=True)
 
