@@ -75,7 +75,7 @@ class Camera(ABC):
             self._check_json_config("video_target_path", conf)
             + f"/Recordings/{filename}/"
         )
-        print(conf)
+
         try:
             self.serve_port = conf["server.port"]
         except KeyError:
@@ -212,9 +212,9 @@ class Camera(ABC):
         return path
 
     @staticmethod
-    def move_file(args):
+    def copy_file(args):
         """
-        move a file from the source path to the target path.
+        Copy a file from the source path to the target path.
 
         Args:
             args (tuple): A tuple containing the source file path and the target directory path.
@@ -228,8 +228,15 @@ class Camera(ABC):
         """
         file, target = args
         try:
-            shutil.move(str(file), str(target / file.name))
+            shutil.copy(str(file), str(target / file.name))
             print(f"Transferred file: {file.name}")
+            # Verify the file exists in the target directory
+            if os.path.exists(str(target / file.name)) and \
+               os.path.getsize(str(file)) == os.path.getsize(str(target / file.name)):
+                os.remove(str(file))
+                print(f"Deleted original file: {file.name}")
+            else:
+                print(f"Failed to transfer file: {file.name}")
         except FileNotFoundError as ex:
             print(f"Failed to transfer file: {file.name}. Reason: {ex}")
 
@@ -250,7 +257,7 @@ class Camera(ABC):
 
         # Use all available CPUs
         with Pool(os.cpu_count()) as p:
-            p.map(self.move_file, files)
+            p.map(self.copy_file, files)
 
     def setup(self) -> None:
         """
@@ -264,13 +271,18 @@ class Camera(ABC):
 
     def start_rec(self) -> None:
         """
-        Start the capture and write runners.
+        Start the capture and write runners with exception handling.
         """
-        self.setup()
-        self.capture_runner.start()
-        self.write_runner.start()
-        self.capture_runner.join()
-        self.write_runner.join()
+        try:
+            self.setup()
+            self.capture_runner.start()
+            self.write_runner.start()
+            self.capture_runner.join()
+            self.write_runner.join()
+        except Exception as cam_error:
+            raise f"Exception occurred during recording: {cam_error}"
+        finally:
+            self.stop_rec()  # Ensure that the process is stopped gracefully.
 
     def dequeue(self, frame_queue: Queue) -> None:
         """
@@ -396,16 +408,20 @@ class PiCamera(Camera):
         super().setup()
 
     def rec(self) -> None:
-        """Start recording."""
-        if self.recording.is_set():
-            warnings.warn("Camera is already recording!")
-            return
+        """Start recording"""
+        try:
+            if self.recording.is_set():
+                warnings.warn("Camera is already recording!")
+                return
 
-        self.recording_init()
-        self.cam.start()
-        while not self.stop.is_set():
-            time.sleep(1)
-        self._stop_recording()
+            self.recording_init()
+            self.cam.start()
+            while not self.stop.is_set():
+                time.sleep(1)
+        except Exception as rec_error:
+            raise f"Error during camera recording: {rec_error}"
+        finally:
+            self._stop_recording()
 
     def recording_init(self) -> None:
         """Initialize the recording."""
