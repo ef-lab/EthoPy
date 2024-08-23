@@ -776,13 +776,6 @@ class Logger:
             Updates the setup_info attribute with the new setup information.
             Updates the setup_status attribute with the new status.
         """
-        # check the internet connection before updating the setup info because otherwise it will
-        # halt due to the fetch1 of the control table
-        if not self.check_connection():
-            logging.info("No internet connection\nTry to update info: %s\nQueue size: %s",
-                         info, self.queue.qsize())
-            return None
-
         if key is None:
             key = dict()
         self.setup_info = {**(experiment.Control() & {**{"setup": self.setup}, **key}).fetch1(),
