@@ -281,8 +281,6 @@ class Camera(ABC):
             self.write_runner.join()
         except Exception as cam_error:
             raise f"Exception occurred during recording: {cam_error}"
-        finally:
-            self.stop_rec()  # Ensure that the process is stopped gracefully.
 
     def dequeue(self, frame_queue: Queue) -> None:
         """
