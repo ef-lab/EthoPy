@@ -153,6 +153,8 @@ class Logger:
         self.total_reward = 0
         self.curr_state = ""
         self.thread_exception = None
+        self.update_status = threading.Event()
+        self.update_status.clear()
 
         # source path is the local path that data are saved
         self.source_path = self._set_path_from_local_conf("source_path", self.DEFAULT_SOURCE_PATH)
@@ -455,6 +457,8 @@ class Logger:
         """
         while not self.thread_end.is_set():
             with self.thread_lock:
+                if self.update_status.is_set():
+                    continue
                 try:
                     self._fetch_setup_info()
                     self._update_setup_info(update_period)
@@ -778,6 +782,7 @@ class Logger:
         """
         if key is None:
             key = dict()
+        self.update_status.set()
         self.setup_info = {**(experiment.Control() & {**{"setup": self.setup}, **key}).fetch1(),
                            **info}
 
@@ -791,6 +796,7 @@ class Logger:
             validate=block,
         )
         self.setup_status = self.setup_info["status"]
+        self.update_status.clear()
 
     def _log_protocol_details(self) -> None:
         """
