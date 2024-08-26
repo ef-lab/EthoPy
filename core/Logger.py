@@ -7,6 +7,7 @@ and automatic running modes. The Logger class manages threads for data insertion
 status updates.
 """
 import importlib
+import inspect
 import json
 import logging
 import os
@@ -786,6 +787,10 @@ class Logger:
         block = True if "status" in info else False
         if block:
             self.update_status.set()
+            caller = inspect.stack()[1]
+            caller_info = (f"Function called by {caller.function} "
+                           f"in {caller.filename} at line {caller.lineno}")
+            logging.info("Update status is set %s\n%s", info['status'], caller_info)
 
         self.setup_info = {**(experiment.Control() & {**{"setup": self.setup}, **key}).fetch1(),
                            **info}
