@@ -782,11 +782,14 @@ class Logger:
         """
         if key is None:
             key = dict()
-        self.update_status.set()
+
+        block = True if "status" in info else False
+        if block:
+            self.update_status.set()
+
         self.setup_info = {**(experiment.Control() & {**{"setup": self.setup}, **key}).fetch1(),
                            **info}
 
-        block = True if "status" in info else False
         self.put(
             table="Control",
             tuple=self.setup_info,
