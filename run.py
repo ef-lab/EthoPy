@@ -19,8 +19,11 @@ while logger.setup_status != 'exit':
             if logger.get_protocol():
                 exec(open(logger.protocol_path, encoding='utf-8').read())
         except Exception as e:
-            ERROR = traceback.format_exc()
-            logger.update_setup_info({'state': 'ERROR!', 'notes': str(e), 'status': 'exit'})
+            logging.error("ERROR %s", traceback.format_exc())
+            ERROR = str(e)
+            if len(ERROR) > 255:
+                ERROR = ERROR[:255]
+            logger.update_setup_info({'state': 'ERROR!', 'notes': ERROR, 'status': 'exit'})
         if logger.manual_run:
             logger.update_setup_info({'status': 'exit'})
             break
@@ -30,6 +33,4 @@ while logger.setup_status != 'exit':
 
 # # # # # Exit # # # # #
 logger.cleanup()
-if ERROR:
-    logging.error("ERROR %s", ERROR)
 sys.exit(0)
