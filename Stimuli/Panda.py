@@ -10,7 +10,7 @@ from direct.task import Task
 from panda3d.core import CardMaker, ClockObject, NodePath, TextureStage
 
 from core.Logger import stimulus
-from core.Stimulus import Stimulus
+from core.Stimulus import StimCondition, Stimulus # import StimCondition need for the Panda class definition
 from utils.helper_functions import iterable
 from utils.Timer import Timer
 
@@ -303,7 +303,7 @@ class Panda(Stimulus, dj.Manual):
                     clip[0].tofile(filename)
             if not 'obj_id' in cond: continue
             for obj_id in iterable(cond['obj_id']):
-                object_info = (Objects() & ('obj_id=%d' % obj_id)).fetch1()
+                object_info = self.exp.logger.get(schema='stimulus', table='Objects', key={'obj_id': obj_id})[0]
                 filename = self.path + object_info['file_name']
                 self.object_files[obj_id] = filename
                 if not os.path.isfile(filename): print('Saving %s' % filename); object_info['object'].tofile(filename)

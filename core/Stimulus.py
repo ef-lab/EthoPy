@@ -3,7 +3,8 @@ import os
 import datajoint as dj
 import numpy as np
 
-from core.Logger import stimulus
+# import experiment needs in definition of Configuration and Trial tables
+from core.Logger import experiment, stimulus
 from utils.helper_functions import DictStruct
 from utils.Presenter import Presenter
 from utils.Timer import Timer

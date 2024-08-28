@@ -9,7 +9,7 @@ from scipy import stats
 from sklearn.metrics import roc_auc_score
 
 from core.Logger import behavior, experiment, mice, stimulus
-from utils.helper_functions import factorize, generate_conf_list, make_hash, rgetattr
+from utils.helper_functions import factorize, generate_conf_list, make_hash
 from utils.Timer import Timer
 
 
@@ -174,18 +174,17 @@ class ExperimentClass:
     def log_conditions(self, conditions, condition_tables=['Condition'], schema='experiment', hsh='cond_hash', priority=2):
         fields_key, hash_dict = list(), dict()
         for ctable in condition_tables:
-            table = rgetattr(eval(schema), ctable)
-            fields_key += list(table().heading.names)
+            fields_key += list(self.logger.get_table_keys(schema, ctable))
         for cond in conditions:
             insert_priority = priority
             key = {sel_key: cond[sel_key] for sel_key in fields_key if sel_key != hsh and sel_key in cond}  # find all dependant fields and generate hash
             cond.update({hsh: make_hash(key)})
             hash_dict[cond[hsh]] = cond[hsh]
             for ctable in condition_tables:  # insert dependant condition tables
-                core = [field for field in rgetattr(eval(schema), ctable).primary_key if field != hsh]
-                fields = [field for field in rgetattr(eval(schema), ctable).heading.names]
+                core = [field for field in self.logger.get_table_keys(schema, ctable, key_type='primary') if field != hsh]
+                fields = [field for field in self.logger.get_table_keys(schema, ctable)]
                 if not np.all([np.any(np.array(k) == list(cond.keys())) for k in fields]):
-                    #if self.logger.manual_run: print('skipping ', ctable)
+                    if self.logger.manual_run: print('skipping ', ctable)
                     continue  # only insert complete tuples
                 if core and hasattr(cond[core[0]], '__iter__'):
                     for idx, pcond in enumerate(cond[core[0]]):

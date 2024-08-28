@@ -29,7 +29,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import datajoint as dj
 import numpy as np
 
-from utils.helper_functions import rgetattr
+from utils.helper_functions import create_virtual_modules, rgetattr
 from utils.logging import setup_logging
 from utils.Timer import Timer
 from utils.Writer import Writer
@@ -47,26 +47,19 @@ environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 # Schema mappings
 SCHEMATA = config["SCHEMATA"]
 
-try:
-    # Create virtual modules
-    virtual_modules = {
-        name: dj.create_virtual_module(name, schema, create_tables=True, create_schema=True)
-        for name, schema in SCHEMATA.items()
-    }
-    # Explicit Module Variables
-    # This is done so these modules can be imported by name in other files,
-    # making the code more readable and maintainable
+VERSION = "0.1"
+
+def set_connection():
+    global experiment, stimulus, behavior, recording, mice, public_conn
+    virtual_modules, public_conn = create_virtual_modules(SCHEMATA)
     experiment = virtual_modules["experiment"]
     stimulus = virtual_modules["stimulus"]
     behavior = virtual_modules["behavior"]
     recording = virtual_modules["recording"]
     mice = virtual_modules["mice"]
-except Exception as e:
-    error_message = f"Failed to connect to the database due to an internet connection error: {e}"
-    logging.error("ERROR %s", error_message)
-    raise Exception(error_message) from e
 
-VERSION = "0.1"
+
+set_connection()
 
 
 class Logger:
@@ -135,12 +128,9 @@ class Logger:
         self.setup_status = 'running' if self.manual_run else 'ready'
 
         # separate connection for internal communication
-        self.private_conn = dj.Connection(
-            dj.config["database.host"],
-            dj.config["database.user"],
-            dj.config["database.password"],
+        self._schemata, self.private_conn = create_virtual_modules(
+            SCHEMATA, create_tables=False, create_schema=False
         )
-        self._schemata = self._initialize_schemata()
 
         self.writer = Writer
         self.rec_fliptimes = True
@@ -630,9 +620,8 @@ class Logger:
             A list of strings, each representing the fully qualified name of an inner class
             defined within the outer class.
         """
-        inner_classes = [getattr(outer_class, attr_name) for attr_name in dir(outer_class)
-                         if isinstance(getattr(outer_class, attr_name), type)
-                         and getattr(outer_class, attr_name).__module__ == outer_class.__module__]
+        outer_class_dict_values = outer_class.__dict__.values()
+        inner_classes = [value for value in outer_class_dict_values if isinstance(value, type)]
         return [outer_class.__name__+'.'+cls.__name__ for cls in inner_classes]
 
     def _log_session_configs(self, params) -> None:
@@ -781,8 +770,14 @@ class Logger:
             Updates the setup_info attribute with the new setup information.
             Updates the setup_status attribute with the new status.
         """
+        if self.thread_exception:
+            self.thread_exception = None
+            raise Exception("Thread exception occurred: %s", self.thread_exception)
         if key is None:
             key = dict()
+
+        if not public_conn.is_connected:
+            set_connection()
 
         block = True if "status" in info else False
         if block:
@@ -837,22 +832,46 @@ class Logger:
         """
         return (experiment.Control() & dict(setup=self.setup)).fetch1(field)
 
-    def get(self, schema='experiment', table='Control', fields='', key=dict(), **kwargs):
+    def get(self, schema='experiment', table='Control', fields: Optional[List] = None, key: Optional[Dict] = None, **kwargs):
         """
         Fetches data from a specified table in a schema.
 
         Args:
         schema (str): The schema to fetch data from. Defaults to "experiment".
         table (str): The table to fetch data from. Defaults to "Control".
-        fields (str): The fields to fetch. Defaults to "".
+        fields (dict): The fields to fetch. Defaults to "".
         key (dict): The key used to fetch data. Defaults to an empty dict.
         **kwargs: Additional keyword arguments.
 
         Returns:
         The fetched data.
         """
+        if key is None:
+            key = dict()
+        if fields is None:
+            fields = []
         table = rgetattr(eval(schema), table)
         return (table() & key).fetch(*fields, **kwargs)
+
+    def get_table_keys(self, schema='experiment', table='Control', 
+                        key: Optional[Dict] = None, key_type=Optional[str]):
+        """
+        Retrieve the primary key of a specified table within a given schema.
+
+        Args:
+            schema (str): The schema name where the table is located. Default is 'experiment'.
+            table (str): The table name from which to retrieve the keys. Default is 'Control'.
+            key (dict): A dict with the key to filter the table. Default is an empty dictionary.
+
+        Returns:
+            list: The primary key of the specified table.
+        """
+        if key is None:
+            key = []
+        table = rgetattr(eval(schema), table)
+        if key_type == 'primary':
+            return (table() & key).primary_key
+        return (table() & key).heading.names
 
     def update_trial_idx(self, trial_idx):
         """

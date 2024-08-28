@@ -1,10 +1,38 @@
-import numpy as np
-from scipy import ndimage
-from itertools import product
-import hashlib, base64, functools
+import base64
+import functools
+import hashlib
+import logging
 import os
 from datetime import datetime
+from itertools import product
 
+import datajoint as dj
+import numpy as np
+from scipy import ndimage
+
+
+def create_virtual_modules(schemata, create_tables=True,  create_schema=True):
+    try:
+        # Create virtual modules
+        public_conn = dj.Connection(
+            dj.config["database.host"],
+            dj.config["database.user"],
+            dj.config["database.password"],
+        )
+        virtual_modules = {}
+        for name, schema in schemata.items():
+            virtual_modules[name] = dj.create_virtual_module(name,
+                                                             schema,
+                                                             create_tables=create_tables,
+                                                             create_schema=create_schema,
+                                                             connection=public_conn)
+        return virtual_modules, public_conn
+    except Exception as e:
+        error_message = (f"Failed to connect to the database due "
+                         f"to an internet connection error: {e}")
+        logging.error("ERROR %s", error_message)
+        raise Exception(error_message) from e
+    
 def sub2ind(array_shape, rows, cols):
     return rows * array_shape[1] + cols
 
