@@ -49,7 +49,24 @@ SCHEMATA = config["SCHEMATA"]
 
 VERSION = "0.1"
 
+
 def set_connection():
+    """
+    Establishes connections to database, creates virtual modules based on the provided
+    schemata and assigns them to global variables. It also initializes the `public_conn`
+    global variable.
+
+    Globals:
+        experiment: The virtual module for experiment.
+        stimulus: The virtual module for stimulus.
+        behavior: The virtual module for behavior.
+        recording: The virtual module for recording.
+        mice: The virtual module for mice.
+        public_conn: The connection object for public access.
+
+    Returns:
+        None
+    """
     global experiment, stimulus, behavior, recording, mice, public_conn
     virtual_modules, public_conn = create_virtual_modules(SCHEMATA)
     experiment = virtual_modules["experiment"]
@@ -124,6 +141,7 @@ class Logger:
         self.manual_run = True if self.protocol_path else False
         # set the python logging
         setup_logging(self.manual_run)
+        
         # if manual true run the experiment else set it to ready state
         self.setup_status = 'running' if self.manual_run else 'ready'
 
@@ -214,6 +232,7 @@ class Logger:
             error_msg = f"Protocol file does not exist at {self._protocol_path}"
             logging.error(error_msg)
             raise FileNotFoundError(error_msg)
+        logging.info("Protocol path: %s", self.protocol_path)
         return True
 
     @property
