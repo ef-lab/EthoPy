@@ -155,7 +155,7 @@ class InterTrial(Experiment):
         self.state_timer.start()
 
     def run(self):
-        if self.beh.is_licking() and self.params.get('noresponse_intertrial'):
+        if self.beh.is_licking() and self.curr_cond['noresponse_intertrial']:
             self.state_timer.start()
 
     def next(self):
