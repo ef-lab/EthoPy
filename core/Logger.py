@@ -141,7 +141,7 @@ class Logger:
         self.manual_run = True if self.protocol_path else False
         # set the python logging
         setup_logging(self.manual_run)
-        
+
         # if manual true run the experiment else set it to ready state
         self.setup_status = 'running' if self.manual_run else 'ready'
 
@@ -854,7 +854,9 @@ class Logger:
         """
         return (experiment.Control() & dict(setup=self.setup)).fetch1(field)
 
-    def get(self, schema='experiment', table='Control', fields: Optional[List] = None, key: Optional[Dict] = None, **kwargs):
+    def get(self, schema='experiment', table='Control',
+            fields: Optional[List] = None, key: Optional[Dict] = None,
+            **kwargs):
         """
         Fetches data from a specified table in a schema.
 
@@ -876,7 +878,7 @@ class Logger:
         return (table() & key).fetch(*fields, **kwargs)
 
     def get_table_keys(self, schema='experiment', table='Control', 
-                        key: Optional[Dict] = None, key_type=Optional[str]):
+                       key: Optional[Dict] = None, key_type=Optional[str]):
         """
         Retrieve the primary key of a specified table within a given schema.
 
