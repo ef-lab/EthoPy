@@ -141,7 +141,7 @@ class Panda(Stimulus, dj.Manual):
         self.set_background_color(0, 0, 0)
 
         self.disableMouse()
-        self.isrunning = False
+        self.in_operation = False
         self.present_movie = False
 
         # Create Ambient Light
@@ -200,9 +200,9 @@ class Panda(Stimulus, dj.Manual):
     def start(self):
         if self.flag_no_stim: return
         self.fill()
-        if not self.isrunning:
+        if not self.in_operation:
             self.timer.start()
-            self.isrunning = True
+            self.in_operation = True
 
         self.log_start()
         if self.present_movie: self.mov_texture.play()
@@ -214,7 +214,7 @@ class Panda(Stimulus, dj.Manual):
     def present(self):
         self.flip()
         if 'obj_dur' in self.curr_cond and self.curr_cond['obj_dur'] < self.timer.elapsed_time():
-            self.isrunning = False
+            self.in_operation = False
 
     def flip(self, n=1):
         for i in range(0, n):
@@ -235,7 +235,7 @@ class Panda(Stimulus, dj.Manual):
         self.stop_recording()
         self.flip(2) # clear double buffer
         self.log_stop()
-        self.isrunning = False
+        self.in_operation = False
 
     def fill(self, color=None):
         if not color: color = self.curr_cond['background_color']

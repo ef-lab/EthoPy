@@ -48,7 +48,7 @@ class Bar(Stimulus, dj.Manual):
 
     def prepare(self, curr_cond):
         self.curr_cond = curr_cond
-        self.isrunning = True
+        self.in_operation = True
         self.curr_frame = 1
 
         # initialize hor/ver gradients
@@ -101,6 +101,6 @@ class Bar(Stimulus, dj.Manual):
             self.BarOffset += self.BarOffsetCyclesPerFrame
             self.Presenter.tick(self.monitor.fps)
         else:
-            self.isrunning = False
+            self.in_operation = False
             self.fill()
 

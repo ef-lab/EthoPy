@@ -34,7 +34,7 @@ class Movies(Stimulus, dj.Manual):
         self.vid = imageio.get_reader(io.BytesIO(clip[0].tobytes()), format='mov')
         self.vsize = (frame_width[0], frame_height[0])
         self.vfps = frame_rate
-        self.isrunning = True
+        self.in_operation = True
         self.timer.start()
 
     def present(self):
@@ -44,7 +44,7 @@ class Movies(Stimulus, dj.Manual):
             self.Presenter.tick(self.vfps)
             self.curr_frame += 1
         else:
-            self.isrunning = False
+            self.in_operation = False
 
     def stop(self):
         super().stop()

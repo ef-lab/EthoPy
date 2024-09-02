@@ -64,7 +64,7 @@ class Stimulus:
     """ This class handles the stimulus presentation use function overrides for each stimulus class """
 
     cond_tables, required_fields, default_key, curr_cond, conditions, timer = [], [], dict(), dict(), [], Timer()
-    period, isrunning, flip_count, photodiode, rec_fliptimes = 'Trial', False, 0, False, False
+    period, in_operation, flip_count, photodiode, rec_fliptimes = 'Trial', False, 0, False, False
     fill_colors = DictStruct({'start': [], 'ready': [], 'reward': [], 'punish': [], 'background': (0, 0, 0)})
 
     def init(self, exp):
@@ -90,7 +90,7 @@ class Stimulus:
 
     def start(self):
         """start stimulus"""
-        self.isrunning = True
+        self.in_operation = True
         self.log_start()
         self.timer.start()
 
@@ -108,7 +108,7 @@ class Stimulus:
         """stop stimulus"""
         self.fill()
         self.log_stop()
-        self.isrunning = False
+        self.in_operation = False
 
     def exit(self):
         """exit stimulus stuff"""
