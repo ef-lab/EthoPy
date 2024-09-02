@@ -832,6 +832,7 @@ class Logger:
             .decode("ascii")
             .strip()
         )
+        logging.info("Git hash: %s", git_hash)
         self.put(
             table="Session.Protocol",
             tuple={
