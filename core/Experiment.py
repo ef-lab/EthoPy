@@ -540,7 +540,7 @@ class Control(dj.Lookup):
     # Control table 
     setup                       : varchar(256)                 # Setup name
     ---
-    status="exit"               : enum('ready','operational','stop','sleeping','exit','offtime','wakeup') 
+    status="exit"               : enum('ready','running','stop','sleeping','exit','offtime','wakeup') 
     animal_id=0                 : int                          # animal id
     task_idx=0                  : int                          # task identification number
     session=0                   : int                          

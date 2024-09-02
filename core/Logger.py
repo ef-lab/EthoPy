@@ -44,7 +44,7 @@ class Logger:
         self.protocol = protocol
         self.is_pi = system.machine.startswith("arm") or system.machine=='aarch64' if system.system == 'Linux' else False
         self.manual_run = True if protocol else False
-        self.setup_status = 'operational' if self.manual_run else 'ready'
+        self.setup_status = 'running' if self.manual_run else 'ready'
         con_info = dj.conn.connection.conn_info
         self.private_conn = dj.Connection(con_info['host'], con_info['user'], con_info['passwd'])
         for schema, value in schemata.items():  # separate connection for internal communication
