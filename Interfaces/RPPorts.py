@@ -52,7 +52,8 @@ class RPPorts(Interface):
             self.GPIO.setup(self.channels['Opto'], self.GPIO.OUT, initial=self.GPIO.LOW)
         if 'Liquid' in self.channels:
             for channel in self.channels['Liquid']:
-                self.Pulser.set_mode(self.channels['Liquid'][channel], pigpio.OUTPUT, initial=self.GPIO.LOW)
+                self.Pulser.set_mode(self.channels['Liquid'][channel], pigpio.OUTPUT)
+                self.Pulser.set_pull_up_down(self.channels['Liquid'][channel], pigpio.PUD_DOWN)
         if 'Sound' in self.channels:
             for channel in self.channels['Sound']:
                 self.Pulser.set_mode(self.channels['Sound'][channel], pigpio.OUTPUT)

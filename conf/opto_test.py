@@ -37,35 +37,35 @@ for irep in range(0, reps):
         dir2_f = lambda: np.array([180, -20, 0]) + np.random.randn(3) * 30
 
         # object parameters
-        rot_f = lambda: interp((np.random.rand(30)-.5) * 250)
-        tilt_f = lambda: interp(np.random.rand(30)*30)
-        yaw_f = lambda: interp(np.random.rand(20)*10)
+        rot_f = lambda: interp((np.random.rand(5)-.5) * 250)
+        tilt_f = lambda: interp(np.random.rand(5)*30)
+        yaw_f = lambda: interp(np.random.rand(5)*10)
 
         conditions += exp.make_conditions(stim_class=panda_obj, stim_periods=['Cue', 'Response'], conditions={**block.dict(),
             'Cue': {
                 'obj_id'        : cue_obj[idx],
-                'obj_dur'       : 240000,
+                'obj_dur'       : 2000,
                 'obj_pos_x'     : 0,
                 'obj_mag'       : .5,
                 'obj_rot'       : (rot_f()),
                 'obj_tilt'      : 0,
                 'obj_yaw'       : 0,
-                'opt_dutycycle'     : 50,
-                'opt_duration'      : [0, 500]},
+                'opt_dutycycle'     : [0, 50],
+                'opt_duration'      : 2000},
             'Response': {
                 'obj_id'        : obj_comb,
-                'obj_dur'       : 240000,
+                'obj_dur'       : 5000,
                 'obj_pos_x'     : (-.25, .25),
                 'obj_mag'       : .5,
                 'obj_rot'       : (rot_f(), rot_f()),
                 'obj_tilt'      : 0,
                 'obj_yaw'       : 0,
-                'opt_dutycycle'     : 50,
+                'opt_dutycycle'     : 0,
                 'opt_duration'      : 0},
             'reward_port'       : rew_prob[idx],
             'response_port'     : rew_prob[idx],
             'cue_ready'         : 100,
-            'cue_duration'      : 240000,
+            'cue_duration'      : 2000,
             'delay_duration'    : 100,
             'response_duration' : 5000,
             'reward_duration'   : 2000,

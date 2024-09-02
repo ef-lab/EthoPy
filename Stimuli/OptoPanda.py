@@ -28,5 +28,6 @@ class Opto(Panda, dj.Manual):
                    'opt_dutycycle': 50}
 
     def start(self):
-        self.exp.interface.opto_stim(self.curr_cond['opt_duration'], self.curr_cond['opt_dutycycle'])
+        if not self.flag_no_stim:
+            self.exp.interface.opto_stim(self.curr_cond['opt_duration'], self.curr_cond['opt_dutycycle'])
         super().start()
