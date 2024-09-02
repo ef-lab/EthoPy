@@ -809,6 +809,9 @@ class Logger:
         self.setup_info = {**(experiment.Control() & {**{"setup": self.setup}, **key}).fetch1(),
                            **info}
 
+        if 'notes' in info and len(info['notes']) > 255:
+            info['notes'] = info['notes'][:255]
+
         self.put(
             table="Control",
             tuple=self.setup_info,

@@ -21,8 +21,6 @@ while logger.setup_status != 'exit':
         except Exception as e:
             logging.error("ERROR %s", traceback.format_exc())
             ERROR = str(e)
-            if len(ERROR) > 255:
-                ERROR = ERROR[:255]
             logger.update_setup_info({'state': 'ERROR!', 'notes': ERROR, 'status': 'exit'})
         if logger.manual_run:
             logger.update_setup_info({'status': 'exit'})
