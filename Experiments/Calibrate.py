@@ -1,6 +1,6 @@
-import pygame
 import time
 from importlib import import_module
+
 from core.Experiment import *
 
 try:
@@ -45,9 +45,12 @@ class Experiment:
         """
         self.params = params
         self.logger = logger
-        interface_module = (experiment.SetupConfiguration & {'setup_conf_idx': self.params['setup_conf_idx']}
-                            ).fetch('interface')[0]
+        interface_module = self.logger.get(schema='experiment',
+                                           table='SetupConfiguration',
+                                           fields=['interface'],
+                                           key={'setup_conf_idx': self.params['setup_conf_idx']})[0]
         interface = getattr(import_module(f'Interfaces.{interface_module}'), interface_module)
+
         self.interface = interface(exp=self, callbacks=False)
 
         pygame.init()
