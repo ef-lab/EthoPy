@@ -1,13 +1,17 @@
+import bisect
+from dataclasses import dataclass
+from dataclasses import field as datafield
+from dataclasses import fields
 from datetime import datetime, timedelta
+from importlib import import_module
+from queue import Queue
+
+import matplotlib.pyplot as plt
+from matplotlib import cm
+
 from core.Experiment import *
 from core.Interface import *
-from matplotlib import cm
-import matplotlib.pyplot as plt
-import bisect
-from importlib import import_module
-from dataclasses import dataclass, fields
-from dataclasses import field as datafield
-from queue import Queue
+
 
 @behavior.schema
 class Rewards(dj.Manual):
