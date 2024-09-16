@@ -70,6 +70,7 @@ class PyWelcome():
 
         pygame_menu.events.CLOSE
         if pygame.get_init():
+            self.main_menu.disable()
             pygame.mouse.set_visible(1)
             pygame.display.quit()
             
