@@ -1,4 +1,5 @@
 import pygame
+
 from core.Interface import *
 
 
@@ -11,6 +12,15 @@ class DummyPorts(Interface):
                             'right_port'      : [pygame.KEYDOWN, 'right'],
                             'proximity_true'  : [pygame.KEYDOWN, 'space'],
                             'proximity_false' : [pygame.KEYUP, 'space']}
+        self.beh.is_licking = self.call_getevents(self.beh.is_licking)
+        self.beh.get_response = self.call_getevents(self.beh.get_response)
+
+    def call_getevents(self, original_method):
+        def wrapper(*args, **kwargs):
+            self._get_events()
+            return original_method(*args, **kwargs)
+
+        return wrapper
 
     def in_position(self):
         self._get_events()

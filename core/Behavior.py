@@ -272,8 +272,6 @@ class Behavior:
             bool: True if there is any valid response since the given time, False otherwise.
         """
 
-        if self.interface.__class__.__name__ == 'DummyPorts': self.interface._get_events()
-
         # set a flag to indicate whether there is a valid response since the given time
         _valid_response = False
 
@@ -311,8 +309,6 @@ class Behavior:
         Returns:
             int: licked port number else 0
         """
-        if self.interface.__class__.__name__ == 'DummyPorts': self.interface._get_events()
-
         # check if there is any licking since the given time
         if self.last_lick.time >= since and self.last_lick.port:
             # if reward == False return the licked port number
