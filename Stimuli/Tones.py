@@ -35,11 +35,11 @@ class Tones(Stimulus, dj.Manual):
         super().start()
 
     def present(self):
-        if self.timer.elapsed_time() > self.curr_cond['tone_duration'] and self.isrunning:
-            self.isrunning = False
+        if self.timer.elapsed_time() > self.curr_cond['tone_duration'] and self.in_operation:
+            self.in_operation = False
             self.stop()
 
     def stop(self):
         self.log_stop()
-        self.isrunning = False
+        self.in_operation = False
         self.exp.interface.stop_sound()

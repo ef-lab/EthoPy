@@ -47,7 +47,7 @@ class Images(Stimulus, dj.Manual):
         img_rgb = curr_img[..., None].repeat(3, -1).astype(np.int32)
         self.curr_img = self.Presenter.make_surface(img_rgb.swapaxes(0, 1))
 
-        self.isrunning = True
+        self.in_operation = True
         self.timer.start()
 
     def present(self):
@@ -61,7 +61,7 @@ class Images(Stimulus, dj.Manual):
                 self.Presenter.render(self.curr_img)
             self.frame_idx += 1
         else:
-            self.isrunning = False
+            self.in_operation = False
 
 
     def _get_image_info(self, key, table, *fields):

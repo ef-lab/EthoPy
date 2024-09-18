@@ -6,7 +6,7 @@ class RPVR(RPPorts):
                 'Liquid': {1: 22},
                 'Lick': {1: 17},
                 'Sync': {'in': 21},
-                'Running': 20,
+                'Status': 20,
                 'Sound': {1: 13}}
     pwm = dict()
 

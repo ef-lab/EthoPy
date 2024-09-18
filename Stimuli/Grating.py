@@ -85,7 +85,7 @@ class Grating(Stimulus, dj.Manual):
         return conditions
 
     def prepare(self, curr_cond):
-        self.isrunning = True
+        self.in_operation = True
         self.movie = False
         self.frame_idx = 0
         curr_cond['lamda'] = int(self.px_per_deg / curr_cond['spatial_freq'])
@@ -112,7 +112,7 @@ class Grating(Stimulus, dj.Manual):
 
     def present(self):
         if self.timer.elapsed_time() > self.curr_cond['duration']:
-            self.isrunning = False
+            self.in_operation = False
         elif self.movie:
             grating = pygame.image.frombuffer(self.vid.get_next_data(), self.vsize, "RGB")
             self.Presenter.render(grating)

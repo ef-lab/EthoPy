@@ -263,39 +263,37 @@ class Behavior:
         return True, 0
 
     def get_response(self, since:int=0, clear:bool=True) -> bool:
-            """
-            Return a boolean indicating whether there is any response since the given time.
+        """
+        Return a boolean indicating whether there is any response since the given time.
 
-            Args:
-                since (int, optional): Time in milliseconds. Defaults to 0.
-                clear (bool, optional): If True, clears any existing response before checking for new responses. 
-                                        Defaults to True.
+        Args:
+            since (int, optional): Time in milliseconds. Defaults to 0.
+            clear (bool, optional): If True, clears any existing response before checking for new responses. 
+                                    Defaults to True.
 
-            Returns:
-                bool: True if there is any valid response since the given time, False otherwise.
-            """
+        Returns:
+            bool: True if there is any valid response since the given time, False otherwise.
+        """
 
-            if self.interface.__class__.__name__ == 'DummyPorts': self.interface._get_events()
+        # set a flag to indicate whether there is a valid response since the given time
+        _valid_response = False
 
-            # set a flag to indicate whether there is a valid response since the given time
-            _valid_response = False
-            
-            # clear existing response if clear is True
-            if clear:
-                self.response = Activity()
-                self.licked_port = 0
-            
-            # loop through the response queue and check if there is any response since the given time
-            # keeps only the response that is oldest and get rest of the queue clear
-            while not self.response_queue.empty():
-                _response = self.response_queue.get()
-                if not _valid_response and _response.time >= since and _response.port:
-                    self.response = _response 
-                    _valid_response = True
-                    
-            # return True if there is any valid response since the given time, False otherwise
-            if _valid_response: return True
-            return False
+        # clear existing response if clear is True
+        if clear:
+            self.response = Activity()
+            self.licked_port = 0
+
+        # loop through the response queue and check if there is any response since the given time
+        # keeps only the response that is oldest and get rest of the queue clear
+        while not self.response_queue.empty():
+            _response = self.response_queue.get()
+            if not _valid_response and _response.time >= since and _response.port:
+                self.response = _response 
+                _valid_response = True
+                
+        # return True if there is any valid response since the given time, False otherwise
+        if _valid_response: return True
+        return False
 
     def is_licking(self, since:int=0, reward:bool=False, clear:bool=True) -> int:
         """checks if there is any licking since the given time
@@ -314,8 +312,6 @@ class Behavior:
         Returns:
             int: licked port number else 0
         """
-        if self.interface.__class__.__name__ == 'DummyPorts': self.interface._get_events()
-
         # check if there is any licking since the given time
         if self.last_lick.time >= since and self.last_lick.port:
             # if reward == False return the licked port number
@@ -354,7 +350,7 @@ class Behavior:
         if not activity.time: activity.time = self.logger.logger_timer.elapsed_time()
         key = {**self.logger.trial_key, **activity.__dict__}
         # log the activity in the database
-        if self.exp.running and self.logging:
+        if self.exp.in_operation and self.logging:
             self.logger.log('Activity', key, schema='behavior', priority=10)
             self.logger.log('Activity.' + activity.type, key, schema='behavior')
         # if activity.type == 'Response': append to the response queue

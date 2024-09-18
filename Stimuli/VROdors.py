@@ -34,7 +34,7 @@ class VROdors(Stimulus, dj.Manual):
         self.exp.interface.start_odor(self.curr_cond['delivery_port'],
                                       dutycycle=0, frequency=self.curr_cond['frequency'])
         self.log_start()
-        self.isrunning = True
+        self.in_operation = True
         self.timer.start()
 
     def loc2odor(self, x, y):
@@ -59,4 +59,4 @@ class VROdors(Stimulus, dj.Manual):
     def stop(self):
         self.exp.interface.stop_odor()
         self.log_stop()
-        self.isrunning = False
+        self.in_operation = False
