@@ -35,8 +35,15 @@ from utils.Timer import Timer
 from utils.Writer import Writer
 
 # read the configuration from the local_conf.json
-with open("local_conf.json", "r", encoding="utf-8") as f:
-    config = json.load(f)
+try:
+    with open("local_conf.json", "r", encoding="utf-8") as f:
+        config = json.load(f)
+except FileNotFoundError:
+    logging.error("Configuration file 'local_conf.json' not found.")
+    raise
+except json.JSONDecodeError:
+    logging.error("Configuration file 'local_conf.json' is not a valid JSON.")
+    raise
 # set the datajoint parameters
 dj.config.update(config["dj_local_conf"])
 dj.logger.setLevel(dj.config["datajoint.loglevel"])
