@@ -11,6 +11,7 @@ from matplotlib import cm
 
 from core.Experiment import *
 from core.Interface import *
+from core.Logger import behavior, experiment
 
 
 @behavior.schema
@@ -250,8 +251,10 @@ class Behavior:
         self.response, self.last_lick = Activity(), Activity()
         self.response_queue = Queue(maxsize = 4)
         self.logging = True
-        interface_module = (experiment.SetupConfiguration & {'setup_conf_idx': exp.params['setup_conf_idx']}
-                            ).fetch('interface')[0]
+        interface_module = self.logger.get(schema='experiment',
+                                           table='SetupConfiguration',
+                                           fields=['interface'],
+                                           key={'setup_conf_idx': exp.params['setup_conf_idx']})[0]
         interface = getattr(import_module(f'Interfaces.{interface_module}'), interface_module)
         self.interface = interface(exp=exp, beh=self)
         self.interface.load_calibration()

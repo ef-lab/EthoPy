@@ -11,12 +11,13 @@ import pygame_menu
 
 class PyWelcome:
     def __init__(self, logger) -> None:
-
         self.logger = logger
 
         self.SCREEN_WIDTH = 800
         self.SCREEN_HEIGHT = 480
-        pygame.init()
+        if not pygame.get_init():
+            pygame.init()
+
         if self.logger.is_pi:
             self.screen = pygame.display.set_mode(
                 (self.SCREEN_WIDTH, self.SCREEN_HEIGHT), pygame.FULLSCREEN
@@ -71,7 +72,6 @@ class PyWelcome:
 
             pygame.display.update()
             pygame.time.wait(10)
-            self.logger.ping()
 
         pygame_menu.events.CLOSE
         if pygame.get_init():

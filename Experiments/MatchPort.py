@@ -101,7 +101,6 @@ class Trial(Experiment):
 
     def run(self):
         self.stim.present()  # Start Stimulus
-        self.logger.ping()
         self.response = self.beh.get_response(self.start_time)
         if self.beh.is_ready(self.stim.curr_cond['trial_ready'], self.start_time) and not self.resp_ready:
             self.resp_ready = True
@@ -123,7 +122,6 @@ class Trial(Experiment):
 
     def exit(self):
         self.stim.stop()  # stop stimulus when timeout
-        self.logger.ping()
 
 
 class Abort(Experiment):
@@ -211,7 +209,6 @@ class Hydrate(Experiment):
             self.stim.ready_stim()
             self.beh.reward()
             time.sleep(1)
-        self.logger.ping()
 
     def next(self):
         if self.is_stopped():  # if wake up then update session
@@ -231,7 +228,6 @@ class Offtime(Experiment):
     def run(self):
         if self.logger.setup_status not in ['sleeping', 'wakeup'] and self.beh.is_sleep_time():
             self.logger.update_setup_info({'status': 'sleeping'})
-        self.logger.ping()
         time.sleep(1)
 
     def next(self):

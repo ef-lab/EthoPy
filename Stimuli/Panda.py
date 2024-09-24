@@ -1,13 +1,18 @@
-from core.Stimulus import *
 import os
 import time
+
+import datajoint as dj
 import numpy as np
-from direct.showbase.ShowBase import ShowBase
-from direct.showbase.Loader import Loader
-from direct.task import Task
 import panda3d.core as core
-from utils.Timer import *
-from panda3d.core import NodePath, CardMaker, TextureStage, ClockObject
+from direct.showbase.Loader import Loader
+from direct.showbase.ShowBase import ShowBase
+from direct.task import Task
+from panda3d.core import CardMaker, ClockObject, NodePath, TextureStage
+
+from core.Logger import stimulus
+from core.Stimulus import StimCondition, Stimulus # import StimCondition need for the Panda class definition
+from utils.helper_functions import iterable
+from utils.Timer import Timer
 
 
 @stimulus.schema
@@ -264,7 +269,8 @@ class Panda(Stimulus, dj.Manual):
             self.taskMgr.remove(self.record_task)
 
     def create_movies(self):
-        import glob, os
+        import glob
+        import os
         print('creating movies..')
         for itrial in range(1, self.exp.curr_trial + 1):
             name = self.record_path + 'trial' + str(itrial) + '_frame_*.png'
@@ -297,7 +303,7 @@ class Panda(Stimulus, dj.Manual):
                     clip[0].tofile(filename)
             if not 'obj_id' in cond: continue
             for obj_id in iterable(cond['obj_id']):
-                object_info = (Objects() & ('obj_id=%d' % obj_id)).fetch1()
+                object_info = self.exp.logger.get(schema='stimulus', table='Objects', key={'obj_id': obj_id})[0]
                 filename = self.path + object_info['file_name']
                 self.object_files[obj_id] = filename
                 if not os.path.isfile(filename): print('Saving %s' % filename); object_info['object'].tofile(filename)
