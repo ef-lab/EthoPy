@@ -4,6 +4,7 @@ import hashlib
 import logging
 import os
 from datetime import datetime
+from getpass import getpass
 from itertools import product
 
 import datajoint as dj
@@ -13,6 +14,9 @@ from scipy import ndimage
 
 def create_virtual_modules(schemata, create_tables=True,  create_schema=True):
     try:
+        if dj.config["database.password"] is None:
+            dj.config["database.password"] = getpass(prompt="Please enter DataJoint password: ")
+
         # Create virtual modules
         public_conn = dj.Connection(
             dj.config["database.host"],
