@@ -202,11 +202,11 @@ class Logger:
         ID and path.
 
         Args:
-        - protocol (str|int|None): The input protocol, which can be an ID (digit) or a
+            protocol (str|int|None): The input protocol, which can be an ID (digit) or a
         path (string).
 
         Returns:
-        - tuple: A tuple containing the protocol ID (int|None) and the protocol path (str|None).
+            tuple: A tuple containing the protocol ID (int|None) and the protocol path (str|None).
         """
         if isinstance(protocol, int):
             return protocol, self._find_protocol_path(protocol)
@@ -306,11 +306,11 @@ class Logger:
         Get the path from the local_conf or create a new directory at the default path.
 
         Args:
-        path_key (str): The key to look up in the configuration.
-        default_path (str): The path to use if the key is not in the configuration.
+            path_key (str): The key to look up in the configuration.
+            default_path (str): The path to use if the key is not in the configuration.
 
         Returns:
-        str: The path from the configuration or the default path.
+            str: The path from the configuration or the default path.
         """
         path = config.get(path_key, default_path)
         if path:
@@ -323,7 +323,7 @@ class Logger:
         Set up additional schema.
 
         Args:
-        extra_schema (Dict[str, Any]): The additional schema to set up.
+            extra_schema (Dict[str, Any]): The additional schema to set up.
         """
         for schema, value in extra_schema.items():
             globals()[schema] = dj.create_virtual_module(
@@ -349,7 +349,7 @@ class Logger:
         processed by calling `join()`.
 
         Args:
-        **kwargs (Any): The keyword arguments used to create a `PrioritizedItem` and put it in the
+            **kwargs (Any): The keyword arguments used to create a `PrioritizedItem` and put it in the
         queue.
         """
         item = PrioritizedItem(**kwargs)
@@ -394,11 +394,11 @@ class Logger:
         and add the item again in the queue for re-trying to insert later.
 
         Args:
-        item : Description of parameter `item`.
-        table : Description of parameter `table`.
-        exception (Exception): The exception that was raised.
-        thread_end : Description of parameter `thread_end`.
-        queue : Description of parameter `queue`.
+            item : Description of parameter `item`.
+            table : Description of parameter `table`.
+            exception (Exception): The exception that was raised.
+            thread_end : Description of parameter `thread_end`.
+            queue : Description of parameter `queue`.
         """
         logging.warning(
             "Failed to insert:\n%s in %s\n With error:%s\nWill retry later",
@@ -417,7 +417,7 @@ class Logger:
         if an exception is raised within the block.
 
         Args:
-        - lock: The lock object to acquire and release.
+            lock: The lock object to acquire and release.
         """
         lock.acquire()
         try:
@@ -869,14 +869,14 @@ class Logger:
         Fetches data from a specified table in a schema.
 
         Args:
-        schema (str): The schema to fetch data from. Defaults to "experiment".
-        table (str): The table to fetch data from. Defaults to "Control".
-        fields (dict): The fields to fetch. Defaults to "".
-        key (dict): The key used to fetch data. Defaults to an empty dict.
-        **kwargs: Additional keyword arguments.
+            schema (str): The schema to fetch data from. Defaults to "experiment".
+            table (str): The table to fetch data from. Defaults to "Control".
+            fields (dict): The fields to fetch. Defaults to "".
+            key (dict): The key used to fetch data. Defaults to an empty dict.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-        The fetched data.
+            The fetched data.
         """
         if key is None:
             key = dict()
@@ -952,6 +952,7 @@ class Logger:
             a default filename will be generated based on the dataset name, animal ID,
             session, and current timestamp.
             log (bool, optional): If True call the log_recording
+
         Returns:
             Tuple[str, Any]: A tuple containing the filename and the dataset object.
         """
