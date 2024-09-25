@@ -247,17 +247,21 @@ class Camera(ABC):
         source = Path(self.source_path)
         target = Path(self.target_path)
 
-        if not source.exists():
-            raise ValueError(f"Source path {source} does not exist.")
+        if not source.is_dir():
+            raise ValueError(f"Source path {source} does not exist or is not a directory.")
 
         if not target.exists():
-            raise ValueError(f"Target path {target} does not exist.")
+            raise ValueError(f"Target path {target} does not exist or is not a directory.")
 
         files = [(entry, target) for entry in source.iterdir() if entry.is_file()]
 
-        # Use all available CPUs
-        with Pool(os.cpu_count()) as p:
-            p.map(self.copy_file, files)
+        with Pool(processes=min(2, os.cpu_count()-1)) as pool:
+            pool.map(self.copy_file, files)
+
+        # Clean up if the source directory is empty
+        if not any(source.iterdir()):
+            source.rmdir()
+            print(f"Deleted the empty folder: {source}")
 
     def setup(self) -> None:
         """

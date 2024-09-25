@@ -53,7 +53,8 @@ class Panda(Stimulus, dj.Manual):
         obj_yaw               : blob
         obj_delay             : int
         obj_dur               : int
-        obj_occluder           : int
+        obj_occluder          : int
+        perspective           : int
         """
 
     class Environment(dj.Part):
@@ -98,7 +99,8 @@ class Panda(Stimulus, dj.Manual):
                    'obj_tilt': 0,
                    'obj_yaw': 0,
                    'obj_delay': 0,
-                   'obj_occluder': 0}
+                   'obj_occluder': 0,
+                   'perspective': 0}
 
     object_files, is_recording = dict(), False
 
