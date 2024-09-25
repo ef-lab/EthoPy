@@ -259,6 +259,21 @@ class Camera(ABC):
         with Pool(os.cpu_count()) as p:
             p.map(self.copy_file, files)
 
+        self.delete_if_empty(source)
+
+    def delete_if_empty(self, folder_path):
+        # Check if the folder exists and is a directory
+        if os.path.isdir(folder_path):
+            # Check if the folder is empty
+            if not os.listdir(folder_path):
+                # Delete the folder
+                shutil.rmtree(folder_path)
+                print(f"Deleted the empty folder: {folder_path}")
+            else:
+                print(f"The folder is not empty: {folder_path}")
+        else:
+            print(f"The path does not exist or is not a directory: {folder_path}")
+
     def setup(self) -> None:
         """
         Set up the frame queue and the capture and write runners.
