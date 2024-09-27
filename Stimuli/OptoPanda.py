@@ -1,5 +1,6 @@
 from Stimuli.Panda import *
 
+
 @stimulus.schema
 class Opto(Panda, dj.Manual):
     definition = """
@@ -25,7 +26,8 @@ class Opto(Panda, dj.Manual):
                    'obj_yaw': 0,
                    'obj_delay': 0,
                    'obj_occluder': 0,
-                   'opt_dutycycle': 50}
+                   'opt_dutycycle': 50,
+                   'perspective': 0}
 
     def start(self):
         if not self.flag_no_stim:
