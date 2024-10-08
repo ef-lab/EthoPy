@@ -68,7 +68,6 @@ class PreTrial(Experiment):
         if not self.is_stopped():
             self.beh.prepare(self.curr_cond)
             self.stim.prepare(self.curr_cond)
-            self.logger.ping()
             self.state_timer.start()
 
     def next(self):
@@ -111,7 +110,6 @@ class Trial(Experiment):
     def exit(self):
         self.stim.stop()
         self.beh.vr.update_location = False
-        self.logger.ping()
 
 
 class Abort(Experiment):

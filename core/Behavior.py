@@ -1,13 +1,18 @@
+import bisect
+from dataclasses import dataclass
+from dataclasses import field as datafield
+from dataclasses import fields
 from datetime import datetime, timedelta
+from importlib import import_module
+from queue import Queue
+
+import matplotlib.pyplot as plt
+from matplotlib import cm
+
 from core.Experiment import *
 from core.Interface import *
-from matplotlib import cm
-import matplotlib.pyplot as plt
-import bisect
-from importlib import import_module
-from dataclasses import dataclass, fields
-from dataclasses import field as datafield
-from queue import Queue
+from core.Logger import behavior, experiment
+
 
 @behavior.schema
 class Rewards(dj.Manual):
@@ -246,8 +251,10 @@ class Behavior:
         self.response, self.last_lick = Activity(), Activity()
         self.response_queue = Queue(maxsize = 4)
         self.logging = True
-        interface_module = (experiment.SetupConfiguration & {'setup_conf_idx': exp.params['setup_conf_idx']}
-                            ).fetch('interface')[0]
+        interface_module = self.logger.get(schema='experiment',
+                                           table='SetupConfiguration',
+                                           fields=['interface'],
+                                           key={'setup_conf_idx': exp.params['setup_conf_idx']})[0]
         interface = getattr(import_module(f'Interfaces.{interface_module}'), interface_module)
         self.interface = interface(exp=exp, beh=self)
         self.interface.load_calibration()
@@ -256,39 +263,37 @@ class Behavior:
         return True, 0
 
     def get_response(self, since:int=0, clear:bool=True) -> bool:
-            """
-            Return a boolean indicating whether there is any response since the given time.
+        """
+        Return a boolean indicating whether there is any response since the given time.
 
-            Args:
-                since (int, optional): Time in milliseconds. Defaults to 0.
-                clear (bool, optional): If True, clears any existing response before checking for new responses. 
-                                        Defaults to True.
+        Args:
+            since (int, optional): Time in milliseconds. Defaults to 0.
+            clear (bool, optional): If True, clears any existing response before checking for new responses. 
+                                    Defaults to True.
 
-            Returns:
-                bool: True if there is any valid response since the given time, False otherwise.
-            """
+        Returns:
+            bool: True if there is any valid response since the given time, False otherwise.
+        """
 
-            if self.interface.__class__.__name__ == 'DummyPorts': self.interface._get_events()
+        # set a flag to indicate whether there is a valid response since the given time
+        _valid_response = False
 
-            # set a flag to indicate whether there is a valid response since the given time
-            _valid_response = False
-            
-            # clear existing response if clear is True
-            if clear:
-                self.response = Activity()
-                self.licked_port = 0
-            
-            # loop through the response queue and check if there is any response since the given time
-            # keeps only the response that is oldest and get rest of the queue clear
-            while not self.response_queue.empty():
-                _response = self.response_queue.get()
-                if not _valid_response and _response.time >= since and _response.port:
-                    self.response = _response 
-                    _valid_response = True
-                    
-            # return True if there is any valid response since the given time, False otherwise
-            if _valid_response: return True
-            return False
+        # clear existing response if clear is True
+        if clear:
+            self.response = Activity()
+            self.licked_port = 0
+
+        # loop through the response queue and check if there is any response since the given time
+        # keeps only the response that is oldest and get rest of the queue clear
+        while not self.response_queue.empty():
+            _response = self.response_queue.get()
+            if not _valid_response and _response.time >= since and _response.port:
+                self.response = _response 
+                _valid_response = True
+                
+        # return True if there is any valid response since the given time, False otherwise
+        if _valid_response: return True
+        return False
 
     def is_licking(self, since:int=0, reward:bool=False, clear:bool=True) -> int:
         """checks if there is any licking since the given time
@@ -307,8 +312,6 @@ class Behavior:
         Returns:
             int: licked port number else 0
         """
-        if self.interface.__class__.__name__ == 'DummyPorts': self.interface._get_events()
-
         # check if there is any licking since the given time
         if self.last_lick.time >= since and self.last_lick.port:
             # if reward == False return the licked port number
