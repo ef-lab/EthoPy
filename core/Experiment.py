@@ -184,8 +184,8 @@ class ExperimentClass:
             for ctable in condition_tables:  # insert dependant condition tables
                 core = [field for field in self.logger.get_table_keys(schema, ctable, key_type='primary') if field != hsh]
                 fields = [field for field in self.logger.get_table_keys(schema, ctable)]
-                if not np.all([np.any(np.array(k) == list(cond.keys())) for k in fields]):
-                    if self.logger.manual_run: print('skipping ', ctable)
+                if not all(k in cond for k in fields):
+                    logging.warning("skipping table: %s, because of missing attributes: %s", ctable, [k for k in fields if k not in cond])
                     continue  # only insert complete tuples
                 if core and hasattr(cond[core[0]], '__iter__'):
                     for idx, pcond in enumerate(cond[core[0]]):
