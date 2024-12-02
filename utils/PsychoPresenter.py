@@ -20,14 +20,15 @@ class Presenter():
             fullscr=monitor.fullscreen, useFBO=True, waitBlanking=True)
 
         # compensate for monitor flatness
-        self.warper = Warper(self.win,
-                             warp='spherical',
-                             warpGridsize=64,
-                             flipHorizontal=False,
-                             flipVertical=False)
-        self.warper.dist_cm = self.monitor.distance
-        self.warper.warpGridsize = 64
-        self.warper.changeProjection('spherical', eyepoint=(monitor.center_x+0.5, monitor.center_y+0.5))
+        if monitor.flatness_correction:
+            self.warper = Warper(self.win,
+                                 warp='spherical',
+                                 warpGridsize=64,
+                                 flipHorizontal=False,
+                                 flipVertical=False)
+            self.warper.dist_cm = 5 #self.monitor.distance
+            self.warper.warpGridsize = 64
+            self.warper.changeProjection('spherical', eyepoint=(monitor.center_x+0.5, monitor.center_y+0.5))
 
         # record fliptimes for syncing
         self.rec_fliptimes = rec_fliptimes
@@ -47,6 +48,7 @@ class Presenter():
     def _setup_photodiode(self, photodiode=True):
         if photodiode:
             self.photodiode_rect = psychopy.visual.Rect(self.win,
+                                                        units='norm',
                                                         width=self.phd_size,
                                                         height=self.phd_size * float(self.window_ratio),
                                                         pos=[-1 + self.phd_size / 2,
@@ -63,6 +65,11 @@ class Presenter():
                 self.phd_f = lambda x: 0.5 * float(((x+1) & 1) * (2 - ((x+1) & (1 << (((np.int64(np.floor((x+1) / 2)) & 15) + 6) - 1)) != 0)))
             else:
                 print(photodiode, ' method not implemented! Available methods: parity, flipcount')
+
+    def render_image(self, image):
+        curr_image = psychopy.visual.ImageStim(self.win, image)
+        curr_image.draw()
+        self.flip()
 
     def set_background_color(self, color):
         self.background_color = color
@@ -92,8 +99,10 @@ class Presenter():
         """
         if self.photodiode:
             amp = self.phd_f(self.flip_count)
+            #self.warper.changeProjection(None)
             self.photodiode_rect.color = [amp, amp, amp]
             self.photodiode_rect.draw()
+            #self.warper.changeProjection('spherical', eyepoint=(self.monitor.center_x+0.5, self.monitor.center_y+0.5))
 
     def quit(self):
         self.win.close()

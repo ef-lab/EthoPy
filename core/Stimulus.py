@@ -32,6 +32,7 @@ class Configuration(dj.Manual):
         fps                      : tinyint UNSIGNED
         resolution_x             : smallint
         resolution_y             : smallint
+        flatness_correction      : binary
         description              : varchar(256)
         """
 
@@ -81,7 +82,7 @@ class Stimulus:
         screen_properties = self.logger.get(table='SetupConfiguration.Screen', key=self.exp.params, as_dict=True)
         self.monitor = DictStruct(screen_properties[0])
         if self.logger.is_pi:
-            cmd = 'echo %d > /sys/class/backlight/10-0045/brightness' % self.monitor.intensity
+            cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % self.monitor.intensity
             os.system(cmd)
             exp.interface.setup_touch_exit()
 

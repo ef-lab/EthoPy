@@ -15,18 +15,19 @@ exp.setup(logger, HeadFixed, session_params)
 conditions = []
 
 # define stimulus conditions
-objects = ['MadMax']
+objects = ['obj1v6']
 
 key = {
-    'clip_number'        : list(range(10, 40)),
+    'clip_number'        : [3,2,4],
     'skip_time'          : [0],
-    'movie_duration'     : 5000,
+    'movie_duration'     : 2000,
     'static_frame'       : False,
     'intertrial_duration': 500,
 }
 
+block = exp.Block(difficulty=0, next_up=0, next_down=0, trial_selection='fixed')
 for obj in objects:
-    conditions += exp.make_conditions(stim_class=Movies(), conditions={**key, 'movie_name': obj})
+    conditions += exp.make_conditions(stim_class=Movies(), conditions={**block.dict(), **key, 'movie_name': obj})
 
 random.seed(0)
 random.shuffle(conditions)
