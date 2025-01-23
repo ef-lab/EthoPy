@@ -224,7 +224,7 @@ class ExperimentClass:
     def _get_new_cond(self):
         """ Get curr condition & create random block of all conditions """
         if self.curr_cond['trial_selection'] == 'fixed':
-            self.curr_cond = [] if len(self.conditions) == 0 else self.conditions.pop()
+            self.curr_cond = [] if len(self.conditions) == 0 else self.conditions.pop(0)
         elif self.curr_cond['trial_selection'] == 'block':
             if np.size(self.iter) == 0: self.iter = np.random.permutation(np.size(self.conditions))
             cond = self.conditions[self.iter[0]]
