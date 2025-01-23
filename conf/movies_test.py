@@ -1,5 +1,5 @@
 from Experiments.Passive import *
-from Stimuli.Movies import *
+from Stimuli.PsychoMovies import *
 from Behaviors.HeadFixed import *
 import random
 
@@ -15,7 +15,7 @@ exp.setup(logger, HeadFixed, session_params)
 conditions = []
 
 # define stimulus conditions
-objects = ['obj1v6']
+objects = ['madmax']
 
 key = {
     'clip_number'        : [3,2,4],

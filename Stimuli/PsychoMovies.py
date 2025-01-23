@@ -36,11 +36,12 @@ class Movies(Stimulus, dj.Manual):
             self.get_clip_info(self.curr_cond, 'Movie', 'frame_rate', 'frame_height', 'frame_width')
         video_aspect = frame_width[0]/frame_height[0]
         size = [2, video_aspect*2] if self.monitor.aspect > video_aspect else [2*video_aspect, 2]
+        print('size: ', size)
         self.vid = psychopy.visual.MovieStim(self.Presenter.win, self.path +file_name[0],
                                              loop=False,  # replay the video when it reaches the end
-                                             autoStart=True)
-                                             #size=size,  # set as `None` to use the native video size
-                                             #units='norm')
+                                             autoStart=True,
+                                             size=[2, 2],  # set as `None` to use the native video size
+                                             units='norm')
 
         self.in_operation = True
         self.timer.start()

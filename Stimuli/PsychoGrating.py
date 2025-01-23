@@ -1,5 +1,6 @@
 from core.Stimulus import *
 from utils.PsychoPresenter import *
+from utils.helper_functions import iterable
 
 
 @stimulus.schema
