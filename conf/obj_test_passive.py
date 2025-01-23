@@ -24,11 +24,11 @@ conditions = []
 np.random.seed(0)
 obj_combs = [[3, 2]]
 times = 10
-reps = 1
+reps = 2
 
 panda_obj = Panda()
 panda_obj.record()
-
+block = exp.Block(difficulty=0, next_up=0, next_down=0, trial_selection='fixed')
 for idx, obj_comb in enumerate(obj_combs):
     for irep in range(0, reps):
         pos_x_f = lambda x: interp(np.random.rand(x) - 0.5)
@@ -39,7 +39,7 @@ for idx, obj_comb in enumerate(obj_combs):
         yaw_f = lambda x: interp(np.random.rand(x)*10)
         dir1_f = lambda: np.array([0, -20, 0]) + np.random.randn(3)*30
         dir2_f = lambda: np.array([180, -20, 0]) + np.random.randn(3)*30
-        conditions += exp.make_conditions(stim_class=panda_obj, conditions={
+        conditions += exp.make_conditions(stim_class=panda_obj, conditions={**block.dict(),
             'background_color': (0.5, 0.5, 0.5),
             'obj_dur': 3000,
             'obj_id': [obj_comb],
