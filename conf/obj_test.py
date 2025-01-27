@@ -22,21 +22,12 @@ exp.setup(logger, MultiPort, session_params)
 np.random.seed(0)
 conditions = []
 
-
-def ready_stim(self):
-    """Stim Cue for ready"""
-    if self.fill_colors.ready and self.exp.beh.is_off_proximity():
-        self.fill(self.fill_colors.ready)
-
-
 # two static objects (1 target + 1 distractor) multiple delays & rotation
 cue_obj = [2, 2, 3, 3]
 resp_obj = [(3, 2), (2, 3), (3, 2), (2, 3)]
 rew_prob = [2, 1, 1, 2]
 reps = 1
 panda_obj = Panda()
-panda_obj.ready_stim = ready_stim
-
 panda_obj.fill_colors.set({'background': (0, 0, 0),
                       'start': (32, 32, 32),
                       'punish': (0, 0, 0)})
