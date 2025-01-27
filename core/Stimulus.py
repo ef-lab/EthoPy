@@ -32,7 +32,6 @@ class Configuration(dj.Manual):
         fps                      : tinyint UNSIGNED
         resolution_x             : smallint
         resolution_y             : smallint
-        flatness_correction      : binary
         description              : varchar(256)
         """
 

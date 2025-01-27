@@ -1,7 +1,7 @@
 # Retinotopic mapping experiment
 
 from Experiments.Passive import *
-from Stimuli.PsychoBar import *
+from Stimuli.Bar import *
 from Behaviors.HeadFixed import *
 
 # define session parameters
@@ -28,17 +28,16 @@ key = {
     'grit_freq'             : 1,
     'style'                 : 'checkerboard', # checkerboard, grating
     'direction'             : 1,             # 1 for UD LR, -1 for DU RL
-    'flatness_correction'   : 0,
+    'flatness_correction'   : 1,
     'intertrial_duration'   : 0,
 }
 
 repeat_n = 10
 
-block = exp.Block(difficulty=0, next_up=0, next_down=0, trial_selection='fixed')
 conditions = []
 for axis in ['horizontal', 'vertical']:
     for rep in range(0, repeat_n):
-        conditions += exp.make_conditions(stim_class=Bar(), conditions={**block.dict(),**key, 'axis': axis})
+        conditions += exp.make_conditions(stim_class=Bar(), conditions={**key, 'axis': axis})
 
 
 # run experiments
