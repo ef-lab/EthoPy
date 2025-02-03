@@ -26,7 +26,7 @@ class Wheel(Interface):
         sleep(1)
         self.msg_queue.put(Message(type='offset', value=self.logger.logger_timer.elapsed_time()))
 
-    def cleanup(self):
+    def release(self):
         self.thread_end.set()
         self.ser.close()  # Close the Serial connection
 
