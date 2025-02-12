@@ -16,8 +16,11 @@ class Wheel(Interface):
         self.offset = None
         self.no_response = False
         self.timeout_timer = time.time()
-        self.dataset = self.logger.createDataset(dataset_name='wheel',
+        self.wheel_dataset = self.logger.createDataset(dataset_name='wheel',
                                                  dataset_type=np.dtype([("position", np.double),
+                                                                        ("tmst", np.double)]))
+        self.frame_dataset = self.logger.createDataset(dataset_name='frames',
+                                                 dataset_type=np.dtype([("idx", np.double),
                                                                         ("tmst", np.double)]))
         self.ser = Serial(self.port, baudrate=self.baud)
         sleep(1)
@@ -38,8 +41,9 @@ class Wheel(Interface):
             msg = self._read_msg()  # Read the response
             if msg is not None:
                 if msg['type'] == 'Position' and self.offset is not None:
-                    # print(msg['value'], msg['tmst'])
-                    self.dataset.append('wheel', [msg['value'], msg['tmst']])
+                    self.wheel_dataset.append('wheel', [msg['value'], msg['tmst']])
+                elif msg['type'] == 'Frame' and self.offset is not None:
+                    self.frame_dataset.append('frames', [msg['value'], msg['tmst']])
                 elif msg['type'] == 'Offset':
                     self.offset = msg['value']
 
