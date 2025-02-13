@@ -591,6 +591,7 @@ class Logger:
             log_protocol (bool): Whether to log the protocol information.
         """
         # Initializes session parameters and logs the session start.
+        self.logger_timer.start()  # Start session time
         self._init_session_params(params)
 
         # Save the protocol file, name and the git_hash in the database.
@@ -603,7 +604,7 @@ class Logger:
         #  Init the informations(e.g. trial_id=0, session) in control table
         self._init_control_table(params)
 
-        self.logger_timer.start()  # Start session time
+
 
     def _init_session_params(self, params: Dict[str, Any]) -> None:
         """
@@ -629,7 +630,8 @@ class Logger:
         # Creates a session key by merging trial key with session parameters.
         # TODO: Read the user name from the Control Table
         session_key = {**self.trial_key, **params, "setup": self.setup,
-                       "user_name": params.get("user_name", "bot")}
+                       "user_name": params.get("user_name", "bot"),
+                       "logger_tmst": self.logger_timer.start_time}
         logging.info("session_key:\n%s", pprint.pformat(session_key))
         # Logs the new session id to the database
         self.put(table="Session", tuple=session_key, priority=1, validate=True, block=True)
