@@ -24,7 +24,10 @@ class Experiment(State, ExperimentClass):
 
 class Entry(Experiment):
     def next(self):
-        return 'PreTrial'
+        if self.logger.setup_status in ['operational']:
+            return 'PreTrial'
+        else:
+            return 'Entry'
 
 
 class PreTrial(Experiment):

@@ -57,10 +57,13 @@ class Wheel(Interface):
         elif self.ser.in_waiting == 0:  # Nothing received
             self.no_response = True
             return None
-        incoming = self.ser.readline().decode("utf-8")
-        resp = None
         self.no_response = False
         self.timeout_timer = time.time()
+        try:
+            incoming = self.ser.readline().decode("utf-8")
+        except:
+            print('error reading serial line!')
+            return None
         try:
             resp = json.loads(incoming)
         except json.JSONDecodeError:
