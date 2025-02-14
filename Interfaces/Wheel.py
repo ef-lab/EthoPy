@@ -50,25 +50,20 @@ class Wheel(Interface):
     def _read_msg(self):
         """Reads a line from the serial buffer,
         decodes it and returns its contents as a dict."""
-        now = time.time()
-        if (now - self.timeout_timer) > 3:
-            self.timeout_timer = time.time()
+        if self.ser.in_waiting == 0:  # don't run faster than necessary
             return None
-        elif self.ser.in_waiting == 0:  # Nothing received
-            self.no_response = True
-            return None
-        self.no_response = False
-        self.timeout_timer = time.time()
-        try:
+
+        try: # read message
             incoming = self.ser.readline().decode("utf-8")
-        except:
-            print('error reading serial line!')
+        except:     # partial read of message, retry
             return None
-        try:
-            resp = json.loads(incoming)
+
+        try: # decode message
+            response = json.loads(incoming)
+            return response
         except json.JSONDecodeError:
             print("Error decoding JSON message!")
-        return resp
+            return None
 
     def _write_msg(self, message=None):
         """Sends a JSON-formatted command to the serial interface."""
