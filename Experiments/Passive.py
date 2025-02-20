@@ -26,6 +26,8 @@ class Entry(Experiment):
     def next(self):
         if self.logger.setup_status in ['operational']:
             return 'PreTrial'
+        elif self.is_stopped():  # if run out of conditions exit
+            return 'Exit'
         else:
             return 'Entry'
 
