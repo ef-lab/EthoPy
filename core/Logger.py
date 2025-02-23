@@ -167,6 +167,7 @@ class Logger:
         self.ping_timer = Timer()
         self.logger_timer = Timer()
         self.total_reward = 0
+        self.rec_idx = 0
         self.curr_state = ""
         self.thread_exception = None
         self.update_status = threading.Event()
@@ -1014,14 +1015,18 @@ class Logger:
         The method assumes the existence of a `get` method to retrieve existing recordings
         and a `log` method to log the new recording entry.
         """
-        recs = self.get(
-            schema="recording",
-            table="Recording",
-            key=self.trial_key,
-            fields=["rec_idx"],
-        )
-        rec_idx = 1 if not recs else max(recs) + 1
-        self.log('Recording', data={**rec_key, 'rec_idx': rec_idx}, schema='recording')
+        if not self.rec_idx:  # if rec_idx has not been utilized check database for logs
+            recs = self.get(
+                schema="recording",
+                table="Recording",
+                key=self.trial_key,
+                fields=["rec_idx"],
+            )
+            self.rec_idx = max(recs) + 1
+        else:
+            self.rec_idx += 1
+
+        self.log('Recording', data={**rec_key, 'rec_idx': self.rec_idx}, schema='recording')
 
     def closeDatasets(self):
         """
