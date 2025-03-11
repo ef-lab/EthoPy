@@ -31,8 +31,9 @@ conditions = []
 dot = Dot()
 dot.photodiode = False
 dot.rec_fliptimes = False
+block = exp.Block(difficulty=0, next_up=0, next_down=0, trial_selection='fixed')
 for rep in range(0, repeat_n):
-    conditions += exp.make_conditions(stim_class=dot, conditions=key)
+    conditions += exp.make_conditions(stim_class=dot, conditions={**block.dict(), **key})
 
 # randomize conditions
 random.seed(0)
