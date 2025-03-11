@@ -23,9 +23,6 @@ class Experiment(State, ExperimentClass):
 
 
 class Entry(Experiment):
-    def entry(self):
-        self.stim.prepare
-
     def next(self):
         if self.logger.setup_status in ['operational']:
             return 'PreTrial'
