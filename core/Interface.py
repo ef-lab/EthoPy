@@ -32,7 +32,7 @@ class Interface:
         self.camera = None
 
         # get port information
-        for port in self.logger.get(table='SetupConfiguration.Port', key=self.exp.params, as_dict=True):
+        for port in self.logger.get(schema='interface', table='SetupConfiguration.Port', key=self.exp.params, as_dict=True):
             self.ports.append(Port(**port))
         self.ports = np.array(self.ports)
         self.proximity_ports = np.array([p.port for p in self.ports if p.type == 'Proximity'])
@@ -40,9 +40,10 @@ class Interface:
 
         # check is the setup idx has a camera and initialize it
         if self.exp.params["setup_conf_idx"] in self.logger.get(
-            table="SetupConfiguration.Camera", fields=["setup_conf_idx"]
+            schema='interface', table="SetupConfiguration.Camera", fields=["setup_conf_idx"]
         ):
             camera_params = self.logger.get(
+                schema='interface',
                 table="SetupConfiguration.Camera",
                 key=f"setup_conf_idx={self.exp.params['setup_conf_idx']}",
                 as_dict=True,

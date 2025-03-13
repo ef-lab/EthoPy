@@ -176,7 +176,7 @@ class Behavior:
         self.response, self.last_lick = Activity(), Activity()
         self.response_queue = Queue(maxsize = 4)
         self.logging = True
-        interface_module = self.logger.get(schema='experiment',
+        interface_module = self.logger.get(schema='interface',
                                            table='SetupConfiguration',
                                            fields=['interface'],
                                            key={'setup_conf_idx': exp.params['setup_conf_idx']})[0]

@@ -21,7 +21,7 @@ class Stimulus:
         """store parent objects """
         self.logger = exp.logger
         self.exp = exp
-        screen_properties = self.logger.get(table='SetupConfiguration.Screen', key=self.exp.params, as_dict=True)
+        screen_properties = self.logger.get(schema='interface', table='SetupConfiguration.Screen', key=self.exp.params, as_dict=True)
         self.monitor = DictStruct(screen_properties[0])
         if self.logger.is_pi:
             cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % self.monitor.intensity

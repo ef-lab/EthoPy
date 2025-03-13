@@ -51,7 +51,7 @@ class Experiment:
         self.params = params
         self.logger = logger
         interface_module = self.logger.get(
-            schema="experiment",
+            schema="interface",
             table="SetupConfiguration",
             fields=["interface"],
             key={"setup_conf_idx": self.params["setup_conf_idx"]},
