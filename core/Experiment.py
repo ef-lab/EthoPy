@@ -292,13 +292,13 @@ class Session(dj.Manual):
     session_tmst=CURRENT_TIMESTAMP   : timestamp                    # session timestamp
     """
 
-    class Protocol(dj.Part):
+    class Task(dj.Part):
         definition = """
         # Protocol info
         -> Session
         ---
-        protocol_name        : varchar(256)                 # protocol filename
-        protocol_file        : blob                         # protocol text file
+        task_name            : varchar(256)                 # protocol filename
+        task_file            : blob                         # protocol text file
         git_hash             : varchar(32)                  # github hash
         """
 
@@ -446,100 +446,9 @@ class Trial(dj.Manual):
 
 
 @experiment.schema
-class SetupConfiguration(dj.Lookup, dj.Manual):
-    definition = """
-    # Setup configuration
-    setup_conf_idx           : tinyint                                            # configuration version
-    ---
-    interface                : enum('DummyPorts','RPPorts', 'PCPorts', 'RPVR')    # The Interface class for the setup
-    discription              : varchar(256)
-    """
-
-    contents = [[0, 'DummyPorts', 'Simulation'],]
-
-    class Port(dj.Lookup, dj.Part):
-        definition = """
-        # Probe identityrepeat_n = 1
-
-        port                     : tinyint                      # port id
-        type="Lick"              : enum('Lick','Proximity')     # port type
-        -> SetupConfiguration
-        ---
-        ready=0                  : tinyint                      # ready flag
-        response=0               : tinyint                      # response flag
-        reward=0                 : tinyint                      # reward flag
-        invert=0                 : tinyint                      # invert flag
-        discription              : varchar(256)
-        """
-
-        contents = [[1,'Lick', 0, 0 , 1, 1, 0, 'probe'],
-                    [2,'Lick', 0, 0 , 1, 1, 0, 'probe'],
-                    [3,'Proximity', 0, 1 , 0, 0, 0, 'probe']]
-
-    class Screen(dj.Lookup, dj.Part):
-        definition = """
-        # Screen information
-        screen_idx               : tinyint
-        -> SetupConfiguration
-        ---
-        intensity                : tinyint UNSIGNED 
-        distance                 : float
-        center_x                 : float
-        center_y                 : float
-        aspect                   : float
-        size                     : float
-        fps                      : tinyint UNSIGNED
-        resolution_x             : smallint
-        resolution_y             : smallint
-        description              : varchar(256)
-        fullscreen               : tinyint
-        """
-
-        contents = [[1,0, 64, 5.0, 0, -0.1, 1.66, 7.0, 30, 800, 480, 'Simulation', 0],]
-
-    class Ball(dj.Lookup, dj.Part):
-        definition = """
-        # Ball information
-        -> SetupConfiguration
-        ---
-        ball_radius=0.125        : float                   # in meters
-        material="styrofoam"     : varchar(64)             # ball material
-        coupling="bearings"      : enum('bearings','air')  # mechanical coupling
-        discription              : varchar(256)
-        """
-
-    class Speaker(dj.Lookup, dj.Part):
-        definition = """
-        # Speaker information
-        speaker_idx             : tinyint
-        -> SetupConfiguration
-        ---
-        sound_freq=10000        : int           # in Hz
-        duration=500            : int           # in ms
-        volume=50               : tinyint       # 0-100 percentage
-        discription             : varchar(256)
-        """
-
-    class Camera(dj.Lookup, dj.Part):
-        definition = """
-        # Camera information
-        camera_idx               : tinyint
-        -> SetupConfiguration
-        ---
-        fps                      : tinyint UNSIGNED
-        resolution_x             : smallint
-        resolution_y             : smallint
-        shutter_speed            : smallint
-        iso                      : smallint
-        file_format              : varchar(256)
-        video_aim                : enum('eye','body','openfield')
-        discription              : varchar(256)
-        """
-
-@experiment.schema
 class Control(dj.Lookup):
     definition = """
-    # Control table 
+    # Control table
     setup                       : varchar(256)                 # Setup name
     ---
     status="exit"               : enum('ready','running','stop','sleeping','exit','offtime','wakeup') 
@@ -558,18 +467,20 @@ class Control(dj.Lookup):
     ip=null                     : varchar(16)                  # setup IP address
     """
 
+
 @experiment.schema
 class Task(dj.Lookup):
     definition = """
     # Experiment parameters
     task_idx                    : int                          # task identification number
     ---
-    protocol                    : varchar(4095)                # stimuli to be presented (array of dictionaries)
+    task                        : varchar(4095)                # stimuli to be presented (array of dictionaries)
     description=""              : varchar(2048)                # task description
     timestamp                   : timestamp    
     """
 
     contents = generate_conf_list("conf/")
+
 
 @mice.schema
 class MouseWeight(dj.Manual):
@@ -579,5 +490,3 @@ class MouseWeight(dj.Manual):
     ---
     weight                          : double(5,2)                  # weight in grams
     """
-
-
