@@ -10,63 +10,6 @@ from utils.Presenter import Presenter
 from utils.Timer import Timer
 
 
-@stimulus.schema
-class Configuration(dj.Manual):
-    definition = """
-    # Session stimulus configuration info
-    -> experiment.Session
-    """
-
-    class Screen(dj.Part):
-        definition = """
-        # Screen information
-        -> Configuration
-        screen_idx               : tinyint
-        ---
-        intensity                : tinyint UNSIGNED 
-        distance         : float
-        center_x         : float
-        center_y         : float
-        aspect           : float
-        size             : float
-        fps                      : tinyint UNSIGNED
-        resolution_x             : smallint
-        resolution_y             : smallint
-        description              : varchar(256)
-        """
-
-    class Speaker(dj.Part):
-        definition = """
-        # Speaker information
-        speaker_idx             : tinyint
-        -> Configuration
-        ---
-        sound_freq=10000        : int           # in Hz
-        duration=500            : int           # in ms
-        volume=50               : tinyint       # 0-100 percentage
-        discription             : varchar(256)
-        """
-
-
-@stimulus.schema
-class StimCondition(dj.Manual):
-    definition = """
-    # This class handles the stimulus presentation use function overrides for each stimulus class
-    stim_hash            : char(24)                     # unique stimulus condition hash  
-    """
-
-    class Trial(dj.Part):
-        definition = """
-        # Stimulus onset timestamps
-        -> experiment.Trial
-        period='Trial'       : varchar(16)
-        ---
-        -> StimCondition
-        start_time           : int                          # start time from session start (ms)
-        end_time=NULL        : int                          # end time from session start (ms)
-        """
-
-
 class Stimulus:
     """ This class handles the stimulus presentation use function overrides for each stimulus class """
 
@@ -78,7 +21,7 @@ class Stimulus:
         """store parent objects """
         self.logger = exp.logger
         self.exp = exp
-        screen_properties = self.logger.get(table='SetupConfiguration.Screen', key=self.exp.params, as_dict=True)
+        screen_properties = self.logger.get(schema='interface', table='SetupConfiguration.Screen', key=self.exp.params, as_dict=True)
         self.monitor = DictStruct(screen_properties[0])
         if self.logger.is_pi:
             cmd = 'echo %d > /sys/class/backlight/rpi_backlight/brightness' % self.monitor.intensity
@@ -161,3 +104,21 @@ class Stimulus:
 
     def name(self):
         return type(self).__name__
+
+@stimulus.schema
+class StimCondition(dj.Manual):
+    definition = """
+    # This class handles the stimulus presentation use function overrides for each stimulus class
+    stim_hash            : char(24)                     # unique stimulus condition hash  
+    """
+
+    class Trial(dj.Part):
+        definition = """
+        # Stimulus onset timestamps
+        -> experiment.Trial
+        period='Trial'       : varchar(16)
+        ---
+        -> StimCondition
+        start_time           : int                          # start time from session start (ms)
+        end_time=NULL        : int                          # end time from session start (ms)
+        """

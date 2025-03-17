@@ -51,7 +51,7 @@ class Experiment:
         self.params = params
         self.logger = logger
         interface_module = self.logger.get(
-            schema="experiment",
+            schema="interface",
             table="SetupConfiguration",
             fields=["interface"],
             key={"setup_conf_idx": self.params["setup_conf_idx"]},
@@ -387,7 +387,7 @@ class Experiment:
         self.logger.put(
             table="PortCalibration",
             tuple=key,
-            schema="behavior",
+            schema="interface",
             priority=5,
             ignore_extra_fields=True,
             validate=True,
@@ -396,7 +396,7 @@ class Experiment:
         )
         self.logger.put(
             table="PortCalibration.Liquid",
-            schema="behavior",
+            schema="interface",
             replace=True,
             ignore_extra_fields=True,
             tuple=dict(
