@@ -1,4 +1,5 @@
 import itertools
+import logging
 import time
 from dataclasses import dataclass, field
 
@@ -183,8 +184,8 @@ class ExperimentClass:
             for ctable in condition_tables:  # insert dependant condition tables
                 core = [field for field in self.logger.get_table_keys(schema, ctable, key_type='primary') if field != hsh]
                 fields = [field for field in self.logger.get_table_keys(schema, ctable)]
-                if not np.all([np.any(np.array(k) == list(cond.keys())) for k in fields]):
-                    if self.logger.manual_run: print('skipping ', ctable)
+                if not all(k in cond for k in fields):
+                    logging.warning("skipping table: %s, because of missing attributes: %s", ctable, [k for k in fields if k not in cond])
                     continue  # only insert complete tuples
                 if core and hasattr(cond[core[0]], '__iter__'):
                     for idx, pcond in enumerate(cond[core[0]]):
@@ -240,11 +241,11 @@ class ExperimentClass:
                 if perf >= self.curr_cond['stair_up']:
                     self.cur_block = self.curr_cond['next_up']
                     self.cur_block_sz = 0
-                    self.logger.update_setup_info({'difficulty': self.cur_block})
+                    self.logger.update_setup_info({'difficulty': self.cur_block, 'block': False})
                 elif perf < self.curr_cond['stair_down']:
                     self.cur_block = self.curr_cond['next_down']
                     self.cur_block_sz = 0
-                    self.logger.update_setup_info({'difficulty': self.cur_block})
+                    self.logger.update_setup_info({'difficulty': self.cur_block, 'block': False})
             if self.curr_cond['antibias']:
                 anti_bias = self._anti_bias(choice_h, self.un_choices[self.un_blocks == self.cur_block])
                 condition_idx = np.logical_and(self.choices == anti_bias, self.blocks == self.cur_block)

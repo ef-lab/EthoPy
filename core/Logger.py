@@ -779,22 +779,22 @@ class Logger:
         except socket.error:
             return False
 
-    def update_setup_info(self, info: Dict[str, Any], key: Optional[Dict[str, Any]] = None):
+    def update_setup_info(self, info: Dict[str, Any], key: Optional[Dict[str, Any]] = None, block: bool = True):
         """
-        This method updates the setup information in Control table with the provided info and key.
+        Updates the setup information in the Control table with the provided info and key.
 
-        It first fetches the existing setup information from the experiment's Control table,
-        then updates it with the provided info. If 'status' is in the provided info, it blocks
-        and validates the update operation.
+        This method fetches the existing setup information from the experiment's Control table,
+        updates it with the provided info. If 'status' is included in the info, it sets the update status and
+        logs the caller's information.
 
         Args:
-            info (dict): The information to update the setup with.
-            key (dict, optional): Additional keys to fetch the setup information with.
-            Defaults to an empty dict.
+            info (dict): The information to update the setup with. This should include any
+                         relevant fields, such as 'status' and 'notes'.
+            key (dict, optional): Additional keys to filter the setup information. If None,
+                                  defaults to an empty dictionary.
 
-        Side Effects:
-            Updates the setup_info attribute with the new setup information.
-            Updates the setup_status attribute with the new status.
+        Raises:
+            Exception: If an exception has occurred in threads running in logger.
         """
         if self.thread_exception:
             self.thread_exception = None
@@ -805,8 +805,7 @@ class Logger:
         if not public_conn.is_connected:
             set_connection()
 
-        block = True if "status" in info else False
-        if block:
+        if "status" in info:
             self.update_status.set()
             caller = inspect.stack()[1]
             caller_info = (f"Function called by {caller.function} "
