@@ -12,7 +12,7 @@ class Arduino(Interface):
 
     def __init__(self, **kwargs):
         super(Arduino, self).__init__(**kwargs)
-        self.port = self.logger.get(table='SetupConfiguration', key=self.exp.params, fields=['path'])[0]
+        self.port = self.logger.get(schema='interface', table='SetupConfiguration', key=self.exp.params, fields=['path'])[0]
         self.baud = 115200
         self.timeout = .001
         self.no_response = False

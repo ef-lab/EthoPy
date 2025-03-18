@@ -74,11 +74,12 @@ def set_connection():
     Returns:
         None
     """
-    global experiment, stimulus, behavior, recording, mice, public_conn
+    global experiment, stimulus, behavior, interface, recording, mice, public_conn
     virtual_modules, public_conn = create_virtual_modules(SCHEMATA)
     experiment = virtual_modules["experiment"]
     stimulus = virtual_modules["stimulus"]
     behavior = virtual_modules["behavior"]
+    interface = virtual_modules["interface"]
     recording = virtual_modules["recording"]
     mice = virtual_modules["mice"]
 
@@ -277,7 +278,7 @@ class Logger:
         if task_idx:
             task_query = experiment.Task() & dict(task_idx=task_idx)
             if len(task_query) > 0:
-                return task_query.fetch1("protocol")
+                return task_query.fetch1("task")
             else:
                 error_msg = f"There is no task_idx:{task_idx} in the tables Tasks"
                 logging.info(error_msg)
@@ -669,19 +670,18 @@ class Logger:
         5. Calls a helper method to log the configuration of sub-tables for each schema.
         """
         # modules that have a Configuration classes
-        _modules = ['core.Behavior', 'core.Stimulus']
+        _modules = ['core.Interface']
         # consider that the module have the same name as the schema but in lower case
         # (e.g for class Behaviour the schema is the behavior)
-        _schemas = [_module.split('.')[1].lower() for _module in _modules]
+        _schema = "interface"
 
         # Logs the session and animal_id in configuration tables of behavior/stimulus.
-        for schema in _schemas:
-            self.put(table="Configuration", tuple=self.trial_key, schema=schema, priority=2,
-                     validate=True, block=True,)
+        self.put(table="Configuration", tuple=self.trial_key, schema=_schema, priority=2,
+                 validate=True, block=True,)
 
         # create a dict with the configuration as key and the subclasses as values
         conf_table_schema = {}
-        for _schema, _module in zip(_schemas, _modules):
+        for _module in _modules:
             conf = importlib.import_module(_module).Configuration
             # Find the inner classes of the class Configuration
             conf_table_schema[_schema] = self.get_inner_classes_list(conf)
@@ -705,7 +705,7 @@ class Logger:
         """
         for config_table in config_tables:
             configuration_data = (
-                getattr(experiment.SetupConfiguration, config_table.split('.')[1])
+                getattr(interface.SetupConfiguration, config_table.split('.')[1])
                 & {"setup_conf_idx": params["setup_conf_idx"]}
             ).fetch(as_dict=True)
             # put the configuration data in the configuration table
@@ -843,11 +843,11 @@ class Logger:
         )
         logging.info("Git hash: %s", git_hash)
         self.put(
-            table="Session.Protocol",
+            table="Session.Task",
             tuple={
                 **self.trial_key,
-                "protocol_name": self.protocol_path,
-                "protocol_file": np.fromfile(self.protocol_path, dtype=np.int8),
+                "task_name": self.protocol_path,
+                "task_file": np.fromfile(self.protocol_path, dtype=np.int8),
                 "git_hash": git_hash,
             },
         )

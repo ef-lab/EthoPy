@@ -1,7 +1,6 @@
 import bisect
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from dataclasses import field as datafield
-from dataclasses import fields
 from datetime import datetime, timedelta
 from importlib import import_module
 from queue import Queue
@@ -145,38 +144,6 @@ class Activity(dj.Manual):
 
 
 @behavior.schema
-class Configuration(dj.Manual):
-    definition = """
-    # Session behavior configuration info
-    -> experiment.Session
-    """
-
-    class Port(dj.Part):
-        definition = """
-        # Probe identity
-        -> Configuration
-        port                     : tinyint                      # port id
-        type="Lick"              : varchar(24)                 # port type
-        ---
-        ready=0                  : tinyint                      # ready flag
-        response=0               : tinyint                      # response flag
-        reward=0                 : tinyint                      # reward flag
-        discription              : varchar(256)
-        """
-
-    class Ball(dj.Part):
-        definition = """
-        # Ball information
-        -> Configuration
-        ---
-        ball_radius=0.125        : float                   # in meters
-        material="styrofoam"     : varchar(64)             # ball material
-        coupling="bearings"      : enum('bearings','air')  # mechanical coupling
-        discription              : varchar(256)
-        """
-
-
-@behavior.schema
 class BehCondition(dj.Manual):
     definition = """
     # reward probe conditions
@@ -190,48 +157,6 @@ class BehCondition(dj.Manual):
         -> BehCondition
         time			      : int 	                # time from session start (ms)
         """
-
-
-@behavior.schema
-class PortCalibration(dj.Manual):
-    definition = """
-    # Liquid delivery calibration sessions for each port with water availability
-    setup                        : varchar(256)                 # Setup name
-    port                         : tinyint                      # port id
-    date                         : date                         # session date (only one per day is allowed)
-    """
-
-    class Liquid(dj.Part):
-        definition = """
-        # Data for volume per pulse duty cycle estimation
-        -> PortCalibration
-        pulse_dur                    : int                  # duration of pulse in ms
-        ---
-        pulse_num                    : int                  # number of pulses
-        weight                       : float                # weight of total liquid released in gr
-        timestamp=CURRENT_TIMESTAMP  : timestamp            # timestamp
-        pressure=0                   : float                # air pressure (PSI)
-        """
-
-    class Test(dj.Part):
-        definition = """
-        # Lick timestamps
-        setup                        : varchar(256)                 # Setup name
-        port                         : tinyint                      # port id
-        timestamp=CURRENT_TIMESTAMP  : timestamp  
-        ___
-        result=null                  : enum('Passed','Failed')
-        pulses=null                  : int
-        """
-
-    def plot(self):
-        colors = cm.get_cmap('nipy_spectral', len(self))
-        for idx, key in enumerate(self):
-            d, n, w = (PortCalibration.Liquid() & key).fetch('pulse_dur', 'pulse_num', 'weight')
-            plt.plot(d, (w / n) * 1000, label=(key['setup'] + ' #' + str(key['probe'])),c=colors(idx))
-            plt.legend(loc=1)
-            plt.xlabel('Time (ms)')
-            plt.ylabel('Liquid(uL)')
 
 
 class Behavior:
@@ -251,7 +176,7 @@ class Behavior:
         self.response, self.last_lick = Activity(), Activity()
         self.response_queue = Queue(maxsize = 4)
         self.logging = True
-        interface_module = self.logger.get(schema='experiment',
+        interface_module = self.logger.get(schema='interface',
                                            table='SetupConfiguration',
                                            fields=['interface'],
                                            key={'setup_conf_idx': exp.params['setup_conf_idx']})[0]

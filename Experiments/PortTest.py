@@ -4,6 +4,7 @@ import time
 import pygame
 import pygame_menu
 
+
 class PortTest:
     def __init__(self, logger, params):
         self.params = params
@@ -12,13 +13,13 @@ class PortTest:
         self.interface = RPPorts(exp=self, callbacks=True)
         self.size = (800, 480)     # window size
         self.result = dict()
-        self.total_pulses=0
+        self.total_pulses = 0
         self.screen_width = 800
         self.screen_height = 480
         pygame.init()
         if self.logger.is_pi:
             self.screen = pygame.display.set_mode((self.screen_width, self.screen_height),
-                                                pygame.FULLSCREEN)
+                                                  pygame.FULLSCREEN)
         else:
             self.surface = pygame.display.set_mode((self.screen_width, self.screen_height))
 
@@ -33,14 +34,14 @@ class PortTest:
         self.theme.widget_padding = 0
 
         self.menu = pygame_menu.Menu('',
-                        self.screen_width,
-                        self.screen_height,
-                        center_content=False,
-                        mouse_motion_selection=True,
-                        onclose=None,
-                        overflow=False,
-                        theme=self.theme,
-                        )
+                                     self.screen_width,
+                                     self.screen_height,
+                                     center_content=False,
+                                     mouse_motion_selection=True,
+                                     onclose=None,
+                                     overflow=False,
+                                     theme=self.theme,
+                                     )
 
     def run(self):
         """ Lickspout liquid delivery test """
@@ -61,7 +62,7 @@ class PortTest:
                         float=True,
                         label_id="pulses_label",
                         font_size=40,
-                        background_color = (0, 15, 15)).translate(0, 50)
+                        background_color=(0, 15, 15)).translate(0, 50)
                     self.flip_frame()
                     print(msg)
                     self.interface.give_liquid(port, self.params['duration'][cal_idx])
@@ -81,7 +82,7 @@ class PortTest:
                             float=True,
                             label_id="Done testing!",
                             font_size=40,
-                            background_color = (0, 15, 15)).translate(0, 50)
+                            background_color=(0, 15, 15)).translate(0, 50)
         self.flip_frame()
         self.close()
 
@@ -91,7 +92,6 @@ class PortTest:
         time.sleep(1)
         if pygame.get_init():
             pygame.display.quit()
-
 
     def flip_frame(self):
         """update the menu Gui"""
@@ -108,10 +108,10 @@ class PortTest:
             float=True,
             label_id="pulses_label",
             font_size=40,
-            background_color = (0, 15, 15)).translate(0, 50)
+            background_color=(0, 15, 15)).translate(0, 50)
         self.flip_frame()
         key = dict(setup=self.logger.setup, port=port, result=result, pulses=pulses, 
-                   date=time.strftime("%Y-%m-%d"),timestamp=time.strftime("%Y-%m-%d %H:%M:%S"))
-        self.logger.put(table='PortCalibration', tuple=key, schema='behavior', priority=5)
-        self.logger.put(table='PortCalibration.Test',  schema='behavior', replace=True, tuple=key)
+                   date=time.strftime("%Y-%m-%d"), timestamp=time.strftime("%Y-%m-%d %H:%M:%S"))
+        self.logger.put(table='PortCalibration', tuple=key, schema='interface', priority=5)
+        self.logger.put(table='PortCalibration.Test',  schema='interface', replace=True, tuple=key)
         time.sleep(1)

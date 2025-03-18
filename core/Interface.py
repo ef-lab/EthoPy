@@ -4,15 +4,16 @@ import struct
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import astuple, dataclass
+from dataclasses import astuple, dataclass, fields
 from dataclasses import field as datafield
-from dataclasses import fields
 from datetime import datetime
 from importlib import import_module
 from time import sleep
 
+import datajoint as dj
 import numpy as np
 
+from core.Logger import experiment, interface  # pylint: disable=W0611, # noqa: F401
 from utils.helper_functions import *
 from utils.Timer import *
 
@@ -31,7 +32,7 @@ class Interface:
         self.camera = None
 
         # get port information
-        for port in self.logger.get(table='SetupConfiguration.Port', key=self.exp.params, as_dict=True):
+        for port in self.logger.get(schema='interface', table='SetupConfiguration.Port', key=self.exp.params, as_dict=True):
             self.ports.append(Port(**port))
         self.ports = np.array(self.ports)
         self.proximity_ports = np.array([p.port for p in self.ports if p.type == 'Proximity'])
@@ -39,9 +40,10 @@ class Interface:
 
         # check is the setup idx has a camera and initialize it
         if self.exp.params["setup_conf_idx"] in self.logger.get(
-            table="SetupConfiguration.Camera", fields=["setup_conf_idx"]
+            schema='interface', table="SetupConfiguration.Camera", fields=["setup_conf_idx"]
         ):
             camera_params = self.logger.get(
+                schema='interface',
                 table="SetupConfiguration.Camera",
                 key=f"setup_conf_idx={self.exp.params['setup_conf_idx']}",
                 as_dict=True,
@@ -91,14 +93,14 @@ class Interface:
         for port in list(set(self.rew_ports)):
             self.pulse_rew[port] = dict()
             key = dict(setup=self.logger.setup, port=port)
-            dates = self.logger.get(schema='behavior', table='PortCalibration.Liquid',
+            dates = self.logger.get(schema='interface', table='PortCalibration.Liquid',
                                     key=key, fields=['date'], order_by='date')
             if np.size(dates) < 1:
                 print('No PortCalibration found!')
                 self.exp.quit = True
                 break
             key['date'] = dates[-1]  # use the most recent calibration
-            self.pulse_dur[port], pulse_num, weight = self.logger.get(schema='behavior', table='PortCalibration.Liquid',
+            self.pulse_dur[port], pulse_num, weight = self.logger.get(schema='interface', table='PortCalibration.Liquid',
                                                                  key=key, fields=['pulse_dur', 'pulse_num', 'weight'])
             self.weight_per_pulse[port] = np.divide(weight, pulse_num)
 
@@ -132,3 +134,227 @@ class Port:
         names = set([f.name for f in fields(self)])
         for k, v in kwargs.items():
             if k in names: setattr(self, k, v)
+
+
+@interface.schema
+class SetupConfiguration(dj.Lookup, dj.Manual):
+    """DataJoint table for configuring the setup interfaces.
+
+    The user can define all harware configuration by defining only the setup index.
+    """
+
+    definition = """
+    # Setup configuration
+    setup_conf_idx           : tinyint      # configuration version
+    ---
+    interface                : enum('DummyPorts','RPPorts', 'PCPorts', 'RPVR')
+    discription              : varchar(256)
+    """
+
+    contents = [
+        [0, "DummyPorts", "Simulation"],
+    ]
+
+    class Port(dj.Lookup, dj.Part):
+        """Port configuration table."""
+
+        definition = """
+        # Probe identityrepeat_n = 1
+
+        port                     : tinyint                      # port id
+        type="Lick"              : enum('Lick','Proximity')     # port type
+        -> SetupConfiguration
+        ---
+        ready=0                  : tinyint                      # ready flag
+        response=0               : tinyint                      # response flag
+        reward=0                 : tinyint                      # reward flag
+        invert=0                 : tinyint                      # invert flag
+        discription              : varchar(256)
+        """
+
+        contents = [
+            [1, "Lick", 0, 0, 1, 1, 0, "probe"],
+            [2, "Lick", 0, 0, 1, 1, 0, "probe"],
+            [3, "Proximity", 0, 1, 0, 0, 0, "probe"],
+        ]
+
+    class Screen(dj.Lookup, dj.Part):
+        """Screen configuration table."""
+
+        definition = """
+        # Screen information
+        screen_idx               : tinyint
+        -> SetupConfiguration
+        ---
+        intensity                : tinyint UNSIGNED
+        distance                 : float
+        center_x                 : float
+        center_y                 : float
+        aspect                   : float
+        size                     : float
+        fps                      : tinyint UNSIGNED
+        resolution_x             : smallint
+        resolution_y             : smallint
+        description              : varchar(256)
+        fullscreen               : tinyint
+        """
+
+        contents = [
+            [1, 0, 64, 5.0, 0, -0.1, 1.66, 7.0, 30, 800, 480, "Simulation", 0],
+        ]
+
+    class Ball(dj.Lookup, dj.Part):
+        """Ball configuration table."""
+
+        definition = """
+        # Ball information
+        -> SetupConfiguration
+        ---
+        ball_radius=0.125        : float                   # in meters
+        material="styrofoam"     : varchar(64)             # ball material
+        coupling="bearings"      : enum('bearings','air')  # mechanical coupling
+        discription              : varchar(256)
+        """
+
+    class Speaker(dj.Lookup, dj.Part):
+        """Speaker configuration table."""
+
+        definition = """
+        # Speaker information
+        speaker_idx             : tinyint
+        -> SetupConfiguration
+        ---
+        sound_freq=10000        : int           # in Hz
+        duration=500            : int           # in ms
+        volume=50               : tinyint       # 0-100 percentage
+        discription             : varchar(256)
+        """
+
+    class Camera(dj.Lookup, dj.Part):
+        """Camera configuration table."""
+
+        definition = """
+        # Camera information
+        camera_idx               : tinyint
+        -> SetupConfiguration
+        ---
+        fps                      : tinyint UNSIGNED
+        resolution_x             : smallint
+        resolution_y             : smallint
+        shutter_speed            : smallint
+        iso                      : smallint
+        file_format              : varchar(256)
+        video_aim                : enum('eye','body','openfield')
+        discription              : varchar(256)
+        """
+
+
+@interface.schema
+class Configuration(dj.Manual):
+    """DataJoint table for saving setup configurations for each session."""
+
+    definition = """
+    # Session behavior configuration info
+    -> experiment.Session
+    """
+
+    class Port(dj.Part):
+        """Port configuration table."""
+
+        definition = """
+        # Probe identity
+        -> Configuration
+        port                     : tinyint                      # port id
+        type="Lick"              : varchar(24)                 # port type
+        ---
+        ready=0                  : tinyint                      # ready flag
+        response=0               : tinyint                      # response flag
+        reward=0                 : tinyint                      # reward flag
+        discription              : varchar(256)
+        """
+
+    class Ball(dj.Part):
+        """Ball configuration table."""
+
+        definition = """
+        # Ball information
+        -> Configuration
+        ---
+        ball_radius=0.125        : float                   # in meters
+        material="styrofoam"     : varchar(64)             # ball material
+        coupling="bearings"      : enum('bearings','air')  # mechanical coupling
+        discription              : varchar(256)
+        """
+
+    class Screen(dj.Part):
+        """Screen configuration table."""
+
+        definition = """
+        # Screen information
+        -> Configuration
+        screen_idx               : tinyint
+        ---
+        intensity                : tinyint UNSIGNED
+        distance         : float
+        center_x         : float
+        center_y         : float
+        aspect           : float
+        size             : float
+        fps                      : tinyint UNSIGNED
+        resolution_x             : smallint
+        resolution_y             : smallint
+        description              : varchar(256)
+        """
+
+    class Speaker(dj.Part):
+        """Speaker configuration table."""
+
+        definition = """
+        # Speaker information
+        speaker_idx             : tinyint
+        -> Configuration
+        ---
+        sound_freq=10000        : int           # in Hz
+        duration=500            : int           # in ms
+        volume=50               : tinyint       # 0-100 percentage
+        discription             : varchar(256)
+        """
+
+
+@interface.schema
+class PortCalibration(dj.Manual):
+    """Liquid delivery calibration sessions for each port with water availability."""
+
+    definition = """
+    # Liquid delivery calibration sessions for each port with water availability
+    setup                        : varchar(256)  # Setup name
+    port                         : tinyint       # port id
+    date                         : date # session date (only one per day is allowed)
+    """
+
+    class Liquid(dj.Part):
+        """Datajoint table for volume per pulse duty cycle estimation."""
+
+        definition = """
+        # Data for volume per pulse duty cycle estimation
+        -> PortCalibration
+        pulse_dur                    : int       # duration of pulse in ms
+        ---
+        pulse_num                    : int       # number of pulses
+        weight                       : float     # weight of total liquid released in gr
+        timestamp=CURRENT_TIMESTAMP  : timestamp # timestamp
+        pressure=0                   : float     # air pressure (PSI)
+        """
+
+    class Test(dj.Part):
+        """Datajoint table for Lick Test."""
+
+        definition = """
+        # Lick timestamps
+        setup                        : varchar(256)                 # Setup name
+        port                         : tinyint                      # port id
+        timestamp=CURRENT_TIMESTAMP  : timestamp
+        ___
+        result=null                  : enum('Passed','Failed')
+        pulses=null                  : int
+        """
