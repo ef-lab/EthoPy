@@ -23,11 +23,13 @@ class Experiment(State, ExperimentClass):
 
 
 class Entry(Experiment):
-    def entry(self):
-        self.stim.prepare
-
     def next(self):
-        return 'PreTrial'
+        if self.logger.setup_status in ['operational']:
+            return 'PreTrial'
+        elif self.is_stopped():  # if run out of conditions exit
+            return 'Exit'
+        else:
+            return 'Entry'
 
 
 class PreTrial(Experiment):
