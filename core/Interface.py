@@ -247,7 +247,18 @@ class SetupConfiguration(dj.Lookup, dj.Manual):
         video_aim                : enum('eye','body','openfield')
         discription              : varchar(256)
         """
+    class Treadmill(dj.Lookup, dj.Part):
+        """Treadmill configuration table."""
 
+        definition = """
+        # Treadmill information
+        -> SetupConfiguration
+        ---
+        perimeter                       : float          # wheel or measuring roller circumference in meters
+        encoder_resolution   : int unsigned   # recorded counts per full revolution
+        encoder_model                   : varchar(128)   # optical encoder model
+        discription                     : varchar(256)
+        """
 
 @interface.schema
 class Configuration(dj.Manual):
